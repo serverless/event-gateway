@@ -1,0 +1,8 @@
+version: '2'
+services:
+  gateway:
+    image: 377024778620.dkr.ecr.us-east-1.amazonaws.com/gateway
+    cpu_shares: 256
+    mem_limit: 268435456
+    ports:
+      - 8080
