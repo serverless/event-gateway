@@ -1,19 +1,27 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/serverless/gateway/db"
+	"github.com/serverless/gateway/functions"
 )
 
-func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "hello from gateway!")
-}
-
 func main() {
-	http.HandleFunc("/status", hello)
-	http.HandleFunc("/v0/gateway", hello)
-	err := http.ListenAndServe(":8080", nil)
+	db, err := db.New()
 	if err != nil {
-		panic(err)
+		log.Fatalf("loading db file failed: %q", err)
 	}
+	defer db.Close()
+
+	router := httprouter.New()
+	router.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
+
+	fns := &functions.Functions{DB: db}
+	fnsapi := &functions.HTTPAPI{Functions: fns}
+	fnsapi.RegisterRoutes(router)
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

@@ -1,0 +1,12 @@
+hash: c63800f654486bd66e21be8f8c1c5ce36ab86f8e796304fe3e5c8273cd7d2a64
+updated: 2017-05-17T16:16:29.477055787+02:00
+imports:
+- name: github.com/boltdb/bolt
+  version: 583e8937c61f1af6513608ccc75c97b6abdf4ff9
+- name: github.com/julienschmidt/httprouter
+  version: 8c199fb6259ffc1af525cc3ad52ee60ba8359669
+- name: golang.org/x/sys
+  version: e4594059fe4cde2daf423055a596c2cd1e6c9adf
+  subpackages:
+  - unix
+testImports: []
