@@ -33,7 +33,8 @@ resource "aws_iam_role_policy" "service" {
         "ec2:Describe*",
         "elasticloadbalancing:RegisterTargets",
         "elasticloadbalancing:DeregisterTargets",
-        "elasticloadbalancing:Describe*"
+        "elasticloadbalancing:Describe*",
+        "lambda:InvokeFunction"
       ],
       "Resource": "*"
     }

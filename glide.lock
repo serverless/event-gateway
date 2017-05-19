@@ -1,6 +1,8 @@
-hash: c63800f654486bd66e21be8f8c1c5ce36ab86f8e796304fe3e5c8273cd7d2a64
-updated: 2017-05-17T16:16:29.477055787+02:00
+hash: eecf09ce09107fcc1256754687fd5d509ab6b4a301b80c14efab50bcf7b85f98
+updated: 2017-05-19T11:54:00.515684741+02:00
 imports:
+- name: github.com/aws/aws-sdk-go
+  version: 0b6039ef3d10c1eda49843ebf9773dcc5bba0169
 - name: github.com/boltdb/bolt
   version: 583e8937c61f1af6513608ccc75c97b6abdf4ff9
 - name: github.com/julienschmidt/httprouter
