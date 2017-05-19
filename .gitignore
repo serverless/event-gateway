@@ -1,3 +1,5 @@
 .terraform
 terraform.tfstate.backup
 bin
+vendor
+*.db
