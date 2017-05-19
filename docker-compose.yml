@@ -6,3 +6,5 @@ services:
     mem_limit: 268435456
     ports:
       - 8080
+    environment:
+      - AWS_REGION=us-east-1
