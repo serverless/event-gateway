@@ -8,3 +8,8 @@ services:
       - 8080
     environment:
       - AWS_REGION=us-east-1
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-1
+        awslogs-group: gateway
