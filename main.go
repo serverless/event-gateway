@@ -32,7 +32,8 @@ func main() {
 	fnsapi.RegisterRoutes(router)
 
 	ens := &endpoints.Endpoints{
-		DB: db,
+		DB:      db,
+		Invoker: fns,
 	}
 	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 	ensapi.RegisterRoutes(router)

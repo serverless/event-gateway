@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"log"
+	"strings"
 
 	"github.com/serverless/gateway/db"
 	shortid "github.com/ventu-io/go-shortid"
@@ -11,7 +12,8 @@ import (
 
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.
 type Endpoints struct {
-	DB *db.DB
+	DB      *db.DB
+	Invoker Invoker
 }
 
 // Endpoint represents single endpoint
@@ -25,6 +27,11 @@ type FunctionTarget struct {
 	FunctionID string `json:"functionId"`
 	Method     string `json:"method"`
 	Path       string `json:"path"`
+}
+
+// Invoker invokes function from function discovery
+type Invoker interface {
+	Invoke(name string, payload []byte) ([]byte, error)
 }
 
 // GetEndpoint returns registered endpoint.
@@ -69,6 +76,22 @@ func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
 	}
 
 	return en, nil
+}
+
+// CallEndpoint calls registered endpoints.
+func (e *Endpoints) CallEndpoint(name, method, path string, payload []byte) ([]byte, error) {
+	en, err := e.GetEndpoint(name)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fn := range en.Functions {
+		if fn.Method == strings.ToLower(method) && fn.Path == path {
+			return e.Invoker.Invoke(fn.FunctionID, payload)
+		}
+	}
+
+	return nil, &ErrorTargetNotFound{name}
 }
 
 const bucket = "endpoints"
