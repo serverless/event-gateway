@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_ecr_repository" "gateway" {
-  name = "gateway"
+  name = "${var.name}"
 }
 
 resource "aws_alb_target_group" "gateway" {
