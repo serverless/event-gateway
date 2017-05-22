@@ -1,12 +1,46 @@
-hash: eecf09ce09107fcc1256754687fd5d509ab6b4a301b80c14efab50bcf7b85f98
-updated: 2017-05-19T11:54:00.515684741+02:00
+hash: f25d7dbc024a0fb7d22005c896377936c15acc854a0195243adc52f59c0cc9f1
+updated: 2017-05-22T10:58:21.465353058+02:00
 imports:
 - name: github.com/aws/aws-sdk-go
   version: 0b6039ef3d10c1eda49843ebf9773dcc5bba0169
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - private/protocol
+  - private/protocol/json/jsonutil
+  - private/protocol/jsonrpc
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/restjson
+  - private/protocol/xml/xmlutil
+  - service/lambda
+  - service/lambda/lambdaiface
+  - service/sts
 - name: github.com/boltdb/bolt
   version: 583e8937c61f1af6513608ccc75c97b6abdf4ff9
+- name: github.com/go-ini/ini
+  version: c437d20015c2ab6454b7a66a13109ff0fb99e17a
+- name: github.com/jmespath/go-jmespath
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/julienschmidt/httprouter
   version: 8c199fb6259ffc1af525cc3ad52ee60ba8359669
+- name: github.com/ventu-io/go-shortid
+  version: 6c56cef5189ca1b3d5ef01dc07f4d611dfc0bb33
 - name: golang.org/x/sys
   version: e4594059fe4cde2daf423055a596c2cd1e6c9adf
   subpackages:

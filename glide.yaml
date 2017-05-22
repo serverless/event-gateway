@@ -6,3 +6,5 @@ import:
   version: ^1.3.0
 - package: github.com/aws/aws-sdk-go
   version: ^1.8.26
+- package: github.com/ventu-io/go-shortid
+  version: ^1.0.0

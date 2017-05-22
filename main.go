@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/julienschmidt/httprouter"
 	"github.com/serverless/gateway/db"
+	"github.com/serverless/gateway/endpoints"
 	"github.com/serverless/gateway/functions"
 )
 
@@ -29,6 +30,12 @@ func main() {
 	}
 	fnsapi := &functions.HTTPAPI{Functions: fns}
 	fnsapi.RegisterRoutes(router)
+
+	ens := &endpoints.Endpoints{
+		DB: db,
+	}
+	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
+	ensapi.RegisterRoutes(router)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
