@@ -8,6 +8,8 @@ services:
       - 8080
     environment:
       - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=AKIAI2TYMWZYFUNUHHIQ
+      - AWS_SECRET_ACCESS_KEY=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
     logging:
       driver: awslogs
       options:
