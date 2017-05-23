@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 
@@ -14,7 +15,10 @@ import (
 )
 
 func main() {
-	db, err := db.New()
+	dataDir := flag.String("data-dir", "", "Path to a data directory to store instance state.")
+	flag.Parse()
+
+	db, err := db.New(*dataDir)
 	if err != nil {
 		log.Printf("loading db file failed: %q", err)
 		return

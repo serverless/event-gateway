@@ -2,6 +2,7 @@ version: '2'
 services:
   gateway:
     image: 377024778620.dkr.ecr.us-east-1.amazonaws.com/gateway
+    command: [-data-dir, /var/lib/gateway]
     cpu_shares: 256
     mem_limit: 268435456
     ports:
@@ -10,6 +11,8 @@ services:
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=AKIAI2TYMWZYFUNUHHIQ
       - AWS_SECRET_ACCESS_KEY=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
+    volumes:
+      - /var/lib/gateway:/var/lib/gateway
     logging:
       driver: awslogs
       options:

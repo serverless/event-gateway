@@ -1,6 +1,8 @@
 package db
 
 import (
+	"path"
+
 	"github.com/boltdb/bolt"
 )
 
@@ -10,8 +12,8 @@ type DB struct {
 }
 
 // New returns new DB instance
-func New() (*DB, error) {
-	bolt, err := bolt.Open("gateway.db", 0600, nil)
+func New(dir string) (*DB, error) {
+	bolt, err := bolt.Open(path.Join(dir, "gateway.db"), 0600, nil)
 	return &DB{bolt}, err
 }
 
