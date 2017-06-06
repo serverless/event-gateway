@@ -231,6 +231,95 @@ fdk.set('users/twilioKey', 'xxx')
 fdk.get('users/twilioKey')
 ```
 
+#### Storage Options
+
+##### stateless gateway services backed by zk/etcd/consul cluster, abstracted by docker/libkv
+
+pros
+
+* flexible support for the three most popular configuration databases
+* very clear operational characteristics, does not confuse anyone about what's happening
+* the gateway is fully stateless, easy to autoscale, clear semantics for operators
+* lowest amount of work for us
+* write once, run anywhere in the same way
+* allows users to easily take advantage of existing database skills, tools, backup tools, monitoring, etc...
+
+cons
+
+* requires users to run their own cluster (they are already running things though, so this isn't a high marginal cost)
+
+##### embedded etcd in gateway, cluster of 3 or 5 active as "leaders", rest of gateways are stateless
+
+pros
+
+* single binary
+
+cons
+
+* unclear operational characteristics, when the cluster gets wedged it may be extremely hard to debug
+* harder than running your own cluster, because you can't reuse existing database skills
+* very hard on operators when things go wrong
+* harder on operators to get things safely set up
+* still effectively have a separate cluster if you want to autoscale without accidentally losing leaders
+* creating a reliable "autopilot" etcd deployment system took tyler 4 months in the past
+
+##### embedded etcd in gateway, single node configured as "leader", rest of gateways are stateless
+
+pros
+
+* easy to set up
+* can be used in combination with a separate etcd cluster for the best of both worlds
+* does not require setting up a cluster to try out, demo, or run in small deployments
+* clear operational characteristics, everyone knows it's not reliable
+
+cons
+
+* single point of failure on the single leader node
+
+##### dynamo + spanner + cosmosdb + on prem other databases
+
+pros
+
+* single binary
+* easy deployment for users on cloud providers
+* one fewer piece to keep running
+
+cons
+
+* dramatically increases the complexity for building the system for us
+* we need to target multiple consistency models (hard+++)
+* we need to spend much more effort on testing
+* we need to spend much more effort on fixing bugs
+* we need to spend much more effort on writing monitoring code
+* we need to master all of these databases in order to program against them
+
+##### eventually consistent gossip-based config sharing with CRDTs
+
+pros
+
+* single binary
+* no external dependencies, even on databases
+
+cons
+
+* if all instances go away, the configuration is gone
+* we're basically building our own distributed database (hard+++++)
+* need to create backup tooling
+* unclear operational characteristics for people
+* huge extra effort needs to go into correctness testing
+
+##### just config files, reloaded on file change
+
+pros
+
+* single binary
+* flexible
+* can be used with any of the other approaches to decouple functionality
+
+cons
+
+* users don't get an API for the gateway
+
 ### ACL system
 
 *ACL system is highly inspired by [Consul's ACL system](https://www.consul.io/docs/guides/acl.html) and AWS IAM.*
