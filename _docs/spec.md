@@ -231,6 +231,68 @@ fdk.set('users/twilioKey', 'xxx')
 fdk.get('users/twilioKey')
 ```
 
+#### Implications of Storage Semantics
+
+For configuration, this system has this desired behavior:
+
+1. something wants to configure something
+1. everything that needs to know about that configuration reacts to it
+
+We benefit from strongly consistent atomic writes because we want all configuration to
+reach everything that needs to be configured. Weakly consistent systems
+may not observe all updates, and we will end up with broken or half-working
+features. We also benefit from efficient notification primitives for
+keeping the overall system performant, such as watches. Without watches,
+we have to continuously scan ranges of keys in the database until we
+find new data, which is enormously expensive, slow, and hard to scale.
+
+Applied to security, where we want to revoke a user's privileges completely,
+if we are using a database without the ability to perform atomic writes,
+even if it is strongly consistent,
+then one component may try updating a user's account by first reading
+their data, modifying it locally, then trying to update it in the database.
+If we don't have atomic updates, the ordering could end up being this:
+
+```
+node A reads user Bob's data
+node A locally updates Bob's data to add admin privileges
+node B deletes Bob's data to remove all privileges
+node B receives "write successful" from database
+node A writes Bob's new data to the system with admin privileges
+Node B then tells the system that was trying to delete Bob "Bob sucessfully deleted"
+Bob steals all of the company's secrets
+```
+
+This is not desirable. However, some strongly consistent databases let us
+perform compare-and-swap operations that let us atomically update Bob, without
+losing any intermediate updates.
+
+```
+node A reads user Bob's data
+node A locally updates Bob's data to add admin privileges
+node B deletes Bob's data to remove all privileges
+node B receives "write successful" from database
+node A tries to do "update Bob unless changed since read" which fails
+Node B then tells the system that was trying to delete Bob "Bob sucessfully deleted"
+Bob is locked out and steals nothing
+```
+
+Atomic updates generally significantly reduce the cognitive burden for
+building a system which must store and react to state changes in different
+components. Watches are another significant help for this, as they
+notify interested systems in relevant changes.
+
+Watches are how we apply the event-driven model to our database.
+When interesting changes happen, interested parties react to them.
+This decouples the emitter from the reactor, greatly simplifying
+interactions in the system. Without watches, we need to
+have some way of detecting changes in a database. If we can scan through
+all keys, we can do an O(N) traversal of the entire database, which
+does not scale very high, but could work alright. If we don't have
+the ability to scan through all data, we may actually have no way of 
+learning what changes are unless there is a top-level key that is set
+that holds everything. This does not scale beyond a couple kilobytes.
+
 #### Storage Options
 
 ##### stateless gateway services backed by zk/etcd/consul cluster, abstracted by docker/libkv
