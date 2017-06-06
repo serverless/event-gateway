@@ -350,6 +350,8 @@ cons
 
 * dramatically increases the complexity for building the system for us
 * we need to target multiple consistency models (hard+++)
+* need to target systems without watch semantics (hard+++)
+* need to target systems without atomic write semantics (hard+++)
 * we need to spend much more effort on testing
 * we need to spend much more effort on fixing bugs
 * we need to spend much more effort on writing monitoring code
