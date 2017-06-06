@@ -384,6 +384,37 @@ cons
 
 * users don't get an API for the gateway
 
+
+#### Recommendation
+
+Keep the system stateless to make it easy to operate. Store state
+in a database that supports atomic updates and watches, such as
+etcd, zookeeper, or consul. Use the docker/libkv library to
+support all 3 backing databases. This lets us treat every
+deployment environment the same way, regardless of whether
+it's in a cloud provider or on-prem. This combination of
+operational clarity and database semantics will significantly
+lower the amount of effort we need to put into engineering over time.
+
+Purely for demo and trial purposes, allow a gateway to be started
+with an `--embedded-master` flag which will start an embedded etcd instance
+that other gateways can use as a shared backing store. This allows people to
+try out the system without standing up an etcd cluster first.
+
+The main downside, having to run a separate cluster in production, is probably
+not a big deal for people who are interested in running this themselves.
+
+Assumptions relating to this cost, and it not seeming very high:
+
+1. most users will fall into these camps:
+  * small/medium orgs interested in trying out locally but using the SaaS offering
+  * orgs with more significant engineering resources who already run zk/etcd/consul
+  * orgs with more significant engineering resources who are not averse to running zk/etcd/consul
+  * orgs who are comfortable paying compose.com $30/mo for hosted etcd
+1. users who are not interested in paying for SaaS but still want to run the gateway
+   themselves WITHOUT running a database are unlikely to be very upset when they occasionally
+   need to reconfigure the gateway when the single master goes away.
+
 ### ACL system
 
 *ACL system is highly inspired by [Consul's ACL system](https://www.consul.io/docs/guides/acl.html) and AWS IAM.*
