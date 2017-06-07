@@ -35,6 +35,45 @@
  └───────────────────────────────────────────────────┘      └─────────────────────────────────────────────────────┘
 ```
 
+## Background
+
+### SOA challenges
+
+SOA introduced completely new domain of problems. In monolithic architectures, it was simple to call a service. In SOA it became a little more problematic as services are remote and calling a service involves network communication which [is not reliable](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing). The main problems to solve:
+
+1. Where is the service deployed? With how many instances? Which instance if the closest to me? (service discovery)
+2. Requests to the service should be balanced between all service instances (load balancing)
+3. If a remote service call failed I want to retry it (retries)
+4. If the service instance failed I want to stop sending requests there (circuit breaking)
+5. Services are written in multiple languages, I want to communication between them without writing dedicated libraries (sidecar)
+6. Calling remote service should not require setting up new connection every time as it increases request time (persistent connections)
+
+Those are the problems that are solved by following tech:
+
+- [Linkerd](https://linkerd.io/)
+- [Istio](https://istio.io/)
+- [Hystrix](https://github.com/Netflix/Hystrix/wiki) (library, not sidecar, it has cool [Dashboard](https://github.com/Netflix/Hystrix/wiki/Dashboard) feature)
+- [Finagle](https://twitter.github.io/finagle/) (library, not sidecar)
+
+The main goal of those tools is to hide all inconveniences of network communication. They abstract network. They run on the same host as the service (or are included in the service), listen on localhost and then, based on knowledge about the whole system, know where to send a request. They use persistent connections between nodes running on the different host so there is no overhead related to connection setup (which is painful especially for secure connections).
+
+### Microservices challenges & FaaS
+
+The greatest benefit of serverless/FaaS is that it solves almost all of above problems:
+
+1. service discovery: I don't care! I have a function name, that's all I need.
+2. load balancing: I don't care! I know that there will be a function to handle my request (blue/green deployments still an issue though)
+3. retries: It's highly unusual that my request will not proceed as function instances are ephemeral and failing function is immediately replaced with a new instance. If it happens I can easily send another request. In case of failure, it's easy to understand what is the cause.
+4. circuit breaking: Functions are ephemeral and auto-scaled, low possibility of flooding/DoS & [cascading failures](https://landing.google.com/sre/book/chapters/addressing-cascading-failures.html).
+5. sidecar: calling function is as simple as calling method from cloud provider SDK.
+6. in FaaS setting up persistent connection between two functions defeats the purpose as functions instances are ephemeral.
+
+Tools like Envoy/Linkerd solve different domain of technical problems that doesn't occur in serverless space. They have a lot of features that are simply not needed. Of course, it's possible to use them but that would be over-engineering.
+
+### Service discovery in FaaS = Function discovery
+
+Service discovery problem may be relevant to serverless architectures especially when we have multi-cloud setup or we want to call a serverless function from legacy system (by legacy I mean microservices architectures). There is a need for some proxy that will know where the function is actually deployed and have  retry logic built-in. It is a bit different problem (mapping function name -> function metadata) than (tracking where each instance of service is available). That's why there is a room for new tools that solves **function discovery** problem rather than service discovery problem. Those problems are fundamentally different.
+
 ## Motivation
 
 - enable developers to build FaaS backends for modern web applications by providing event-based communication layer
