@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net/http"
+
+	"go.uber.org/zap"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -15,12 +16,15 @@ import (
 )
 
 func main() {
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
 	dataDir := flag.String("data-dir", "", "Path to a data directory to store instance state.")
 	flag.Parse()
 
 	db, err := db.New(*dataDir)
 	if err != nil {
-		log.Printf("loading db file failed: %q", err)
+		logger.Info("loading db file failed", zap.Error(err))
 		return
 	}
 	defer db.Close()
@@ -31,6 +35,7 @@ func main() {
 	fns := &functions.Functions{
 		DB:        db,
 		AWSLambda: lambda.New(session.New(aws.NewConfig())),
+		Logger:    logger,
 	}
 	fnsapi := &functions.HTTPAPI{Functions: fns}
 	fnsapi.RegisterRoutes(router)
@@ -38,9 +43,11 @@ func main() {
 	ens := &endpoints.Endpoints{
 		DB:      db,
 		Invoker: fns,
+		Logger:  logger,
 	}
 	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 	ensapi.RegisterRoutes(router)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	err = http.ListenAndServe(":8080", router)
+	logger.Fatal("server failed", zap.Error(err))
 }

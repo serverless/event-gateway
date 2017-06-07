@@ -1,8 +1,8 @@
-hash: f25d7dbc024a0fb7d22005c896377936c15acc854a0195243adc52f59c0cc9f1
-updated: 2017-05-22T10:58:21.465353058+02:00
+hash: 0b03d3db4138fdf1e4427bb6ca2a58e14af0fb34494688358bdf75f7c7c57ad9
+updated: 2017-06-07T12:42:28.504306015+02:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 0b6039ef3d10c1eda49843ebf9773dcc5bba0169
+  version: 512bdaf8bec30abd545b440447cebb57b53d3af9
   subpackages:
   - aws
   - aws/awserr
@@ -20,6 +20,7 @@ imports:
   - aws/request
   - aws/session
   - aws/signer/v4
+  - internal/shareddefaults
   - private/protocol
   - private/protocol/json/jsonutil
   - private/protocol/jsonrpc
@@ -41,6 +42,17 @@ imports:
   version: 8c199fb6259ffc1af525cc3ad52ee60ba8359669
 - name: github.com/ventu-io/go-shortid
   version: 6c56cef5189ca1b3d5ef01dc07f4d611dfc0bb33
+- name: go.uber.org/atomic
+  version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+- name: go.uber.org/zap
+  version: fab453050a7a08c35f31fc5fff6f2dbd962285ab
+  subpackages:
+  - buffer
+  - internal/bufferpool
+  - internal/color
+  - internal/exit
+  - internal/multierror
+  - zapcore
 - name: golang.org/x/sys
   version: e4594059fe4cde2daf423055a596c2cd1e6c9adf
   subpackages:

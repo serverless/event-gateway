@@ -3,7 +3,8 @@ package functions
 import (
 	"bytes"
 	"encoding/gob"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
@@ -14,6 +15,7 @@ import (
 type Functions struct {
 	DB        *db.DB
 	AWSLambda lambdaiface.LambdaAPI
+	Logger    *zap.Logger
 }
 
 // Function registered in the function discovery. Function repesents FaaS function deployed on one of the supported providers.
@@ -60,7 +62,7 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 	buf := bytes.NewBuffer(value)
 	err = gob.NewDecoder(buf).Decode(fn)
 	if err != nil {
-		log.Printf("fetching function failed: %q", err)
+		f.Logger.Info("fetching function failed", zap.Error(err))
 		return nil, err
 	}
 	return fn, nil
@@ -81,8 +83,7 @@ func (f *Functions) Invoke(name string, payload []byte) ([]byte, error) {
 		}
 		output, err := f.AWSLambda.Invoke(params)
 		if err != nil {
-			log.Printf("calling function failed: %q", err)
-
+			f.Logger.Info("calling function failed", zap.Error(err))
 			return nil, &ErrorInvocationFailed{
 				function: *fn,
 				instance: instance,

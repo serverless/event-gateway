@@ -3,8 +3,9 @@ package endpoints
 import (
 	"bytes"
 	"encoding/gob"
-	"log"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"github.com/serverless/gateway/db"
 	shortid "github.com/ventu-io/go-shortid"
@@ -14,6 +15,7 @@ import (
 type Endpoints struct {
 	DB      *db.DB
 	Invoker Invoker
+	Logger  *zap.Logger
 }
 
 // Endpoint represents single endpoint
@@ -49,7 +51,7 @@ func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
 	buf := bytes.NewBuffer(value)
 	err = gob.NewDecoder(buf).Decode(fn)
 	if err != nil {
-		log.Printf("fetching endpoint failed: %q", err)
+		e.Logger.Info("fetching endpoint failed", zap.Error(err))
 		return nil, err
 	}
 	return fn, nil

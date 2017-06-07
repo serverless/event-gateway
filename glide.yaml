@@ -8,3 +8,7 @@ import:
   version: ^1.8.26
 - package: github.com/ventu-io/go-shortid
   version: ^1.0.0
+- package: go.uber.org/zap
+  version: ^1.4.0
+- package: go.uber.org/atomic
+  version: ^1.2.0
