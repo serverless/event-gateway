@@ -70,9 +70,6 @@ func (r *Endpoints) Deleted(key string, lastKnownValue []byte) {
 
 // GetEndpoint returns registered endpoint.
 func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
-	e.RLock()
-	defer e.RUnlock()
-
 	value, err := e.DB.CachedGet(name)
 	if err != nil {
 		return nil, err
