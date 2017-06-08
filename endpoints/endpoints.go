@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -13,7 +14,8 @@ import (
 
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.
 type Endpoints struct {
-	DB      *db.DB
+	sync.RWMutex
+	DB      *db.ReactiveCfgStore
 	Invoker Invoker
 	Logger  *zap.Logger
 }
@@ -36,9 +38,42 @@ type Invoker interface {
 	Invoke(name string, payload []byte) ([]byte, error)
 }
 
+// Created is called when a new endpoint is detected in the config.
+func (r *Endpoints) Created(key string, value []byte) {
+	r.Lock()
+	defer r.Unlock()
+	// TODO put any necessary endpoint conf initialization code here
+	r.Logger.Debug("received Created event",
+		zap.String("key", key),
+		zap.String("value", string(value)))
+}
+
+// Modified is called when an existing endpoint is modified in the config.
+func (r *Endpoints) Modified(key string, newValue []byte) {
+	r.Lock()
+	defer r.Unlock()
+	// TODO put any necessary endpoint conf modification code here
+	r.Logger.Debug("received Modified event",
+		zap.String("key", key),
+		zap.String("newValue", string(newValue)))
+}
+
+// Deleted is called when an endpoint is deleted in the config.
+func (r *Endpoints) Deleted(key string, lastKnownValue []byte) {
+	r.Lock()
+	defer r.Unlock()
+	// TODO put any necessary endpoint conf deletion code here
+	r.Logger.Debug("received Deleted event",
+		zap.String("key", key),
+		zap.String("lastKnownValue", string(lastKnownValue)))
+}
+
 // GetEndpoint returns registered endpoint.
 func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
-	value, err := e.DB.Get(bucket, name)
+	e.RLock()
+	defer e.RUnlock()
+
+	value, err := e.DB.CachedGet(name)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +107,7 @@ func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
 		return nil, err
 	}
 
-	err = e.DB.Set(bucket, en.ID, buf.Bytes())
+	err = e.DB.Put(en.ID, buf.Bytes(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -95,5 +130,3 @@ func (e *Endpoints) CallEndpoint(name, method, path string, payload []byte) ([]b
 
 	return nil, &ErrorTargetNotFound{name}
 }
-
-const bucket = "endpoints"
