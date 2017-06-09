@@ -13,6 +13,9 @@ before_install:
 install:
 - glide install
 script:
+- go get -u github.com/alecthomas/gometalinter
+- gometalinter --install --force
+- gometalinter --vendor --fast --disable=gotype ./...
 - "./_infrastructure/scripts/travis_publish_image.sh"
 - "./_infrastructure/scripts/travis_deploy.sh"
 env:
