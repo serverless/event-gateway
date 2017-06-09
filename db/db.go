@@ -13,39 +13,44 @@ import (
 	"github.com/docker/libkv/store/etcd"
 )
 
-type EventType uint
+// eventType is used for distinguishing kinds of events.
+type eventType uint
 
 const (
-	CREATED_NODE EventType = iota
-	MODIFIED_NODE
-	DELETED_NODE
+	createdNode eventType = iota
+	modifiedNode
+	deletedNode
 )
 
 func init() {
 	etcd.Register()
-	// TODO for other stores, do consul.Register(), zookeeper.Register() also
 }
 
+// CfgReactor is a type that can react to state changes on keys in a directory.
 type CfgReactor interface {
 	Created(key string, value []byte)
 	Modified(key string, newValue []byte)
 	Deleted(key string, lastKnownValue []byte)
 }
 
-type Event struct {
-	EventType EventType
-	Key       string
+type event struct {
+	eventType eventType
+	key       string
 
 	// Value is set to the new value for CREATED/MODIFIED events,
 	// and it is set to the last known value for DELETED events.
-	Value []byte
+	value []byte
 }
 
-type CachedValue struct {
+type cachedValue struct {
 	Value     []byte
 	LastIndex uint64
 }
 
+// ReactiveCfgStore provides a means of watching for changes to
+// interesting configuration in the backing database. It also
+// maintains a cache of updates observed by a CfgReactor
+// instance.
 type ReactiveCfgStore struct {
 	sync.RWMutex
 	endpoints string
@@ -55,11 +60,9 @@ type ReactiveCfgStore struct {
 	log       *zap.Logger
 }
 
-func NewReactiveCfgStore(root, kindStr string, endpoints []string, log *zap.Logger) *ReactiveCfgStore {
+// NewReactiveCfgStore instantiates a new ReactiveCfgStore.
+func NewReactiveCfgStore(root, endpoints []string, log *zap.Logger) *ReactiveCfgStore {
 	kind := store.ETCD
-	if kindStr != "etcd" {
-		panic("--db-type set to unsupported value: " + kindStr)
-	}
 
 	kv, err := libkv.NewStore(
 		kind,
@@ -83,19 +86,22 @@ func NewReactiveCfgStore(root, kindStr string, endpoints []string, log *zap.Logg
 	}
 }
 
+// React will watch for events on the ReactiveCfgStore's root directory,
+// and call the Created/Modified/Deleted functions on a provided
+// CfgReactor when changes are detected.
 func (rfs *ReactiveCfgStore) React(reactor CfgReactor, shutdown chan struct{}) {
-	events := make(chan Event)
+	events := make(chan event)
 	go rfs.watchRoot(events, shutdown)
 
 	go func() {
 		for event := range events {
-			switch event.EventType {
-			case CREATED_NODE:
-				reactor.Created(event.Key, event.Value)
-			case MODIFIED_NODE:
-				reactor.Modified(event.Key, event.Value)
-			case DELETED_NODE:
-				reactor.Deleted(event.Key, event.Value)
+			switch event.eventType {
+			case createdNode:
+				reactor.Created(event.key, event.value)
+			case modifiedNode:
+				reactor.Modified(event.key, event.value)
+			case deletedNode:
+				reactor.Deleted(event.key, event.value)
 			default:
 				panic("received unknown event type.")
 			}
@@ -103,10 +109,17 @@ func (rfs *ReactiveCfgStore) React(reactor CfgReactor, shutdown chan struct{}) {
 	}()
 }
 
-func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan Event, shutdown chan struct{}) {
-	// TODO this is only tested for etcd, may need to change logic
-	// for zk/consul cache allows us to diff nodes we receive
-	cache := map[string]CachedValue{}
+func (rfs *ReactiveCfgStore) bustCache() {
+	rfs.Lock()
+	defer rfs.Unlock()
+	rfs.cache = map[string][]byte{}
+}
+
+func (rfs *ReactiveCfgStore) watchRoot(outgoingevents chan event, shutdown chan struct{}) {
+	// NB when extending libkv usage for DB's other than etcd, the watch behavior
+	// will need to be carefully considered, as the code below will likely need
+	// to be changed depending on which backend database is used.
+	cache := map[string]cachedValue{}
 
 	backoffFactor := 1
 	backoff := func() {
@@ -125,12 +138,20 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan Event, shutdown chan 
 	// 2. create a libkv watch chan for children of this root
 	// 3. for each set of updates on this chan, diff it with
 	//    our existing conception of the state, and emit
-	//    Event structs for each detected change.
+	//    event structs for each detected change.
 	// 4. whenever we hit a problem, use a truncated
 	//    exponential backoff to reduce load on any
 	//    systems experiencing issues.
 	for {
-		// populate directory if it doesn't exist
+		// return if shutdown
+		select {
+		case <-shutdown:
+			rfs.bustCache()
+			return
+		default:
+		}
+
+		// 1. populate directory if it doesn't exist
 		exists, err := rfs.Exists("")
 		if err != nil {
 			rfs.log.Error("Could not access database.",
@@ -156,6 +177,7 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan Event, shutdown chan 
 			}
 		}
 
+		// 2. create watch chan for this directory
 		events, err := rfs.WatchTree("", shutdown)
 		if err != nil {
 			rfs.log.Error("Could not watch directory.",
@@ -172,8 +194,8 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan Event, shutdown chan 
 			select {
 			case kvs, ok := <-events:
 				if ok {
-					// compare all nodes against cache, emit diff events
-					nextCache := rfs.DiffCache(kvs, outgoingEvents, cache)
+					// 3. compare all nodes against cache, emit diff events
+					nextCache := rfs.diffCache(kvs, outgoingevents, cache)
 
 					// roll cache forward
 					cache = nextCache
@@ -191,33 +213,42 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan Event, shutdown chan 
 					break innerLoop
 				}
 			case <-shutdown:
+				rfs.bustCache()
 				return
 			}
 		}
 	}
 }
 
-func (rfs *ReactiveCfgStore) DiffCache(kvs []*store.KVPair, outgoingEvents chan Event, cache map[string]CachedValue) map[string]CachedValue {
-	nextCache := map[string]CachedValue{}
+func (rfs *ReactiveCfgStore) diffCache(kvs []*store.KVPair, outgoingevents chan event,
+	cache map[string]cachedValue) map[string]cachedValue {
+
+	nextCache := map[string]cachedValue{}
+
+	// Update all keys in the rfs cache because
+	// we may have blown them away by busting cache
+	// after shutting down a different watcher.
+	rfs.Lock()
+	for _, kv := range kvs {
+		rfs.cache[kv.Key] = kv.Value
+	}
+	rfs.Unlock()
 
 	for _, kv := range kvs {
 		// populate next cache
-		nextCache[kv.Key] = CachedValue{
+		nextCache[kv.Key] = cachedValue{
 			Value:     kv.Value,
 			LastIndex: kv.LastIndex,
 		}
 
 		old, exists := cache[kv.Key]
 		if exists {
-			// if LastIndex newer, emit MODIFIED_NODE event
+			// if LastIndex newer, emit modifiedNode event
 			if kv.LastIndex > old.LastIndex {
-				rfs.Lock()
-				rfs.cache[kv.Key] = kv.Value
-				rfs.Unlock()
-				outgoingEvents <- Event{
-					EventType: MODIFIED_NODE,
-					Key:       kv.Key,
-					Value:     kv.Value,
+				outgoingevents <- event{
+					eventType: modifiedNode,
+					key:       kv.Key,
+					value:     kv.Value,
 				}
 			}
 
@@ -225,34 +256,40 @@ func (rfs *ReactiveCfgStore) DiffCache(kvs []*store.KVPair, outgoingEvents chan 
 			// learn about any deleted nodes.
 			delete(cache, kv.Key)
 		} else {
-			// this node wasn't present before, emit CREATED_NODE
-			rfs.Lock()
-			rfs.cache[kv.Key] = kv.Value
-			rfs.Unlock()
-			outgoingEvents <- Event{
-				EventType: CREATED_NODE,
-				Key:       kv.Key,
-				Value:     kv.Value,
+			// this node wasn't present before, emit createdNode
+			outgoingevents <- event{
+				eventType: createdNode,
+				key:       kv.Key,
+				value:     kv.Value,
 			}
 		}
 	}
 
-	for key, cachedValue := range cache {
-		// this node is not present anymore, emit
-		// DELETED_NODE event.
-		rfs.Lock()
+	// Anything that was present in the old cache,
+	// but not in our recent update, has been deleted
+	// on the database. Clear it from our cache and
+	// emit a deletedNode event.
+	rfs.Lock()
+	for key, _ := range cache {
 		delete(rfs.cache, key)
-		rfs.Unlock()
-		outgoingEvents <- Event{
-			EventType: DELETED_NODE,
-			Key:       key,
-			Value:     cachedValue.Value,
+	}
+	rfs.Unlock()
+
+	for key, cachedValue := range cache {
+		outgoingevents <- event{
+			eventType: deletedNode,
+			key:       key,
+			value:     cachedValue.Value,
 		}
 	}
 
 	return nextCache
 }
 
+// CachedGet looks for a key in the ReactiveCfgStore's cache,
+// which is populated by events en-route to a CfgReactor.
+// If the key is not found locally, a request is sent to the
+// backing database.
 func (rfs *ReactiveCfgStore) CachedGet(key string) ([]byte, error) {
 	rfs.RLock()
 	value, exists := rfs.cache[key]
@@ -273,39 +310,63 @@ func (rfs *ReactiveCfgStore) CachedGet(key string) ([]byte, error) {
 }
 
 // pass-through libkv API for simplifying access to the backing database.
+
+// Put passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) Put(key string, value []byte, options *store.WriteOptions) error {
 	return rfs.kv.Put(rfs.root+"/"+key, value, options)
 }
+
+// Get passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) Get(key string) (*store.KVPair, error) {
 	return rfs.kv.Get(rfs.root + "/" + key)
 }
+
+// Delete passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) Delete(key string) error {
 	return rfs.kv.Delete(rfs.root + "/" + key)
 }
+
+// Exists passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) Exists(key string) (bool, error) {
 	return rfs.kv.Exists(rfs.root + "/" + key)
 }
+
+// Watch passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) Watch(key string, stopCh <-chan struct{}) (<-chan *store.KVPair, error) {
 	return rfs.kv.Watch(rfs.root+"/"+key, stopCh)
 }
+
+// WatchTree passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) WatchTree(directory string, stopCh <-chan struct{}) (<-chan []*store.KVPair, error) {
 	return rfs.kv.WatchTree(rfs.root+"/"+directory, stopCh)
 }
+
+// NewLock passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) NewLock(key string, options *store.LockOptions) (store.Locker, error) {
 	return rfs.kv.NewLock(rfs.root+"/"+key, options)
 }
+
+// List passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) List(directory string) ([]*store.KVPair, error) {
 	return rfs.kv.List(rfs.root + "/" + directory)
 }
+
+// DeleteTree passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) DeleteTree(directory string) error {
 	return rfs.kv.DeleteTree(rfs.root + "/" + directory)
 }
+
+// AtomicPut passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) AtomicPut(key string, value []byte, previous *store.KVPair, options *store.WriteOptions) (bool, *store.KVPair, error) {
 	return rfs.kv.AtomicPut(rfs.root+"/"+key, value, previous, options)
 }
+
+// AtomicDelete passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) AtomicDelete(key string, previous *store.KVPair) (bool, error) {
 	return rfs.kv.AtomicDelete(rfs.root+"/"+key, previous)
 }
+
+// Close closes the underlying libkv client.
 func (rfs *ReactiveCfgStore) Close() {
 	rfs.kv.Close()
 }
