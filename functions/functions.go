@@ -3,6 +3,7 @@ package functions
 import (
 	"bytes"
 	"encoding/gob"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -13,7 +14,8 @@ import (
 
 // Functions is a discovery tool for FaaS functions.
 type Functions struct {
-	DB        *db.DB
+	sync.RWMutex
+	DB        *db.ReactiveCfgStore
 	AWSLambda lambdaiface.LambdaAPI
 	Logger    *zap.Logger
 }
@@ -31,6 +33,36 @@ type Instance struct {
 	Region   string `json:"region"`
 }
 
+// Created is called when a new function is detected in the config.
+func (f *Functions) Created(key string, value []byte) {
+	f.Lock()
+	defer f.Unlock()
+	// TODO put any necessary function conf initialization code here
+	f.Logger.Debug("received Created event",
+		zap.String("key", key),
+		zap.String("value", string(value)))
+}
+
+// Modified is called when an existing function is modified in the config.
+func (f *Functions) Modified(key string, newValue []byte) {
+	f.Lock()
+	defer f.Unlock()
+	// TODO put any necessary function conf modification code here
+	f.Logger.Debug("received Modified event",
+		zap.String("key", key),
+		zap.String("newValue", string(newValue)))
+}
+
+// Deleted is called when a function is deleted in the config.
+func (f *Functions) Deleted(key string, lastKnownValue []byte) {
+	f.Lock()
+	defer f.Unlock()
+	// TODO put any necessary function conf deletion code here
+	f.Logger.Debug("received Deleted event",
+		zap.String("key", key),
+		zap.String("lastKnownValue", string(lastKnownValue)))
+}
+
 // RegisterFunction registers function in the discovery.
 func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 	buf := new(bytes.Buffer)
@@ -39,7 +71,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 		return nil, err
 	}
 
-	err = f.DB.Set(bucket, fn.ID, buf.Bytes())
+	err = f.DB.Put(fn.ID, buf.Bytes(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +81,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 
 // GetFunction returns function from the discovery.
 func (f *Functions) GetFunction(name string) (*Function, error) {
-	value, err := f.DB.Get(bucket, name)
+	value, err := f.DB.CachedGet(name)
 	if err != nil {
 		return nil, err
 	}
@@ -97,5 +129,4 @@ func (f *Functions) Invoke(name string, payload []byte) ([]byte, error) {
 	return nil, nil
 }
 
-const bucket = "functions"
 const providerAWSLambda = "aws-lambda"
