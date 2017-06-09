@@ -1,10 +1,12 @@
 package db
 
 import (
-	"log"
 	"math"
+	"strings"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/docker/libkv"
 	"github.com/docker/libkv/store"
@@ -33,7 +35,10 @@ type CfgReactor interface {
 type Event struct {
 	EventType EventType
 	Key       string
-	Value     []byte
+
+	// Value is set to the new value for CREATED/MODIFIED events,
+	// and it is set to the last known value for DELETED events.
+	Value []byte
 }
 
 type CachedValue struct {
@@ -43,21 +48,17 @@ type CachedValue struct {
 
 type ReactiveCfgStore struct {
 	sync.RWMutex
-	root  string
-	cache map[string][]byte
-	kv    store.Store
+	endpoints string
+	root      string
+	cache     map[string][]byte
+	kv        store.Store
+	log       *zap.Logger
 }
 
-func NewReactiveCfgStore(root, kindStr string, endpoints []string) *ReactiveCfgStore {
+func NewReactiveCfgStore(root, kindStr string, endpoints []string, log *zap.Logger) *ReactiveCfgStore {
 	kind := store.ETCD
-	if kindStr == "etcd" {
-		// kind is good as it is
-	} else if kindStr == "zookeeper" {
-		kind = store.ZK
-	} else if kindStr == "consul" {
-		kind = store.CONSUL
-	} else {
-		panic("--db-type set to value other than etcd, zookeeper, or consul: " + kindStr)
+	if kindStr != "etcd" {
+		panic("--db-type set to unsupported value: " + kindStr)
 	}
 
 	kv, err := libkv.NewStore(
@@ -69,21 +70,21 @@ func NewReactiveCfgStore(root, kindStr string, endpoints []string) *ReactiveCfgS
 	)
 
 	if err != nil {
-		log.Fatalf("Cannot create kv client: %v", err)
+		log.Fatal("Cannot create kv client.",
+			zap.Error(err))
 	}
 
 	return &ReactiveCfgStore{
-		root:  root,
-		cache: map[string][]byte{},
-		kv:    kv,
+		root:      root,
+		endpoints: strings.Join(endpoints, ","),
+		cache:     map[string][]byte{},
+		kv:        kv,
+		log:       log,
 	}
 }
 
-func (rfs *ReactiveCfgStore) React(reactor CfgReactor, shutdown chan struct{}) error {
-	events, err := rfs.watchDirectory(rfs.root, shutdown)
-	if err != nil {
-		return err
-	}
+func (rfs *ReactiveCfgStore) React(reactor CfgReactor, shutdown chan struct{}) {
+	events := rfs.watchRoot(shutdown)
 
 	go func() {
 		for event := range events {
@@ -99,28 +100,9 @@ func (rfs *ReactiveCfgStore) React(reactor CfgReactor, shutdown chan struct{}) e
 			}
 		}
 	}()
-
-	return nil
 }
 
-func (rfs *ReactiveCfgStore) watchDirectory(interest string, shutdown chan struct{}) (chan Event, error) {
-	// populate directory if it doesn't exist
-	exists, err := rfs.Exists(interest)
-	if err != nil {
-		log.Printf("Something went wrong when reading key %v", interest)
-		log.Printf("%v", err)
-		return nil, err
-	}
-	if !exists {
-		// must set IsDir to true since backend may be etcd
-		err := rfs.Put(interest, []byte(""), &store.WriteOptions{IsDir: true})
-		if err != nil {
-			log.Printf("Something went wrong when initializing directory %v", interest)
-			log.Printf("%v", err)
-			return nil, err
-		}
-	}
-
+func (rfs *ReactiveCfgStore) watchRoot(shutdown chan struct{}) chan Event {
 	outgoingEvents := make(chan Event)
 
 	// TODO this is only tested for etcd, may need to change logic
@@ -128,14 +110,52 @@ func (rfs *ReactiveCfgStore) watchDirectory(interest string, shutdown chan struc
 	go func() {
 		cache := map[string]CachedValue{}
 
-		backoff := 1
+		backoffFactor := 1
+		backoff := func() {
+			rfs.log.Warn("Backing-off after a failure",
+				zap.String("event", "backoff"),
+				zap.Int("seconds", backoffFactor))
+			time.Sleep(time.Duration(backoffFactor) * time.Second)
+			backoffFactor = int(math.Min(float64(backoffFactor<<1), 8))
+		}
+		resetBackoff := func() {
+			backoffFactor = 1
+		}
 
 		for {
-			events, err := rfs.WatchTree(interest, shutdown)
+			// populate directory if it doesn't exist
+			exists, err := rfs.Exists("")
 			if err != nil {
-				log.Printf("Could not watch directory: %v", err)
-				time.Sleep(time.Duration(backoff) * time.Second)
-				backoff = int(math.Min(float64(backoff<<1), 8))
+				rfs.log.Error("Could not access database.",
+					zap.String("event", "db"),
+					zap.String("endpoints", rfs.endpoints),
+					zap.String("key", rfs.root),
+					zap.Error(err))
+				backoff()
+				continue
+			}
+			if !exists {
+				// must set IsDir to true since backend may be etcd
+				err := rfs.Put("", []byte(""), &store.WriteOptions{IsDir: true})
+				if err != nil {
+					rfs.log.Error("Could not initialize watcher root.",
+						zap.String("event", "db"),
+						zap.String("endpoints", rfs.endpoints),
+						zap.String("key", rfs.root),
+						zap.Error(err))
+					backoff()
+					continue
+				}
+			}
+
+			events, err := rfs.WatchTree("", shutdown)
+			if err != nil {
+				rfs.log.Error("Could not watch directory.",
+					zap.String("event", "db"),
+					zap.String("endpoints", rfs.endpoints),
+					zap.String("key", rfs.root),
+					zap.Error(err))
+				backoff()
 				continue
 			}
 
@@ -198,12 +218,15 @@ func (rfs *ReactiveCfgStore) watchDirectory(interest string, shutdown chan struc
 
 						// roll cache forward
 						cache = nextCache
-						backoff = 1
+						resetBackoff()
 					} else {
 						// directory nuked or connection to server failed
-						log.Printf("Either lost connection to backing store, or path %v was deleted.", interest)
-						time.Sleep(time.Duration(backoff) * time.Second)
-						backoff = int(math.Min(float64(backoff<<1), 8))
+						rfs.log.Error("Either lost connection to db, or the watch path was deleted.",
+							zap.String("event", "db"),
+							zap.String("endpoints", rfs.endpoints),
+							zap.String("key", rfs.root))
+
+						backoff()
 						break innerLoop
 					}
 				case <-shutdown:
@@ -212,7 +235,7 @@ func (rfs *ReactiveCfgStore) watchDirectory(interest string, shutdown chan struc
 			}
 		}
 	}()
-	return outgoingEvents, nil
+	return outgoingEvents
 }
 
 func (rfs *ReactiveCfgStore) CachedGet(key string) ([]byte, error) {
@@ -251,16 +274,16 @@ func (rfs *ReactiveCfgStore) Watch(key string, stopCh <-chan struct{}) (<-chan *
 	return rfs.kv.Watch(rfs.root+"/"+key, stopCh)
 }
 func (rfs *ReactiveCfgStore) WatchTree(directory string, stopCh <-chan struct{}) (<-chan []*store.KVPair, error) {
-	return rfs.kv.WatchTree(directory, stopCh)
+	return rfs.kv.WatchTree(rfs.root+"/"+directory, stopCh)
 }
 func (rfs *ReactiveCfgStore) NewLock(key string, options *store.LockOptions) (store.Locker, error) {
 	return rfs.kv.NewLock(rfs.root+"/"+key, options)
 }
 func (rfs *ReactiveCfgStore) List(directory string) ([]*store.KVPair, error) {
-	return rfs.kv.List(directory)
+	return rfs.kv.List(rfs.root + "/" + directory)
 }
 func (rfs *ReactiveCfgStore) DeleteTree(directory string) error {
-	return rfs.kv.DeleteTree(directory)
+	return rfs.kv.DeleteTree(rfs.root + "/" + directory)
 }
 func (rfs *ReactiveCfgStore) AtomicPut(key string, value []byte, previous *store.KVPair, options *store.WriteOptions) (bool, *store.KVPair, error) {
 	return rfs.kv.AtomicPut(rfs.root+"/"+key, value, previous, options)

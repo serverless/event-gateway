@@ -2,4 +2,7 @@
 terraform.tfstate.backup
 bin
 vendor
+*.swp
+*.swo
 *.db
+default.etcd/
