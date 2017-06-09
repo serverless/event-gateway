@@ -18,6 +18,6 @@ func (l HTTPLogger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	l.handler.ServeHTTP(w, r)
 
-	duration := time.Now().Sub(start)
+	duration := time.Since(start)
 	l.durationMetric.Observe(float64(duration) / float64(time.Millisecond))
 }
