@@ -15,6 +15,8 @@ import (
 	"github.com/serverless/gateway/db"
 	"github.com/serverless/gateway/endpoints"
 	"github.com/serverless/gateway/functions"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func main() {
@@ -26,7 +28,9 @@ func main() {
 	embedCliAddr := flag.String("embed-cli-addr", "http://localhost:2379", "Address for testing embedded etcd to receive client connections.")
 	embedDataDir := flag.String("embed-data-dir", "default.etcd", "Path for testing embedded etcd to store its state.")
 	flag.Parse()
-
+  
+  prometheus.MustRegister(durationMetric)
+  
 	dbHostStrings := strings.Split(*dbHosts, ",")
 
 	cfg := zap.NewDevelopmentConfig()
@@ -58,7 +62,6 @@ func main() {
 	}
 
 	router := httprouter.New()
-	router.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 
 	fdb := db.NewReactiveCfgStore("/serverless-gateway/functions", *dbType, dbHostStrings, logger)
 	fns := &functions.Functions{
@@ -80,9 +83,10 @@ func main() {
 	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 	ensapi.RegisterRoutes(router)
 
-	err = http.ListenAndServe(":8080", router)
-	logger.Error("server failed, shutting down", zap.Error(err))
-
-	close(shutdownInitiateChan)
+	router.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
+	router.Handler("GET", "/metrics", prometheus.Handler())
+	err = http.ListenAndServe(":8080", HTTPLogger{router, durationMetric})
+	logger.Error("server failed", zap.Error(err))
+  close(shutdownInitiateChan)
 	<-shutdownCompleteChan
 }
