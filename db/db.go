@@ -115,6 +115,7 @@ func (rfs *ReactiveCfgStore) bustCache() {
 	rfs.cache = map[string][]byte{}
 }
 
+// nolint: gocyclo
 func (rfs *ReactiveCfgStore) watchRoot(outgoingevents chan event, shutdown chan struct{}) {
 	// NB when extending libkv usage for DB's other than etcd, the watch behavior
 	// will need to be carefully considered, as the code below will likely need
