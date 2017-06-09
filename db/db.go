@@ -61,7 +61,7 @@ type ReactiveCfgStore struct {
 }
 
 // NewReactiveCfgStore instantiates a new ReactiveCfgStore.
-func NewReactiveCfgStore(root, endpoints []string, log *zap.Logger) *ReactiveCfgStore {
+func NewReactiveCfgStore(root string, endpoints []string, log *zap.Logger) *ReactiveCfgStore {
 	kind := store.ETCD
 
 	kv, err := libkv.NewStore(
