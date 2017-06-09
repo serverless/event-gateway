@@ -270,7 +270,7 @@ func (rfs *ReactiveCfgStore) diffCache(kvs []*store.KVPair, outgoingevents chan 
 	// on the database. Clear it from our cache and
 	// emit a deletedNode event.
 	rfs.Lock()
-	for key, _ := range cache {
+	for key := range cache {
 		delete(rfs.cache, key)
 	}
 	rfs.Unlock()

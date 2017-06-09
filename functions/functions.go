@@ -34,31 +34,31 @@ type Instance struct {
 }
 
 // Created is called when a new function is detected in the config.
-func (r *Functions) Created(key string, value []byte) {
-	r.Lock()
-	defer r.Unlock()
+func (f *Functions) Created(key string, value []byte) {
+	f.Lock()
+	defer f.Unlock()
 	// TODO put any necessary function conf initialization code here
-	r.Logger.Debug("received Created event",
+	f.Logger.Debug("received Created event",
 		zap.String("key", key),
 		zap.String("value", string(value)))
 }
 
 // Modified is called when an existing function is modified in the config.
-func (r *Functions) Modified(key string, newValue []byte) {
-	r.Lock()
-	defer r.Unlock()
+func (f *Functions) Modified(key string, newValue []byte) {
+	f.Lock()
+	defer f.Unlock()
 	// TODO put any necessary function conf modification code here
-	r.Logger.Debug("received Modified event",
+	f.Logger.Debug("received Modified event",
 		zap.String("key", key),
 		zap.String("newValue", string(newValue)))
 }
 
 // Deleted is called when a function is deleted in the config.
-func (r *Functions) Deleted(key string, lastKnownValue []byte) {
-	r.Lock()
-	defer r.Unlock()
+func (f *Functions) Deleted(key string, lastKnownValue []byte) {
+	f.Lock()
+	defer f.Unlock()
 	// TODO put any necessary function conf deletion code here
-	r.Logger.Debug("received Deleted event",
+	f.Logger.Debug("received Deleted event",
 		zap.String("key", key),
 		zap.String("lastKnownValue", string(lastKnownValue)))
 }
