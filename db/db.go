@@ -120,6 +120,15 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan Event, shutdown chan 
 		backoffFactor = 1
 	}
 
+	// This is the main loop for detecting changes.
+	// 1. try to populate the watching root if it does not exist
+	// 2. create a libkv watch chan for children of this root
+	// 3. for each set of updates on this chan, diff it with
+	//    our existing conception of the state, and emit
+	//    Event structs for each detected change.
+	// 4. whenever we hit a problem, use a truncated
+	//    exponential backoff to reduce load on any
+	//    problems experiencing issues.
 	for {
 		// populate directory if it doesn't exist
 		exists, err := rfs.Exists("")
