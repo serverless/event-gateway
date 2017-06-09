@@ -84,7 +84,8 @@ func NewReactiveCfgStore(root, kindStr string, endpoints []string, log *zap.Logg
 }
 
 func (rfs *ReactiveCfgStore) React(reactor CfgReactor, shutdown chan struct{}) {
-	events := rfs.watchRoot(shutdown)
+	events := make(chan Event)
+	go rfs.watchRoot(events, shutdown)
 
 	go func() {
 		for event := range events {
@@ -102,31 +103,41 @@ func (rfs *ReactiveCfgStore) React(reactor CfgReactor, shutdown chan struct{}) {
 	}()
 }
 
-func (rfs *ReactiveCfgStore) watchRoot(shutdown chan struct{}) chan Event {
-	outgoingEvents := make(chan Event)
-
+func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan Event, shutdown chan struct{}) {
 	// TODO this is only tested for etcd, may need to change logic
 	// for zk/consul cache allows us to diff nodes we receive
-	go func() {
-		cache := map[string]CachedValue{}
+	cache := map[string]CachedValue{}
 
-		backoffFactor := 1
-		backoff := func() {
-			rfs.log.Warn("Backing-off after a failure",
-				zap.String("event", "backoff"),
-				zap.Int("seconds", backoffFactor))
-			time.Sleep(time.Duration(backoffFactor) * time.Second)
-			backoffFactor = int(math.Min(float64(backoffFactor<<1), 8))
-		}
-		resetBackoff := func() {
-			backoffFactor = 1
+	backoffFactor := 1
+	backoff := func() {
+		rfs.log.Warn("Backing-off after a failure",
+			zap.String("event", "backoff"),
+			zap.Int("seconds", backoffFactor))
+		time.Sleep(time.Duration(backoffFactor) * time.Second)
+		backoffFactor = int(math.Min(float64(backoffFactor<<1), 8))
+	}
+	resetBackoff := func() {
+		backoffFactor = 1
+	}
+
+	for {
+		// populate directory if it doesn't exist
+		exists, err := rfs.Exists("")
+		if err != nil {
+			rfs.log.Error("Could not access database.",
+				zap.String("event", "db"),
+				zap.String("endpoints", rfs.endpoints),
+				zap.String("key", rfs.root),
+				zap.Error(err))
+			backoff()
+			continue
 		}
 
-		for {
-			// populate directory if it doesn't exist
-			exists, err := rfs.Exists("")
+		if !exists {
+			// must set IsDir to true since backend may be etcd
+			err := rfs.Put("", []byte(""), &store.WriteOptions{IsDir: true})
 			if err != nil {
-				rfs.log.Error("Could not access database.",
+				rfs.log.Error("Could not initialize watcher root.",
 					zap.String("event", "db"),
 					zap.String("endpoints", rfs.endpoints),
 					zap.String("key", rfs.root),
@@ -134,108 +145,103 @@ func (rfs *ReactiveCfgStore) watchRoot(shutdown chan struct{}) chan Event {
 				backoff()
 				continue
 			}
-			if !exists {
-				// must set IsDir to true since backend may be etcd
-				err := rfs.Put("", []byte(""), &store.WriteOptions{IsDir: true})
-				if err != nil {
-					rfs.log.Error("Could not initialize watcher root.",
+		}
+
+		events, err := rfs.WatchTree("", shutdown)
+		if err != nil {
+			rfs.log.Error("Could not watch directory.",
+				zap.String("event", "db"),
+				zap.String("endpoints", rfs.endpoints),
+				zap.String("key", rfs.root),
+				zap.Error(err))
+			backoff()
+			continue
+		}
+
+	innerLoop:
+		for {
+			select {
+			case kvs, ok := <-events:
+				if ok {
+					// compare all nodes against cache, emit diff events
+					nextCache := rfs.DiffCache(kvs, outgoingEvents, cache)
+
+					// roll cache forward
+					cache = nextCache
+
+					// if we got here, all is well, so reset exponential backoff
+					resetBackoff()
+				} else {
+					// directory nuked or connection to server failed
+					rfs.log.Error("Either lost connection to db, or the watch path was deleted.",
 						zap.String("event", "db"),
 						zap.String("endpoints", rfs.endpoints),
-						zap.String("key", rfs.root),
-						zap.Error(err))
+						zap.String("key", rfs.root))
+
 					backoff()
-					continue
+					break innerLoop
 				}
-			}
-
-			events, err := rfs.WatchTree("", shutdown)
-			if err != nil {
-				rfs.log.Error("Could not watch directory.",
-					zap.String("event", "db"),
-					zap.String("endpoints", rfs.endpoints),
-					zap.String("key", rfs.root),
-					zap.Error(err))
-				backoff()
-				continue
-			}
-
-		innerLoop:
-			for {
-				select {
-				case kvs, ok := <-events:
-					if ok {
-						// compare all nodes against cache, emit diff events
-						nextCache := map[string]CachedValue{}
-						for _, kv := range kvs {
-							// populate next cache
-							nextCache[kv.Key] = CachedValue{
-								Value:     kv.Value,
-								LastIndex: kv.LastIndex,
-							}
-
-							old, exists := cache[kv.Key]
-							if exists {
-								// if LastIndex newer, emit MODIFIED_NODE event
-								if kv.LastIndex > old.LastIndex {
-									rfs.Lock()
-									rfs.cache[kv.Key] = kv.Value
-									rfs.Unlock()
-									outgoingEvents <- Event{
-										EventType: MODIFIED_NODE,
-										Key:       kv.Key,
-										Value:     kv.Value,
-									}
-								}
-
-								// Remove key from old cache so we can
-								// learn about any deleted nodes.
-								delete(cache, kv.Key)
-							} else {
-								// this node wasn't present before, emit CREATED_NODE
-								rfs.Lock()
-								rfs.cache[kv.Key] = kv.Value
-								rfs.Unlock()
-								outgoingEvents <- Event{
-									EventType: CREATED_NODE,
-									Key:       kv.Key,
-									Value:     kv.Value,
-								}
-							}
-						}
-
-						for key, cachedValue := range cache {
-							// this node is not present anymore, emit
-							// DELETED_NODE event.
-							rfs.Lock()
-							delete(rfs.cache, key)
-							rfs.Unlock()
-							outgoingEvents <- Event{
-								EventType: DELETED_NODE,
-								Key:       key,
-								Value:     cachedValue.Value,
-							}
-						}
-
-						// roll cache forward
-						cache = nextCache
-						resetBackoff()
-					} else {
-						// directory nuked or connection to server failed
-						rfs.log.Error("Either lost connection to db, or the watch path was deleted.",
-							zap.String("event", "db"),
-							zap.String("endpoints", rfs.endpoints),
-							zap.String("key", rfs.root))
-
-						backoff()
-						break innerLoop
-					}
-				case <-shutdown:
-					return
-				}
+			case <-shutdown:
+				return
 			}
 		}
-	}()
-	return outgoingEvents
+	}
+}
+
+func (rfs *ReactiveCfgStore) DiffCache(kvs []*store.KVPair, outgoingEvents chan Event, cache map[string]CachedValue) map[string]CachedValue {
+	nextCache := map[string]CachedValue{}
+
+	for _, kv := range kvs {
+		// populate next cache
+		nextCache[kv.Key] = CachedValue{
+			Value:     kv.Value,
+			LastIndex: kv.LastIndex,
+		}
+
+		old, exists := cache[kv.Key]
+		if exists {
+			// if LastIndex newer, emit MODIFIED_NODE event
+			if kv.LastIndex > old.LastIndex {
+				rfs.Lock()
+				rfs.cache[kv.Key] = kv.Value
+				rfs.Unlock()
+				outgoingEvents <- Event{
+					EventType: MODIFIED_NODE,
+					Key:       kv.Key,
+					Value:     kv.Value,
+				}
+			}
+
+			// Remove key from old cache so we can
+			// learn about any deleted nodes.
+			delete(cache, kv.Key)
+		} else {
+			// this node wasn't present before, emit CREATED_NODE
+			rfs.Lock()
+			rfs.cache[kv.Key] = kv.Value
+			rfs.Unlock()
+			outgoingEvents <- Event{
+				EventType: CREATED_NODE,
+				Key:       kv.Key,
+				Value:     kv.Value,
+			}
+		}
+	}
+
+	for key, cachedValue := range cache {
+		// this node is not present anymore, emit
+		// DELETED_NODE event.
+		rfs.Lock()
+		delete(rfs.cache, key)
+		rfs.Unlock()
+		outgoingEvents <- Event{
+			EventType: DELETED_NODE,
+			Key:       key,
+			Value:     cachedValue.Value,
+		}
+	}
+
+	return nextCache
 }
 
 func (rfs *ReactiveCfgStore) CachedGet(key string) ([]byte, error) {
