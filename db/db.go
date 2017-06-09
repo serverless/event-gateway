@@ -128,7 +128,7 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan Event, shutdown chan 
 	//    Event structs for each detected change.
 	// 4. whenever we hit a problem, use a truncated
 	//    exponential backoff to reduce load on any
-	//    problems experiencing issues.
+	//    systems experiencing issues.
 	for {
 		// populate directory if it doesn't exist
 		exists, err := rfs.Exists("")
