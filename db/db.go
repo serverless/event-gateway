@@ -62,6 +62,12 @@ type ReactiveCfgStore struct {
 
 // NewReactiveCfgStore instantiates a new ReactiveCfgStore.
 func NewReactiveCfgStore(root string, endpoints []string, log *zap.Logger) *ReactiveCfgStore {
+	if root == "/" {
+		panic("Root (\"/\") used for watch path. Please namespace all usage to avoid performance issues.")
+	} else if !strings.HasPrefix(root, "/") {
+		panic("Path provided to NewReactiveCfgStore," + root + ", is invalid. Must begin with /")
+	}
+
 	kind := store.ETCD
 
 	kv, err := libkv.NewStore(
@@ -77,8 +83,10 @@ func NewReactiveCfgStore(root string, endpoints []string, log *zap.Logger) *Reac
 			zap.Error(err))
 	}
 
+	noTrailingSlash := strings.TrimSuffix(root, "/")
+
 	return &ReactiveCfgStore{
-		root:      root,
+		root:      noTrailingSlash,
 		endpoints: strings.Join(endpoints, ","),
 		cache:     map[string][]byte{},
 		kv:        kv,
@@ -163,6 +171,8 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingevents chan event, shutdown chan 
 			backoff()
 			continue
 		}
+
+		// TODO make sure it's a directory, not file
 
 		if !exists {
 			// must set IsDir to true since backend may be etcd
