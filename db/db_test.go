@@ -82,20 +82,23 @@ func (t *TestReactor) Deleted(key string, lastKnownValue []byte) {
 	}
 }
 
+func randomHumanReadableBytes(n int) []byte {
+	buf := make([]byte, n)
+	_, err := rand.Read(buf)
+	if err != nil {
+		panic(err)
+	}
+	for i, v := range buf {
+		// make sure newV is in the printable range
+		newV := 32 + (v % 94)
+		buf[i] = newV
+	}
+	return buf
+}
+
 func TestWatch(t *testing.T) {
 	withEtcd(func() {
-		n := 10
-		buf := make([]byte, n)
-		_, err := rand.Read(buf)
-		if err != nil {
-			panic(err)
-		}
-		for i, v := range buf {
-			// make sure newV is in the printable range
-			newV := 32 + (v % 94)
-			buf[i] = newV
-		}
-
+		buf := randomHumanReadableBytes(10)
 		log, err := zap.NewDevelopment()
 		if err != nil {
 			panic(err)
@@ -107,44 +110,34 @@ func TestWatch(t *testing.T) {
 			modified: make(chan struct{}),
 			deleted:  make(chan struct{}),
 		}
+
 		listener := NewReactiveCfgStore("/test", []string{etcdCliAddr}, log)
+		configurer := NewReactiveCfgStore("/test", []string{etcdCliAddr}, log)
 
 		// clear state before continuing
-		listener.Delete("k1")
+		configurer.Delete("k1")
 
+		// watch for events with the reactor
 		closeReact := make(chan struct{})
 		listener.React(&trx, closeReact)
-		configurer := NewReactiveCfgStore("/test", []string{etcdCliAddr}, log)
 
 		rxShutdown := time.After(10 * time.Second)
 
-		err = configurer.Put("k1", buf, nil)
-		if err != nil {
-			panic(err)
+		doIt := func(err error, listen chan struct{}, shutdown <-chan time.Time) {
+			if err != nil {
+				panic(err)
+			}
+			select {
+			case <-listen:
+			case <-shutdown:
+				panic("did not receive creation update within timeout")
+			}
 		}
-		select {
-		case <-trx.created:
-		case <-rxShutdown:
-			panic("did not receive creation update within timeout")
-		}
-		err = configurer.Put("k1", buf, nil)
-		if err != nil {
-			panic(err)
-		}
-		select {
-		case <-trx.modified:
-		case <-rxShutdown:
-			panic("did not receive modification update within timeout")
-		}
-		err = configurer.Delete("k1")
-		if err != nil {
-			panic(err)
-		}
-		select {
-		case <-trx.deleted:
-		case <-rxShutdown:
-			panic("did not receive deletion update within timeout")
-		}
+
+		doIt(configurer.Put("k1", buf, nil), trx.created, rxShutdown)
+		doIt(configurer.Put("k1", buf, nil), trx.modified, rxShutdown)
+		doIt(configurer.Delete("k1"), trx.deleted, rxShutdown)
+
 		close(closeReact)
 	})
 }

@@ -10,6 +10,14 @@ import (
 	"github.com/coreos/pkg/capnslog"
 )
 
+func parse(input string) *url.URL {
+	output, err := url.Parse(input)
+	if err != nil {
+		panic(err)
+	}
+	return output
+}
+
 // EmbedEtcd starts an embedded etcd instance. It can be shut down by closing the shutdown chan.
 // It returns a chan that is closed upon startup, and a chan that is closed once shutdown is complete.
 func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdown chan struct{}, log *zap.Logger, verboseLogging bool) (<-chan struct{}, <-chan struct{}) {
@@ -19,15 +27,8 @@ func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdown chan struct{}, log *z
 	cfg := embed.NewConfig()
 
 	// set advertise urls
-	clientURL, err := url.Parse(cliAddr)
-	if err != nil {
-		panic(err)
-	}
-
-	peerURL, err := url.Parse(peerAddr)
-	if err != nil {
-		panic(err)
-	}
+	clientURL := parse(cliAddr)
+	peerURL := parse(peerAddr)
 
 	// client/peer advertisement addresses
 	cfg.ACUrls = []url.URL{*clientURL}
