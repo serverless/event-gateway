@@ -121,7 +121,7 @@ func TestWatch(t *testing.T) {
 		closeReact := make(chan struct{})
 		listener.React(&trx, closeReact)
 
-		rxShutdown := time.After(10 * time.Second)
+		rxShutdown := time.After(time.Minute)
 
 		doIt := func(err error, listen chan struct{}, shutdown <-chan time.Time) {
 			if err != nil {
