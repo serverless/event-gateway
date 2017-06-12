@@ -53,15 +53,22 @@ type cachedValue struct {
 // instance.
 type ReactiveCfgStore struct {
 	sync.RWMutex
-	endpoints string
-	root      string
-	cache     map[string][]byte
-	kv        store.Store
-	log       *zap.Logger
+	endpoints     string
+	root          string
+	cache         map[string][]byte
+	kv            store.Store
+	log           *zap.Logger
+	backoffFactor int
 }
 
 // NewReactiveCfgStore instantiates a new ReactiveCfgStore.
 func NewReactiveCfgStore(root string, endpoints []string, log *zap.Logger) *ReactiveCfgStore {
+	if root == "/" {
+		panic("Root (\"/\") used for watch path. Please namespace all usage to avoid performance issues.")
+	} else if !strings.HasPrefix(root, "/") {
+		panic("Path provided to NewReactiveCfgStore," + root + ", is invalid. Must begin with /")
+	}
+
 	kind := store.ETCD
 
 	kv, err := libkv.NewStore(
@@ -77,12 +84,15 @@ func NewReactiveCfgStore(root string, endpoints []string, log *zap.Logger) *Reac
 			zap.Error(err))
 	}
 
+	noTrailingSlash := strings.TrimSuffix(root, "/")
+
 	return &ReactiveCfgStore{
-		root:      root,
-		endpoints: strings.Join(endpoints, ","),
-		cache:     map[string][]byte{},
-		kv:        kv,
-		log:       log,
+		root:          noTrailingSlash,
+		endpoints:     strings.Join(endpoints, ","),
+		cache:         map[string][]byte{},
+		kv:            kv,
+		log:           log,
+		backoffFactor: 1,
 	}
 }
 
@@ -115,24 +125,22 @@ func (rfs *ReactiveCfgStore) bustCache() {
 	rfs.cache = map[string][]byte{}
 }
 
-// nolint: gocyclo
-func (rfs *ReactiveCfgStore) watchRoot(outgoingevents chan event, shutdown chan struct{}) {
+func (rfs *ReactiveCfgStore) resetBackoff() {
+	rfs.backoffFactor = 1
+}
+
+func (rfs *ReactiveCfgStore) backoff() {
+	rfs.log.Warn("Backing-off after a failure",
+		zap.String("event", "backoff"),
+		zap.Int("seconds", rfs.backoffFactor))
+	time.Sleep(time.Duration(rfs.backoffFactor) * time.Second)
+	rfs.backoffFactor = int(math.Min(float64(rfs.backoffFactor<<1), 8))
+}
+
+func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
 	// NB when extending libkv usage for DB's other than etcd, the watch behavior
 	// will need to be carefully considered, as the code below will likely need
 	// to be changed depending on which backend database is used.
-	cache := map[string]cachedValue{}
-
-	backoffFactor := 1
-	backoff := func() {
-		rfs.log.Warn("Backing-off after a failure",
-			zap.String("event", "backoff"),
-			zap.Int("seconds", backoffFactor))
-		time.Sleep(time.Duration(backoffFactor) * time.Second)
-		backoffFactor = int(math.Min(float64(backoffFactor<<1), 8))
-	}
-	resetBackoff := func() {
-		backoffFactor = 1
-	}
 
 	// This is the main loop for detecting changes.
 	// 1. try to populate the watching root if it does not exist
@@ -152,7 +160,7 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingevents chan event, shutdown chan 
 		default:
 		}
 
-		// 1. populate directory if it doesn't exist
+		// populate directory if it doesn't exist
 		exists, err := rfs.Exists("")
 		if err != nil {
 			rfs.log.Error("Could not access database.",
@@ -160,7 +168,7 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingevents chan event, shutdown chan 
 				zap.String("endpoints", rfs.endpoints),
 				zap.String("key", rfs.root),
 				zap.Error(err))
-			backoff()
+			rfs.backoff()
 			continue
 		}
 
@@ -173,12 +181,12 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingevents chan event, shutdown chan 
 					zap.String("endpoints", rfs.endpoints),
 					zap.String("key", rfs.root),
 					zap.Error(err))
-				backoff()
+				rfs.backoff()
 				continue
 			}
 		}
 
-		// 2. create watch chan for this directory
+		// create watch chan for this directory
 		events, err := rfs.WatchTree("", shutdown)
 		if err != nil {
 			rfs.log.Error("Could not watch directory.",
@@ -186,37 +194,46 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingevents chan event, shutdown chan 
 				zap.String("endpoints", rfs.endpoints),
 				zap.String("key", rfs.root),
 				zap.Error(err))
-			backoff()
+			rfs.backoff()
 			continue
 		}
 
-	innerLoop:
-		for {
-			select {
-			case kvs, ok := <-events:
-				if ok {
-					// 3. compare all nodes against cache, emit diff events
-					nextCache := rfs.diffCache(kvs, outgoingevents, cache)
+		shouldShutdown := rfs.processEvents(events, outgoingEvents, shutdown)
+		if shouldShutdown {
+			return
+		}
+	}
+}
 
-					// roll cache forward
-					cache = nextCache
+func (rfs *ReactiveCfgStore) processEvents(incomingEvents <-chan []*store.KVPair,
+	outgoingEvents chan event, shutdown chan struct{}) bool {
 
-					// if we got here, all is well, so reset exponential backoff
-					resetBackoff()
-				} else {
-					// directory nuked or connection to server failed
-					rfs.log.Error("Either lost connection to db, or the watch path was deleted.",
-						zap.String("event", "db"),
-						zap.String("endpoints", rfs.endpoints),
-						zap.String("key", rfs.root))
+	cache := map[string]cachedValue{}
+	for {
+		select {
+		case kvs, ok := <-incomingEvents:
+			if ok {
+				// compare all nodes against cache, emit diff events
+				nextCache := rfs.diffCache(kvs, outgoingEvents, cache)
 
-					backoff()
-					break innerLoop
-				}
-			case <-shutdown:
-				rfs.bustCache()
-				return
+				// roll cache forward
+				cache = nextCache
+
+				// if we got here, all is well, so reset exponential backoff
+				rfs.resetBackoff()
+			} else {
+				// directory nuked or connection to server failed
+				rfs.log.Error("Either lost connection to db, or the watch path was deleted.",
+					zap.String("event", "db"),
+					zap.String("endpoints", rfs.endpoints),
+					zap.String("key", rfs.root))
+
+				rfs.backoff()
+				return false
 			}
+		case <-shutdown:
+			rfs.bustCache()
+			return true
 		}
 	}
 }
