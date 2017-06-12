@@ -12,7 +12,7 @@ import (
 
 const (
 	etcdDir     = "testing.etcd"
-	etcdCliAddr = "localhost:2389"
+	etcdCliAddr = "127.0.0.1:2389"
 )
 
 func testingEtcd() (chan struct{}, <-chan struct{}) {
