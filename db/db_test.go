@@ -24,8 +24,13 @@ func testingEtcd() (chan struct{}, <-chan struct{}) {
 		panic(err)
 	}
 
+	log, err := zap.NewNop()
+	if err != nil {
+		panic(err)
+	}
+
 	startedChan, stoppedChan := EmbedEtcd(wd+"/"+etcdDir, "http://localhost:2390",
-		"http://"+etcdCliAddr, shutdownInitiateChan, nil, false)
+		"http://"+etcdCliAddr, shutdownInitiateChan, log, false)
 
 	select {
 	case <-startedChan:
@@ -99,7 +104,8 @@ func randomHumanReadableBytes(n int) []byte {
 func TestWatch(t *testing.T) {
 	withEtcd(func() {
 		buf := randomHumanReadableBytes(10)
-		log, err := zap.NewDevelopment()
+
+		log, err := zap.NewNop()
 		if err != nil {
 			panic(err)
 		}

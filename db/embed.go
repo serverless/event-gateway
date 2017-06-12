@@ -65,9 +65,7 @@ func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdown chan struct{}, log *z
 	go func() {
 		select {
 		case <-e.Server.ReadyNotify():
-			if log != nil {
-				log.Info("Embedded etcd is ready.")
-			}
+			log.Info("Embedded etcd is ready.")
 			close(startedChan)
 		case <-time.After(60 * time.Second):
 			log.Error("Embedded etcd took too long to start!")
@@ -79,9 +77,7 @@ func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdown chan struct{}, log *z
 		// run until error or shutdown
 		select {
 		case <-shutdown:
-			if log != nil {
-				log.Info("Shutting down embedded etcd.")
-			}
+			log.Info("Shutting down embedded etcd.")
 			e.Server.Stop()
 			close(stoppedChan)
 		case err := <-e.Err():

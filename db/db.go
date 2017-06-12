@@ -172,8 +172,6 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 			continue
 		}
 
-		// TODO make sure it's a directory, not file
-
 		if !exists {
 			// must set IsDir to true since backend may be etcd
 			err := rfs.Put("", []byte(""), &store.WriteOptions{IsDir: true})
