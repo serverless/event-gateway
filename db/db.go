@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"sync"
@@ -176,13 +177,17 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 			// must set IsDir to true since backend may be etcd
 			err := rfs.Put("", []byte(""), &store.WriteOptions{IsDir: true})
 			if err != nil {
-				rfs.log.Error("Could not initialize watcher root.",
-					zap.String("event", "db"),
-					zap.String("endpoints", rfs.endpoints),
-					zap.String("key", rfs.root),
-					zap.Error(err))
-				rfs.backoff()
-				continue
+				if strings.HasPrefix(err.Error(), "102: Not a file") {
+					rfs.log.Debug("Another node (probably) created the root directory first.")
+				} else {
+					rfs.log.Error("Could not initialize watcher root.",
+						zap.String("event", "db"),
+						zap.String("endpoints", rfs.endpoints),
+						zap.String("key", rfs.root),
+						zap.Error(err))
+					rfs.backoff()
+					continue
+				}
 			}
 		}
 
@@ -310,20 +315,23 @@ func (rfs *ReactiveCfgStore) diffCache(kvs []*store.KVPair, outgoingevents chan 
 // backing database.
 func (rfs *ReactiveCfgStore) CachedGet(key string) ([]byte, error) {
 	rfs.RLock()
-	value, exists := rfs.cache[key]
+	value, exists := rfs.cache[rfs.root+"/"+key]
 	rfs.RUnlock()
 
 	if exists {
 		return value, nil
 	}
 
-	kv, err := rfs.kv.Get(key)
+	kv, err := rfs.Get(key)
 
 	// NB we don't put this into the cache because
 	// we aren't watching its directory, if it
 	// exists, and we would have a stale value
 	// in cache as soon as it is updated.
 
+	if kv == nil {
+		return []byte{}, err
+	}
 	return kv.Value, err
 }
 
@@ -336,6 +344,7 @@ func (rfs *ReactiveCfgStore) Put(key string, value []byte, options *store.WriteO
 
 // Get passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) Get(key string) (*store.KVPair, error) {
+	rfs.log.Debug(fmt.Sprintf("doing Get for %s", rfs.root+"/"+key))
 	return rfs.kv.Get(rfs.root + "/" + key)
 }
 

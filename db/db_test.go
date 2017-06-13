@@ -98,46 +98,86 @@ func randomHumanReadableBytes(n int) []byte {
 	return buf
 }
 
-func TestWatch(t *testing.T) {
+func watchTests() {
+	buf := randomHumanReadableBytes(10)
+
+	log, _ := zap.NewDevelopment()
+
+	trx := TestReactor{
+		expect:   buf,
+		created:  make(chan struct{}),
+		modified: make(chan struct{}),
+		deleted:  make(chan struct{}),
+	}
+
+	listener := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
+	configurer := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
+
+	// clear state before continuing
+	configurer.Delete("k1")
+
+	// watch for events with the reactor
+	closeReact := make(chan struct{})
+	listener.React(&trx, closeReact)
+
+	rxShutdown := time.After(4 * time.Second)
+
+	waitForIt := func(err error, listen chan struct{}) {
+		if err != nil {
+			panic(err)
+		}
+		select {
+		case <-listen:
+		case <-rxShutdown:
+			panic("did not receive expected update within timeout")
+		}
+	}
+
+	waitForIt(configurer.Put("k1", buf, nil), trx.created)
+	waitForIt(configurer.Put("k1", buf, nil), trx.modified)
+	waitForIt(configurer.Delete("k1"), trx.deleted)
+
+	close(closeReact)
+}
+
+func getSetTests() {
+	buf := randomHumanReadableBytes(10)
+
+	log, _ := zap.NewDevelopment()
+
+	writer := NewReactiveCfgStore("/test2", []string{etcdCliAddr}, log)
+
+	// clear state before continuing
+	writer.Delete("k1")
+
+	_, err := writer.CachedGet("k1")
+	if err == nil {
+		panic("should not have gotten key")
+	}
+	err = writer.Put("k1", buf, nil)
+	if err != nil {
+		panic("could not set key")
+	}
+	val, err := writer.CachedGet("k1")
+	if err != nil {
+		panic("writer could not get key that was set")
+	}
+	if !bytes.Equal(val, buf) {
+		panic("read a value other than the one that was written")
+	}
+	err = writer.Delete("k1")
+	if err != nil {
+		panic("could not delete key")
+	}
+	_, err = writer.CachedGet("k1")
+	if err == nil {
+		panic("got a key that should have been deleted")
+	}
+}
+
+func TestReactiveCfgStore(t *testing.T) {
 	withEtcd(func() {
-		buf := randomHumanReadableBytes(10)
-
-		log, _ := zap.NewDevelopment()
-
-		trx := TestReactor{
-			expect:   buf,
-			created:  make(chan struct{}),
-			modified: make(chan struct{}),
-			deleted:  make(chan struct{}),
-		}
-
-		listener := NewReactiveCfgStore("/test", []string{etcdCliAddr}, log)
-		configurer := NewReactiveCfgStore("/test", []string{etcdCliAddr}, log)
-
-		// clear state before continuing
-		configurer.Delete("k1")
-
-		// watch for events with the reactor
-		closeReact := make(chan struct{})
-		listener.React(&trx, closeReact)
-
-		rxShutdown := time.After(time.Minute)
-
-		doIt := func(err error, listen chan struct{}, shutdown <-chan time.Time) {
-			if err != nil {
-				panic(err)
-			}
-			select {
-			case <-listen:
-			case <-shutdown:
-				panic("did not receive creation update within timeout")
-			}
-		}
-
-		doIt(configurer.Put("k1", buf, nil), trx.created, rxShutdown)
-		doIt(configurer.Put("k1", buf, nil), trx.modified, rxShutdown)
-		doIt(configurer.Delete("k1"), trx.deleted, rxShutdown)
-
-		close(closeReact)
+		watchTests()
+		getSetTests()
 	})
 }
