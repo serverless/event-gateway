@@ -5,8 +5,8 @@ services:
     cpu_shares: 256
     mem_limit: 268435456
     ports:
-      - 8080
-      - 2379:2379
+      - "8080"
+      - "2379:2379"
     environment:
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=AKIAI2TYMWZYFUNUHHIQ
@@ -21,5 +21,5 @@ services:
     cpu_shares: 256
     mem_limit: 536870912
     ports:
-      - 9090:9090
+      - "9090:9090"
 
