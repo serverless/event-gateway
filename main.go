@@ -84,7 +84,7 @@ func main() {
 	ensapi.RegisterRoutes(router)
 
 	router.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
-	router.Handler("GET", "/metrics", prometheus.Handler())
+	router.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
 	err = http.ListenAndServe(":8080", metrics.HTTPLogger{router, metrics.DurationMetric})
 	logger.Error("server failed", zap.Error(err))
 	close(shutdownInitiateChan)
