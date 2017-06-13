@@ -43,7 +43,7 @@ func (e *Endpoints) Created(key string, value []byte) {
 	e.Lock()
 	defer e.Unlock()
 	// TODO put any necessary endpoint conf initialization code here
-	e.Logger.Debug("received Created event",
+	e.Logger.Debug("Received Created event.",
 		zap.String("key", key),
 		zap.String("value", string(value)))
 }
@@ -53,7 +53,7 @@ func (e *Endpoints) Modified(key string, newValue []byte) {
 	e.Lock()
 	defer e.Unlock()
 	// TODO put any necessary endpoint conf modification code here
-	e.Logger.Debug("received Modified event",
+	e.Logger.Debug("Received Modified event.",
 		zap.String("key", key),
 		zap.String("newValue", string(newValue)))
 }
@@ -63,7 +63,7 @@ func (e *Endpoints) Deleted(key string, lastKnownValue []byte) {
 	e.Lock()
 	defer e.Unlock()
 	// TODO put any necessary endpoint conf deletion code here
-	e.Logger.Debug("received Deleted event",
+	e.Logger.Debug("Received Deleted event.",
 		zap.String("key", key),
 		zap.String("lastKnownValue", string(lastKnownValue)))
 }
@@ -83,7 +83,7 @@ func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
 	buf := bytes.NewBuffer(value)
 	err = gob.NewDecoder(buf).Decode(fn)
 	if err != nil {
-		e.Logger.Info("fetching endpoint failed", zap.Error(err))
+		e.Logger.Info("Fetching endpoint failed.", zap.Error(err))
 		return nil, err
 	}
 	return fn, nil
@@ -98,7 +98,7 @@ func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
 
 	en.ID = id
 
-	buf := new(bytes.Buffer)
+	buf := &bytes.Buffer{}
 	err = gob.NewEncoder(buf).Encode(en)
 	if err != nil {
 		return nil, err

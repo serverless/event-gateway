@@ -16,6 +16,9 @@ Gateway exposes configuration API for all sub-services.
   - provider - `string` - compute provider, possible values: `aws-lambda`
   - originId - `string` - provider specific function ID
   - region - `string` - deployment region
+  - credentials - `object`:
+    - aws_access_key_id - `string`
+    - aws_secret_access_key - `string`
 
 #### Methods
 

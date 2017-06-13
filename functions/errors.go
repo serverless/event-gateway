@@ -8,7 +8,7 @@ type ErrorNotFound struct {
 }
 
 func (e ErrorNotFound) Error() string {
-	return fmt.Sprintf("function %q not found", e.name)
+	return fmt.Sprintf("Function %q not found.", e.name)
 }
 
 // ErrorInvocationFailed occurs when function invocation failed.
@@ -19,5 +19,5 @@ type ErrorInvocationFailed struct {
 }
 
 func (e ErrorInvocationFailed) Error() string {
-	return fmt.Sprintf("calling function %q (%s, %s): %s", e.function.ID, e.instance.Provider, e.instance.OriginID, e.err.Error())
+	return fmt.Sprintf("Calling function %q (%s, %s): %s.", e.function.ID, e.instance.Provider, e.instance.OriginID, e.err.Error())
 }
