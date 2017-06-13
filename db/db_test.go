@@ -92,7 +92,7 @@ func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor) {
 	// clear state before continuing
 	configurer.Delete("k1")
 
-	rxShutdown := time.After(4 * time.Second)
+	rxShutdown := time.After(30 * time.Second)
 
 	waitForIt := func(err error, listen chan struct{}) {
 		if err != nil {
