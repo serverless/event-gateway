@@ -19,7 +19,7 @@ services:
   gateway:
     image: prom/prometheus
     cpu_shares: 256
-        mem_limit: 536870912
-        ports:
-          - 9090:9090
+    mem_limit: 536870912
+    ports:
+      - 9090:9090
 
