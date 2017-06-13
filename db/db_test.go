@@ -15,7 +15,7 @@ const (
 	etcdCliAddr = "127.0.0.1:2389"
 )
 
-func testingEtcd() (chan struct{}, <-chan struct{}) {
+func testingEtcd(log *zap.Logger) (chan struct{}, <-chan struct{}) {
 	shutdownInitiateChan := make(chan struct{})
 	cleanupChan := make(chan struct{})
 
@@ -23,8 +23,6 @@ func testingEtcd() (chan struct{}, <-chan struct{}) {
 	if err != nil {
 		panic(err)
 	}
-
-	log, _ := zap.NewDevelopment()
 
 	startedChan, stoppedChan := EmbedEtcd(wd+"/"+etcdDir, "http://localhost:2390",
 		"http://"+etcdCliAddr, shutdownInitiateChan, log, false)
@@ -45,18 +43,6 @@ func testingEtcd() (chan struct{}, <-chan struct{}) {
 	}()
 
 	return shutdownInitiateChan, cleanupChan
-}
-
-func withEtcd(f func()) {
-	shutdownChan, stoppedChan := testingEtcd()
-	if shutdownChan == nil {
-		panic("could not start testing etcd")
-	}
-
-	f()
-
-	close(shutdownChan)
-	<-stoppedChan
 }
 
 type TestReactor struct {
@@ -98,27 +84,13 @@ func randomHumanReadableBytes(n int) []byte {
 	return buf
 }
 
-func watchTests() {
-	buf := randomHumanReadableBytes(10)
-
+func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor) {
 	log, _ := zap.NewDevelopment()
 
-	trx := TestReactor{
-		expect:   buf,
-		created:  make(chan struct{}),
-		modified: make(chan struct{}),
-		deleted:  make(chan struct{}),
-	}
-
-	listener := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
 	configurer := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
 
 	// clear state before continuing
 	configurer.Delete("k1")
-
-	// watch for events with the reactor
-	closeReact := make(chan struct{})
-	listener.React(&trx, closeReact)
 
 	rxShutdown := time.After(4 * time.Second)
 
@@ -136,8 +108,6 @@ func watchTests() {
 	waitForIt(configurer.Put("k1", buf, nil), trx.created)
 	waitForIt(configurer.Put("k1", buf, nil), trx.modified)
 	waitForIt(configurer.Delete("k1"), trx.deleted)
-
-	close(closeReact)
 }
 
 func getSetTests() {
@@ -176,8 +146,31 @@ func getSetTests() {
 }
 
 func TestReactiveCfgStore(t *testing.T) {
-	withEtcd(func() {
-		watchTests()
-		getSetTests()
-	})
+	log, _ := zap.NewDevelopment()
+
+	buf := randomHumanReadableBytes(10)
+
+	// watch for events with the reactor
+	trx := TestReactor{
+		expect:   buf,
+		created:  make(chan struct{}),
+		modified: make(chan struct{}),
+		deleted:  make(chan struct{}),
+	}
+	closeReact := make(chan struct{})
+
+	listener := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
+	listener.React(&trx, closeReact)
+
+	shutdownChan, stoppedChan := testingEtcd(log)
+	if shutdownChan == nil {
+		panic("could not start testing etcd")
+	}
+
+	watchTests(listener, buf, trx)
+	getSetTests()
+
+	close(closeReact)
+	close(shutdownChan)
+	<-stoppedChan
 }
