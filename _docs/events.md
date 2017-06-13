@@ -189,3 +189,30 @@ reason about that accurately, as one event may act on an external database
 that is then read by a later function, so we should probably not
 try to reduce the Synchronous topologies to the direct dependencies
 of the specified output to use as a response.
+1. If we allow multiple/optional return events, how can we
+decouple response types from configurable topics, such that
+we don't need to know about specific topics when deploying a
+function that may emit events of type A, B, or C? Maybe
+allow configuring a mapping from a function's event type identifiers
+to one or more topics.
+
+## Recommended Initial Functionality
+Here are some things that would be good to build initially, which
+will allow us to be flexible later on about what patterns we
+choose to support.
+
+1. Multiple backing functions for a single named function. Supports
+cutover/blue-green deploys/canary deployments.
+1. TTL fields on requests to the gateway, based on a TTL passed
+to the function. Even with graph analysis, it will be
+hard to guarantee that no loops will occur as long as anything
+can make a request through the gateway to another function
+(or itself accidentally). We need to detect which things are
+triggering loops and mitigate their damage as fast as possible.
+1. Multiple/optional response events. Maybe pass in a token to a function,
+and if the function returns JSON/PB/etc... that includes the provided token,
+we know that it is an object that may contain multiple/optional events.
+1. Embrace many:many thinking for everything. Avoid things
+that need to be configured for a particular destination in the
+code. Push as much to configuration as possible.
+
