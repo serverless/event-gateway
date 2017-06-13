@@ -1,6 +1,8 @@
 # Event Specification
 
 ## Warning: On Cycles
+A cycle is when a set of functions pass events to each other in a way that
+never terminates. The simplest example is a function that calls itself recursively.
 A cycle means the entire system grinds to a halt, as the gateway infinitely passes
 events back and forth, getting hotter and hotter as more events enter the cycle.
 We may want to consider adding a defensive TTL field, similar to that
