@@ -24,7 +24,7 @@ func testingEtcd() (chan struct{}, <-chan struct{}) {
 		panic(err)
 	}
 
-	log, _ := zap.NewProduction()
+	log, _ := zap.NewDevelopment()
 
 	startedChan, stoppedChan := EmbedEtcd(wd+"/"+etcdDir, "http://localhost:2390",
 		"http://"+etcdCliAddr, shutdownInitiateChan, log, false)
@@ -102,7 +102,7 @@ func TestWatch(t *testing.T) {
 	withEtcd(func() {
 		buf := randomHumanReadableBytes(10)
 
-		log, _ := zap.NewProduction()
+		log, _ := zap.NewDevelopment()
 
 		trx := TestReactor{
 			expect:   buf,
