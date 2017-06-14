@@ -84,7 +84,7 @@ func randomHumanReadableBytes(n int) []byte {
 	return buf
 }
 
-func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor) {
+func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor, log *zap.Logger) {
 	rxShutdown := time.After(30 * time.Second)
 
 	waitForIt := func(err error, listen chan struct{}) {
@@ -98,9 +98,11 @@ func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor) {
 		}
 	}
 
-	waitForIt(listener.Put("k1", buf, nil), trx.created)
-	waitForIt(listener.Put("k1", buf, nil), trx.modified)
-	waitForIt(listener.Delete("k1"), trx.deleted)
+	writer := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
+
+	waitForIt(writer.Put("k1", buf, nil), trx.created)
+	waitForIt(writer.Put("k1", buf, nil), trx.modified)
+	waitForIt(writer.Delete("k1"), trx.deleted)
 }
 
 func getSetTests(log *zap.Logger) {
@@ -160,7 +162,7 @@ func TestReactiveCfgStore(t *testing.T) {
 		panic("could not start testing etcd")
 	}
 
-	watchTests(listener, buf, trx)
+	watchTests(listener, buf, trx, log)
 	getSetTests(log)
 
 	close(closeReact)
