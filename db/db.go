@@ -64,15 +64,15 @@ type ReactiveCfgStore struct {
 	// when failures occur.
 	backoffFactor int
 
-	// ReconciliationBaseDelay is the minimum duration in seconds
+	// reconciliationBaseDelay is the minimum duration in seconds
 	// between re-connection attempts for db watches, which
 	// mitigate connection issues causing lost updates.
-	ReconciliationBaseDelay int
+	reconciliationBaseDelay int
 
-	// ReconciliationJitter is the maximum additional delay
-	// applied to the ReconciliationBaseDelay when waiting
+	// reconciliationJitter is the maximum additional delay
+	// applied to the reconciliationBaseDelay when waiting
 	// to reconnect to the db for reconciliation
-	ReconciliationJitter int
+	reconciliationJitter int
 }
 
 // NewReactiveCfgStore instantiates a new ReactiveCfgStore.
@@ -107,8 +107,8 @@ func NewReactiveCfgStore(root string, endpoints []string, log *zap.Logger) *Reac
 		kv:                      kv,
 		log:                     log,
 		backoffFactor:           1,
-		ReconciliationBaseDelay: 30,
-		ReconciliationJitter:    10,
+		reconciliationBaseDelay: 30,
+		reconciliationJitter:    10,
 	}
 }
 
@@ -155,9 +155,9 @@ func (rfs *ReactiveCfgStore) backoff() {
 
 func (rfs *ReactiveCfgStore) reconciliationTimeout() <-chan time.Time {
 	// use a minimum jitter of 1
-	maxJitter := int(math.Max(float64(rfs.ReconciliationJitter), 1))
+	maxJitter := int(math.Max(float64(rfs.reconciliationJitter), 1))
 	jitter := rand.Intn(maxJitter)
-	delay := time.Duration(jitter+rfs.ReconciliationBaseDelay) * time.Second
+	delay := time.Duration(jitter+rfs.reconciliationBaseDelay) * time.Second
 	return time.After(delay)
 }
 
