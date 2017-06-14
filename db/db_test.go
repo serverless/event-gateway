@@ -145,7 +145,6 @@ func getSetTests(log *zap.Logger) {
 func TestReactiveCfgStore(t *testing.T) {
 	cfg := zap.NewDevelopmentConfig()
 	cfg.DisableStacktrace = true
-	cfg.OutputPaths = []string{"testing.log"}
 	log, _ := cfg.Build()
 
 	shutdownChan, stoppedChan := testingEtcd(log)
