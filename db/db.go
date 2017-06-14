@@ -2,6 +2,7 @@ package db
 
 import (
 	"math"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -53,12 +54,25 @@ type cachedValue struct {
 // instance.
 type ReactiveCfgStore struct {
 	sync.RWMutex
-	endpoints     string
-	root          string
-	cache         map[string][]byte
-	kv            store.Store
-	log           *zap.Logger
+	endpoints string
+	root      string
+	cache     map[string][]byte
+	kv        store.Store
+	log       *zap.Logger
+
+	// backoffFactor is used to track exponential backoffs
+	// when failures occur.
 	backoffFactor int
+
+	// reconciliationBaseDelay is the minimum duration in seconds
+	// between re-connection attempts for db watches, which
+	// mitigate connection issues causing lost updates.
+	reconciliationBaseDelay int
+
+	// reconciliationJitter is the maximum additional delay
+	// applied to the reconciliationBaseDelay when waiting
+	// to reconnect to the db for reconciliation
+	reconciliationJitter int
 }
 
 // NewReactiveCfgStore instantiates a new ReactiveCfgStore.
@@ -87,12 +101,14 @@ func NewReactiveCfgStore(root string, endpoints []string, log *zap.Logger) *Reac
 	noTrailingSlash := strings.TrimSuffix(root, "/")
 
 	return &ReactiveCfgStore{
-		root:          noTrailingSlash,
-		endpoints:     strings.Join(endpoints, ","),
-		cache:         map[string][]byte{},
-		kv:            kv,
-		log:           log,
-		backoffFactor: 1,
+		root:                    noTrailingSlash,
+		endpoints:               strings.Join(endpoints, ","),
+		cache:                   map[string][]byte{},
+		kv:                      kv,
+		log:                     log,
+		backoffFactor:           1,
+		reconciliationBaseDelay: 30,
+		reconciliationJitter:    10,
 	}
 }
 
@@ -130,11 +146,19 @@ func (rfs *ReactiveCfgStore) resetBackoff() {
 }
 
 func (rfs *ReactiveCfgStore) backoff() {
-	rfs.log.Warn("Backing-off after a failure",
+	rfs.log.Info("Backing-off after a failure",
 		zap.String("event", "backoff"),
 		zap.Int("seconds", rfs.backoffFactor))
 	time.Sleep(time.Duration(rfs.backoffFactor) * time.Second)
 	rfs.backoffFactor = int(math.Min(float64(rfs.backoffFactor<<1), 8))
+}
+
+func (rfs *ReactiveCfgStore) reconciliationTimeout() <-chan time.Time {
+	// use a minimum jitter of 1
+	maxJitter := int(math.Max(float64(rfs.reconciliationJitter), 1))
+	jitter := rand.Intn(maxJitter)
+	delay := time.Duration(jitter+rfs.reconciliationBaseDelay) * time.Second
+	return time.After(delay)
 }
 
 func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
@@ -151,6 +175,9 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 	// 4. whenever we hit a problem, use a truncated
 	//    exponential backoff to reduce load on any
 	//    systems experiencing issues.
+
+	cache := map[string]cachedValue{}
+
 	for {
 		// return if shutdown
 		select {
@@ -176,13 +203,17 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 			// must set IsDir to true since backend may be etcd
 			err := rfs.Put("", []byte(""), &store.WriteOptions{IsDir: true})
 			if err != nil {
-				rfs.log.Error("Could not initialize watcher root.",
-					zap.String("event", "db"),
-					zap.String("endpoints", rfs.endpoints),
-					zap.String("key", rfs.root),
-					zap.Error(err))
-				rfs.backoff()
-				continue
+				if strings.HasPrefix(err.Error(), "102: Not a file") {
+					rfs.log.Debug("Another node (probably) created the root directory first.")
+				} else {
+					rfs.log.Error("Could not initialize watcher root.",
+						zap.String("event", "db"),
+						zap.String("endpoints", rfs.endpoints),
+						zap.String("key", rfs.root),
+						zap.Error(err))
+					rfs.backoff()
+					continue
+				}
 			}
 		}
 
@@ -198,26 +229,28 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 			continue
 		}
 
-		shouldShutdown := rfs.processEvents(events, outgoingEvents, shutdown)
+		// process events from the events chan until the
+		// connection to the server is lost, or the key
+		// is removed.
+		shouldShutdown := rfs.processEvents(&cache, events, outgoingEvents, shutdown)
 		if shouldShutdown {
 			return
 		}
 	}
 }
 
-func (rfs *ReactiveCfgStore) processEvents(incomingEvents <-chan []*store.KVPair,
+func (rfs *ReactiveCfgStore) processEvents(cache *map[string]cachedValue, incomingEvents <-chan []*store.KVPair,
 	outgoingEvents chan event, shutdown chan struct{}) bool {
 
-	cache := map[string]cachedValue{}
 	for {
 		select {
 		case kvs, ok := <-incomingEvents:
 			if ok {
 				// compare all nodes against cache, emit diff events
-				nextCache := rfs.diffCache(kvs, outgoingEvents, cache)
+				nextCache := rfs.diffCache(kvs, outgoingEvents, *cache)
 
 				// roll cache forward
-				cache = nextCache
+				*cache = nextCache
 
 				// if we got here, all is well, so reset exponential backoff
 				rfs.resetBackoff()
@@ -234,6 +267,10 @@ func (rfs *ReactiveCfgStore) processEvents(incomingEvents <-chan []*store.KVPair
 		case <-shutdown:
 			rfs.bustCache()
 			return true
+		case <-rfs.reconciliationTimeout():
+			// it's time to reconnect to catch any lost updates
+			rfs.log.Debug("attempting reconnection to reconcile possibly lost updates.")
+			return false
 		}
 	}
 }
@@ -310,20 +347,23 @@ func (rfs *ReactiveCfgStore) diffCache(kvs []*store.KVPair, outgoingevents chan 
 // backing database.
 func (rfs *ReactiveCfgStore) CachedGet(key string) ([]byte, error) {
 	rfs.RLock()
-	value, exists := rfs.cache[key]
+	value, exists := rfs.cache[rfs.root+"/"+key]
 	rfs.RUnlock()
 
 	if exists {
 		return value, nil
 	}
 
-	kv, err := rfs.kv.Get(key)
+	kv, err := rfs.Get(key)
 
 	// NB we don't put this into the cache because
 	// we aren't watching its directory, if it
 	// exists, and we would have a stale value
 	// in cache as soon as it is updated.
 
+	if kv == nil {
+		return []byte{}, err
+	}
 	return kv.Value, err
 }
 
