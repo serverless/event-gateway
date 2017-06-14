@@ -155,6 +155,9 @@ func TestReactiveCfgStore(t *testing.T) {
 	closeReact := make(chan struct{})
 
 	listener := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
+	listener.ReconciliationJitter = 0
+	listener.ReconciliationBaseDelay = 3
+
 	listener.React(&trx, closeReact)
 
 	shutdownChan, stoppedChan := testingEtcd(log)

@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -54,12 +55,25 @@ type cachedValue struct {
 // instance.
 type ReactiveCfgStore struct {
 	sync.RWMutex
-	endpoints     string
-	root          string
-	cache         map[string][]byte
-	kv            store.Store
-	log           *zap.Logger
+	endpoints string
+	root      string
+	cache     map[string][]byte
+	kv        store.Store
+	log       *zap.Logger
+
+	// backoffFactor is used to track exponential backoffs
+	// when failures occur.
 	backoffFactor int
+
+	// ReconciliationBaseDelay is the minimum duration in seconds
+	// between re-connection attempts for db watches, which
+	// mitigate connection issues causing lost updates.
+	ReconciliationBaseDelay int
+
+	// ReconciliationJitter is the maximum additional delay
+	// applied to the ReconciliationBaseDelay when waiting
+	// to reconnect to the db for reconciliation
+	ReconciliationJitter int
 }
 
 // NewReactiveCfgStore instantiates a new ReactiveCfgStore.
@@ -88,12 +102,14 @@ func NewReactiveCfgStore(root string, endpoints []string, log *zap.Logger) *Reac
 	noTrailingSlash := strings.TrimSuffix(root, "/")
 
 	return &ReactiveCfgStore{
-		root:          noTrailingSlash,
-		endpoints:     strings.Join(endpoints, ","),
-		cache:         map[string][]byte{},
-		kv:            kv,
-		log:           log,
-		backoffFactor: 1,
+		root:                    noTrailingSlash,
+		endpoints:               strings.Join(endpoints, ","),
+		cache:                   map[string][]byte{},
+		kv:                      kv,
+		log:                     log,
+		backoffFactor:           1,
+		ReconciliationBaseDelay: 30,
+		ReconciliationJitter:    10,
 	}
 }
 
@@ -139,6 +155,14 @@ func (rfs *ReactiveCfgStore) backoff() {
 	rfs.backoffFactor = int(math.Min(float64(rfs.backoffFactor<<1), 8))
 }
 
+func (rfs *ReactiveCfgStore) reconciliationTimeout() <-chan time.Time {
+	// use a minimum jitter of 1
+	maxJitter := int(math.Max(float64(rfs.ReconciliationJitter), 1))
+	jitter := rand.Intn(maxJitter)
+	delay := time.Duration(jitter+rfs.ReconciliationBaseDelay) * time.Second
+	return time.After(delay)
+}
+
 func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
 	// NB when extending libkv usage for DB's other than etcd, the watch behavior
 	// will need to be carefully considered, as the code below will likely need
@@ -153,6 +177,9 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 	// 4. whenever we hit a problem, use a truncated
 	//    exponential backoff to reduce load on any
 	//    systems experiencing issues.
+
+	cache := map[string]cachedValue{}
+
 	for {
 		// return if shutdown
 		select {
@@ -207,17 +234,16 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 		// process events from the events chan until the
 		// connection to the server is lost, or the key
 		// is removed.
-		shouldShutdown := rfs.processEvents(events, outgoingEvents, shutdown)
+		shouldShutdown := rfs.processEvents(cache, events, outgoingEvents, shutdown)
 		if shouldShutdown {
 			return
 		}
 	}
 }
 
-func (rfs *ReactiveCfgStore) processEvents(incomingEvents <-chan []*store.KVPair,
+func (rfs *ReactiveCfgStore) processEvents(cache map[string]cachedValue, incomingEvents <-chan []*store.KVPair,
 	outgoingEvents chan event, shutdown chan struct{}) bool {
 
-	cache := map[string]cachedValue{}
 	for {
 		select {
 		case kvs, ok := <-incomingEvents:
@@ -243,6 +269,10 @@ func (rfs *ReactiveCfgStore) processEvents(incomingEvents <-chan []*store.KVPair
 		case <-shutdown:
 			rfs.bustCache()
 			return true
+		case <-rfs.reconciliationTimeout():
+			// it's time to reconnect to catch any lost updates
+			rfs.log.Debug("attempting reconnection to reconcile possibly lost updates.")
+			return false
 		}
 	}
 }
