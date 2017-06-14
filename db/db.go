@@ -127,11 +127,12 @@ func (rfs *ReactiveCfgStore) bustCache() {
 }
 
 func (rfs *ReactiveCfgStore) resetBackoff() {
+	rfs.log.Debug("resetting backoff after successful event processing.")
 	rfs.backoffFactor = 1
 }
 
 func (rfs *ReactiveCfgStore) backoff() {
-	rfs.log.Warn("Backing-off after a failure",
+	rfs.log.Info("Backing-off after a failure",
 		zap.String("event", "backoff"),
 		zap.Int("seconds", rfs.backoffFactor))
 	time.Sleep(time.Duration(rfs.backoffFactor) * time.Second)
@@ -203,6 +204,9 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 			continue
 		}
 
+		// process events from the events chan until the
+		// connection to the server is lost, or the key
+		// is removed.
 		shouldShutdown := rfs.processEvents(events, outgoingEvents, shutdown)
 		if shouldShutdown {
 			return

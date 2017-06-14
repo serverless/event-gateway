@@ -85,13 +85,6 @@ func randomHumanReadableBytes(n int) []byte {
 }
 
 func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor) {
-	log, _ := zap.NewDevelopment()
-
-	configurer := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
-
-	// clear state before continuing
-	configurer.Delete("k1")
-
 	rxShutdown := time.After(30 * time.Second)
 
 	waitForIt := func(err error, listen chan struct{}) {
@@ -105,15 +98,13 @@ func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor) {
 		}
 	}
 
-	waitForIt(configurer.Put("k1", buf, nil), trx.created)
-	waitForIt(configurer.Put("k1", buf, nil), trx.modified)
-	waitForIt(configurer.Delete("k1"), trx.deleted)
+	waitForIt(listener.Put("k1", buf, nil), trx.created)
+	waitForIt(listener.Put("k1", buf, nil), trx.modified)
+	waitForIt(listener.Delete("k1"), trx.deleted)
 }
 
-func getSetTests() {
+func getSetTests(log *zap.Logger) {
 	buf := randomHumanReadableBytes(10)
-
-	log, _ := zap.NewDevelopment()
 
 	writer := NewReactiveCfgStore("/test2", []string{etcdCliAddr}, log)
 
@@ -146,7 +137,9 @@ func getSetTests() {
 }
 
 func TestReactiveCfgStore(t *testing.T) {
-	log, _ := zap.NewDevelopment()
+	cfg := zap.NewDevelopmentConfig()
+	cfg.DisableStacktrace = true
+	log, _ := cfg.Build()
 
 	buf := randomHumanReadableBytes(10)
 
@@ -168,7 +161,7 @@ func TestReactiveCfgStore(t *testing.T) {
 	}
 
 	watchTests(listener, buf, trx)
-	getSetTests()
+	getSetTests(log)
 
 	close(closeReact)
 	close(shutdownChan)
