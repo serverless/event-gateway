@@ -7,9 +7,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/serverless/gateway/db"
@@ -65,9 +62,8 @@ func main() {
 
 	fdb := db.NewReactiveCfgStore("/serverless-gateway/functions", dbHostStrings, logger)
 	fns := &functions.Functions{
-		DB:        fdb,
-		AWSLambda: lambda.New(session.New(aws.NewConfig())),
-		Logger:    logger,
+		DB:     fdb,
+		Logger: logger,
 	}
 	fdb.React(fns, shutdownInitiateChan)
 	fnsapi := &functions.HTTPAPI{Functions: fns}

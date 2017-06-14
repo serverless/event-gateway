@@ -39,7 +39,7 @@ func (h HTTPAPI) getEndpoint(w http.ResponseWriter, r *http.Request, params http
 }
 
 func (h HTTPAPI) createEndpoint(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	en := new(Endpoint)
+	en := &Endpoint{}
 	dec := json.NewDecoder(r.Body)
 	dec.Decode(en)
 

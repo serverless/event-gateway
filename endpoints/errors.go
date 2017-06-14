@@ -8,7 +8,7 @@ type ErrorNotFound struct {
 }
 
 func (e ErrorNotFound) Error() string {
-	return fmt.Sprintf("endpoint %q not found", e.name)
+	return fmt.Sprintf("Endpoint %q not found.", e.name)
 }
 
 // ErrorTargetNotFound occurs when requested target couldn't been found.
@@ -17,5 +17,5 @@ type ErrorTargetNotFound struct {
 }
 
 func (e ErrorTargetNotFound) Error() string {
-	return fmt.Sprintf("endpoint %q doesn't have specified target", e.name)
+	return fmt.Sprintf("Endpoint %q doesn't have specified target.", e.name)
 }
