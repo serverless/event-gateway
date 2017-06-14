@@ -50,22 +50,26 @@ type TestReactor struct {
 	created  chan struct{}
 	modified chan struct{}
 	deleted  chan struct{}
+	log      *zap.Logger
 }
 
 func (t *TestReactor) Created(key string, value []byte) {
 	if bytes.Equal(value, t.expect) {
+		t.log.Debug("received created callback")
 		close(t.created)
 	}
 }
 
 func (t *TestReactor) Modified(key string, newValue []byte) {
 	if bytes.Equal(newValue, t.expect) {
+		t.log.Debug("received modified callback")
 		close(t.modified)
 	}
 }
 
 func (t *TestReactor) Deleted(key string, lastKnownValue []byte) {
 	if bytes.Equal(lastKnownValue, t.expect) {
+		t.log.Debug("received deleted callback")
 		close(t.deleted)
 	}
 }
@@ -141,7 +145,13 @@ func getSetTests(log *zap.Logger) {
 func TestReactiveCfgStore(t *testing.T) {
 	cfg := zap.NewDevelopmentConfig()
 	cfg.DisableStacktrace = true
+	cfg.OutputPaths = []string{"testing.log"}
 	log, _ := cfg.Build()
+
+	shutdownChan, stoppedChan := testingEtcd(log)
+	if shutdownChan == nil {
+		panic("could not start testing etcd")
+	}
 
 	buf := randomHumanReadableBytes(10)
 
@@ -151,6 +161,7 @@ func TestReactiveCfgStore(t *testing.T) {
 		created:  make(chan struct{}),
 		modified: make(chan struct{}),
 		deleted:  make(chan struct{}),
+		log:      log,
 	}
 	closeReact := make(chan struct{})
 
@@ -159,11 +170,6 @@ func TestReactiveCfgStore(t *testing.T) {
 	listener.ReconciliationBaseDelay = 3
 
 	listener.React(&trx, closeReact)
-
-	shutdownChan, stoppedChan := testingEtcd(log)
-	if shutdownChan == nil {
-		panic("could not start testing etcd")
-	}
 
 	watchTests(listener, buf, trx, log)
 	getSetTests(log)

@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"strings"
@@ -143,7 +142,6 @@ func (rfs *ReactiveCfgStore) bustCache() {
 }
 
 func (rfs *ReactiveCfgStore) resetBackoff() {
-	rfs.log.Debug("resetting backoff after successful event processing.")
 	rfs.backoffFactor = 1
 }
 
@@ -234,14 +232,14 @@ func (rfs *ReactiveCfgStore) watchRoot(outgoingEvents chan event, shutdown chan 
 		// process events from the events chan until the
 		// connection to the server is lost, or the key
 		// is removed.
-		shouldShutdown := rfs.processEvents(cache, events, outgoingEvents, shutdown)
+		shouldShutdown := rfs.processEvents(&cache, events, outgoingEvents, shutdown)
 		if shouldShutdown {
 			return
 		}
 	}
 }
 
-func (rfs *ReactiveCfgStore) processEvents(cache map[string]cachedValue, incomingEvents <-chan []*store.KVPair,
+func (rfs *ReactiveCfgStore) processEvents(cache *map[string]cachedValue, incomingEvents <-chan []*store.KVPair,
 	outgoingEvents chan event, shutdown chan struct{}) bool {
 
 	for {
@@ -249,10 +247,10 @@ func (rfs *ReactiveCfgStore) processEvents(cache map[string]cachedValue, incomin
 		case kvs, ok := <-incomingEvents:
 			if ok {
 				// compare all nodes against cache, emit diff events
-				nextCache := rfs.diffCache(kvs, outgoingEvents, cache)
+				nextCache := rfs.diffCache(kvs, outgoingEvents, *cache)
 
 				// roll cache forward
-				cache = nextCache
+				*cache = nextCache
 
 				// if we got here, all is well, so reset exponential backoff
 				rfs.resetBackoff()
@@ -378,7 +376,6 @@ func (rfs *ReactiveCfgStore) Put(key string, value []byte, options *store.WriteO
 
 // Get passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *ReactiveCfgStore) Get(key string) (*store.KVPair, error) {
-	rfs.log.Debug(fmt.Sprintf("doing Get for %s", rfs.root+"/"+key))
 	return rfs.kv.Get(rfs.root + "/" + key)
 }
 
