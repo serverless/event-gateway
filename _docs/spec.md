@@ -140,31 +140,31 @@ A connector is a Gateway plugin that imports/exports events from/to external sou
                         ┌─────────────────────┐                  ┌─────┐
                    ┌────┴────┐                │     event: ─────▶│  λ  │
 ┌────────────┐     │  Kafka  │                │   userCreated    └─────┘
-│   Kafka    │◀───▶│connector│                │        │                
-└────────────┘     └────┬────┘  Gateway       │        │                
-                   ┌────┴────┐                │────────┤                
+│   Kafka    │◀───▶│connector│                │        │
+└────────────┘     └────┬────┘  Gateway       │        │
+                   ┌────┴────┐                │────────┤
 ┌────────────┐     │RabbitMQ │                │        │         ┌─────┐
 │  RabbitMQ  │◀───▶│connector│                │     event: ─────▶│  λ  │
 └────────────┘     └────┬────┘                │   userVisited    └─────┘
-                        └─────────────────────┘                                 
+                        └─────────────────────┘
 ```
 
 A connector can be either import, export or both. Example of archiving all events to S3 with S3 connector configured as a export connector:
 
 ```
-                      ┌─────────────────────────────────┐                   
-                      │             Gateway             │                   
-                      │                                 │                   
-                      │             ┌───┐               │                   
-                      │      ┌─────▶│ λ │               │                   
+                      ┌─────────────────────────────────┐
+                      │             Gateway             │
+                      │                                 │
+                      │             ┌───┐               │
+                      │      ┌─────▶│ λ │               │
 ┌─────────────────────┴┐     │      └───┘              ┌┴──────────────────┐
 │  Kinesis connector   │     │                         │   S3 connector    │
 │(configured to import │     │                         │  (configured to   │
 │ events from specific │─────┴────────────────────────▶│ export all events │
 │   Kinesis stream)    │                               │   to S3 bucket)   │
 └─────────────────────┬┘                               └┬──────────────────┘
-                      │                                 │                   
-                      └─────────────────────────────────┘                   
+                      │                                 │
+                      └─────────────────────────────────┘
 ```
 
 #### Pub/Sub & Serverless framework
@@ -328,7 +328,7 @@ interactions in the system. Without watches, we need to
 have some way of detecting changes in a database. If we can scan through
 all keys, we can do an O(N) traversal of the entire database, which
 does not scale very high, but could work alright. If we don't have
-the ability to scan through all data, we may actually have no way of 
+the ability to scan through all data, we may actually have no way of
 learning what changes are unless there is a top-level key that is set
 that holds everything. This does not scale beyond a couple kilobytes.
 
@@ -586,8 +586,8 @@ Because of low latency & multi-region support requirements of some sub services 
 │               │           └┬──┘│         │
 └─────────┬─────┘            └───┘         │
         ▲ └────────────────────────────────┘
-        │                                   
-        │                                   
+        │
+        │
         ▼ GCloud us-central1───────────────┐
 ┌─────────┴─────┐                          │
 │               │                          │
@@ -596,9 +596,9 @@ Because of low latency & multi-region support requirements of some sub services 
 │               │           └┬──┘│         │
 └─────────┬─────┘            └───┘         │
         ▲ └────────────────────────────────┘
-        │                                   
-        │                                   
-        │                                   
+        │
+        │
+        │
         ▼ Azure us-west-2──────────────────┐
 ┌─────────┴─────┐                          │
 │               │                          │
@@ -639,23 +639,75 @@ Platform────────────────────────
 
 Gateway exposes configuration RESTful HTTP API.
 
-#### Function discovery
+#### Functions
 
 ##### Register function
 
-`PUT /api/function`
+`POST /api/function`
 
 Request:
 
-- `id` - `string` - function name/ID e.g. `users/userCreate`
-- `instances` - `array` of `object` - function instances:
-  - `provider` - `string` - function provider, Possible values: `aws-lambda`, `gcloud-functions`, `openwhisk-action`
-  - `originId` - `string` - provider specific ID
-  - `region` - `string` - provider specific region name
+- `id` - `string` - requred. function name
+- `type` - `string` - required. function type, possible values: `aws-lambda`, `gcloud-function`, `azure-function`, `openwhisk-action`, `group`, `http`. `group` type may not use another group as a backing function.
+- `properties` - object:
+  - for `aws-lambda`:
+    - `arn` - `string` - AWS ARN identifier
+    - `region` - `string` - provider specific region name
+    - `version` - `string` - a specific version ID
+    - `accesKeyID` - `string` - aws API key ID
+    - `secretAccesKey` - `string` - aws API key
+  - for `gcloud-functions`:
+    - `name` - `string` - function name e.g. `users/userCreate`
+    - `region` - `string` - provider specific region name
+    - `serviceAccountKey` - `json` - google service account key
+  - for `azure-functions`:
+    - `name` - `string` - function name e.g. `users/userCreate`
+    - `appName` - `string` - azure app name
+    - `azureFunctionsAdminKey` - `string` - azure API key
+  - for `openwhisk-action`:
+    - `name` - `string` - function name e.g. `users/userCreate`
+    - `namespace` - `string` - openwhisk namespace
+    - `apiHost` - `string` - platform endpoint, e.g. openwhisk.ng.bluemix.net
+    - `auth` - `string` - authentication key, e.g. xxxxxx:yyyyy
+    - `apiGwAccessToken` - `string` - optional API gateway access token
+  - for `group`:
+    - `functions` - `array` of `object` - backing functions
+      - `functionId` - `string` - function id
+      - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
+  - for `http`:
+    - `url` - `string` - the URL of an http or https remote endpoint
+
+Response:
+
+- `id` - `string` - function name
+- `type` - `string` - required. function type, possible values: `aws-lambda`, `gcloud-function`, `azure-function`, `openwhisk-action`, `group`, `http`.
+- `properties` - `object` - specific to `type`
+
+##### Change configuration of group function
+
+`PUT /api/function/<id>/functions`
+
+Allows changing configuration of group function
+
+Request:
+
+- `functions` - `array` of `object` - backing functions
+  - `functionId` - `string` - function id
+  - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
+
+Response:
+
+- `functions` - `array` of `object` - backing functions
+  - `functionId` - `string` - function id
+  - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
 
 ##### Deregister function
 
 `DELETE /api/function/<function id>`
+
+Notes:
+* used to delete all types of functions, including groups
+* fails if the function ID is currently in-use by an endpoint or topic
 
 #### Endpoints
 
@@ -665,47 +717,110 @@ Request:
 
 Request:
 
-- `type` - `string` - endpoint type e.g. Possible values: `http`, `websockets` ...
-- `target` - `array` of `object` - in case of `function` target type it's:
-  - `functionId` - function id/name
-  - `method` - HTTP method
-  - `path` - URL path
-
-Example:
-
-```json
-{
-  "type": "http",
-  "target": [{
-    "functionId": "users/create",
-    "method": "post",
-    "path": "users"
-  }]
-}
-```
+- `functionId` - id of backing function or function group
+- `method` - HTTP method
+- `path` - URL path
 
 Response:
 
-- `id` - `string` - endpoint ID (something shorter than UUID as it will be a part of URL)
-- `type` - ditto
-- `endpoint` - `string` - in case of `http` type it's URL
-- `target` - ditto
-
-Example:
-
-```json
-{
-  "id": "dogPzIz8",
-  "endpoint": "https://gateway.internal/endpoint/dogPzIz8/",
-  "type": "http",
-  "target": [{
-    "functionId": "users/create",
-    "method": "post",
-    "path": "users"
-  }]
-}
-```
+- `id` - `string` - a short UUID that represents this endpoint mapping
+- `functionId` - `string` - function id
+- `method` - HTTP method
+- `path` - URL path
 
 ##### Delete endpoint
 
 `DELETE /api/endpoint/<endpoint id>`
+
+##### Get endpoints
+
+`GET /api/endpoint`
+
+Response:
+
+- `endpoints` - `array` of `object`
+	- `id` - `string` - endpoint ID, which is method + path, e.g. `GET-/homepage`
+	- `functionId` - `string` - function id
+	- `method` - HTTP method
+	- `path` - URL path
+
+#### Pub-Sub
+
+##### Create topic
+
+`POST /api/topic`
+
+Request:
+
+- `id` - name of topic
+
+##### Delete topic
+
+`DELETE /api/topic/<topic id>`
+
+##### Get topics
+
+`GET /api/topic`
+
+Response:
+
+- `topics` - `array` of `object` - backing functions
+  - `id` - `string` - topic id
+
+##### Add Subscription
+
+`POST /api/topic/<topic id>/subscription`
+
+Request:
+
+- `functionId` - ID of function or function group to receive events from the topic
+
+Response:
+
+- `subscriptionId` - `string` - subscription ID, which is topic + function ID, e.g. `newusers-/userProcessGroup`
+- `functionId` - ID of function or function group
+
+##### Delete Subscriber
+
+`DELETE /api/topic/<topic id>/subscription/<subscription id>`
+
+##### Get Subscriptions
+
+`GET /api/topic/<topic id>/subscription`
+
+Response:
+
+- `subscriptions` - `array` of `object` - backing functions
+  - `subscriptionId` - `string` - subscription ID
+  - `functionId` - ID of function or function group
+
+##### Add Publisher
+
+`POST /api/topic/<topic id>/publisher`
+
+Request:
+
+- `functionId` - ID of function or function group to publish events to the topic
+- `type` - either `input` or `output`
+
+Response:
+
+- `publisherId` - `string` - publisher ID, which is topic + function ID, e.g. `newusers-/userCreateGroup`
+- `functionId` - ID of function or function group to publish events to the topic
+- `type` - either `input` or `output`
+
+##### Delete Publisher
+
+`DELETE /api/topic/<topic id>/publisher/<publisher id>`
+
+##### Get Publishers
+
+`GET /api/topic/<topic id>/publisher`
+
+Response:
+
+- `publishers` - `array` of `object` - backing functions
+  - `publisherId` - `string` - publisher ID
+  - `functionId` - ID of function or function group
+	- `type` - either `input` or `output`
+
