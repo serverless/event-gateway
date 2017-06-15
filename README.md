@@ -1,101 +1,200 @@
-# gateway
-⚡️😍💸
+# Gateway
 
 ## API
 
-Gateway exposes configuration API for all sub-services.
+Gateway exposes configuration RESTful HTTP API.
 
-### Function Discovery
+### Functions discovery
 
-#### Models
+#### Register function
 
-##### `Function`
-
-- id - `string` - function id/name
-- instance - `array` of objects:
-  - provider - `string` - compute provider, possible values: `aws-lambda`
-  - originId - `string` - provider specific function ID
-  - region - `string` - deployment region
-  - credentials - `object`:
-    - aws_access_key_id - `string`
-    - aws_secret_access_key - `string`
-
-#### Methods
-
-##### Register function
-
-`POST /v0/gateway/api/function`
+`POST /api/function`
 
 Request:
 
-`Function` model object
+- `functionId` - `string` - required, function name
+- `type` - `string` - required, function type, possible values: `aws-lambda`, `gcloud-function`, `azure-function`, `openwhisk-action`, `group`, `http`. `group` type may not use another group as a backing function.
+- `properties` - object:
+  - for `aws-lambda`:
+    - `arn` - `string` - AWS ARN identifier
+    - `region` - `string` - region name
+    - `version` - `string` - a specific version ID
+    - `accesKeyID` - `string` - AWS API key ID
+    - `secretAccesKey` - `string` - AWS API key
+  - for `gcloud-functions`:
+    - `name` - `string` - function name
+    - `region` - `string` - region name
+    - `serviceAccountKey` - `json` - Google Service Account key
+  - for `azure-functions`:
+    - `name` - `string` - function name
+    - `appName` - `string` - azure app name
+    - `azureFunctionsAdminKey` - `string` - Azure API key
+  - for `openwhisk-action`:
+    - `name` - `string` - action name
+    - `namespace` - `string` - OpenWhisk namespace
+    - `apiHost` - `string` - OpenWhisk platform endpoint, e.g. openwhisk.ng.bluemix.net
+    - `auth` - `string` - OpenWhisk authentication key, e.g. xxxxxx:yyyyy
+    - `apiGwAccessToken` - `string` - OpenWhisk optional API gateway access token
+  - for `group`:
+    - `functions` - `array` of `object` - backing functions
+      - `functionId` - `string` - function ID
+      - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
+  - for `http`:
+    - `url` - `string` - the URL of an http or https remote endpoint
 
 Response:
 
-`Function` model object
+- `functionId` - `string` - function name
+- `type` - `string` - required. function type, possible values: `aws-lambda`, `gcloud-function`, `azure-function`, `openwhisk-action`, `group`, `http`.
+- `properties` - `object` - specific to `type`
 
-##### Get function
+#### Change configuration of group function
 
-`GET /v0/gateway/api/function/:name`
+`PUT /api/function/<function ID>/functions`
 
-Response:
-
-`Function` model object
-
-##### Invoke function
-
-`POST /v0/gateway/api/invoke/:name`
+Allows changing configuration of group function
 
 Request:
 
-`object` passed to the function
+- `functions` - `array` of `object` - backing functions
+  - `functionId` - `string` - function ID
+  - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
 
 Response:
 
-`object` with function invocation result
+- `functions` - `array` of `object` - backing functions
+  - `functionId` - `string` - function ID
+  - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
+
+#### Deregister function
+
+`DELETE /api/function/<function id>`
+
+Notes:
+* used to delete all types of functions, including groups
+* fails if the function ID is currently in-use by an endpoint or topic
 
 ### Endpoints
 
-#### Models
+#### Create endpoint
 
-##### `Endpoint`
-
-- id - `string` - endpoint id
-- functions - `array` of objects:
-  - functionId - `string` - ID of function registered in Function Discovery
-  - method - `string` - HTTP method
-  - path - `string` - URL path
-
-#### Methods
-
-##### Create endpoint
-
-`POST /v0/gateway/api/endpoint`
+`POST /api/endpoint`
 
 Request:
 
-`Endpoint` model object (without `id`)
+- `functionId` - `string` - ID of backing function or function group
+- `method` - `string` - HTTP method
+- `path` - `string` - URL path
 
 Response:
 
-`Endpoint` model object
+- `endpointId` - `string` - a short UUID that represents this endpoint mapping
+- `functionId` - `string` - function ID
+- `method` - `string` - HTTP method
+- `path` - `string` - URL path
 
-##### Get endpoint
+#### Delete endpoint
 
- `GET /v0/gateway/api/endpoint/:id`
+`DELETE /api/endpoint/<endpoint ID>`
 
- Response:
+#### Get endpoints
 
- `Endpoint` model object
+`GET /api/endpoint`
 
- ##### Call endpoint (public API)
+Response:
 
-`<method registered in endpoint> /v0/gateway/endpoint/:id/<path registered in endpoint`
+- `endpoints` - `array` of `object`
+	- `id` - `string` - endpoint ID, which is method + path, e.g. `GET-/homepage`
+	- `functionId` - `string` - function ID
+	- `method` - HTTP method
+	- `path` - URL path
+
+### Pub/Sub
+
+#### Create topic
+
+`POST /api/topic`
 
 Request:
 
-Payload expected by function
+- `id` - `string` - name of topic
 
 Response:
 
-Payload returned by function
+- `id` - `string` - name of topic
+
+#### Delete topic
+
+`DELETE /api/topic/<topic id>`
+
+#### Get topics
+
+`GET /api/topic`
+
+Response:
+
+- `topics` - `array` of `object` - topics
+  - `id` - `string` - topic name
+
+#### Add subscription
+
+`POST /api/topic/<topic id>/subscription`
+
+Request:
+
+- `functionId` - ID of function or function group to receive events from the topic
+
+Response:
+
+- `subscriptionId` - `string` - subscription ID, which is topic + function ID, e.g. `newusers-/userProcessGroup`
+- `functionId` - ID of function or function group
+
+#### Delete subscription
+
+`DELETE /api/topic/<topic id>/subscription/<subscription id>`
+
+#### Get subscriptions
+
+`GET /api/topic/<topic id>/subscription`
+
+Response:
+
+- `subscriptions` - `array` of `object` - backing functions
+  - `subscriptionId` - `string` - subscription ID
+  - `functionId` - ID of function or function group
+
+#### Add publisher
+
+`POST /api/topic/<topic id>/publisher`
+
+Request:
+
+- `functionId` - ID of function or function group to publish events to the topic
+- `type` - either `input` or `output`
+
+Response:
+
+- `publisherId` - `string` - publisher ID, which is topic + function ID, e.g. `newusers-/userCreateGroup`
+- `functionId` - ID of function or function group to publish events to the topic
+- `type` - either `input` or `output`
+
+#### Delete publisher
+
+`DELETE /api/topic/<topic id>/publisher/<publisher id>`
+
+#### Get Publishers
+
+`GET /api/topic/<topic id>/publisher`
+
+Response:
+
+- `publishers` - `array` of `object` - backing functions
+  - `publisherId` - `string` - publisher ID
+  - `functionId` - ID of function or function group
+	- `type` - either `input` or `output`
+
+#### Publish message to the topic
+
+`POST /api/topic/<topic id>/publish`
+
+Request: arbitrary payload
