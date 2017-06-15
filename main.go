@@ -5,6 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/docker/libkv"
+	"github.com/docker/libkv/store"
+	"github.com/docker/libkv/store/etcd"
+
 	"go.uber.org/zap"
 
 	"github.com/julienschmidt/httprouter"
@@ -16,6 +20,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+func init() {
+	etcd.Register()
+}
 
 func main() {
 	verbose := flag.Bool("verbose", false, "Verbose logging.")
@@ -58,20 +66,52 @@ func main() {
 		}
 	}
 
+	kv, err := libkv.NewStore(
+		store.ETCD,
+		dbHostStrings,
+		&store.Config{
+			ConnectionTimeout: 10 * time.Second,
+		},
+	)
+
+	if err != nil {
+		logger.Fatal("Cannot create kv client.",
+			zap.Error(err))
+	}
+
+	// path watchers
+	functionPathWatcher := db.NewPathWatcher("/serverless-gateway/functions", db, logger)
+	endpointPathWatcher := db.NewPathWatcher("/serverless-gateway/endpoints", db, logger)
+	subscriberPathWatcher := db.NewPathWatcher("/serverless-gateway/subscribers", db, logger)
+	publisherPathWatcher := db.NewPathWatcher("/serverless-gateway/publishers", db, logger)
+
+	// updates dynamic routing information for endpoints when config changes are detected.
+	endpointCache := endpoints.NewEndpointUpdater()
+	// serves lookups for function info
+	functionCache := functions.NewFunctionCache()
+	// serves lookups for which functions are subscribed to a topic
+	subscriptionCache := pubsub.NewSubscriptionCache()
+	// serves lookups for which topics a function's input or output are published to
+	publisherCache := pubsub.NewPublisherCache()
+
+	// start reacting to changes
+	functionPathWatcher.React(functionCache, shutdownInitiateChan)
+	endpointPathWatcher.React(endpointCache, shutdownInitiateChan)
+	subscriberPathWatcher.React(subscriberCache, shutdownInitiateChan)
+	publisherPathWatcher.React(publisherCache, shutdownInitiateChan)
+
 	router := httprouter.New()
 
-	fdb := db.NewReactiveCfgStore("/serverless-gateway/functions", dbHostStrings, logger)
 	fns := &functions.Functions{
-		DB:     fdb,
+		DB:     db.NewPrefixedStore("/serverless-gateway/functions", db),
 		Logger: logger,
 	}
-	fdb.React(fns, shutdownInitiateChan)
 	fnsapi := &functions.HTTPAPI{Functions: fns}
 	fnsapi.RegisterRoutes(router)
 
 	edb := db.NewReactiveCfgStore("/serverless-gateway/endpoints", dbHostStrings, logger)
 	ens := &endpoints.Endpoints{
-		DB:      edb,
+		DB:      db.NewPrefixedStore("/serverless-gateway/endpoints", db),
 		Invoker: fns,
 		Logger:  logger,
 	}

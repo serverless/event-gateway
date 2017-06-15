@@ -15,7 +15,7 @@ import (
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.
 type Endpoints struct {
 	sync.RWMutex
-	DB      *db.ReactiveCfgStore
+	DB      *db.PrefixedStore
 	Invoker Invoker
 	Logger  *zap.Logger
 }
@@ -70,23 +70,23 @@ func (e *Endpoints) Deleted(key string, lastKnownValue []byte) {
 
 // GetEndpoint returns registered endpoint.
 func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
-	value, err := e.DB.CachedGet(name)
+	kv, err := e.DB.Get(name)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(value) == 0 {
+	if len(kv.Value) == 0 {
 		return nil, &ErrorNotFound{name}
 	}
 
-	fn := new(Endpoint)
-	buf := bytes.NewBuffer(value)
-	err = gob.NewDecoder(buf).Decode(fn)
+	endpoint := Endpoint{}
+	buf := bytes.NewBuffer(kv.Value)
+	err = gob.NewDecoder(buf).Decode(&endpoint)
 	if err != nil {
 		e.Logger.Info("Fetching endpoint failed.", zap.Error(err))
 		return nil, err
 	}
-	return fn, nil
+	return &endpoint, nil
 }
 
 // CreateEndpoint creates endpoint.

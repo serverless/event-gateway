@@ -15,7 +15,8 @@ import (
 
 // Functions is a discovery tool for FaaS functions.
 type Functions struct {
-	DB     *db.ReactiveCfgStore
+	DB     *db.PrefixedStore
+	Cache  FunctionCache
 	Logger *zap.Logger
 }
 
@@ -39,27 +40,6 @@ type Credentials struct {
 	AWSSecretAccessKey string `json:"aws_secret_access_key"`
 }
 
-// Created is called when a new function is detected in the config.
-func (f *Functions) Created(key string, value []byte) {
-	f.Logger.Debug("Received Created event.",
-		zap.String("key", key),
-		zap.String("value", string(value)))
-}
-
-// Modified is called when an existing function is modified in the config.
-func (f *Functions) Modified(key string, newValue []byte) {
-	f.Logger.Debug("Received Modified event.",
-		zap.String("key", key),
-		zap.String("newValue", string(newValue)))
-}
-
-// Deleted is called when a function is deleted in the config.
-func (f *Functions) Deleted(key string, lastKnownValue []byte) {
-	f.Logger.Debug("Received Deleted event.",
-		zap.String("key", key),
-		zap.String("lastKnownValue", string(lastKnownValue)))
-}
-
 // RegisterFunction registers function in the discovery.
 func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 	byt, err := json.Marshal(fn)
@@ -77,19 +57,19 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 
 // GetFunction returns function from the discovery.
 func (f *Functions) GetFunction(name string) (*Function, error) {
-	value, err := f.DB.CachedGet(name)
+	kv, err := f.DB.Get(name)
 	if err != nil {
 		return nil, &ErrorNotFound{name}
 	}
 
-	fn := &Function{}
-	dec := json.NewDecoder(bytes.NewReader(value))
-	err = dec.Decode(fn)
+	fn := Function{}
+	dec := json.NewDecoder(bytes.NewReader(kv.Value))
+	err = dec.Decode(&fn)
 	if err != nil {
 		f.Logger.Info("Fetching function failed.", zap.Error(err))
 		return nil, err
 	}
-	return fn, nil
+	return &fn, nil
 }
 
 // Invoke function registered in the discovery.
