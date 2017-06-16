@@ -48,13 +48,13 @@ func (c *functionCache) reactor() *cacheMaintainer {
 
 type endpointCache struct {
 	sync.RWMutex
-	cache map[string]endpointTypes.Endpoint
+	cache map[endpointTypes.EndpointID]endpointTypes.Endpoint
 	log   *zap.Logger
 }
 
 func newEndpointCache(log *zap.Logger) *endpointCache {
 	return &endpointCache{
-		cache: map[string]endpointTypes.Endpoint{},
+		cache: map[endpointTypes.EndpointID]endpointTypes.Endpoint{},
 		log:   log,
 	}
 }
@@ -69,13 +69,13 @@ func (c *endpointCache) reactor() *cacheMaintainer {
 			} else {
 				c.Lock()
 				defer c.Unlock()
-				c.cache[k] = e
+				c.cache[endpointTypes.EndpointID(k)] = e
 			}
 		},
 		func(k string, v []byte) {
 			c.Lock()
 			defer c.Unlock()
-			delete(c.cache, k)
+			delete(c.cache, endpointTypes.EndpointID(k))
 		},
 	)
 }

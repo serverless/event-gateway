@@ -1,6 +1,7 @@
 package targetcache
 
 import (
+	"errors"
 	"strings"
 
 	"go.uber.org/zap"
@@ -14,11 +15,11 @@ import (
 )
 
 type TargetCache interface {
-	BackingFunctions(endpoint endpointTypes.Endpoint) []functionTypes.WeightedFunction
-	GetFunction(functionID functionTypes.FunctionID) functionTypes.Function
-	FunctionInputToTopics(function functionTypes.FunctionID) []pubsubTypes.TopicID
-	FunctionOutputToTopics(function functionTypes.FunctionID) []pubsubTypes.TopicID
-	SubscribersOfTopic(topic pubsubTypes.TopicID) []functionTypes.FunctionID
+	BackingFunctions(endpoint endpointTypes.EndpointID) ([]functionTypes.WeightedFunction, error)
+	GetFunction(functionID functionTypes.FunctionID) (functionTypes.Function, error)
+	FunctionInputToTopics(function functionTypes.FunctionID) ([]pubsubTypes.TopicID, error)
+	FunctionOutputToTopics(function functionTypes.FunctionID) ([]pubsubTypes.TopicID, error)
+	SubscribersOfTopic(topic pubsubTypes.TopicID) ([]functionTypes.FunctionID, error)
 }
 
 type LibKVTargetCache struct {
@@ -30,24 +31,31 @@ type LibKVTargetCache struct {
 	topicCache      *topicCache
 }
 
-func (tc *LibKVTargetCache) BackingFunctions(endpoint endpointTypes.Endpoint) []functionTypes.WeightedFunction {
-	return []functionTypes.WeightedFunction{}
+func (tc *LibKVTargetCache) BackingFunctions(endpointID endpointTypes.EndpointID) ([]functionTypes.WeightedFunction, error) {
+	tc.endpointCache.RLock()
+	_, exists := tc.endpointCache.cache[endpointID]
+	tc.endpointCache.RUnlock()
+	if !exists {
+		return []functionTypes.WeightedFunction{}, errors.New("endpoint not found")
+	}
+	res := []functionTypes.WeightedFunction{}
+	return res, nil
 }
 
-func (tc *LibKVTargetCache) GetFunction(functionID functionTypes.FunctionID) functionTypes.Function {
-	return functionTypes.Function{}
+func (tc *LibKVTargetCache) GetFunction(functionID functionTypes.FunctionID) (functionTypes.Function, error) {
+	return functionTypes.Function{}, nil
 }
 
-func (tc *LibKVTargetCache) FunctionInputToTopics(function functionTypes.FunctionID) []pubsubTypes.TopicID {
-	return []pubsubTypes.TopicID{}
+func (tc *LibKVTargetCache) FunctionInputToTopics(function functionTypes.FunctionID) ([]pubsubTypes.TopicID, error) {
+	return []pubsubTypes.TopicID{}, nil
 }
 
-func (tc *LibKVTargetCache) FunctionOutputToTopics(function functionTypes.FunctionID) []pubsubTypes.TopicID {
-	return []pubsubTypes.TopicID{}
+func (tc *LibKVTargetCache) FunctionOutputToTopics(function functionTypes.FunctionID) ([]pubsubTypes.TopicID, error) {
+	return []pubsubTypes.TopicID{}, nil
 }
 
-func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsubTypes.TopicID) []functionTypes.FunctionID {
-	return []functionTypes.FunctionID{}
+func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsubTypes.TopicID) ([]functionTypes.FunctionID, error) {
+	return []functionTypes.FunctionID{}, nil
 }
 
 func (tc *LibKVTargetCache) Shutdown() {

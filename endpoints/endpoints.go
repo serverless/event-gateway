@@ -3,7 +3,6 @@ package endpoints
 import (
 	"bytes"
 	"encoding/gob"
-	"strings"
 	"sync"
 
 	shortid "github.com/ventu-io/go-shortid"
@@ -75,15 +74,9 @@ func (e *Endpoints) CreateEndpoint(en *types.Endpoint) (*types.Endpoint, error) 
 
 // CallEndpoint calls registered endpoints.
 func (e *Endpoints) CallEndpoint(name, method, path string, payload []byte) ([]byte, error) {
-	en, err := e.GetEndpoint(name)
+	_, err := e.GetEndpoint(name)
 	if err != nil {
 		return nil, err
-	}
-
-	for _, fn := range en.Functions {
-		if fn.Method == strings.ToLower(method) && fn.Path == path {
-			return e.Invoker.Invoke(fn.FunctionID, payload)
-		}
 	}
 
 	return nil, &ErrorTargetNotFound{name}
