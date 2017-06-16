@@ -22,7 +22,12 @@ type TargetCache interface {
 }
 
 type LibKVTargetCache struct {
-	shutdown chan struct{}
+	shutdown        chan struct{}
+	functionCache   *functionCache
+	endpointCache   *endpointCache
+	publisherCache  *publisherCache
+	subscriberCache *subscriberCache
+	topicCache      *topicCache
 }
 
 func (tc *LibKVTargetCache) BackingFunctions(endpoint endpointTypes.Endpoint) []functionTypes.WeightedFunction {
@@ -62,23 +67,29 @@ func New(path string, kv store.Store, log *zap.Logger) TargetCache {
 	publisherPathWatcher := db.NewPathWatcher(path+"publishers", kv, log)
 
 	// updates dynamic routing information for endpoints when config changes are detected.
-	endpointCache := NewEndpointCache(log)
+	endpointCache := newEndpointCache(log)
 	// serves lookups for function info
-	functionCache := NewFunctionCache(log)
+	functionCache := newFunctionCache(log)
 	// serves lookups for which functions are subscribed to a topic
-	subscriberCache := NewSubscriberCache(log)
+	subscriberCache := newSubscriberCache(log)
 	// serves lookups for which topics a function's input or output are published to
-	publisherCache := NewPublisherCache(log)
-
-	shutdown := make(chan struct{})
+	publisherCache := newPublisherCache(log)
+	// maintains list of known topics
+	topicCache := newTopicCache(log)
 
 	// start reacting to changes
-	functionPathWatcher.React(functionCache, shutdown)
-	endpointPathWatcher.React(endpointCache, shutdown)
-	subscriberPathWatcher.React(subscriberCache, shutdown)
-	publisherPathWatcher.React(publisherCache, shutdown)
+	shutdown := make(chan struct{})
+	functionPathWatcher.React(functionCache.reactor(), shutdown)
+	endpointPathWatcher.React(endpointCache.reactor(), shutdown)
+	subscriberPathWatcher.React(subscriberCache.reactor(), shutdown)
+	publisherPathWatcher.React(publisherCache.reactor(), shutdown)
 
 	return &LibKVTargetCache{
-		shutdown: shutdown,
+		shutdown:        shutdown,
+		functionCache:   functionCache,
+		endpointCache:   endpointCache,
+		publisherCache:  publisherCache,
+		subscriberCache: subscriberCache,
+		topicCache:      topicCache,
 	}
 }
