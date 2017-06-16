@@ -11,8 +11,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/gateway/db"
+	"github.com/serverless/gateway/endpoints/types"
 	"github.com/serverless/gateway/targetcache"
-	"github.com/serverless/gateway/types"
 )
 
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.

@@ -7,24 +7,24 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/serverless/gateway/types"
+	"github.com/serverless/gateway/endpoints/types"
 )
 
-type EndpointCache struct {
+type endpointCache struct {
 	sync.RWMutex
 	cache map[string]types.Endpoint
 	log   *zap.Logger
 }
 
-func NewEndpointCache(log *zap.Logger) *EndpointCache {
-	return &EndpointCache{
+func NewEndpointCache(log *zap.Logger) *endpointCache {
+	return &endpointCache{
 		cache: map[string]types.Endpoint{},
 		log:   log,
 	}
 }
 
 // Created is called when a new endpoint is detected in the config.
-func (e *EndpointCache) Created(key string, value []byte) {
+func (e *endpointCache) Created(key string, value []byte) {
 	e.log.Debug("Received Created endpoint.",
 		zap.String("key", key),
 		zap.String("value", string(value)))
@@ -44,7 +44,7 @@ func (e *EndpointCache) Created(key string, value []byte) {
 }
 
 // Modified is called when an existing endpoint is modified in the config.
-func (e *EndpointCache) Modified(key string, newValue []byte) {
+func (e *endpointCache) Modified(key string, newValue []byte) {
 	e.log.Debug("Received Modified endpoint.",
 		zap.String("key", key),
 		zap.String("newValue", string(newValue)))
@@ -63,7 +63,7 @@ func (e *EndpointCache) Modified(key string, newValue []byte) {
 }
 
 // Deleted is called when a endpoint is deleted in the config.
-func (e *EndpointCache) Deleted(key string, lastKnownValue []byte) {
+func (e *endpointCache) Deleted(key string, lastKnownValue []byte) {
 	e.log.Debug("Received Deleted endpoint.",
 		zap.String("key", key),
 		zap.String("lastKnownValue", string(lastKnownValue)))

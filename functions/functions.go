@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 
 	"github.com/serverless/gateway/db"
-	"github.com/serverless/gateway/types"
+	"github.com/serverless/gateway/functions/types"
 )
 
 // Functions is a discovery tool for FaaS functions.

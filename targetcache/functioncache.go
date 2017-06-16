@@ -7,24 +7,24 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/serverless/gateway/types"
+	"github.com/serverless/gateway/functions/types"
 )
 
-type FunctionCache struct {
+type functionCache struct {
 	sync.RWMutex
 	cache map[string]types.Function
 	log   *zap.Logger
 }
 
-func NewFunctionCache(log *zap.Logger) *FunctionCache {
-	return &FunctionCache{
+func NewFunctionCache(log *zap.Logger) *functionCache {
+	return &functionCache{
 		cache: map[string]types.Function{},
 		log:   log,
 	}
 }
 
 // Created is called when a new function is detected in the config.
-func (f *FunctionCache) Created(key string, value []byte) {
+func (f *functionCache) Created(key string, value []byte) {
 	f.log.Debug("Received Created function.",
 		zap.String("key", key),
 		zap.String("value", string(value)))
@@ -44,7 +44,7 @@ func (f *FunctionCache) Created(key string, value []byte) {
 }
 
 // Modified is called when an existing function is modified in the config.
-func (f *FunctionCache) Modified(key string, newValue []byte) {
+func (f *functionCache) Modified(key string, newValue []byte) {
 	f.log.Debug("Received Modified function.",
 		zap.String("key", key),
 		zap.String("newValue", string(newValue)))
@@ -63,7 +63,7 @@ func (f *FunctionCache) Modified(key string, newValue []byte) {
 }
 
 // Deleted is called when a function is deleted in the config.
-func (f *FunctionCache) Deleted(key string, lastKnownValue []byte) {
+func (f *functionCache) Deleted(key string, lastKnownValue []byte) {
 	f.log.Debug("Received Deleted function.",
 		zap.String("key", key),
 		zap.String("lastKnownValue", string(lastKnownValue)))

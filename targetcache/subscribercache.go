@@ -7,24 +7,24 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/serverless/gateway/types"
+	"github.com/serverless/gateway/pubsub/types"
 )
 
-type SubscriberCache struct {
+type subscriberCache struct {
 	sync.RWMutex
 	cache map[string]types.Subscriber
 	log   *zap.Logger
 }
 
-func NewSubscriberCache(log *zap.Logger) *SubscriberCache {
-	return &SubscriberCache{
+func NewSubscriberCache(log *zap.Logger) *subscriberCache {
+	return &subscriberCache{
 		cache: map[string]types.Subscriber{},
 		log:   log,
 	}
 }
 
 // Created is called when a new subscriber is detected in the config.
-func (s *SubscriberCache) Created(key string, value []byte) {
+func (s *subscriberCache) Created(key string, value []byte) {
 	s.log.Debug("Received Created subscriber.",
 		zap.String("key", key),
 		zap.String("value", string(value)))
@@ -44,7 +44,7 @@ func (s *SubscriberCache) Created(key string, value []byte) {
 }
 
 // Modified is called when an existing subscriber is modified in the config.
-func (s *SubscriberCache) Modified(key string, newValue []byte) {
+func (s *subscriberCache) Modified(key string, newValue []byte) {
 	s.log.Debug("Received Modified subscriber.",
 		zap.String("key", key),
 		zap.String("newValue", string(newValue)))
@@ -63,7 +63,7 @@ func (s *SubscriberCache) Modified(key string, newValue []byte) {
 }
 
 // Deleted is called when a subscriber is deleted in the config.
-func (s *SubscriberCache) Deleted(key string, lastKnownValue []byte) {
+func (s *subscriberCache) Deleted(key string, lastKnownValue []byte) {
 	s.log.Debug("Received Deleted subscriber.",
 		zap.String("key", key),
 		zap.String("lastKnownValue", string(lastKnownValue)))

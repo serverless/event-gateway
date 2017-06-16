@@ -3,7 +3,7 @@ package functions
 import (
 	"fmt"
 
-	"github.com/serverless/gateway/types"
+	"github.com/serverless/gateway/functions/types"
 )
 
 // ErrorNotFound occurs when function couldn't been found in the discovery.

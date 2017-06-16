@@ -8,39 +8,41 @@ import (
 	"github.com/docker/libkv/store"
 
 	"github.com/serverless/gateway/db"
-	"github.com/serverless/gateway/types"
+	endpointTypes "github.com/serverless/gateway/endpoints/types"
+	functionTypes "github.com/serverless/gateway/functions/types"
+	pubsubTypes "github.com/serverless/gateway/pubsub/types"
 )
 
 type TargetCache interface {
-	BackingFunctions(endpoint types.Endpoint) []types.WeightedFunction
-	GetFunction(functionID types.FunctionID) types.Function
-	FunctionInputToTopics(function types.FunctionID) []types.TopicID
-	FunctionOutputToTopics(function types.FunctionID) []types.TopicID
-	SubscribersOfTopic(topic types.TopicID) []types.FunctionID
+	BackingFunctions(endpoint endpointTypes.Endpoint) []functionTypes.WeightedFunction
+	GetFunction(functionID functionTypes.FunctionID) functionTypes.Function
+	FunctionInputToTopics(function functionTypes.FunctionID) []pubsubTypes.TopicID
+	FunctionOutputToTopics(function functionTypes.FunctionID) []pubsubTypes.TopicID
+	SubscribersOfTopic(topic pubsubTypes.TopicID) []functionTypes.FunctionID
 }
 
 type LibKVTargetCache struct {
 	shutdown chan struct{}
 }
 
-func (tc *LibKVTargetCache) BackingFunctions(endpoint types.Endpoint) []types.WeightedFunction {
-	return []types.WeightedFunction{}
+func (tc *LibKVTargetCache) BackingFunctions(endpoint endpointTypes.Endpoint) []functionTypes.WeightedFunction {
+	return []functionTypes.WeightedFunction{}
 }
 
-func (tc *LibKVTargetCache) GetFunction(functionID types.FunctionID) types.Function {
-	return types.Function{}
+func (tc *LibKVTargetCache) GetFunction(functionID functionTypes.FunctionID) functionTypes.Function {
+	return functionTypes.Function{}
 }
 
-func (tc *LibKVTargetCache) FunctionInputToTopics(function types.FunctionID) []types.TopicID {
-	return []types.TopicID{}
+func (tc *LibKVTargetCache) FunctionInputToTopics(function functionTypes.FunctionID) []pubsubTypes.TopicID {
+	return []pubsubTypes.TopicID{}
 }
 
-func (tc *LibKVTargetCache) FunctionOutputToTopics(function types.FunctionID) []types.TopicID {
-	return []types.TopicID{}
+func (tc *LibKVTargetCache) FunctionOutputToTopics(function functionTypes.FunctionID) []pubsubTypes.TopicID {
+	return []pubsubTypes.TopicID{}
 }
 
-func (tc *LibKVTargetCache) SubscribersOfTopic(topic types.TopicID) []types.FunctionID {
-	return []types.FunctionID{}
+func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsubTypes.TopicID) []functionTypes.FunctionID {
+	return []functionTypes.FunctionID{}
 }
 
 func (tc *LibKVTargetCache) Shutdown() {

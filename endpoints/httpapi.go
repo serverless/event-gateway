@@ -7,7 +7,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/serverless/gateway/types"
+	"github.com/serverless/gateway/endpoints/types"
 )
 
 // HTTPAPI for endpints sub-service
