@@ -19,8 +19,8 @@ Request:
     - `arn` - `string` - AWS ARN identifier
     - `region` - `string` - region name
     - `version` - `string` - a specific version ID
-    - `accesKeyID` - `string` - AWS API key ID
-    - `secretAccesKey` - `string` - AWS API key
+    - `accessKeyID` - `string` - AWS API key ID
+    - `secretAccessKey` - `string` - AWS API key
   - for `gcloud-functions`:
     - `name` - `string` - function name
     - `region` - `string` - region name
