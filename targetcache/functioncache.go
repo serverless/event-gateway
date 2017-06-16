@@ -1,4 +1,4 @@
-package functions
+package targetcache
 
 import (
 	"bytes"
@@ -6,17 +6,19 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+
+	"github.com/serverless/gateway/types"
 )
 
 type FunctionCache struct {
 	sync.RWMutex
-	cache map[string]Function
+	cache map[string]types.Function
 	log   *zap.Logger
 }
 
-func NewFunctionCache(log *zap.Logger) FunctionCache {
-	return FunctionCache{
-		cache: map[string]Function{},
+func NewFunctionCache(log *zap.Logger) *FunctionCache {
+	return &FunctionCache{
+		cache: map[string]types.Function{},
 		log:   log,
 	}
 }
@@ -27,7 +29,7 @@ func (f *FunctionCache) Created(key string, value []byte) {
 		zap.String("key", key),
 		zap.String("value", string(value)))
 
-	fn := Function{}
+	fn := types.Function{}
 	dec := json.NewDecoder(bytes.NewReader(value))
 	err := dec.Decode(&fn)
 	if err != nil {
@@ -46,7 +48,7 @@ func (f *FunctionCache) Modified(key string, newValue []byte) {
 	f.log.Debug("Received Modified function.",
 		zap.String("key", key),
 		zap.String("newValue", string(newValue)))
-	fn := Function{}
+	fn := types.Function{}
 	dec := json.NewDecoder(bytes.NewReader(newValue))
 	err := dec.Decode(&fn)
 	if err != nil {

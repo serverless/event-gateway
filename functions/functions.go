@@ -10,44 +10,25 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
+
 	"github.com/serverless/gateway/db"
+	"github.com/serverless/gateway/types"
 )
 
 // Functions is a discovery tool for FaaS functions.
 type Functions struct {
 	DB     *db.PrefixedStore
-	Cache  FunctionCache
 	Logger *zap.Logger
 }
 
-// Function registered in the function discovery. Function repesents FaaS function deployed on one of the supported providers.
-type Function struct {
-	ID        string     `json:"id"`
-	Instances []Instance `json:"instances"`
-}
-
-// Instance of function. A function can have multiple instances. Each instance of a function is deployed in different regions.
-type Instance struct {
-	Provider    string      `json:"provider"`
-	OriginID    string      `json:"originId"`
-	Region      string      `json:"region"`
-	Credentials Credentials `json:"credentials"`
-}
-
-// Credentials that allows calling user's function.
-type Credentials struct {
-	AWSAccessKeyID     string `json:"aws_access_key_id"`
-	AWSSecretAccessKey string `json:"aws_secret_access_key"`
-}
-
 // RegisterFunction registers function in the discovery.
-func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
+func (f *Functions) RegisterFunction(fn *types.Function) (*types.Function, error) {
 	byt, err := json.Marshal(fn)
 	if err != nil {
 		return nil, err
 	}
 
-	err = f.DB.Put(fn.ID, byt, nil)
+	err = f.DB.Put(string(fn.ID), byt, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56,13 +37,13 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 }
 
 // GetFunction returns function from the discovery.
-func (f *Functions) GetFunction(name string) (*Function, error) {
+func (f *Functions) GetFunction(name string) (*types.Function, error) {
 	kv, err := f.DB.Get(name)
 	if err != nil {
 		return nil, &ErrorNotFound{name}
 	}
 
-	fn := Function{}
+	fn := types.Function{}
 	dec := json.NewDecoder(bytes.NewReader(kv.Value))
 	err = dec.Decode(&fn)
 	if err != nil {

@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+
+	"github.com/serverless/gateway/types"
 )
 
 // HTTPAPI for function discovery
@@ -35,7 +37,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 }
 
 func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	fn := new(Function)
+	fn := &types.Function{}
 	dec := json.NewDecoder(r.Body)
 	dec.Decode(fn)
 

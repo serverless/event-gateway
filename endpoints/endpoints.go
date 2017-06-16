@@ -6,31 +6,22 @@ import (
 	"strings"
 	"sync"
 
+	shortid "github.com/ventu-io/go-shortid"
+
 	"go.uber.org/zap"
 
 	"github.com/serverless/gateway/db"
-	shortid "github.com/ventu-io/go-shortid"
+	"github.com/serverless/gateway/targetcache"
+	"github.com/serverless/gateway/types"
 )
 
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.
 type Endpoints struct {
 	sync.RWMutex
-	DB      *db.PrefixedStore
-	Invoker Invoker
-	Logger  *zap.Logger
-}
-
-// Endpoint represents single endpoint
-type Endpoint struct {
-	ID        string           `json:"id"`
-	Functions []FunctionTarget `json:"functions"`
-}
-
-// FunctionTarget is a function exposed by Endpoints
-type FunctionTarget struct {
-	FunctionID string `json:"functionId"`
-	Method     string `json:"method"`
-	Path       string `json:"path"`
+	DB          *db.PrefixedStore
+	TargetCache targetcache.TargetCache
+	Invoker     Invoker
+	Logger      *zap.Logger
 }
 
 // Invoker invokes function from function discovery
@@ -38,38 +29,8 @@ type Invoker interface {
 	Invoke(name string, payload []byte) ([]byte, error)
 }
 
-// Created is called when a new endpoint is detected in the config.
-func (e *Endpoints) Created(key string, value []byte) {
-	e.Lock()
-	defer e.Unlock()
-	// TODO put any necessary endpoint conf initialization code here
-	e.Logger.Debug("Received Created event.",
-		zap.String("key", key),
-		zap.String("value", string(value)))
-}
-
-// Modified is called when an existing endpoint is modified in the config.
-func (e *Endpoints) Modified(key string, newValue []byte) {
-	e.Lock()
-	defer e.Unlock()
-	// TODO put any necessary endpoint conf modification code here
-	e.Logger.Debug("Received Modified event.",
-		zap.String("key", key),
-		zap.String("newValue", string(newValue)))
-}
-
-// Deleted is called when an endpoint is deleted in the config.
-func (e *Endpoints) Deleted(key string, lastKnownValue []byte) {
-	e.Lock()
-	defer e.Unlock()
-	// TODO put any necessary endpoint conf deletion code here
-	e.Logger.Debug("Received Deleted event.",
-		zap.String("key", key),
-		zap.String("lastKnownValue", string(lastKnownValue)))
-}
-
 // GetEndpoint returns registered endpoint.
-func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
+func (e *Endpoints) GetEndpoint(name string) (*types.Endpoint, error) {
 	kv, err := e.DB.Get(name)
 	if err != nil {
 		return nil, err
@@ -79,7 +40,7 @@ func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
 		return nil, &ErrorNotFound{name}
 	}
 
-	endpoint := Endpoint{}
+	endpoint := types.Endpoint{}
 	buf := bytes.NewBuffer(kv.Value)
 	err = gob.NewDecoder(buf).Decode(&endpoint)
 	if err != nil {
@@ -90,7 +51,7 @@ func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
 }
 
 // CreateEndpoint creates endpoint.
-func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
+func (e *Endpoints) CreateEndpoint(en *types.Endpoint) (*types.Endpoint, error) {
 	id, err := shortid.Generate()
 	if err != nil {
 		return nil, err

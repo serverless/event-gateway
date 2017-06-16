@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+
+	"github.com/serverless/gateway/types"
 )
 
 // HTTPAPI for endpints sub-service
@@ -39,7 +41,7 @@ func (h HTTPAPI) getEndpoint(w http.ResponseWriter, r *http.Request, params http
 }
 
 func (h HTTPAPI) createEndpoint(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	en := &Endpoint{}
+	en := &types.Endpoint{}
 	dec := json.NewDecoder(r.Body)
 	dec.Decode(en)
 

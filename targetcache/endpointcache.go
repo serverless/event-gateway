@@ -1,4 +1,4 @@
-package endpoints
+package targetcache
 
 import (
 	"bytes"
@@ -6,17 +6,19 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+
+	"github.com/serverless/gateway/types"
 )
 
 type EndpointCache struct {
 	sync.RWMutex
-	cache map[string]Endpoint
+	cache map[string]types.Endpoint
 	log   *zap.Logger
 }
 
-func NewEndpointCache(log *zap.Logger) EndpointCache {
-	return EndpointCache{
-		cache: map[string]Endpoint{},
+func NewEndpointCache(log *zap.Logger) *EndpointCache {
+	return &EndpointCache{
+		cache: map[string]types.Endpoint{},
 		log:   log,
 	}
 }
@@ -27,7 +29,7 @@ func (e *EndpointCache) Created(key string, value []byte) {
 		zap.String("key", key),
 		zap.String("value", string(value)))
 
-	endpoint := Endpoint{}
+	endpoint := types.Endpoint{}
 	dec := json.NewDecoder(bytes.NewReader(value))
 	err := dec.Decode(&endpoint)
 	if err != nil {
@@ -46,7 +48,7 @@ func (e *EndpointCache) Modified(key string, newValue []byte) {
 	e.log.Debug("Received Modified endpoint.",
 		zap.String("key", key),
 		zap.String("newValue", string(newValue)))
-	endpoint := Endpoint{}
+	endpoint := types.Endpoint{}
 	dec := json.NewDecoder(bytes.NewReader(newValue))
 	err := dec.Decode(&endpoint)
 	if err != nil {

@@ -13,11 +13,11 @@ type PrefixedStore struct {
 }
 
 // NewPrefixedStore creates a new namespaced libkv Store
-func NewPrefixedStore(root string, kv store.Store) PrefixedStore {
+func NewPrefixedStore(root string, kv store.Store) *PrefixedStore {
 	if !strings.HasSuffix(root, "/") {
 		root = root + "/"
 	}
-	return PrefixedStore{
+	return &PrefixedStore{
 		root: root,
 		kv:   kv,
 	}
