@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/docker/libkv/store"
 	shortid "github.com/ventu-io/go-shortid"
-
 	"go.uber.org/zap"
 
-	"github.com/serverless/gateway/db"
 	"github.com/serverless/gateway/functions"
 )
 
@@ -27,7 +26,7 @@ type Endpoint struct {
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.
 type Endpoints struct {
 	sync.RWMutex
-	DB     *db.PrefixedStore
+	DB     store.Store
 	Logger *zap.Logger
 }
 
