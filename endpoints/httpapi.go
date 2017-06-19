@@ -2,7 +2,6 @@ package endpoints
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -17,11 +16,6 @@ type HTTPAPI struct {
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v0/gateway/api/endpoint/:name", h.getEndpoint)
 	router.POST("/v0/gateway/api/endpoint", h.createEndpoint)
-
-	router.GET("/v0/gateway/endpoint/:id/*path", h.callEndpoint)
-	router.POST("/v0/gateway/endpoint/:id/*path", h.callEndpoint)
-	router.PUT("/v0/gateway/endpoint/:id/*path", h.callEndpoint)
-	router.DELETE("/v0/gateway/endpoint/:id/*path", h.callEndpoint)
 }
 
 func (h HTTPAPI) getEndpoint(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -52,18 +46,4 @@ func (h HTTPAPI) createEndpoint(w http.ResponseWriter, r *http.Request, params h
 		encoder := json.NewEncoder(w)
 		encoder.Encode(output)
 	}
-}
-
-func (h HTTPAPI) callEndpoint(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	payload, _ := ioutil.ReadAll(r.Body)
-	response, err := h.Endpoints.CallEndpoint(params.ByName("id"), r.Method, params.ByName("path"), payload)
-	if err != nil {
-		if _, ok := err.(*ErrorTargetNotFound); ok {
-			w.WriteHeader(http.StatusNotFound)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
-
-	w.Write(response)
 }

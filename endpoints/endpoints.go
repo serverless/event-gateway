@@ -73,13 +73,3 @@ func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
 
 	return en, nil
 }
-
-// CallEndpoint calls registered endpoints.
-func (e *Endpoints) CallEndpoint(name, method, path string, payload []byte) ([]byte, error) {
-	_, err := e.GetEndpoint(name)
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, &ErrorTargetNotFound{name}
-}

@@ -7,7 +7,6 @@ type FunctionID string
 type FunctionSpec struct {
 	ID         FunctionID        `json:"functionId"`
 	Type       string            `json:"type"`
-	Instances  []Instance        `json:"instances"`
 	Properties map[string]string `json:"properties"`
 }
 
@@ -65,14 +64,6 @@ type HTTPProperties struct{}
 type WeightedFunction struct {
 	FunctionID FunctionID
 	Weight     uint
-}
-
-// Instance of function. A function can have multiple instances. Each instance of a function is deployed in different regions.
-type Instance struct {
-	Provider    string      `json:"provider"`
-	OriginID    string      `json:"originId"`
-	Region      string      `json:"region"`
-	Credentials Credentials `json:"credentials"`
 }
 
 // Credentials that allows calling user's function.
