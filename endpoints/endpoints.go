@@ -3,7 +3,6 @@ package endpoints
 import (
 	"bytes"
 	"encoding/json"
-	"strings"
 	"sync"
 
 	shortid "github.com/ventu-io/go-shortid"
@@ -41,7 +40,7 @@ func (e *Endpoints) GetEndpoint(name string) (*types.Endpoint, error) {
 		e.Logger.Info("Fetching endpoint failed.", zap.Error(err))
 		return nil, err
 	}
-  
+
 	return &endpoint, nil
 }
 
