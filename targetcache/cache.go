@@ -12,6 +12,8 @@ import (
 	pubsubTypes "github.com/serverless/gateway/pubsub/types"
 )
 
+// Cache is a simplification of the db.Reactive interface, which doesn't care about
+// the distinction between Created and Modified, reducing them to Set.
 type Cache interface {
 	Set(string, []byte)
 	Del(string, []byte)
