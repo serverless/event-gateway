@@ -4,7 +4,7 @@ Dataflow for serverless functions and services.
 
 ## Description
 
-The Event Gateway is a single product with a unique set of features enabling building serverless event-driven systems.
+The Event Gateway is a layer-7 proxy and realtime dataflow engine.
 
 Features:
 
