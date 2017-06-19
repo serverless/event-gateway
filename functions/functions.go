@@ -6,12 +6,12 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/serverless/gateway/db"
+	"github.com/docker/libkv/store"
 )
 
 // Functions is a discovery tool for FaaS functions.
 type Functions struct {
-	DB     *db.PrefixedStore
+	DB     store.Store
 	Logger *zap.Logger
 }
 
