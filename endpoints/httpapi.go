@@ -35,6 +35,7 @@ func (h HTTPAPI) getEndpoint(w http.ResponseWriter, r *http.Request, params http
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	} else {
+		w.Header().Set("Content-Type", "application/json")
 		encoder := json.NewEncoder(w)
 		encoder.Encode(en)
 	}
@@ -49,6 +50,7 @@ func (h HTTPAPI) createEndpoint(w http.ResponseWriter, r *http.Request, params h
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
+		w.Header().Set("Content-Type", "application/json")
 		encoder := json.NewEncoder(w)
 		encoder.Encode(output)
 	}

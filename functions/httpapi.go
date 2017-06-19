@@ -29,6 +29,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	} else {
+		w.Header().Set("Content-Type", "application/json")
 		encoder := json.NewEncoder(w)
 		encoder.Encode(fn)
 	}
@@ -43,7 +44,9 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
+		w.Header().Set("Content-Type", "application/json")
 		encoder := json.NewEncoder(w)
 		encoder.Encode(output)
 	}
 }
+
