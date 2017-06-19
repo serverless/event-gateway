@@ -1,26 +1,26 @@
-# Event Gateway
+# The Event Gateway
 
 Dataflow for serverless functions and services.
 
 ## Description
 
-Event Gateway is a single product with a unique set of features enabling building serverless event-driven systems.
+The Event Gateway is a single product with a unique set of features enabling building serverless event-driven systems.
 
 Features:
 
-- pub/sub - lightweight pub/sub system allowing function subscription on custom events,
-- function discovery - discover and call serverless functions by other functions or legacy systems,
-- endpoints - expose public HTTP/GraphQL/REST/WebSockets endpoints backed by serverless functions.
+- pub/sub - lightweight pub/sub system allowing function subscription on custom events
+- function discovery - discover and call serverless functions by other functions or legacy systems
+- endpoints - expose public HTTP/GraphQL/REST/WebSocket endpoints backed by serverless functions
 
-What Event Gateway is NOT:
+What The Event Gateway is NOT:
 
-- it's not a replacement for message queues (no message ordering, strong durability guarantees, load-balanced message delivery),
-- it's not a replacement for streaming platforms (no processing capabilities, consumers groups),
-- it's not a replacement for existing service discovery solutions from micro-services world.
+- it's not a replacement for message queues (no message ordering, strong durability guarantees)
+- it's not a replacement for streaming platforms (no processing capability and consumers group)
+- it's not a replacement for existing service discovery solutions from the microservices world
 
 ## API (for MVP)
 
-Event Gateway exposes configuration RESTful HTTP API.
+The Event Gateway exposes a RESTful configuration API.
 
 ### Function discovery
 
@@ -217,9 +217,9 @@ Response:
 
 Request: arbitrary payload
 
-# Brainstorm
+# Brainstorm / Specification draft
 
-Following document includes a lot of random ideas that might not get to implementation phase.
+The Following document includes a lot of random ideas that might not get to the implementation phase.
 
 ## Overview
 
