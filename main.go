@@ -4,6 +4,11 @@ import (
 	"flag"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/docker/libkv"
+	"github.com/docker/libkv/store"
+	"github.com/docker/libkv/store/etcd"
 
 	"go.uber.org/zap"
 
@@ -16,6 +21,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+func init() {
+	etcd.Register()
+}
 
 func main() {
 	verbose := flag.Bool("verbose", false, "Verbose logging.")
@@ -58,24 +67,32 @@ func main() {
 		}
 	}
 
+	kv, err := libkv.NewStore(
+		store.ETCD,
+		dbHostStrings,
+		&store.Config{
+			ConnectionTimeout: 10 * time.Second,
+		},
+	)
+
+	if err != nil {
+		logger.Fatal("Cannot create kv client.",
+			zap.Error(err))
+	}
+
 	router := httprouter.New()
 
-	fdb := db.NewReactiveCfgStore("/serverless-gateway/functions", dbHostStrings, logger)
 	fns := &functions.Functions{
-		DB:     fdb,
+		DB:     db.NewPrefixedStore("/serverless-gateway/functions", kv),
 		Logger: logger,
 	}
-	fdb.React(fns, shutdownInitiateChan)
 	fnsapi := &functions.HTTPAPI{Functions: fns}
 	fnsapi.RegisterRoutes(router)
 
-	edb := db.NewReactiveCfgStore("/serverless-gateway/endpoints", dbHostStrings, logger)
 	ens := &endpoints.Endpoints{
-		DB:      edb,
-		Invoker: fns,
-		Logger:  logger,
+		DB:     db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
+		Logger: logger,
 	}
-	edb.React(ens, shutdownInitiateChan)
 	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 	ensapi.RegisterRoutes(router)
 

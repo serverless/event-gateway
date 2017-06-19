@@ -1,6 +1,8 @@
 package functions
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // ErrorNotFound occurs when function couldn't been found in the discovery.
 type ErrorNotFound struct {

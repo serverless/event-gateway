@@ -1,3 +1,4 @@
+gateway
 .terraform
 terraform.tfstate.backup
 bin

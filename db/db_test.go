@@ -8,12 +8,20 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/docker/libkv"
+	"github.com/docker/libkv/store"
+	"github.com/docker/libkv/store/etcd"
 )
 
 const (
 	etcdDir     = "testing.etcd"
 	etcdCliAddr = "127.0.0.1:2389"
 )
+
+func init() {
+	etcd.Register()
+}
 
 func testingEtcd(log *zap.Logger) (chan struct{}, <-chan struct{}) {
 	shutdownInitiateChan := make(chan struct{})
@@ -88,7 +96,7 @@ func randomHumanReadableBytes(n int) []byte {
 	return buf
 }
 
-func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor, log *zap.Logger) {
+func watchTests(listener *PathWatcher, buf []byte, trx *TestReactor, kv store.Store, log *zap.Logger) {
 	rxShutdown := time.After(30 * time.Second)
 
 	waitForIt := func(err error, listen chan struct{}) {
@@ -102,44 +110,11 @@ func watchTests(listener *ReactiveCfgStore, buf []byte, trx TestReactor, log *za
 		}
 	}
 
-	writer := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
+	writer := NewPrefixedStore("/test1", kv)
 
 	waitForIt(writer.Put("k1", buf, nil), trx.created)
 	waitForIt(writer.Put("k1", buf, nil), trx.modified)
 	waitForIt(writer.Delete("k1"), trx.deleted)
-}
-
-func getSetTests(log *zap.Logger) {
-	buf := randomHumanReadableBytes(10)
-
-	writer := NewReactiveCfgStore("/test2", []string{etcdCliAddr}, log)
-
-	// clear state before continuing
-	writer.Delete("k1")
-
-	_, err := writer.CachedGet("k1")
-	if err == nil {
-		panic("should not have gotten key")
-	}
-	err = writer.Put("k1", buf, nil)
-	if err != nil {
-		panic("could not set key")
-	}
-	val, err := writer.CachedGet("k1")
-	if err != nil {
-		panic("writer could not get key that was set")
-	}
-	if !bytes.Equal(val, buf) {
-		panic("read a value other than the one that was written")
-	}
-	err = writer.Delete("k1")
-	if err != nil {
-		panic("could not delete key")
-	}
-	_, err = writer.CachedGet("k1")
-	if err == nil {
-		panic("got a key that should have been deleted")
-	}
 }
 
 func TestReactiveCfgStore(t *testing.T) {
@@ -152,10 +127,21 @@ func TestReactiveCfgStore(t *testing.T) {
 		panic("could not start testing etcd")
 	}
 
+	kv, err := libkv.NewStore(
+		store.ETCD,
+		[]string{etcdCliAddr},
+		&store.Config{
+			ConnectionTimeout: 10 * time.Second,
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
 	buf := randomHumanReadableBytes(10)
 
 	// watch for events with the reactor
-	trx := TestReactor{
+	trx := &TestReactor{
 		expect:   buf,
 		created:  make(chan struct{}),
 		modified: make(chan struct{}),
@@ -164,14 +150,13 @@ func TestReactiveCfgStore(t *testing.T) {
 	}
 	closeReact := make(chan struct{})
 
-	listener := NewReactiveCfgStore("/test1", []string{etcdCliAddr}, log)
+	listener := NewPathWatcher("/test1", kv, log)
 	listener.reconciliationJitter = 0
 	listener.reconciliationBaseDelay = 3
 
-	listener.React(&trx, closeReact)
+	listener.React(trx, closeReact)
 
-	watchTests(listener, buf, trx, log)
-	getSetTests(log)
+	watchTests(listener, buf, trx, kv, log)
 
 	close(closeReact)
 	close(shutdownChan)
