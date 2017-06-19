@@ -2,7 +2,7 @@ package endpoints
 
 import (
 	"bytes"
-	"encoding/gob"
+	"encoding/json"
 	"strings"
 	"sync"
 
@@ -79,14 +79,14 @@ func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
 		return nil, &ErrorNotFound{name}
 	}
 
-	fn := new(Endpoint)
-	buf := bytes.NewBuffer(value)
-	err = gob.NewDecoder(buf).Decode(fn)
+	en := &Endpoint{}
+	dec := json.NewDecoder(bytes.NewReader(value))
+	err = dec.Decode(en)
 	if err != nil {
 		e.Logger.Info("Fetching endpoint failed.", zap.Error(err))
 		return nil, err
 	}
-	return fn, nil
+	return en, nil
 }
 
 // CreateEndpoint creates endpoint.
@@ -98,13 +98,11 @@ func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
 
 	en.ID = id
 
-	buf := &bytes.Buffer{}
-	err = gob.NewEncoder(buf).Encode(en)
+	byt, err := json.Marshal(en)
 	if err != nil {
 		return nil, err
 	}
-
-	err = e.DB.Put(en.ID, buf.Bytes(), nil)
+	err = e.DB.Put(en.ID, byt, nil)
 	if err != nil {
 		return nil, err
 	}
