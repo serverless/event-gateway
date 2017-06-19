@@ -18,7 +18,9 @@ type Subscriber struct {
 type FunctionEnd uint
 
 const (
+	// Input means the input to a function should feed a topic
 	Input FunctionEnd = iota
+	// Output means the output of a function should feed a topic
 	Output
 )
 

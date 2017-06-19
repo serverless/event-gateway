@@ -14,6 +14,8 @@ import (
 	pubsubTypes "github.com/serverless/gateway/pubsub/types"
 )
 
+// TargetCache is an interface for retrieving cached configuration
+// for driving performance-sensitive routing decisions.
 type TargetCache interface {
 	BackingFunctions(endpoint endpointTypes.EndpointID) ([]functionTypes.WeightedFunction, error)
 	GetFunction(functionID functionTypes.FunctionID) (functionTypes.Function, error)
@@ -22,6 +24,8 @@ type TargetCache interface {
 	SubscribersOfTopic(topic pubsubTypes.TopicID) ([]functionTypes.FunctionID, error)
 }
 
+// LibKVTargetCache is an implementation of TargetCache using the docker/libkv
+// library for watching data in etcd, zookeeper, and consul.
 type LibKVTargetCache struct {
 	shutdown        chan struct{}
 	functionCache   *functionCache
@@ -31,6 +35,7 @@ type LibKVTargetCache struct {
 	topicCache      *topicCache
 }
 
+// BackingFunctions returns the weighted functions and ID's for an endpoint
 func (tc *LibKVTargetCache) BackingFunctions(endpointID endpointTypes.EndpointID) ([]functionTypes.WeightedFunction, error) {
 	tc.endpointCache.RLock()
 	_, exists := tc.endpointCache.cache[endpointID]
@@ -42,27 +47,33 @@ func (tc *LibKVTargetCache) BackingFunctions(endpointID endpointTypes.EndpointID
 	return res, nil
 }
 
+// GetFunction takes a function ID and returns a deserialized instance of that function, if it exists
 func (tc *LibKVTargetCache) GetFunction(functionID functionTypes.FunctionID) (functionTypes.Function, error) {
 	return functionTypes.Function{}, nil
 }
 
+// FunctionInputToTopics is used for determining the topics to forward inputs to a function to.
 func (tc *LibKVTargetCache) FunctionInputToTopics(function functionTypes.FunctionID) ([]pubsubTypes.TopicID, error) {
 	return []pubsubTypes.TopicID{}, nil
 }
 
+// FunctionOutputToTopics is used for determining the topics to forward outputs of a function to.
 func (tc *LibKVTargetCache) FunctionOutputToTopics(function functionTypes.FunctionID) ([]pubsubTypes.TopicID, error) {
 	return []pubsubTypes.TopicID{}, nil
 }
 
+// SubscribersOfTopic is used for determining which functions to forward messages in a topic to.
 func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsubTypes.TopicID) ([]functionTypes.FunctionID, error) {
 	return []functionTypes.FunctionID{}, nil
 }
 
+// Shutdown causes all state watchers to clean up their state.
 func (tc *LibKVTargetCache) Shutdown() {
 	close(tc.shutdown)
 }
 
-func New(path string, kv store.Store, log *zap.Logger) TargetCache {
+// New instantiates a new LibKVTargetCache, rooted at a particular location.
+func New(path string, kv store.Store, log *zap.Logger) *LibKVTargetCache {
 	// make sure we have a trailing slash for trimming future updates
 	if !strings.HasSuffix(path, "/") {
 		path = path + "/"
