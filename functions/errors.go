@@ -2,8 +2,6 @@ package functions
 
 import (
 	"fmt"
-
-	"github.com/serverless/gateway/functions/types"
 )
 
 // ErrorNotFound occurs when function couldn't been found in the discovery.
@@ -18,8 +16,8 @@ func (e ErrorNotFound) Error() string {
 // ErrorInvocationFailed occurs when function invocation failed.
 type ErrorInvocationFailed struct {
 	err      error
-	function types.Function
-	instance types.Instance
+	function Function
+	instance Instance
 }
 
 func (e ErrorInvocationFailed) Error() string {

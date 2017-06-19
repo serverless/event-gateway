@@ -1,4 +1,4 @@
-package types
+package functions
 
 // FunctionID uniquely identifies a function
 type FunctionID string

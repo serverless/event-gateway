@@ -18,7 +18,6 @@ import (
 	"github.com/serverless/gateway/endpoints"
 	"github.com/serverless/gateway/functions"
 	"github.com/serverless/gateway/metrics"
-	"github.com/serverless/gateway/targetcache"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -81,8 +80,6 @@ func main() {
 			zap.Error(err))
 	}
 
-	targetCache := targetcache.New("/serverless-gateway", kv, logger)
-
 	router := httprouter.New()
 
 	fns := &functions.Functions{
@@ -93,9 +90,8 @@ func main() {
 	fnsapi.RegisterRoutes(router)
 
 	ens := &endpoints.Endpoints{
-		DB:          db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
-		TargetCache: targetCache,
-		Logger:      logger,
+		DB:     db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
+		Logger: logger,
 	}
 	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 	ensapi.RegisterRoutes(router)

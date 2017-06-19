@@ -10,20 +10,29 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/gateway/db"
-	"github.com/serverless/gateway/endpoints/types"
-	"github.com/serverless/gateway/targetcache"
+	"github.com/serverless/gateway/functions"
 )
+
+// EndpointID uniquely identifies an endpoint
+type EndpointID string
+
+// Endpoint represents single endpoint
+type Endpoint struct {
+	ID         EndpointID           `json:"id"`
+	FunctionID functions.FunctionID `json:"functionId"`
+	Method     string               `json:"method"`
+	Path       string               `json:"path"`
+}
 
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.
 type Endpoints struct {
 	sync.RWMutex
-	DB          *db.PrefixedStore
-	TargetCache targetcache.TargetCache
-	Logger      *zap.Logger
+	DB     *db.PrefixedStore
+	Logger *zap.Logger
 }
 
 // GetEndpoint returns registered endpoint.
-func (e *Endpoints) GetEndpoint(name string) (*types.Endpoint, error) {
+func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
 	kv, err := e.DB.Get(name)
 	if err != nil {
 		return nil, err
@@ -33,7 +42,7 @@ func (e *Endpoints) GetEndpoint(name string) (*types.Endpoint, error) {
 		return nil, &ErrorNotFound{name}
 	}
 
-	endpoint := types.Endpoint{}
+	endpoint := Endpoint{}
 	dec := json.NewDecoder(bytes.NewReader(kv.Value))
 	err = dec.Decode(&endpoint)
 	if err != nil {
@@ -45,13 +54,13 @@ func (e *Endpoints) GetEndpoint(name string) (*types.Endpoint, error) {
 }
 
 // CreateEndpoint creates endpoint.
-func (e *Endpoints) CreateEndpoint(en *types.Endpoint) (*types.Endpoint, error) {
+func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
 	id, err := shortid.Generate()
 	if err != nil {
 		return nil, err
 	}
 
-	en.ID = types.EndpointID(id)
+	en.ID = EndpointID(id)
 
 	buf, err := json.Marshal(en)
 	if err != nil {
