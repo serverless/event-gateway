@@ -2,7 +2,8 @@ package endpoints
 
 import (
 	"bytes"
-	"encoding/gob"
+	"encoding/json"
+	"strings"
 	"sync"
 
 	shortid "github.com/ventu-io/go-shortid"
@@ -34,12 +35,13 @@ func (e *Endpoints) GetEndpoint(name string) (*types.Endpoint, error) {
 	}
 
 	endpoint := types.Endpoint{}
-	buf := bytes.NewBuffer(kv.Value)
-	err = gob.NewDecoder(buf).Decode(&endpoint)
+	dec := json.NewDecoder(bytes.NewReader(kv.Value))
+	err = dec.Decode(&endpoint)
 	if err != nil {
 		e.Logger.Info("Fetching endpoint failed.", zap.Error(err))
 		return nil, err
 	}
+  
 	return &endpoint, nil
 }
 
@@ -52,13 +54,12 @@ func (e *Endpoints) CreateEndpoint(en *types.Endpoint) (*types.Endpoint, error) 
 
 	en.ID = types.EndpointID(id)
 
-	buf := &bytes.Buffer{}
-	err = gob.NewEncoder(buf).Encode(en)
+	buf, err := json.Marshal(en)
 	if err != nil {
 		return nil, err
 	}
 
-	err = e.DB.Put(string(en.ID), buf.Bytes(), nil)
+	err = e.DB.Put(string(en.ID), buf, nil)
 	if err != nil {
 		return nil, err
 	}
