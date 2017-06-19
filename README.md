@@ -1,10 +1,28 @@
-# Gateway
+# The Event Gateway
 
-## API
+Dataflow for serverless functions and services.
 
-Gateway exposes configuration RESTful HTTP API.
+## Description
 
-### Functions discovery
+The Event Gateway is a layer-7 proxy and realtime dataflow engine.
+
+Features:
+
+- pub/sub - lightweight pub/sub system allowing function subscription on custom events
+- function discovery - discover and call serverless functions by other functions or legacy systems
+- endpoints - expose public HTTP/GraphQL/REST/WebSocket endpoints backed by serverless functions
+
+What The Event Gateway is NOT:
+
+- it's not a replacement for message queues (no message ordering, strong durability guarantees)
+- it's not a replacement for streaming platforms (no processing capability and consumers group)
+- it's not a replacement for existing service discovery solutions from the microservices world
+
+## API (for MVP)
+
+The Event Gateway exposes a RESTful configuration API.
+
+### Function discovery
 
 #### Register function
 
@@ -199,7 +217,9 @@ Response:
 
 Request: arbitrary payload
 
-# Specification draft
+# Brainstorm / Specification draft
+
+The Following document includes a lot of random ideas that might not get to the implementation phase.
 
 ## Overview
 
@@ -246,14 +266,14 @@ SOA introduced completely new domain of problems. In monolithic architectures, i
 2. Requests to the service should be balanced between all service instances (load balancing)
 3. If a remote service call failed I want to retry it (retries)
 4. If the service instance failed I want to stop sending requests there (circuit breaking)
-5. Services are written in multiple languages, I want to communication between them without writing dedicated libraries (sidecar)
+5. Services are written in multiple languages, I want to communicate between them without writing dedicated libraries (sidecar)
 6. Calling remote service should not require setting up new connection every time as it increases request time (persistent connections)
 
-Those are the problems that are solved by following tech:
+Following tech solves those problems:
 
 - [Linkerd](https://linkerd.io/)
 - [Istio](https://istio.io/)
-- [Hystrix](https://github.com/Netflix/Hystrix/wiki) (library, not sidecar, it has cool [Dashboard](https://github.com/Netflix/Hystrix/wiki/Dashboard) feature)
+- [Hystrix](https://github.com/Netflix/Hystrix/wiki) (library, not sidecar)
 - [Finagle](https://twitter.github.io/finagle/) (library, not sidecar)
 
 The main goal of those tools is to hide all inconveniences of network communication. They abstract network. They run on the same host as the service (or are included in the service), listen on localhost and then, based on knowledge about the whole system, know where to send a request. They use persistent connections between nodes running on the different host so there is no overhead related to connection setup (which is painful especially for secure connections).
@@ -282,23 +302,6 @@ Service discovery problem may be relevant to serverless architectures especially
 - enable developers to build event-driven backend systems by providing configuration store and communication layer
 
 ## Concepts
-
-### Gateway
-
-Gateway is a single product with a unique set of features that enable building serverless event-driven systems. Features:
-
-- event discovery - registry of events that occur in the system
-- pub/sub - lightweight pub/sub system allowing reacting (with functions) on events registered in event discovery
-- function discovery - register of functions that can be discovered by other functions or legacy systems
-- edge proxy - exposing public GraphQL/HTTP/REST/WebSockets endpoints that allow communicating with backend functions and events
-- config store - key/value store for dynamic configuration and feature flags
-- ACL tokens - access control list system used to control access to functions and other resources
-
-What Gateway is NOT:
-
-- it's not a replacement for message queues (no message ordering, strong durability guarantees, load-balanced message delivery)
-- it's not a replacement for streaming platforms (no processing capabilities, consumers groups)
-- it's not a replacement for existing service discovery solutions
 
 ### Event discovery
 
