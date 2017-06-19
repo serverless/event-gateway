@@ -95,7 +95,6 @@ func main() {
 	ens := &endpoints.Endpoints{
 		DB:          db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
 		TargetCache: targetCache,
-		Invoker:     fns,
 		Logger:      logger,
 	}
 	ensapi := &endpoints.HTTPAPI{Endpoints: ens}

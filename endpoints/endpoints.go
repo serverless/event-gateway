@@ -19,13 +19,7 @@ type Endpoints struct {
 	sync.RWMutex
 	DB          *db.PrefixedStore
 	TargetCache targetcache.TargetCache
-	Invoker     Invoker
 	Logger      *zap.Logger
-}
-
-// Invoker invokes function from function discovery
-type Invoker interface {
-	Invoke(name string, payload []byte) ([]byte, error)
 }
 
 // GetEndpoint returns registered endpoint.

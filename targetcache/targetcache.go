@@ -2,6 +2,7 @@ package targetcache
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.uber.org/zap"
@@ -37,14 +38,41 @@ type LibKVTargetCache struct {
 
 // BackingFunctions returns the weighted functions and ID's for an endpoint
 func (tc *LibKVTargetCache) BackingFunctions(endpointID endpointTypes.EndpointID) ([]functionTypes.WeightedFunction, error) {
+	// try to get the endpoint from our cache
 	tc.endpointCache.RLock()
-	_, exists := tc.endpointCache.cache[endpointID]
+	endpoint, exists := tc.endpointCache.cache[string(endpointID)]
 	tc.endpointCache.RUnlock()
 	if !exists {
 		return []functionTypes.WeightedFunction{}, errors.New("endpoint not found")
 	}
-	res := []functionTypes.WeightedFunction{}
-	return res, nil
+
+	// try to get the function from our cache
+	fid := endpoint.FunctionID
+	tc.functionCache.RLock()
+	function, exists := tc.functionCache.cache[fid]
+	tc.functionCache.RUnlock()
+	if !exists {
+		errMsg := fmt.Sprintf("Function %s not found in function cache. Is it configured?", fid)
+		return []functionTypes.WeightedFunction{}, errors.New(errMsg)
+	}
+
+	// if function is a group, get weights, otherwise, just return the ID
+	if function.Type != functionTypes.Group {
+		res := []functionTypes.WeightedFunction{
+			functionTypes.WeightedFunction{
+				FunctionID: function.ID,
+				Weight:     1,
+			},
+		}
+		return res, nil
+	}
+
+	if function.Group == nil {
+		errMsg := fmt.Sprintf("Function %s is a group, but contains no GroupProperties struct!", fid)
+		return []functionTypes.WeightedFunction{}, errors.New(errMsg)
+	}
+
+	return function.Group.Functions, nil
 }
 
 // GetFunction takes a function ID and returns a deserialized instance of that function, if it exists
@@ -98,10 +126,10 @@ func New(path string, kv store.Store, log *zap.Logger) *LibKVTargetCache {
 
 	// start reacting to changes
 	shutdown := make(chan struct{})
-	functionPathWatcher.React(functionCache.reactor(), shutdown)
-	endpointPathWatcher.React(endpointCache.reactor(), shutdown)
-	subscriberPathWatcher.React(subscriberCache.reactor(), shutdown)
-	publisherPathWatcher.React(publisherCache.reactor(), shutdown)
+	functionPathWatcher.React(newCacheMaintainer(functionCache), shutdown)
+	endpointPathWatcher.React(newCacheMaintainer(endpointCache), shutdown)
+	subscriberPathWatcher.React(newCacheMaintainer(subscriberCache), shutdown)
+	publisherPathWatcher.React(newCacheMaintainer(publisherCache), shutdown)
 
 	return &LibKVTargetCache{
 		shutdown:        shutdown,

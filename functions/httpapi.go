@@ -2,7 +2,6 @@ package functions
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -19,7 +18,6 @@ type HTTPAPI struct {
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v0/gateway/api/function/:name", h.getFunction)
 	router.POST("/v0/gateway/api/function", h.registerFunction)
-	router.POST("/v0/gateway/api/invoke/:name", h.invoke)
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -47,19 +45,5 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 	} else {
 		encoder := json.NewEncoder(w)
 		encoder.Encode(output)
-	}
-}
-
-func (h HTTPAPI) invoke(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	payload, _ := ioutil.ReadAll(r.Body)
-	output, err := h.Functions.Invoke(params.ByName("name"), payload)
-	if err != nil {
-		if _, ok := err.(*ErrorNotFound); ok {
-			w.WriteHeader(http.StatusNotFound)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	} else {
-		w.Write(output)
 	}
 }
