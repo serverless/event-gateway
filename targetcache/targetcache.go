@@ -19,7 +19,7 @@ import (
 // for driving performance-sensitive routing decisions.
 type TargetCache interface {
 	BackingFunctions(endpoint endpointTypes.EndpointID) ([]functionTypes.WeightedFunction, error)
-	GetFunction(functionID functionTypes.FunctionID) (functionTypes.Function, error)
+	Function(functionID functionTypes.FunctionID) (functionTypes.Function, error)
 	FunctionInputToTopics(function functionTypes.FunctionID) ([]pubsubTypes.TopicID, error)
 	FunctionOutputToTopics(function functionTypes.FunctionID) ([]pubsubTypes.TopicID, error)
 	SubscribersOfTopic(topic pubsubTypes.TopicID) ([]functionTypes.FunctionID, error)
@@ -33,7 +33,6 @@ type LibKVTargetCache struct {
 	endpointCache   *endpointCache
 	publisherCache  *publisherCache
 	subscriberCache *subscriberCache
-	topicCache      *topicCache
 }
 
 // BackingFunctions returns the weighted functions and ID's for an endpoint
@@ -75,8 +74,8 @@ func (tc *LibKVTargetCache) BackingFunctions(endpointID endpointTypes.EndpointID
 	return function.Group.Functions, nil
 }
 
-// GetFunction takes a function ID and returns a deserialized instance of that function, if it exists
-func (tc *LibKVTargetCache) GetFunction(functionID functionTypes.FunctionID) (functionTypes.Function, error) {
+// Function takes a function ID and returns a deserialized instance of that function, if it exists
+func (tc *LibKVTargetCache) Function(functionID functionTypes.FunctionID) (functionTypes.Function, error) {
 	tc.functionCache.RLock()
 	function, exists := tc.functionCache.cache[functionID]
 	tc.functionCache.RUnlock()
@@ -166,8 +165,6 @@ func New(path string, kv store.Store, log *zap.Logger) *LibKVTargetCache {
 	subscriberCache := newSubscriberCache(log)
 	// serves lookups for which topics a function's input or output are published to
 	publisherCache := newPublisherCache(log)
-	// maintains list of known topics
-	topicCache := newTopicCache(log)
 
 	// start reacting to changes
 	shutdown := make(chan struct{})
@@ -182,6 +179,5 @@ func New(path string, kv store.Store, log *zap.Logger) *LibKVTargetCache {
 		endpointCache:   endpointCache,
 		publisherCache:  publisherCache,
 		subscriberCache: subscriberCache,
-		topicCache:      topicCache,
 	}
 }

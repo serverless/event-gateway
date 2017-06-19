@@ -256,29 +256,3 @@ func (c *subscriberCache) Del(k string, v []byte) {
 		}
 	}
 }
-
-type topicCache struct {
-	sync.RWMutex
-	cache map[pubsubTypes.TopicID]struct{}
-	log   *zap.Logger
-}
-
-func newTopicCache(log *zap.Logger) *topicCache {
-	return &topicCache{
-		// cache is a set of all TopicID's
-		cache: map[pubsubTypes.TopicID]struct{}{},
-		log:   log,
-	}
-}
-
-func (c *topicCache) Set(k string, v []byte) {
-	c.Lock()
-	defer c.Unlock()
-	c.cache[pubsubTypes.TopicID(k)] = struct{}{}
-}
-
-func (c *topicCache) Del(k string, v []byte) {
-	c.Lock()
-	defer c.Unlock()
-	delete(c.cache, pubsubTypes.TopicID(k))
-}
