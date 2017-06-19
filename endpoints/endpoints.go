@@ -50,7 +50,7 @@ func (e *Endpoints) CreateEndpoint(en *types.Endpoint) (*types.Endpoint, error) 
 		return nil, err
 	}
 
-	en.ID = id
+	en.ID = types.EndpointID(id)
 
 	buf := &bytes.Buffer{}
 	err = gob.NewEncoder(buf).Encode(en)
@@ -58,7 +58,7 @@ func (e *Endpoints) CreateEndpoint(en *types.Endpoint) (*types.Endpoint, error) 
 		return nil, err
 	}
 
-	err = e.DB.Put(en.ID, buf.Bytes(), nil)
+	err = e.DB.Put(string(en.ID), buf.Bytes(), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,9 @@ import (
 // TopicID uniquely identifies a pubsub topic
 type TopicID string
 
+// PublisherID uniquely identifies a publisher function
+type PublisherID string
+
 // Subscriber maps from TopicID to FunctionID
 type Subscriber struct {
 	TopicID    TopicID
