@@ -60,22 +60,32 @@ func (f *Functions) validateFunction(fn *Function) error {
 		return &ErrorValidation{err}
 	}
 
+	count := 0
 	if fn.AWSLambda != nil {
-		fn.Type = AWSLambda
-	} else if fn.AzureFunction != nil {
-		fn.Type = AzureFunction
-	} else if fn.GCloudFunction != nil {
-		fn.Type = GCloudFunction
-	} else if fn.OpenWhiskAction != nil {
-		fn.Type = OpenWhiskAction
-	} else if fn.Group != nil {
-		fn.Type = Group
-	} else if fn.HTTP != nil {
-		fn.Type = HTTP
+		count++
+	}
+	if fn.AzureFunction != nil {
+		count++
+	}
+	if fn.GCloudFunction != nil {
+		count++
+	}
+	if fn.OpenWhiskAction != nil {
+		count++
+	}
+	if fn.Group != nil {
+		count++
+	}
+	if fn.HTTP != nil {
+		count++
 	}
 
-	if fn.Type == 0 {
+	if count == 0 {
 		return &ErrorPropertiesNotSpecified{}
+	}
+
+	if count > 1 {
+		return &ErrorOneFunctionTypeCanBeSpecified{}
 	}
 
 	return nil

@@ -8,8 +8,7 @@ type FunctionType uint
 
 // Function repesents a deployed on one of the supported providers.
 type Function struct {
-	ID   FunctionID   `json:"functionId"`
-	Type FunctionType `json:"-"`
+	ID FunctionID `json:"functionId"`
 
 	// Only one of the following properties can be defined.
 	AWSLambda       *AWSLambdaProperties       `json:"awsLambda,omitempty"`
@@ -19,22 +18,6 @@ type Function struct {
 	Group           *GroupProperties           `json:"group,omitempty"`
 	HTTP            *HTTPProperties            `json:"http,omitempty"`
 }
-
-const (
-	_ FunctionType = iota
-	// AWSLambda means this function is an AWS Lambda function.
-	AWSLambda
-	// GCloudFunction means this function is a Google Cloud Function.
-	GCloudFunction
-	// AzureFunction means this function is a Microsoft Azure Function.
-	AzureFunction
-	// OpenWhiskAction means this function is an OpenWhisk Action.
-	OpenWhiskAction
-	// Group means this is a load balancing group of functions with associated weights.
-	Group
-	// HTTP means this is an http endpoint.
-	HTTP
-)
 
 // AWSLambdaProperties contains the configuration required to call an AWS Lambda function.
 type AWSLambdaProperties struct {

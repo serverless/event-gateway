@@ -48,6 +48,8 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 	if err != nil {
 		if _, ok := err.(*ErrorPropertiesNotSpecified); ok {
 			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*ErrorOneFunctionTypeCanBeSpecified); ok {
+			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*ErrorValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
