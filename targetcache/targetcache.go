@@ -9,10 +9,10 @@ import (
 
 	"github.com/docker/libkv/store"
 
-	"github.com/serverless/gateway/db"
-	"github.com/serverless/gateway/endpoints"
-	"github.com/serverless/gateway/functions"
-	"github.com/serverless/gateway/pubsub"
+	"github.com/serverless/event-gateway/db"
+	"github.com/serverless/event-gateway/endpoints"
+	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/pubsub"
 )
 
 // TargetCache is an interface for retrieving cached configuration

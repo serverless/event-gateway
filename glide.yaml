@@ -1,4 +1,4 @@
-package: github.com/serverless/gateway
+package: github.com/serverless/event-gateway
 import:
 - package: github.com/julienschmidt/httprouter
   version: ^1.1.0

@@ -1,7 +1,7 @@
 package pubsub
 
 import (
-	"github.com/serverless/gateway/functions"
+	"github.com/serverless/event-gateway/functions"
 )
 
 // TopicID uniquely identifies a pubsub topic
