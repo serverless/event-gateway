@@ -11,7 +11,7 @@ if [ -z "$TRAVIS_PULL_REQUEST" ] || [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     chmod +x $TRAVIS_BUILD_DIR/ecs-cli
 
     $TRAVIS_BUILD_DIR/ecs-cli configure --cluster backend
-    $TRAVIS_BUILD_DIR/ecs-cli compose service up --target-group-arn arn:aws:elasticloadbalancing:us-east-1:377024778620:targetgroup/gateway/1c51fea8fd2329be --container-name gateway --container-port 8080 --role gateway-dev-us-east-1-ecs-service
+    $TRAVIS_BUILD_DIR/ecs-cli compose service up  --project-name gateway --target-group-arn arn:aws:elasticloadbalancing:us-east-1:377024778620:targetgroup/gateway/1c51fea8fd2329be --container-name gateway --container-port 8080 --role gateway-dev-us-east-1-ecs-service
   else
     echo "Skipping deploy because branch is not 'master' not 'prod'"
   fi
