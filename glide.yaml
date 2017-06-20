@@ -26,3 +26,7 @@ import:
   subpackages:
   - model
 - package: github.com/prometheus/procfs
+- package: gopkg.in/go-playground/validator.v9
+  version: ^9.4.0
+- package: github.com/go-playground/universal-translator
+  version: ^0.16.0
