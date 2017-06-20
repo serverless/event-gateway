@@ -20,11 +20,11 @@ func (e ErrorPropertiesNotSpecified) Error() string {
 	return "Function properties not specified."
 }
 
-// ErrorOneFunctionTypeCanBeSpecified occurs when function payload include properties for more than one type of function.
-type ErrorOneFunctionTypeCanBeSpecified struct{}
+// ErrorMoreThanOneFunctionTypeSpecified occurs when function payload include properties for more than one type of function.
+type ErrorMoreThanOneFunctionTypeSpecified struct{}
 
-func (e ErrorOneFunctionTypeCanBeSpecified) Error() string {
-	return "Only one type of function can be provided."
+func (e ErrorMoreThanOneFunctionTypeSpecified) Error() string {
+	return "More that one function type specified."
 }
 
 // ErrorValidation occurs when function payload doesn't validate.

@@ -1,5 +1,5 @@
-hash: 4abfd3add57f661535d4f4364e24b838fb101a53ad0a7668909d678287dfffcf
-updated: 2017-06-20T13:59:27.506641961+02:00
+hash: e13e97916cb64a81c1974eef9744c1cba969fae59f21568e3f334b037af3bdd1
+updated: 2017-06-20T16:36:11.013032203+02:00
 imports:
 - name: github.com/aws/aws-sdk-go
   version: 0ddc167e85ddb40d9fbc97bfabda2175e49b3dbc
@@ -113,6 +113,10 @@ imports:
   version: 909568be09de550ed094403c2bf8a261b5bb730a
   subpackages:
   - proto
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  subpackages:
+  - gomock
 - name: github.com/golang/protobuf
   version: 4bd1920723d7b7c925de087aa32e2187708897f7
   subpackages:
@@ -154,6 +158,10 @@ imports:
   version: a1dba9ce8baed984a2495b658c82687f8157b98f
   subpackages:
   - xfs
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
 - name: github.com/ugorji/go
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:

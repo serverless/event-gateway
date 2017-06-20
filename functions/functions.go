@@ -10,7 +10,13 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// Functions is a discovery tool for FaaS functions.
+// Registry is a discovery tool for FaaS and HTTP functions.
+type Registry interface {
+	RegisterFunction(fn *Function) (*Function, error)
+	GetFunction(name string) (*Function, error)
+}
+
+// Functions implements Registry.
 type Functions struct {
 	DB     store.Store
 	Logger *zap.Logger
@@ -54,12 +60,6 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 }
 
 func (f *Functions) validateFunction(fn *Function) error {
-	validate := validator.New()
-	err := validate.Struct(fn)
-	if err != nil {
-		return &ErrorValidation{err}
-	}
-
 	count := 0
 	if fn.AWSLambda != nil {
 		count++
@@ -85,7 +85,13 @@ func (f *Functions) validateFunction(fn *Function) error {
 	}
 
 	if count > 1 {
-		return &ErrorOneFunctionTypeCanBeSpecified{}
+		return &ErrorMoreThanOneFunctionTypeSpecified{}
+	}
+
+	validate := validator.New()
+	err := validate.Struct(fn)
+	if err != nil {
+		return &ErrorValidation{err}
 	}
 
 	return nil
