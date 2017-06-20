@@ -62,8 +62,9 @@ type HTTPProperties struct{}
 
 // WeightedFunction is a function along with its load-balacing proportional weight.
 type WeightedFunction struct {
-	FunctionID FunctionID
-	Weight     uint
+	GroupFunctionID FunctionID
+	FunctionID      FunctionID
+	Weight          uint
 }
 
 // Credentials that allows calling user's function.
