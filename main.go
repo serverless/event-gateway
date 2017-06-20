@@ -14,10 +14,10 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/serverless/gateway/db"
-	"github.com/serverless/gateway/endpoints"
-	"github.com/serverless/gateway/functions"
-	"github.com/serverless/gateway/metrics"
+	"github.com/serverless/event-gateway/db"
+	"github.com/serverless/event-gateway/endpoints"
+	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/metrics"
 
 	"github.com/prometheus/client_golang/prometheus"
 )

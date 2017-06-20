@@ -9,7 +9,7 @@ import (
 	shortid "github.com/ventu-io/go-shortid"
 	"go.uber.org/zap"
 
-	"github.com/serverless/gateway/functions"
+	"github.com/serverless/event-gateway/functions"
 )
 
 // EndpointID uniquely identifies an endpoint
