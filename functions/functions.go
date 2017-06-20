@@ -30,7 +30,6 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 
 	byt, err := json.Marshal(fn)
 	if err != nil {
-		f.Logger.Info("Marshalling function payload failed.", zap.Error(err))
 		return nil, err
 	}
 
