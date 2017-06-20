@@ -1,4 +1,4 @@
-gateway
+event-gateway
 .terraform
 terraform.tfstate.backup
 bin
