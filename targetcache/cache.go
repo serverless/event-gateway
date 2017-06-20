@@ -7,9 +7,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/serverless/gateway/endpoints"
-	"github.com/serverless/gateway/functions"
-	"github.com/serverless/gateway/pubsub"
+	"github.com/serverless/event-gateway/endpoints"
+	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/pubsub"
 )
 
 // Cache is a simplification of the db.Reactive interface, which doesn't care about
