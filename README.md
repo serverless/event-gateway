@@ -1,16 +1,14 @@
 # The Event Gateway
 
-Dataflow for serverless functions and services.
+Dataflow for event-driven, serverless architectures. The Event Gateway is a layer-7 proxy and realtime dataflow engine.
 
-## Description
+## Philosophy
 
-The Event Gateway is a layer-7 proxy and realtime dataflow engine.
-
-Philosophy:
 - Everything we care about is an event! (even calling a function)
 - Make it easy to share events across different systems!
 
-Motivating Problems:
+## Motivation
+
 - It is cumbersome to plug things into each other. This should be easy! Why do I need to set up a queue system to
 keep track of new user registrations or failed logins?
 - Introspection is terrible. There is no performant way to emit logs and metrics from a function. How do I know
@@ -19,18 +17,29 @@ plug this function into to my existing analytics system?
 - Using new functions is risky without the ability to incrementally deploy them.
 - The AWS API Gateway is frequently cited as a performance and cost-prohibitive factor for using Lambda.
 
-Features:
+## Features
 
-- Pub/Sub - Lightweight pub/sub system. Allows functions to asynchronously receive events that are published
+### Pub/Sub
+
+Lightweight pub/sub system. Allows functions to asynchronously receive events that are published
 to a topic. Functions can be configured to automatically publish their
 input (useful for analyzing HTTP requests etc...) or output to one or more topics. Instead of rewriting your
 functions every time you want to send data to another place, this can be handled entirely in configuration
 using the Event Gateway. This completely decouples functions from one another, reducing communication costs across
 teams, eliminates effort spent redeploying functions, and allows you to easily share events across functions,
 HTTP services, even different cloud providers.
-- Function Discovery - Discover and call serverless functions from anything that can reach the Event Gateway.
-- Endpoints - Expose public HTTP/GraphQL/REST/WebSocket endpoints backed by serverless functions or HTTP services.
-- Multiple Emit - Optionally return multiple events, such as log messages or metrics, without sending it all back to
+
+### Function Discovery
+
+Discover and call serverless functions from anything that can reach the Event Gateway.
+
+### Endpoints
+
+Expose public HTTP/GraphQL/REST/WebSocket endpoints backed by serverless functions or HTTP services.
+
+### Multiple Emit
+
+Optionally return multiple events, such as log messages or metrics, without sending it all back to
 the caller. This plays particularly well with Pub/Sub systems. If you have an existing metrics aggregator, but don't
 want to send metrics to it from within your serverless function (forcing your caller to wait while this completes)
 you can return additional metrics destined for a topic of your choosing, say, "homepage-metrics". You can then
@@ -40,11 +49,54 @@ systems without the function needing to know anything about them! And when you u
 in the future, your code doesn't need to be updated at all. Just spin up another forwarder function, subscribe
 it to the stream, and you're good to go. This is not limited to metrics!
 
-What The Event Gateway is NOT:
+## What The Event Gateway is NOT:
 
 - it's not a replacement for message queues (no message ordering, currently weak durability guarantees only)
 - it's not a replacement for streaming platforms (no processing capability and consumers group)
 - it's not a replacement for existing service discovery solutions from the microservices world
+
+## Architecture
+
+```
+                              AWS us-east-1 (main ─┐                                 
+                              region)              │                                 
+                              │   ┌─────────────┐  │                                 
+                              │   │             │  │                                 
+           ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ▶│    etcd     │◀ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─           
+                              │   │             │  │                      │          
+           │                  │   └─────────────┘  │                                 
+                              │          ▲         │                      │          
+           │                  │          │         │                                 
+                              │          ▼         │                      │          
+           │                  │  ┌──────────────┐  │                                 
+                              │  │              │  │                      │          
+           │                  │  │   Gateway    │  │                                 
+                              │  │   instance   │  │                      │          
+           │                  │  │              │  │                                 
+                              │  └──────────────┘  │                      │          
+           │                  │          ▲         │                                 
+                              │          │         │                      │          
+           │                  │          ▼         │                                 
+                              │        ┌───┐       │                      │          
+GCloud us-c│ntral1───┐        │        │ λ ├┐      │           Azure West US────────┐
+│          ▼         │        │        └┬──┘│      │           │          ▼         │
+│  ┌──────────────┐  │        │         └───┘      │           │  ┌──────────────┐  │
+│  │              │  │        └────────────────────┘           │  │              │  │
+│  │   Gateway    │  │                                         │  │   Gateway    │  │
+│  │   instance   │  │                                         │  │   instance   │  │
+│  │              │  │                                         │  │              │  │
+│  └──────────────┘  │                                         │  └──────────────┘  │
+│          ▲         │                                         │          ▲         │
+│          │         │                                         │          │         │
+│          ▼         │                                         │          ▼         │
+│        ┌───┐       │                                         │        ┌───┐       │
+│        │ λ ├┐      │                                         │        │ λ ├┐      │
+│        └┬──┘│      │                                         │        └┬──┘│      │
+│         └───┘      │                                         │         └───┘      │
+└────────────────────┘                                         └────────────────────┘
+```
+
+The Event Gateway instances use a strongly consistent, subscribable DB (initially etcd, with support for Consul, Zookeeper, and Dynamo planned) to store and broadcast configuration. The instances locally cache configuration used to drive low-latency event routing.
 
 ## API (for MVP)
 
@@ -805,44 +857,3 @@ OpenWhisk actions, as mentioned above, is a FaaS platform. Triggers & Rules enab
 - OpenWhisk Rules doesn't integrate with other FaaS provider
 - OpenWhisk doesn't provide fine-grained ACL system
 - OpenWhisk doesn't enable exporting events outside OpenWhisk
-
-## Implementation
-
-**Described Gateway product is a complex system. During the implementation phase, we need to make sure that every feature is requested by users and solves real users problems.**
-
-Because of low latency & multi-region support requirements of some sub services Gateway instances has to be deployed in every supported region. Instances deployed in different regions and zones create a cluster. Gateway cluster uses consensus algorithm to prevent from data inconsistency between instances in a cluster.
-
-```
-
-          AWS us-east-1────────────────────┐
-┌─────────┴─────┐                          │
-│               │                          │
-│    Gateway    │           ┌───┐          │
-│   instance    │◀─────────▶│ λ ├┐         │
-│               │           └┬──┘│         │
-└─────────┬─────┘            └───┘         │
-        ▲ └────────────────────────────────┘
-        │
-        │
-        ▼ GCloud us-central1───────────────┐
-┌─────────┴─────┐                          │
-│               │                          │
-│    Gateway    │           ┌───┐          │
-│   instance    │◀─────────▶│ λ ├┐         │
-│               │           └┬──┘│         │
-└─────────┬─────┘            └───┘         │
-        ▲ └────────────────────────────────┘
-        │
-        │
-        │
-        ▼ Azure us-west-2──────────────────┐
-┌─────────┴─────┐                          │
-│               │                          │
-│    Gateway    │           ┌───┐          │
-│   instance    │◀─────────▶│ λ ├┐         │
-│               │           └┬──┘│         │
-└─────────┬─────┘            └───┘         │
-          └────────────────────────────────┘
-```
-
-
