@@ -74,6 +74,19 @@ func (f *Functions) validateFunction(fn *Function) error {
 	}
 	if fn.Group != nil {
 		count++
+
+		if len(fn.Group.Functions) == 0 {
+			return &ErrorNoFunctionsProvided{}
+		}
+
+		weightTotal := uint(0)
+		for _, wf := range fn.Group.Functions {
+			weightTotal += wf.Weight
+		}
+
+		if weightTotal < 1 {
+			return &ErrorTotalFunctionWeightsZero{}
+		}
 	}
 	if fn.HTTP != nil {
 		count++

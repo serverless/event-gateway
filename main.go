@@ -10,7 +10,6 @@ import (
 	"github.com/docker/libkv"
 	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/etcd"
-
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -19,8 +18,8 @@ import (
 	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/metrics"
-
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/serverless/event-gateway/router"
+	"github.com/serverless/event-gateway/targetcache"
 )
 
 func init() {
@@ -39,6 +38,7 @@ func main() {
 	flag.Parse()
 
 	prometheus.MustRegister(metrics.DurationMetric)
+	prometheus.MustRegister(metrics.DroppedPubSubEvents)
 
 	dbHostStrings := strings.Split(*dbHosts, ",")
 
@@ -112,10 +112,8 @@ func main() {
 	// start Event Gateway handler
 	go func() {
 		targetCache := targetcache.New("/serverless-gateway", kv, logger)
-		router := router.New(targetCache, logger)
-		mux := http.NewServeMux()
-		mux.Handle("/", router)
-		err = http.ListenAndServe(":"+strconv.Itoa(int(*gatewayPort)), mux)
+		router := router.New(targetCache, metrics.DroppedPubSubEvents, logger)
+		err = http.ListenAndServe(":"+strconv.Itoa(int(*gatewayPort)), router)
 		logger.Error("gateway server failed", zap.Error(err))
 		close(shutdownInitiateChan)
 		router.Drain()

@@ -13,6 +13,18 @@ func (e ErrorNotFound) Error() string {
 	return fmt.Sprintf("Function %q not found.", e.name)
 }
 
+type ErrorNoFunctionsProvided struct{}
+
+func (e ErrorNoFunctionsProvided) Error() string {
+	return "No backing functions provided."
+}
+
+type ErrorTotalFunctionWeightsZero struct{}
+
+func (e ErrorTotalFunctionWeightsZero) Error() string {
+	return "Function weights sum to zero."
+}
+
 // ErrorPropertiesNotSpecified occurs when function payload doesn't include function properties.
 type ErrorPropertiesNotSpecified struct{}
 

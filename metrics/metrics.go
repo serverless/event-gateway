@@ -11,3 +11,9 @@ var DurationMetric = prometheus.NewHistogram(
 		Help:    "Request duration distribution",
 		Buckets: prometheus.ExponentialBuckets(0.1, 1.1, 140),
 	})
+
+var DroppedPubSubEvents = prometheus.NewCounter(
+	prometheus.CounterOpts{
+		Name: "gateway_dropped_pubsub_events",
+		Help: "Dropped events due to insufficient processing power.",
+	})
