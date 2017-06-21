@@ -4,13 +4,12 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/docker/libkv/store"
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/functions/mock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestRegisterFunction_Success(t *testing.T) {
@@ -18,7 +17,9 @@ func TestRegisterFunction_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Put("testfunc", []byte(`{"functionId":"testfunc","awsLambda":{"arn":"arn:","region":"us-east-1","version":"latest","accessKeyID":"xxx","secretAccessKey":"xxx"}}`), nil).Return(nil)
+	payload := `{"functionId":"testfunc",` +
+		`"awsLambda":{"arn":"arn:","region":"us-east-1","version":"latest","accessKeyID":"xxx","secretAccessKey":"xxx"}}`
+	db.EXPECT().Put("testfunc", []byte(payload), nil).Return(nil)
 	registry := &functions.Functions{DB: db, Logger: zap.NewNop()}
 
 	fn, _ := registry.RegisterFunction(&functions.Function{
