@@ -1,11 +1,21 @@
 # The Event Gateway
 
-Communication bus and dataflow for event-driven, serverless architectures. The Event Gateway is a layer-7 proxy and realtime dataflow engine.
+Dataflow for event-driven, serverless architectures. The Event Gateway is a layer-7 proxy and realtime dataflow engine.
 
 ## Philosophy
 
 - Everything we care about is an event! (even calling a function)
 - Make it easy to share events across different systems!
+
+## Motivation
+
+- It is cumbersome to plug things into each other. This should be easy! Why do I need to set up a queue system to
+keep track of new user registrations or failed logins?
+- Introspection is terrible. There is no performant way to emit logs and metrics from a function. How do I know
+a new piece of code is actually working? How do I feed metrics to my existing monitoring system? How do I
+plug this function into to my existing analytics system?
+- Using new functions is risky without the ability to incrementally deploy them.
+- The AWS API Gateway is frequently cited as a performance and cost-prohibitive factor for using Lambda.
 
 ## Features
 
@@ -44,16 +54,6 @@ it to the stream, and you're good to go. This is not limited to metrics!
 - it's not a replacement for message queues (no message ordering, currently weak durability guarantees only)
 - it's not a replacement for streaming platforms (no processing capability and consumers group)
 - it's not a replacement for existing service discovery solutions from the microservices world
-
-## Motivation
-
-- It is cumbersome to plug things into each other. This should be easy! Why do I need to set up a queue system to
-keep track of new user registrations or failed logins?
-- Introspection is terrible. There is no performant way to emit logs and metrics from a function. How do I know
-a new piece of code is actually working? How do I feed metrics to my existing monitoring system? How do I
-plug this function into to my existing analytics system?
-- Using new functions is risky without the ability to incrementally deploy them.
-- The AWS API Gateway is frequently cited as a performance and cost-prohibitive factor for using Lambda.
 
 ## Architecture
 
@@ -96,9 +96,7 @@ GCloud us-c│ntral1───┐        │        │ λ ├┐      │       
 └────────────────────┘                                         └────────────────────┘
 ```
 
-- the event gateway instance uses etcd deployed in main region to read and write data
-- the event gateway instance subscribes to all changes made in etcd store, by other instances
-- the event gateway instance based on state change notifications creates cached versions of state to eliminate need for calling remote etcd for routing every event
+The Event Gateway instances use a strongly consistent, subscribable DB (initially etcd, with support for Consul, Zookeeper, and Dynamo planned) to store and broadcast configuration. The instances locally cache configuration used to drive low-latency event routing.
 
 ## API (for MVP)
 
