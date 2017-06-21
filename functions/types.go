@@ -34,7 +34,7 @@ func (f *Function) Call(payload []byte) ([]byte, error) {
 	if f.AWSLambda != nil {
 		return f.AWSLambda.Call(payload)
 	}
-	return []byte{}, errors.New("Calling this kind of function is not implemented.")
+	return []byte{}, errors.New("calling this kind of function is not implemented")
 }
 
 // AWSLambdaProperties contains the configuration required to call an AWS Lambda function.
