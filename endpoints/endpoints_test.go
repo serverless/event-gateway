@@ -19,9 +19,9 @@ func TestCreate_Success(t *testing.T) {
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Get("GET-test").Return(nil, errors.New("not found"))
 	db.EXPECT().Put("GET-test", []byte(`{"endpointId":"GET-test","functionId":"test","method":"GET","path":"test"}`), nil).Return(nil)
-	fun := mock.NewMockFunctionExister(ctrl)
-	fun.EXPECT().Exists("test").Return(true, nil)
-	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
+	fundb := mock.NewMockStore(ctrl)
+	fundb.EXPECT().Exists("test").Return(true, nil)
+	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionsDB: fundb}
 
 	en, _ := registry.Create(&endpoints.Endpoint{
 		FunctionID: "test",
@@ -43,9 +43,9 @@ func TestCreate_EndpointAlreadyExistsError(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Get("GET-test").Return(nil, nil)
-	fun := mock.NewMockFunctionExister(ctrl)
-	fun.EXPECT().Exists("test").Return(true, nil)
-	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
+	fundb := mock.NewMockStore(ctrl)
+	fundb.EXPECT().Exists("test").Return(true, nil)
+	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionsDB: fundb}
 
 	_, err := registry.Create(&endpoints.Endpoint{
 		FunctionID: "test",
@@ -63,9 +63,9 @@ func TestCreate_DBPutError(t *testing.T) {
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Get("GET-test").Return(nil, errors.New("not found"))
 	db.EXPECT().Put(gomock.Any(), gomock.Any(), nil).Return(errors.New("db put failed"))
-	fun := mock.NewMockFunctionExister(ctrl)
-	fun.EXPECT().Exists("test").Return(true, nil)
-	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
+	fundb := mock.NewMockStore(ctrl)
+	fundb.EXPECT().Exists("test").Return(true, nil)
+	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionsDB: fundb}
 
 	_, err := registry.Create(&endpoints.Endpoint{
 		FunctionID: "test",
@@ -81,9 +81,9 @@ func TestCreate_FunctionNotFoundError(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	fun := mock.NewMockFunctionExister(ctrl)
-	fun.EXPECT().Exists("test").Return(false, nil)
-	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
+	fundb := mock.NewMockStore(ctrl)
+	fundb.EXPECT().Exists("test").Return(false, nil)
+	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionsDB: fundb}
 
 	_, err := registry.Create(&endpoints.Endpoint{
 		FunctionID: "test",
@@ -100,8 +100,8 @@ func TestDelete_OK(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Delete("testid").Return(nil)
-	fun := mock.NewMockFunctionExister(ctrl)
-	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
+	fundb := mock.NewMockStore(ctrl)
+	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionsDB: fundb}
 
 	assert.Nil(t, registry.Delete("testid"))
 }
@@ -112,8 +112,8 @@ func TestDelete_Error(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Delete("testid").Return(errors.New("delete failed"))
-	fun := mock.NewMockFunctionExister(ctrl)
-	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
+	fundb := mock.NewMockStore(ctrl)
+	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionsDB: fundb}
 
 	assert.EqualError(t, registry.Delete("testid"), `Endpoint "testid" not found.`)
 }
@@ -127,8 +127,8 @@ func TestGetAll_OK(t *testing.T) {
 		Key:   "",
 		Value: []byte(`{"endpointId":"GET-test","functionId":"test","method":"GET","path":"test"}`),
 	}}, nil)
-	fun := mock.NewMockFunctionExister(ctrl)
-	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
+	fundb := mock.NewMockStore(ctrl)
+	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionsDB: fundb}
 
 	ens, err := registry.GetAll()
 
@@ -148,8 +148,8 @@ func TestGetAll_EmptyListOnDBListError(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().List("").Return(nil, errors.New("db failed"))
-	fun := mock.NewMockFunctionExister(ctrl)
-	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
+	fundb := mock.NewMockStore(ctrl)
+	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionsDB: fundb}
 
 	ens, err := registry.GetAll()
 
