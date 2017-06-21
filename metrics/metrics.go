@@ -12,6 +12,10 @@ var DurationMetric = prometheus.NewHistogram(
 		Buckets: prometheus.ExponentialBuckets(0.1, 1.1, 140),
 	})
 
+// DroppedPubSubEvents counts the number of times we need
+// to drop events instead of forwarding them in the pubsub
+// system. This should be alerted on in a monitoring system,
+// and trigger adding more capacity.
 var DroppedPubSubEvents = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Name: "gateway_pubsub_events_dropped",

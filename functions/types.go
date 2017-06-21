@@ -5,7 +5,7 @@ import (
 	"math/rand"
 )
 
-// Call tries to send a payload to a target function
+// Caller tries to send a payload to a target function
 type Caller interface {
 	Call([]byte) ([]byte, error)
 }
@@ -33,9 +33,8 @@ type Function struct {
 func (f *Function) Call(payload []byte) ([]byte, error) {
 	if f.AWSLambda != nil {
 		return f.AWSLambda.Call(payload)
-	} else {
-		return []byte{}, errors.New("Calling this kind of function is not implemented.")
 	}
+	return []byte{}, errors.New("Calling this kind of function is not implemented.")
 }
 
 // AWSLambdaProperties contains the configuration required to call an AWS Lambda function.
@@ -84,6 +83,7 @@ type WeightedFunction struct {
 // WeightedFunctions is a slice of WeightedFunction's that you can choose from based on weight
 type WeightedFunctions []WeightedFunction
 
+// Choose uses the function weights to pick a single one.
 func (w WeightedFunctions) Choose() (FunctionID, error) {
 	var chosenFunction FunctionID
 
@@ -96,7 +96,7 @@ func (w WeightedFunctions) Choose() (FunctionID, error) {
 		}
 
 		if weightTotal < 1 {
-			err := errors.New("Target function weights sum to 0, there is not one function to target.")
+			err := errors.New("target function weights sum to 0, there is not one function to target")
 			return FunctionID(""), err
 		}
 

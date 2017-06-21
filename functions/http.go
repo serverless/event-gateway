@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Call tries to send a payload to a target function
 func (p *HTTPProperties) Call(payload []byte) ([]byte, error) {
 	client := http.Client{
 		Timeout: time.Second * 5,

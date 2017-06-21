@@ -18,6 +18,8 @@ import (
 	"github.com/serverless/event-gateway/targetcache"
 )
 
+// Router calls a target function when an endpoint is hit, and
+// handles pubsub message delivery.
 type Router struct {
 	sync.Mutex
 	targetCache          targetcache.TargetCache
@@ -35,6 +37,7 @@ type res struct {
 	payload       []byte
 }
 
+// New instantiates a new Router
 func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
 	return &Router{
 		targetCache:          targetCache,
@@ -48,6 +51,8 @@ func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log
 	}
 }
 
+// IsDraining returns true if this Router is being drained of items
+// in its work queue before shutting down.
 func (router *Router) IsDraining() bool {
 	select {
 	case <-router.drain:
@@ -168,7 +173,7 @@ func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction 
 
 func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload []byte) {
 	topics := []pubsub.TopicID{}
-	for topic, _ := range topicMap {
+	for topic := range topicMap {
 		topics = append(topics, topic)
 	}
 	select {
@@ -183,6 +188,8 @@ func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload 
 	}
 }
 
+// CallEndpoint determines which function to call when an endpoint is hit, and
+// submits pubsub events to the work queue.
 func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []byte, resChan chan res) {
 	res := res{}
 
@@ -233,6 +240,7 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 	}
 }
 
+// CallFunction looks up a function and calls it.
 func (router *Router) CallFunction(fid functions.FunctionID, payload []byte) ([]byte, error) {
 	f, err := router.targetCache.Function(fid)
 	if err != nil {
