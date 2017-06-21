@@ -56,7 +56,7 @@ func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) ([
 	}
 
 	// if function is a group, get weights, otherwise, just return the ID
-	if function.Type != functions.Group {
+	if function.Group != nil {
 		res := []functions.WeightedFunction{
 			functions.WeightedFunction{
 				FunctionID: function.ID,

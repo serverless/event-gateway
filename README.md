@@ -30,7 +30,7 @@ teams, eliminates effort spent redeploying functions, and allows you to easily s
 HTTP services, even different cloud providers.
 - Function Discovery - Discover and call serverless functions from anything that can reach the Event Gateway.
 - Endpoints - Expose public HTTP/GraphQL/REST/WebSocket endpoints backed by serverless functions or HTTP services.
-- Multiple Emit - Optionally return multiple events, such as log messages or metrics, without sending it all back to 
+- Multiple Emit - Optionally return multiple events, such as log messages or metrics, without sending it all back to
 the caller. This plays particularly well with Pub/Sub systems. If you have an existing metrics aggregator, but don't
 want to send metrics to it from within your serverless function (forcing your caller to wait while this completes)
 you can return additional metrics destined for a topic of your choosing, say, "homepage-metrics". You can then
@@ -59,40 +59,45 @@ The Event Gateway exposes a RESTful configuration API.
 Request:
 
 - `functionId` - `string` - required, function name
-- `type` - `string` - required, function type, possible values: `aws-lambda`, `gcloud-function`, `azure-function`, `openwhisk-action`, `group`, `http`. `group` type may not use another group as a backing function.
-- `properties` - object:
-  - for `aws-lambda`:
-    - `arn` - `string` - AWS ARN identifier
-    - `region` - `string` - region name
-    - `version` - `string` - a specific version ID
-    - `accessKeyID` - `string` - AWS API key ID
-    - `secretAccessKey` - `string` - AWS API key
-  - for `gcloud-functions`:
-    - `name` - `string` - function name
-    - `region` - `string` - region name
-    - `serviceAccountKey` - `json` - Google Service Account key
-  - for `azure-functions`:
-    - `name` - `string` - function name
-    - `appName` - `string` - azure app name
-    - `azureFunctionsAdminKey` - `string` - Azure API key
-  - for `openwhisk-action`:
-    - `name` - `string` - action name
-    - `namespace` - `string` - OpenWhisk namespace
-    - `apiHost` - `string` - OpenWhisk platform endpoint, e.g. openwhisk.ng.bluemix.net
-    - `auth` - `string` - OpenWhisk authentication key, e.g. xxxxxx:yyyyy
-    - `apiGwAccessToken` - `string` - OpenWhisk optional API gateway access token
-  - for `group`:
-    - `functions` - `array` of `object` - backing functions
-      - `functionId` - `string` - function ID
-      - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
-  - for `http`:
-    - `url` - `string` - the URL of an http or https remote endpoint
+
+Only one of the following function type can be provided.
+
+- `awsLambda` - `object` - AWS Lambda properties:
+  - `arn` - `string` - AWS ARN identifier
+  - `region` - `string` - region name
+  - `version` - `string` - a specific version ID
+  - `accessKeyID` - `string` - AWS API key ID
+  - `secretAccessKey` - `string` - AWS API key
+- `gcloudFunction` - `object` - Google Cloud Function properties:
+  - `name` - `string` - function name
+  - `region` - `string` - region name
+  - `serviceAccountKey` - `json` - Google Service Account key
+- `azureFunction` - `object` - Azure Function properties:
+  - `name` - `string` - function name
+  - `appName` - `string` - azure app name
+  - `functionsAdminKey` - `string` - Azure API key
+- `openWhiskAction` - `object` - OpenWhisk Action properties:
+  - `name` - `string` - action name
+  - `namespace` - `string` - OpenWhisk namespace
+  - `apiHost` - `string` - OpenWhisk platform endpoint, e.g. openwhisk.ng.bluemix.net
+  - `auth` - `string` - OpenWhisk authentication key, e.g. xxxxxx:yyyyy
+  - `apiGwAccessToken` - `string` - OpenWhisk optional API gateway access token
+- `group` - `object` - Group function properties:
+  - `functions` - `array` of `object` - backing functions
+    - `functionId` - `string` - function ID
+    - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
+- `http` - `object` - HTTP function properties:
+  - `url` - `string` - the URL of an http or https remote endpoint
 
 Response:
 
 - `functionId` - `string` - function name
-- `type` - `string` - required. function type, possible values: `aws-lambda`, `gcloud-function`, `azure-function`, `openwhisk-action`, `group`, `http`.
-- `properties` - `object` - specific to `type`
+- `awsLambda` - `object` - AWS Lambda properties
+- `gcloudFunction` - `object` - Google Cloud Function properties
+- `azureFunction` - `object` - Azure Function properties
+- `openWhiskAction` - `object` - OpenWhisk Action properties
+- `group` - `object` - Group function properties
+- `http` - `object` - HTTP function properties
 
 #### Change configuration of group function
 

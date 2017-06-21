@@ -3,71 +3,66 @@ package functions
 // FunctionID uniquely identifies a function
 type FunctionID string
 
-// FunctionSpec is the JSON representation of a Function.
-type FunctionSpec struct {
-	ID         FunctionID        `json:"functionId"`
-	Type       string            `json:"type"`
-	Properties map[string]string `json:"properties"`
-}
-
 // FunctionType represents what kind of function this is.
 type FunctionType uint
 
-const (
-	// AwsLambda means this function is an AWS Lambda function.
-	AwsLambda FunctionType = iota
-	// GcloudFunction means this function is a Google Cloud Function.
-	GcloudFunction
-	// AzureFunction means this function is a Microsoft Azure Function.
-	AzureFunction
-	// OpenWhiskAction means this function is an OpenWhisk Action.
-	OpenWhiskAction
-	// Group means this is a load balancing group of functions with associated weights.
-	Group
-	// HTTP means this is an http endpoint.
-	HTTP
-)
-
 // Function repesents a deployed on one of the supported providers.
 type Function struct {
-	ID              FunctionID
-	Type            FunctionType
-	AwsLambda       *AwsLambdaProperties
-	GcloudFunction  *GcloudFunctionProperties
-	AzureFunction   *AzureFunctionProperties
-	OpenWhiskAction *OpenWhiskActionProperties
-	Group           *GroupProperties
-	HTTP            *HTTPProperties
+	ID FunctionID `json:"functionId"`
+
+	// Only one of the following properties can be defined.
+	AWSLambda       *AWSLambdaProperties       `json:"awsLambda,omitempty"`
+	GCloudFunction  *GCloudFunctionProperties  `json:"gcloudFunction,omitempty"`
+	AzureFunction   *AzureFunctionProperties   `json:"azureFunction,omitempty"`
+	OpenWhiskAction *OpenWhiskActionProperties `json:"openWhiskAction,omitempty"`
+	Group           *GroupProperties           `json:"group,omitempty"`
+	HTTP            *HTTPProperties            `json:"http,omitempty"`
 }
 
-// AwsLambdaProperties contains the configuration required to call an AWS Lambda function
-type AwsLambdaProperties struct{}
+// AWSLambdaProperties contains the configuration required to call an AWS Lambda function.
+type AWSLambdaProperties struct {
+	ARN             string `json:"arn" validate:"required"`
+	Region          string `json:"region" validate:"required"`
+	Version         string `json:"version" validate:"required"`
+	AccessKeyID     string `json:"accessKeyID" validate:"required"`
+	SecretAccessKey string `json:"secretAccessKey" validate:"required"`
+}
 
-// GcloudFunctionProperties contains the configuration required to call a Google Cloud Function
-type GcloudFunctionProperties struct{}
+// GCloudFunctionProperties contains the configuration required to call a Google Cloud Function.
+type GCloudFunctionProperties struct {
+	Name              string `json:"name" validate:"required"`
+	Region            string `json:"region" validate:"required"`
+	ServiceAccountKey string `json:"serviceAccountKey" validate:"required"`
+}
 
-// AzureFunctionProperties contains the configuration required to call an Azure Function
-type AzureFunctionProperties struct{}
+// AzureFunctionProperties contains the configuration required to call an Azure Function.
+type AzureFunctionProperties struct {
+	Name              string `json:"name" validate:"required"`
+	AppName           string `json:"appName" validate:"required"`
+	FunctionsAdminKey string `json:"functionsAdminKey" validate:"required"`
+}
 
-// OpenWhiskActionProperties contains the configuration required to call an OpenWhisk action
-type OpenWhiskActionProperties struct{}
+// OpenWhiskActionProperties contains the configuration required to call an OpenWhisk action.
+type OpenWhiskActionProperties struct {
+	Name             string `json:"name" validate:"required"`
+	Namespace        string `json:"namespace" validate:"required"`
+	APIHost          string `json:"apiHost" validate:"required"`
+	Auth             string `json:"auth" validate:"required"`
+	APIGWAccessToken string `json:"apiGwAccessToken" validate:"required"`
+}
 
-// GroupProperties contains a set of other functions and their load balancing weights
+// GroupProperties contains a set of other functions and their load balancing weights.
 type GroupProperties struct {
-	Functions []WeightedFunction
+	Functions []WeightedFunction `json:"functions" validate:"required"`
 }
-
-// HTTPProperties contains the configuration required to call an http endpoint
-type HTTPProperties struct{}
 
 // WeightedFunction is a function along with its load-balacing proportional weight.
 type WeightedFunction struct {
-	FunctionID FunctionID
-	Weight     uint
+	FunctionID FunctionID `json:"functionId" validate:"required"`
+	Weight     uint       `json:"weight" validate:"required"`
 }
 
-// Credentials that allows calling user's function.
-type Credentials struct {
-	AWSAccessKeyID     string `json:"aws_access_key_id"`
-	AWSSecretAccessKey string `json:"aws_secret_access_key"`
+// HTTPProperties contains the configuration required to call an http endpoint.
+type HTTPProperties struct {
+	URL string `json:"url" validate:"required,url"`
 }
