@@ -7,9 +7,16 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/docker/libkv/store"
+	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// Functions is a discovery tool for FaaS functions.
+// Registry is a discovery tool for FaaS and HTTP functions.
+type Registry interface {
+	RegisterFunction(fn *Function) (*Function, error)
+	GetFunction(name string) (*Function, error)
+}
+
+// Functions implements Registry.
 type Functions struct {
 	DB     store.Store
 	Logger *zap.Logger
@@ -17,6 +24,10 @@ type Functions struct {
 
 // RegisterFunction registers function in the discovery.
 func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
+	if err := f.validateFunction(fn); err != nil {
+		return nil, err
+	}
+
 	byt, err := json.Marshal(fn)
 	if err != nil {
 		return nil, err
@@ -47,4 +58,40 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 	return &fn, nil
 }
 
-const providerAWSLambda = "aws-lambda"
+func (f *Functions) validateFunction(fn *Function) error {
+	count := 0
+	if fn.AWSLambda != nil {
+		count++
+	}
+	if fn.AzureFunction != nil {
+		count++
+	}
+	if fn.GCloudFunction != nil {
+		count++
+	}
+	if fn.OpenWhiskAction != nil {
+		count++
+	}
+	if fn.Group != nil {
+		count++
+	}
+	if fn.HTTP != nil {
+		count++
+	}
+
+	if count == 0 {
+		return &ErrorPropertiesNotSpecified{}
+	}
+
+	if count > 1 {
+		return &ErrorMoreThanOneFunctionTypeSpecified{}
+	}
+
+	validate := validator.New()
+	err := validate.Struct(fn)
+	if err != nil {
+		return &ErrorValidation{err}
+	}
+
+	return nil
+}

@@ -13,7 +13,7 @@ install:
 script:
 - go get -u github.com/alecthomas/gometalinter
 - gometalinter --install --force
-- gometalinter --vendor --fast --disable=gotype --disable=vetshadow ./...
+- gometalinter --vendor --fast --disable=gotype --disable=vetshadow --skip=mock ./...
 - go test -race $(glide novendor)
 - "./_infrastructure/scripts/travis_publish_image.sh"
 - "./_infrastructure/scripts/travis_deploy.sh"
