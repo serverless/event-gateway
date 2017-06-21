@@ -81,7 +81,7 @@ type WeightedFunction struct {
 	Weight     uint       `json:"weight" validate:"required"`
 }
 
-// WeithegFunctions is a slice of WeightedFunction's that you can choose from based on weight
+// WeightedFunctions is a slice of WeightedFunction's that you can choose from based on weight
 type WeightedFunctions []WeightedFunction
 
 func (w WeightedFunctions) Choose() (FunctionID, error) {
