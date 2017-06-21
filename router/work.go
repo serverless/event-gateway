@@ -5,6 +5,6 @@ import (
 )
 
 type work struct {
-	topic   pubsub.TopicID
+	topics  []pubsub.TopicID
 	payload []byte
 }

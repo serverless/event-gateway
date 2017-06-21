@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
@@ -32,8 +31,8 @@ type Router struct {
 }
 
 type res struct {
-	e       error
-	payload []byte
+	responseError error
+	payload       []byte
 }
 
 func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
@@ -49,21 +48,27 @@ func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log
 	}
 }
 
-func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// if we're draining requests, spit back a 503
+func (router *Router) IsDraining() bool {
 	select {
 	case <-router.drain:
-		http.Error(w, http.StatusText(503), 503)
-		return
+		return true
 	default:
+	}
+	return false
+}
+
+func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// if we're draining requests, spit back a 503
+	if router.IsDraining() {
+		http.Error(w, http.StatusText(503), 503)
 	}
 
 	rawPath := r.URL.EscapedPath()
 	isAsync := strings.HasSuffix(rawPath, "/async")
 	trimmedPath := strings.TrimSuffix(rawPath, "/async")
-	id := strings.ToLower(r.Method) + "-" + trimmedPath
+	id := strings.ToUpper(r.Method) + "-" + trimmedPath
 	endpointID := endpoints.EndpointID(id)
-	router.log.Debug("got a new request: " + string(endpointID))
+	router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
 	reqBuf, err := ioutil.ReadAll(r.Body)
 
@@ -83,8 +88,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "response channel unexpectedly closed", 500)
 			return
 		}
-		if res.e != nil {
-			http.Error(w, res.e.Error(), 500)
+		if res.responseError != nil {
+			http.Error(w, res.responseError.Error(), 500)
 		} else {
 			timeout := time.After(router.responseWriteTimeout)
 			total := 0
@@ -108,45 +113,88 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []byte, resChan chan res) {
-	// 1. Get the backing functions, note that we need to change the
-	// BackingFunctions to let us know if it was a group, so we can
-	// submit events to topics based both on the function group AND
-	// the chosen function if subscribers are different for them, but
-	// being careful to not send duplicate events if both are registered
-	// as producers for a topic.
+func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction functions.FunctionID) (
+	map[pubsub.TopicID]struct{}, map[pubsub.TopicID]struct{}, error) {
+
 	sendInput := map[pubsub.TopicID]struct{}{}
 	sendOutput := map[pubsub.TopicID]struct{}{}
+
+	fillInputMap := func(fid functions.FunctionID) error {
+		inputDest, err := router.targetCache.FunctionInputToTopics(fid)
+		if err != nil {
+			return err
+		}
+
+		for _, topic := range inputDest {
+			sendInput[topic] = struct{}{}
+		}
+
+		return nil
+	}
+
+	fillOutputMap := func(fid functions.FunctionID) error {
+		outputDest, err := router.targetCache.FunctionInputToTopics(fid)
+		if err != nil {
+			return err
+		}
+
+		for _, topic := range outputDest {
+			sendOutput[topic] = struct{}{}
+		}
+
+		return nil
+	}
+
+	if fnGroup != nil {
+		if err := fillInputMap(*fnGroup); err != nil {
+			return nil, nil, err
+		}
+
+		if err := fillOutputMap(*fnGroup); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	if err := fillInputMap(chosenFunction); err != nil {
+		return nil, nil, err
+	}
+
+	if err := fillOutputMap(chosenFunction); err != nil {
+		return nil, nil, err
+	}
+
+	return sendInput, sendOutput, nil
+}
+
+func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload []byte) {
+	topics := []pubsub.TopicID{}
+	for topic, _ := range topicMap {
+		topics = append(topics, topic)
+	}
+	select {
+	case router.work <- work{
+		topics:  topics,
+		payload: payload,
+	}:
+	default:
+		// We could not submit any work, this is NOT good but
+		// we will sacrifice consistency for availability for now.
+		router.dropMetric.Inc()
+	}
+}
+
+func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []byte, resChan chan res) {
 	res := res{}
+
+	// 1. Figure out what function we're targeting
 
 	backingFunctions, fnGroup, err := router.targetCache.BackingFunctions(endpointID)
 
-	var chosenFunction functions.FunctionID
-
-	if len(backingFunctions) == 1 {
-		chosenFunction = backingFunctions[0].FunctionID
-	} else {
-		weightTotal := uint(0)
-		for _, wf := range backingFunctions {
-			weightTotal += wf.Weight
-		}
-
-		if weightTotal < 1 {
-			res.e = errors.New("for endpoint ID:" + string(endpointID) +
-				" the target function weights sum to 0, there is not one function to target.")
-			resChan <- res
-			return
-		}
-
-		chosenWeight := uint(1 + rand.Intn(int(weightTotal)))
-		weightsSoFar := uint(0)
-		for _, wf := range backingFunctions {
-			chosenFunction = wf.FunctionID
-			weightsSoFar += wf.Weight
-			if weightsSoFar >= chosenWeight {
-				break
-			}
-		}
+	chosenFunction, err := backingFunctions.Choose()
+	if err != nil {
+		res.responseError = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
+		resChan <- res
+		return
 	}
 
 	// 2. check if we need to send the input or output of the function to
@@ -155,72 +203,20 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 	//		We need to be very loud though, so that we can autoscale up more
 	//		gateway instances ASAP
 
-	fillInputMap := func(fid functions.FunctionID) bool {
-		inputDest, err := router.targetCache.FunctionInputToTopics(fid)
-		if err != nil {
-			res.e = errors.New("Unable to find subscribing topics for the input to function: " + string(fid))
-			resChan <- res
-			return false
-		}
-
-		for _, topic := range inputDest {
-			sendInput[topic] = struct{}{}
-		}
-
-		return true
-	}
-
-	fillOutputMap := func(fid functions.FunctionID) bool {
-		outputDest, err := router.targetCache.FunctionInputToTopics(fid)
-		if err != nil {
-			res.e = errors.New("Unable to find subscribing topics for the output to function: " + string(fid))
-			resChan <- res
-			return false
-		}
-
-		for _, topic := range outputDest {
-			sendOutput[topic] = struct{}{}
-		}
-
-		return true
-	}
-
-	if fnGroup != nil {
-		if !fillInputMap(*fnGroup) {
-			return
-		}
-
-		if !fillOutputMap(*fnGroup) {
-			return
-		}
-	}
-
-	if !fillInputMap(chosenFunction) {
-		return
-	}
-
-	if !fillOutputMap(chosenFunction) {
-		return
-	}
-
-	for topic, _ := range sendInput {
-		select {
-		case router.work <- work{
-			topic:   topic,
-			payload: payload,
-		}:
-		default:
-			// We could not submit any work, this is NOT good but
-			// we will sacrifice consistency for availability for now.
-			router.dropMetric.Inc()
-		}
+	sendInput, sendOutput, subscriberErr := router.subscribers(fnGroup, chosenFunction)
+	if subscriberErr != nil {
+		// We don't return because this is not fatal, and we still want to
+		// call the function even though there's a problem with subscribers.
+		res.responseError = errors.New("unable to determine subscribers for function: " + err.Error())
+	} else {
+		router.enqueueWork(sendInput, payload)
 	}
 
 	// 3. call the target backing function and submit the response to
 	//		the resChan if it is not nil.
 	result, err := router.CallFunction(chosenFunction, payload)
 	if err != nil {
-		res.e = errors.New("unable to reach backing function: " + err.Error())
+		res.responseError = errors.New("unable to reach backing function: " + err.Error())
 		resChan <- res
 		return
 	}
@@ -232,17 +228,8 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 	//		enqueue the work for forwarding events to subscribers, loudly
 	//		dropping it if we're congested.
 
-	for topic, _ := range sendOutput {
-		select {
-		case router.work <- work{
-			topic:   topic,
-			payload: result,
-		}:
-		default:
-			// We could not submit any work, this is NOT good but
-			// we will sacrifice consistency for availability for now.
-			router.dropMetric.Inc()
-		}
+	if subscriberErr == nil {
+		router.enqueueWork(sendOutput, result)
 	}
 }
 

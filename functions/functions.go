@@ -58,7 +58,7 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 	return &fn, nil
 }
 
-func (f *Functions) validateFunction(fn *Function) error {
+func (fn *Function) targetCount() int {
 	count := 0
 	if fn.AWSLambda != nil {
 		count++
@@ -74,7 +74,15 @@ func (f *Functions) validateFunction(fn *Function) error {
 	}
 	if fn.Group != nil {
 		count++
+	}
+	if fn.HTTP != nil {
+		count++
+	}
+	return count
+}
 
+func (f *Functions) validateFunction(fn *Function) error {
+	if fn.Group != nil {
 		if len(fn.Group.Functions) == 0 {
 			return &ErrorNoFunctionsProvided{}
 		}
@@ -88,9 +96,8 @@ func (f *Functions) validateFunction(fn *Function) error {
 			return &ErrorTotalFunctionWeightsZero{}
 		}
 	}
-	if fn.HTTP != nil {
-		count++
-	}
+
+	count := fn.targetCount()
 
 	if count == 0 {
 		return &ErrorPropertiesNotSpecified{}

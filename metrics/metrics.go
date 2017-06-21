@@ -14,6 +14,6 @@ var DurationMetric = prometheus.NewHistogram(
 
 var DroppedPubSubEvents = prometheus.NewCounter(
 	prometheus.CounterOpts{
-		Name: "gateway_dropped_pubsub_events",
+		Name: "gateway_pubsub_events_dropped",
 		Help: "Dropped events due to insufficient processing power.",
 	})

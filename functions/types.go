@@ -1,9 +1,12 @@
 package functions
 
-import "errors"
+import (
+	"errors"
+	"math/rand"
+)
 
 // Call tries to send a payload to a target function
-type Call interface {
+type Caller interface {
 	Call([]byte) ([]byte, error)
 }
 
@@ -76,6 +79,39 @@ type GroupProperties struct {
 type WeightedFunction struct {
 	FunctionID FunctionID `json:"functionId" validate:"required"`
 	Weight     uint       `json:"weight" validate:"required"`
+}
+
+// WeithegFunctions is a slice of WeightedFunction's that you can choose from based on weight
+type WeightedFunctions []WeightedFunction
+
+func (w WeightedFunctions) Choose() (FunctionID, error) {
+	var chosenFunction FunctionID
+
+	if len(w) == 1 {
+		chosenFunction = w[0].FunctionID
+	} else {
+		weightTotal := uint(0)
+		for _, wf := range w {
+			weightTotal += wf.Weight
+		}
+
+		if weightTotal < 1 {
+			err := errors.New("Target function weights sum to 0, there is not one function to target.")
+			return FunctionID(""), err
+		}
+
+		chosenWeight := uint(1 + rand.Intn(int(weightTotal)))
+		weightsSoFar := uint(0)
+		for _, wf := range w {
+			chosenFunction = wf.FunctionID
+			weightsSoFar += wf.Weight
+			if weightsSoFar >= chosenWeight {
+				break
+			}
+		}
+	}
+
+	return chosenFunction, nil
 }
 
 // HTTPProperties contains the configuration required to call an http endpoint.

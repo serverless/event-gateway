@@ -18,7 +18,7 @@ import (
 // TargetCache is an interface for retrieving cached configuration
 // for driving performance-sensitive routing decisions.
 type TargetCache interface {
-	BackingFunctions(endpoint endpoints.EndpointID) ([]functions.WeightedFunction, *functions.FunctionID, error)
+	BackingFunctions(endpoint endpoints.EndpointID) (functions.WeightedFunctions, *functions.FunctionID, error)
 	Function(functionID functions.FunctionID) (functions.Function, error)
 	FunctionInputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error)
 	FunctionOutputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error)
@@ -38,7 +38,7 @@ type LibKVTargetCache struct {
 // BackingFunctions returns the weighted functions and ID's for an endpoint and
 // the ID of a Group function if present.
 func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) (
-	[]functions.WeightedFunction, *functions.FunctionID, error,
+	functions.WeightedFunctions, *functions.FunctionID, error,
 ) {
 
 	// try to get the endpoint from our cache
@@ -70,7 +70,7 @@ func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) (
 		return res, nil, nil
 	}
 
-	return function.Group.Functions, &function.ID, nil
+	return functions.WeightedFunctions(function.Group.Functions), &function.ID, nil
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
