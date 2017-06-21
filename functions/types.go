@@ -1,5 +1,12 @@
 package functions
 
+import "errors"
+
+// Call tries to send a payload to a target function
+type Call interface {
+	Call([]byte) ([]byte, error)
+}
+
 // FunctionID uniquely identifies a function
 type FunctionID string
 
@@ -17,6 +24,15 @@ type Function struct {
 	OpenWhiskAction *OpenWhiskActionProperties `json:"openWhiskAction,omitempty"`
 	Group           *GroupProperties           `json:"group,omitempty"`
 	HTTP            *HTTPProperties            `json:"http,omitempty"`
+}
+
+// Call tries to send a payload to a target function
+func (f *Function) Call(payload []byte) ([]byte, error) {
+	if f.AWSLambda != nil {
+		return f.AWSLambda.Call(payload)
+	} else {
+		return []byte{}, errors.New("Calling this kind of function is not implemented.")
+	}
 }
 
 // AWSLambdaProperties contains the configuration required to call an AWS Lambda function.

@@ -247,7 +247,11 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 }
 
 func (router *Router) CallFunction(fid functions.FunctionID, payload []byte) ([]byte, error) {
-	return []byte{}, nil
+	f, err := router.targetCache.Function(fid)
+	if err != nil {
+		return []byte{}, nil
+	}
+	return f.Call(payload)
 }
 
 // StartWorkers spins up NWorkers goroutines for processing
