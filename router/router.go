@@ -199,9 +199,9 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 
 	// 2. check if we need to send the input or output of the function to
 	//    any topics, and if so, we add that work to the work queue. The
-	//		work queue is	a bounded channel, and we never block if it's full.
-	//		We need to be very loud though, so that we can autoscale up more
-	//		gateway instances ASAP
+	//    work queue is a bounded channel, and we never block if it's full.
+	//    We need to be very loud though, so that we can autoscale up more
+	//    gateway instances ASAP
 
 	sendInput, sendOutput, subscriberErr := router.subscribers(fnGroup, chosenFunction)
 	if subscriberErr != nil {
