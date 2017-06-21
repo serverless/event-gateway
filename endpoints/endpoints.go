@@ -24,9 +24,9 @@ type Endpoint struct {
 	Path       string               `json:"path" validate:"required"`
 }
 
-// FunctionExister is an interface used to check if function exists in the discovery.
+// FunctionExister is an interface used to check if function exists in configuration.
 type FunctionExister interface {
-	Exist(name string) bool
+	Exists(id string) (bool, error)
 }
 
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.
@@ -44,7 +44,10 @@ func (e *Endpoints) Create(en *Endpoint) (*Endpoint, error) {
 		return nil, &ErrorValidation{err}
 	}
 
-	exists := e.FunctionExister.Exist(string(en.FunctionID))
+	exists, err := e.FunctionExister.Exists(string(en.FunctionID))
+	if err != nil {
+		return nil, err
+	}
 	if !exists {
 		return nil, &ErrorFunctionNotFound{string(en.FunctionID)}
 	}

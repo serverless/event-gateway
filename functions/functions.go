@@ -52,7 +52,7 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 	return &fn, nil
 }
 
-// Exist checks if a function is registed in the discovery.
+// Exist checks if a function is registed in configuration.
 func (f *Functions) Exist(name string) bool {
 	_, err := f.DB.Get(name)
 	if err != nil {

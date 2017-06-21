@@ -20,7 +20,7 @@ func TestCreate_Success(t *testing.T) {
 	db.EXPECT().Get("GET-test").Return(nil, errors.New("not found"))
 	db.EXPECT().Put("GET-test", []byte(`{"endpointId":"GET-test","functionId":"test","method":"GET","path":"test"}`), nil).Return(nil)
 	fun := mock.NewMockFunctionExister(ctrl)
-	fun.EXPECT().Exist("test").Return(true)
+	fun.EXPECT().Exists("test").Return(true, nil)
 	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
 
 	en, _ := registry.Create(&endpoints.Endpoint{
@@ -44,7 +44,7 @@ func TestCreate_EndpointAlreadyExistsError(t *testing.T) {
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Get("GET-test").Return(nil, nil)
 	fun := mock.NewMockFunctionExister(ctrl)
-	fun.EXPECT().Exist("test").Return(true)
+	fun.EXPECT().Exists("test").Return(true, nil)
 	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
 
 	_, err := registry.Create(&endpoints.Endpoint{
@@ -64,7 +64,7 @@ func TestCreate_DBPutError(t *testing.T) {
 	db.EXPECT().Get("GET-test").Return(nil, errors.New("not found"))
 	db.EXPECT().Put(gomock.Any(), gomock.Any(), nil).Return(errors.New("db put failed"))
 	fun := mock.NewMockFunctionExister(ctrl)
-	fun.EXPECT().Exist("test").Return(true)
+	fun.EXPECT().Exists("test").Return(true, nil)
 	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
 
 	_, err := registry.Create(&endpoints.Endpoint{
@@ -82,7 +82,7 @@ func TestCreate_FunctionNotFoundError(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	fun := mock.NewMockFunctionExister(ctrl)
-	fun.EXPECT().Exist("test").Return(false)
+	fun.EXPECT().Exists("test").Return(false, nil)
 	registry := &endpoints.Endpoints{DB: db, Logger: zap.NewNop(), FunctionExister: fun}
 
 	_, err := registry.Create(&endpoints.Endpoint{

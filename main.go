@@ -82,8 +82,9 @@ func main() {
 
 	router := httprouter.New()
 
+	fnsDB := db.NewPrefixedStore("/serverless-gateway/functions", kv)
 	fns := &functions.Functions{
-		DB:     db.NewPrefixedStore("/serverless-gateway/functions", kv),
+		DB:     fnsDB,
 		Logger: logger,
 	}
 	fnsapi := &functions.HTTPAPI{Functions: fns}
@@ -92,7 +93,7 @@ func main() {
 	ens := &endpoints.Endpoints{
 		DB:              db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
 		Logger:          logger,
-		FunctionExister: fns,
+		FunctionExister: fnsDB,
 	}
 	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 	ensapi.RegisterRoutes(router)

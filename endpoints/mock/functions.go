@@ -28,12 +28,13 @@ func (_m *MockFunctionExister) EXPECT() *_MockFunctionExisterRecorder {
 	return _m.recorder
 }
 
-func (_m *MockFunctionExister) Exist(_param0 string) bool {
-	ret := _m.ctrl.Call(_m, "Exist", _param0)
+func (_m *MockFunctionExister) Exists(_param0 string) (bool, error) {
+	ret := _m.ctrl.Call(_m, "Exists", _param0)
 	ret0, _ := ret[0].(bool)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-func (_mr *_MockFunctionExisterRecorder) Exist(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exist", arg0)
+func (_mr *_MockFunctionExisterRecorder) Exists(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exists", arg0)
 }
