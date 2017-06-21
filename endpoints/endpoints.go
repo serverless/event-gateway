@@ -3,10 +3,11 @@ package endpoints
 import (
 	"bytes"
 	"encoding/json"
-	"sync"
+	"strings"
+
+	validator "gopkg.in/go-playground/validator.v9"
 
 	"github.com/docker/libkv/store"
-	shortid "github.com/ventu-io/go-shortid"
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/functions"
@@ -17,49 +18,47 @@ type EndpointID string
 
 // Endpoint represents single endpoint
 type Endpoint struct {
-	ID         EndpointID           `json:"id"`
-	FunctionID functions.FunctionID `json:"functionId"`
-	Method     string               `json:"method"`
-	Path       string               `json:"path"`
+	ID         EndpointID           `json:"endpointId"`
+	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
+	Method     string               `json:"method" validate:"required,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
+	Path       string               `json:"path" validate:"required"`
+}
+
+// FunctionExister is an interface used to check if function exists in the discovery.
+type FunctionExister interface {
+	Exist(name string) bool
 }
 
 // Endpoints enable exposing public HTTP/REST endpoints that allow communicating with backend functions.
 type Endpoints struct {
-	sync.RWMutex
 	DB     store.Store
 	Logger *zap.Logger
+	FunctionExister
 }
 
-// GetEndpoint returns registered endpoint.
-func (e *Endpoints) GetEndpoint(name string) (*Endpoint, error) {
-	kv, err := e.DB.Get(name)
+// Create creates endpoint.
+func (e *Endpoints) Create(en *Endpoint) (*Endpoint, error) {
+	validate := validator.New()
+	err := validate.Struct(en)
 	if err != nil {
-		return nil, err
+		return nil, &ErrorValidation{err}
 	}
 
-	if len(kv.Value) == 0 {
-		return nil, &ErrorNotFound{name}
+	exists := e.FunctionExister.Exist(string(en.FunctionID))
+	if !exists {
+		return nil, &ErrorFunctionNotFound{string(en.FunctionID)}
 	}
 
-	endpoint := Endpoint{}
-	dec := json.NewDecoder(bytes.NewReader(kv.Value))
-	err = dec.Decode(&endpoint)
-	if err != nil {
-		e.Logger.Info("Fetching endpoint failed.", zap.Error(err))
-		return nil, err
+	en.Path = strings.TrimPrefix(en.Path, "/")
+	en.ID = EndpointID(en.Method + "-" + en.Path)
+
+	_, err = e.DB.Get(string(en.ID))
+	if err == nil {
+		return nil, &ErrorAlreadyExists{
+			Method: en.Method,
+			Path:   en.Path,
+		}
 	}
-
-	return &endpoint, nil
-}
-
-// CreateEndpoint creates endpoint.
-func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
-	id, err := shortid.Generate()
-	if err != nil {
-		return nil, err
-	}
-
-	en.ID = EndpointID(id)
 
 	buf, err := json.Marshal(en)
 	if err != nil {
@@ -72,4 +71,36 @@ func (e *Endpoints) CreateEndpoint(en *Endpoint) (*Endpoint, error) {
 	}
 
 	return en, nil
+}
+
+// Delete endpoint.
+func (e *Endpoints) Delete(id EndpointID) error {
+	err := e.DB.Delete(string(id))
+	if err != nil {
+		return &ErrorNotFound{string(id)}
+	}
+	return nil
+}
+
+// GetAll returns array of all Endpoints.
+func (e *Endpoints) GetAll() ([]*Endpoint, error) {
+	ens := []*Endpoint{}
+
+	kvs, err := e.DB.List("")
+	if err != nil {
+		return ens, nil
+	}
+
+	for _, kv := range kvs {
+		en := &Endpoint{}
+		dec := json.NewDecoder(bytes.NewReader(kv.Value))
+		err = dec.Decode(en)
+		if err != nil {
+			return nil, err
+		}
+
+		ens = append(ens, en)
+	}
+
+	return ens, nil
 }

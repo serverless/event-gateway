@@ -10,12 +10,6 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// Registry is a discovery tool for FaaS and HTTP functions.
-type Registry interface {
-	RegisterFunction(fn *Function) (*Function, error)
-	GetFunction(name string) (*Function, error)
-}
-
 // Functions implements Registry.
 type Functions struct {
 	DB     store.Store
@@ -56,6 +50,16 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 		return nil, err
 	}
 	return &fn, nil
+}
+
+// Exist checks if a function is registed in the discovery.
+func (f *Functions) Exist(name string) bool {
+	_, err := f.DB.Get(name)
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 func (f *Functions) validateFunction(fn *Function) error {
