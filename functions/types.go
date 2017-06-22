@@ -33,6 +33,8 @@ type Function struct {
 func (f *Function) Call(payload []byte) ([]byte, error) {
 	if f.AWSLambda != nil {
 		return f.AWSLambda.Call(payload)
+	} else if f.HTTP != nil {
+		return f.HTTP.Call(payload)
 	}
 	return []byte{}, errors.New("calling this kind of function is not implemented")
 }

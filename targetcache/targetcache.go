@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/docker/libkv/store"
+	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/db"
 	"github.com/serverless/event-gateway/endpoints"

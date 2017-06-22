@@ -58,7 +58,7 @@ func main() {
 	shutdownCompleteChan := make(chan struct{})
 	if *embedMaster {
 		startedChan, stoppedChan := db.EmbedEtcd(*embedDataDir, *embedPeerAddr,
-			*embedCliAddr, shutdownInitiateChan, logger, *verbose)
+			*embedCliAddr, shutdownInitiateChan, *verbose)
 		select {
 		case <-startedChan:
 			defer func() {

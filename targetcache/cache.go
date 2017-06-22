@@ -93,6 +93,7 @@ func newEndpointCache(log *zap.Logger) *endpointCache {
 func (c *endpointCache) Set(k string, v []byte) {
 	e := endpoints.Endpoint{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&e)
+	c.log.Debug("endpoint cache received set key.", zap.String("key", k), zap.String("value", string(v)))
 	if err != nil {
 		c.log.Error("Could not deserialize Endpoint state!", zap.Error(err), zap.String("key", k))
 	} else {

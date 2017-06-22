@@ -54,15 +54,15 @@ type PathWatcher struct {
 	// when failures occur.
 	backoffFactor int
 
-	// reconciliationBaseDelay is the minimum duration in seconds
+	// ReconciliationBaseDelay is the minimum duration in seconds
 	// between re-connection attempts for db watches, which
 	// mitigate connection issues causing lost updates.
-	reconciliationBaseDelay int
+	ReconciliationBaseDelay int
 
-	// reconciliationJitter is the maximum additional delay
-	// applied to the reconciliationBaseDelay when waiting
-	// to reconnect to the db for reconciliation
-	reconciliationJitter int
+	// ReconciliationJitter is the maximum additional delay
+	// applied to the ReconciliationBaseDelay when waiting
+	// to reconnect to the db for Reconciliation
+	ReconciliationJitter int
 }
 
 // NewPathWatcher instantiates a new PathWatcher.
@@ -81,8 +81,8 @@ func NewPathWatcher(path string, kv store.Store, log *zap.Logger) *PathWatcher {
 		kv:                      kv,
 		log:                     log,
 		backoffFactor:           1,
-		reconciliationBaseDelay: 30,
-		reconciliationJitter:    10,
+		ReconciliationBaseDelay: 30,
+		ReconciliationJitter:    10,
 	}
 }
 
@@ -95,13 +95,14 @@ func (rfs *PathWatcher) React(reactor Reactive, shutdown chan struct{}) {
 
 	go func() {
 		for event := range events {
+			key := strings.TrimPrefix(event.key, rfs.path)
 			switch event.eventType {
 			case createdNode:
-				reactor.Created(event.key, event.value)
+				reactor.Created(key, event.value)
 			case modifiedNode:
-				reactor.Modified(event.key, event.value)
+				reactor.Modified(key, event.value)
 			case deletedNode:
-				reactor.Deleted(event.key, event.value)
+				reactor.Deleted(key, event.value)
 			default:
 				panic("received unknown event type.")
 			}
@@ -121,11 +122,11 @@ func (rfs *PathWatcher) backoff() {
 	rfs.backoffFactor = int(math.Min(float64(rfs.backoffFactor<<1), 8))
 }
 
-func (rfs *PathWatcher) reconciliationTimeout() <-chan time.Time {
+func (rfs *PathWatcher) ReconciliationTimeout() <-chan time.Time {
 	// use a minimum jitter of 1
-	maxJitter := int(math.Max(float64(rfs.reconciliationJitter), 1))
+	maxJitter := int(math.Max(float64(rfs.ReconciliationJitter), 1))
 	jitter := rand.Intn(maxJitter)
-	delay := time.Duration(jitter+rfs.reconciliationBaseDelay) * time.Second
+	delay := time.Duration(jitter+rfs.ReconciliationBaseDelay) * time.Second
 	return time.After(delay)
 }
 
@@ -229,7 +230,7 @@ func (rfs *PathWatcher) processEvents(cache *map[string]cachedValue, incomingEve
 			}
 		case <-shutdown:
 			return true
-		case <-rfs.reconciliationTimeout():
+		case <-rfs.ReconciliationTimeout():
 			// it's time to reconnect to catch any lost updates
 			rfs.log.Debug("attempting reconnection to reconcile possibly lost updates.")
 			return false
