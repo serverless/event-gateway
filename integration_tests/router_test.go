@@ -40,7 +40,7 @@ func TestFunctionDefAndCalling(t *testing.T) {
 	router, testRouterServer := newTestRouterServer(kv, log)
 	defer testRouterServer.Close()
 
-	expected := "	😸"
+	expected := "😸"
 
 	testTargetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, expected)
