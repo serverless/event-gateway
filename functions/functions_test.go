@@ -89,10 +89,10 @@ func TestExistFunction_Found(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("testfunc").Return(&store.KVPair{Value: []byte(`{"functionId": "testfunc"}`)}, nil)
+	db.EXPECT().Exists("testfunc").Return(true, nil)
 	registry := &functions.Functions{DB: db, Logger: zap.NewNop()}
 
-	exists := registry.Exist("testfunc")
+	exists, _ := registry.DB.Exists("testfunc")
 
 	assert.Equal(t, true, exists)
 }
@@ -102,10 +102,10 @@ func TestExistFunction_NotFound(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("nofunc").Return(nil, errors.New("not found"))
+	db.EXPECT().Exists("nofunc").Return(false, nil)
 	registry := &functions.Functions{DB: db, Logger: zap.NewNop()}
 
-	exists := registry.Exist("nofunc")
+	exists, _ := registry.DB.Exists("nofunc")
 
 	assert.Equal(t, false, exists)
 }

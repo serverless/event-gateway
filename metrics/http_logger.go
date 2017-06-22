@@ -9,8 +9,8 @@ import (
 
 // HTTPLogger logs HTTP requests and collects request related metrics
 type HTTPLogger struct {
-	Handler        http.Handler
-	DurationMetric prometheus.Histogram
+	Handler         http.Handler
+	RequestDuration prometheus.Histogram
 }
 
 func (l HTTPLogger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -19,5 +19,5 @@ func (l HTTPLogger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	l.Handler.ServeHTTP(w, r)
 
 	duration := time.Since(start)
-	l.DurationMetric.Observe(float64(duration) / float64(time.Millisecond))
+	l.RequestDuration.Observe(float64(duration) / float64(time.Millisecond))
 }

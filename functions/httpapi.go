@@ -53,6 +53,10 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*ErrorValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*ErrorNoFunctionsProvided); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*ErrorTotalFunctionWeightsZero); ok {
+			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

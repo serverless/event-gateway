@@ -3,23 +3,23 @@ package main
 import (
 	"flag"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/docker/libkv"
 	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/etcd"
-
-	"go.uber.org/zap"
-
 	"github.com/julienschmidt/httprouter"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/db"
 	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/metrics"
-
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/serverless/event-gateway/router"
+	"github.com/serverless/event-gateway/targetcache"
 )
 
 func init() {
@@ -33,9 +33,12 @@ func main() {
 	embedPeerAddr := flag.String("embed-peer-addr", "http://localhost:2380", "Address for testing embedded etcd to receive peer connections.")
 	embedCliAddr := flag.String("embed-cli-addr", "http://localhost:2379", "Address for testing embedded etcd to receive client connections.")
 	embedDataDir := flag.String("embed-data-dir", "default.etcd", "Path for testing embedded etcd to store its state.")
+	apiPort := flag.Uint("api-port", 8081, "Port to serve configuration API on.")
+	gatewayPort := flag.Uint("gateway-port", 8080, "Port to serve configured endpoints on.")
 	flag.Parse()
 
-	prometheus.MustRegister(metrics.DurationMetric)
+	prometheus.MustRegister(metrics.RequestDuration)
+	prometheus.MustRegister(metrics.DroppedPubSubEvents)
 
 	dbHostStrings := strings.Split(*dbHosts, ",")
 
@@ -80,28 +83,42 @@ func main() {
 			zap.Error(err))
 	}
 
-	router := httprouter.New()
+	// start API handler
+	go func() {
+		apiRouter := httprouter.New()
 
-	fnsDB := db.NewPrefixedStore("/serverless-gateway/functions", kv)
-	fns := &functions.Functions{
-		DB:     fnsDB,
-		Logger: logger,
-	}
-	fnsapi := &functions.HTTPAPI{Functions: fns}
-	fnsapi.RegisterRoutes(router)
+		fnsDB := db.NewPrefixedStore("/serverless-gateway/functions", kv)
+		fns := &functions.Functions{
+			DB:     fnsDB,
+			Logger: logger,
+		}
+		fnsapi := &functions.HTTPAPI{Functions: fns}
+		fnsapi.RegisterRoutes(apiRouter)
 
-	ens := &endpoints.Endpoints{
-		DB:          db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
-		Logger:      logger,
-		FunctionsDB: fnsDB,
-	}
-	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
-	ensapi.RegisterRoutes(router)
+		ens := &endpoints.Endpoints{
+			DB:          db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
+			Logger:      logger,
+			FunctionsDB: fnsDB,
+		}
+		ensapi := &endpoints.HTTPAPI{Endpoints: ens}
+		ensapi.RegisterRoutes(apiRouter)
 
-	router.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
-	router.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
-	err = http.ListenAndServe(":8080", metrics.HTTPLogger{router, metrics.DurationMetric})
-	logger.Error("server failed", zap.Error(err))
-	close(shutdownInitiateChan)
+		apiRouter.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
+		apiRouter.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
+
+		err = http.ListenAndServe(":"+strconv.Itoa(int(*apiPort)), metrics.HTTPLogger{apiRouter, metrics.RequestDuration})
+		logger.Error("api server failed", zap.Error(err))
+		close(shutdownInitiateChan)
+	}()
+
+	// start Event Gateway handler
+	go func() {
+		targetCache := targetcache.New("/serverless-gateway", kv, logger)
+		router := router.New(targetCache, metrics.DroppedPubSubEvents, logger)
+		err = http.ListenAndServe(":"+strconv.Itoa(int(*gatewayPort)), router)
+		logger.Error("gateway server failed", zap.Error(err))
+		close(shutdownInitiateChan)
+		router.Drain()
+	}()
 	<-shutdownCompleteChan
 }

@@ -1,5 +1,15 @@
 package functions
 
+import (
+	"errors"
+	"math/rand"
+)
+
+// Caller tries to send a payload to a target function
+type Caller interface {
+	Call([]byte) ([]byte, error)
+}
+
 // FunctionID uniquely identifies a function
 type FunctionID string
 
@@ -17,6 +27,14 @@ type Function struct {
 	OpenWhiskAction *OpenWhiskActionProperties `json:"openWhiskAction,omitempty"`
 	Group           *GroupProperties           `json:"group,omitempty"`
 	HTTP            *HTTPProperties            `json:"http,omitempty"`
+}
+
+// Call tries to send a payload to a target function
+func (f *Function) Call(payload []byte) ([]byte, error) {
+	if f.AWSLambda != nil {
+		return f.AWSLambda.Call(payload)
+	}
+	return []byte{}, errors.New("calling this kind of function is not implemented")
 }
 
 // AWSLambdaProperties contains the configuration required to call an AWS Lambda function.
@@ -53,13 +71,47 @@ type OpenWhiskActionProperties struct {
 
 // GroupProperties contains a set of other functions and their load balancing weights.
 type GroupProperties struct {
-	Functions []WeightedFunction `json:"functions" validate:"required"`
+	Functions WeightedFunctions `json:"functions" validate:"required"`
 }
 
 // WeightedFunction is a function along with its load-balacing proportional weight.
 type WeightedFunction struct {
 	FunctionID FunctionID `json:"functionId" validate:"required"`
 	Weight     uint       `json:"weight" validate:"required"`
+}
+
+// WeightedFunctions is a slice of WeightedFunction's that you can choose from based on weight
+type WeightedFunctions []WeightedFunction
+
+// Choose uses the function weights to pick a single one.
+func (w WeightedFunctions) Choose() (FunctionID, error) {
+	var chosenFunction FunctionID
+
+	if len(w) == 1 {
+		chosenFunction = w[0].FunctionID
+	} else {
+		weightTotal := uint(0)
+		for _, wf := range w {
+			weightTotal += wf.Weight
+		}
+
+		if weightTotal < 1 {
+			err := errors.New("target function weights sum to 0, there is not one function to target")
+			return FunctionID(""), err
+		}
+
+		chosenWeight := uint(1 + rand.Intn(int(weightTotal)))
+		weightsSoFar := uint(0)
+		for _, wf := range w {
+			chosenFunction = wf.FunctionID
+			weightsSoFar += wf.Weight
+			if weightsSoFar >= chosenWeight {
+				break
+			}
+		}
+	}
+
+	return chosenFunction, nil
 }
 
 // HTTPProperties contains the configuration required to call an http endpoint.

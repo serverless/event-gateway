@@ -52,17 +52,7 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 	return &fn, nil
 }
 
-// Exist checks if a function is registed in configuration.
-func (f *Functions) Exist(name string) bool {
-	_, err := f.DB.Get(name)
-	if err != nil {
-		return false
-	}
-
-	return true
-}
-
-func (f *Functions) validateFunction(fn *Function) error {
+func (fn *Function) targetCount() int {
 	count := 0
 	if fn.AWSLambda != nil {
 		count++
@@ -82,6 +72,26 @@ func (f *Functions) validateFunction(fn *Function) error {
 	if fn.HTTP != nil {
 		count++
 	}
+	return count
+}
+
+func (f *Functions) validateFunction(fn *Function) error {
+	if fn.Group != nil {
+		if len(fn.Group.Functions) == 0 {
+			return &ErrorNoFunctionsProvided{}
+		}
+
+		weightTotal := uint(0)
+		for _, wf := range fn.Group.Functions {
+			weightTotal += wf.Weight
+		}
+
+		if weightTotal < 1 {
+			return &ErrorTotalFunctionWeightsZero{}
+		}
+	}
+
+	count := fn.targetCount()
 
 	if count == 0 {
 		return &ErrorPropertiesNotSpecified{}

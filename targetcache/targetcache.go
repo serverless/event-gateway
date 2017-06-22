@@ -18,7 +18,7 @@ import (
 // TargetCache is an interface for retrieving cached configuration
 // for driving performance-sensitive routing decisions.
 type TargetCache interface {
-	BackingFunctions(endpoint endpoints.EndpointID) ([]functions.WeightedFunction, error)
+	BackingFunctions(endpoint endpoints.EndpointID) (functions.WeightedFunctions, *functions.FunctionID, error)
 	Function(functionID functions.FunctionID) (functions.Function, error)
 	FunctionInputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error)
 	FunctionOutputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error)
@@ -35,14 +35,19 @@ type LibKVTargetCache struct {
 	subscriberCache *subscriberCache
 }
 
-// BackingFunctions returns the weighted functions and ID's for an endpoint
-func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) ([]functions.WeightedFunction, error) {
+// BackingFunctions returns functions and their weights, along with the
+// group ID if this was a Group function target, so we can submit
+// events to topics that are fed by both.
+func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) (
+	functions.WeightedFunctions, *functions.FunctionID, error,
+) {
+
 	// try to get the endpoint from our cache
 	tc.endpointCache.RLock()
 	endpoint, exists := tc.endpointCache.cache[endpointID]
 	tc.endpointCache.RUnlock()
 	if !exists {
-		return []functions.WeightedFunction{}, errors.New("endpoint not found")
+		return functions.WeightedFunctions{}, nil, errors.New("endpoint not found")
 	}
 
 	// try to get the function from our cache
@@ -52,26 +57,21 @@ func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) ([
 	tc.functionCache.RUnlock()
 	if !exists {
 		errMsg := fmt.Sprintf("Function %s not found in function cache. Is it configured?", fid)
-		return []functions.WeightedFunction{}, errors.New(errMsg)
+		return functions.WeightedFunctions{}, nil, errors.New(errMsg)
 	}
 
 	// if function is a group, get weights, otherwise, just return the ID
-	if function.Group != nil {
-		res := []functions.WeightedFunction{
-			functions.WeightedFunction{
+	if function.Group == nil {
+		res := functions.WeightedFunctions{
+			{
 				FunctionID: function.ID,
 				Weight:     1,
 			},
 		}
-		return res, nil
+		return res, nil, nil
 	}
 
-	if function.Group == nil {
-		errMsg := fmt.Sprintf("Function %s is a group, but contains no GroupProperties struct!", fid)
-		return []functions.WeightedFunction{}, errors.New(errMsg)
-	}
-
-	return function.Group.Functions, nil
+	return functions.WeightedFunctions(function.Group.Functions), &function.ID, nil
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
