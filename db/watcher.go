@@ -122,7 +122,7 @@ func (rfs *PathWatcher) backoff() {
 	rfs.backoffFactor = int(math.Min(float64(rfs.backoffFactor<<1), 8))
 }
 
-func (rfs *PathWatcher) ReconciliationTimeout() <-chan time.Time {
+func (rfs *PathWatcher) reconciliationTimeout() <-chan time.Time {
 	// use a minimum jitter of 1
 	maxJitter := int(math.Max(float64(rfs.ReconciliationJitter), 1))
 	jitter := rand.Intn(maxJitter)
@@ -230,7 +230,7 @@ func (rfs *PathWatcher) processEvents(cache *map[string]cachedValue, incomingEve
 			}
 		case <-shutdown:
 			return true
-		case <-rfs.ReconciliationTimeout():
+		case <-rfs.reconciliationTimeout():
 			// it's time to reconnect to catch any lost updates
 			rfs.log.Debug("attempting reconnection to reconcile possibly lost updates.")
 			return false
