@@ -68,7 +68,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rawPath := r.URL.EscapedPath()
 	isAsync := strings.HasSuffix(rawPath, "/async")
 	trimmedPath := strings.TrimSuffix(rawPath, "/async")
-	id := strings.ToUpper(r.Method) + "-" + trimmedPath
+	id := r.Method + "-" + trimmedPath
 	endpointID := endpoints.EndpointID(id)
 	router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
