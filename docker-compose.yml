@@ -5,7 +5,7 @@ services:
     cpu_shares: 256
     mem_limit: 268435456
     ports:
-      - "8080"
+      - "8081"
       - "2379:2379"
     logging:
       driver: awslogs
