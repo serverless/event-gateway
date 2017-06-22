@@ -37,7 +37,7 @@ func main() {
 	gatewayPort := flag.Uint("gateway-port", 8080, "Port to serve configured endpoints on.")
 	flag.Parse()
 
-	prometheus.MustRegister(metrics.DurationMetric)
+	prometheus.MustRegister(metrics.RequestDuration)
 	prometheus.MustRegister(metrics.DroppedPubSubEvents)
 
 	dbHostStrings := strings.Split(*dbHosts, ",")
@@ -106,7 +106,7 @@ func main() {
 		apiRouter.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 		apiRouter.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
 
-		err = http.ListenAndServe(":"+strconv.Itoa(int(*apiPort)), metrics.HTTPLogger{apiRouter, metrics.DurationMetric})
+		err = http.ListenAndServe(":"+strconv.Itoa(int(*apiPort)), metrics.HTTPLogger{apiRouter, metrics.RequestDuration})
 		logger.Error("api server failed", zap.Error(err))
 		close(shutdownInitiateChan)
 	}()
