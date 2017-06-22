@@ -106,7 +106,10 @@ func main() {
 		apiRouter.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 		apiRouter.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
 
-		err = http.ListenAndServe(":"+strconv.Itoa(int(*apiPort)), metrics.HTTPLogger{apiRouter, metrics.RequestDuration})
+		err = http.ListenAndServe(":"+strconv.Itoa(int(*apiPort)), metrics.HTTPLogger{
+			Handler:         apiRouter,
+			RequestDuration: metrics.RequestDuration,
+		})
 		logger.Error("api server failed", zap.Error(err))
 		close(shutdownInitiateChan)
 	}()
@@ -115,7 +118,13 @@ func main() {
 	go func() {
 		targetCache := targetcache.New("/serverless-gateway", kv, logger)
 		router := router.New(targetCache, metrics.DroppedPubSubEvents, logger)
-		err = http.ListenAndServe(":"+strconv.Itoa(int(*gatewayPort)), router)
+		ev := &http.Server{
+			Addr:         ":" + strconv.Itoa(int(*gatewayPort)),
+			Handler:      router,
+			ReadTimeout:  3 * time.Second,
+			WriteTimeout: 3 * time.Second,
+		}
+		err := ev.ListenAndServe()
 		logger.Error("gateway server failed", zap.Error(err))
 		close(shutdownInitiateChan)
 		router.Drain()

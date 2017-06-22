@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -32,21 +31,20 @@ type Router struct {
 	responseWriteTimeout time.Duration
 }
 
-type res struct {
-	responseError error
-	payload       []byte
+type functionResponse struct {
+	err     error
+	payload []byte
 }
 
 // New instantiates a new Router
 func New(TargetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
 	return &Router{
-		TargetCache:          TargetCache,
-		dropMetric:           dropMetric,
-		log:                  log,
-		NWorkers:             20,
-		drain:                make(chan struct{}),
-		work:                 nil,
-		responseWriteTimeout: 3 * time.Second,
+		TargetCache: targetCache,
+		dropMetric:  dropMetric,
+		log:         log,
+		NWorkers:    20,
+		drain:       make(chan struct{}),
+		work:        nil,
 	}
 }
 
@@ -81,7 +79,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%s", err)
 	}
 
-	resChan := make(chan res)
+	resChan := make(chan functionResponse)
 
 	go router.CallEndpoint(endpointID, reqBuf, resChan)
 
@@ -93,26 +91,14 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "response channel unexpectedly closed", 500)
 			return
 		}
-		if res.responseError != nil {
-			http.Error(w, res.responseError.Error(), 500)
-		} else {
-			timeout := time.After(router.responseWriteTimeout)
-			total := 0
-			sz := len(res.payload)
-			for total < sz {
-				select {
-				case <-timeout:
-					http.Error(w, "timed out writing response", 500)
-					return
-				default:
-				}
 
-				written, err := w.Write(res.payload)
-				if err != nil {
-					http.Error(w, err.Error(), 500)
-					return
-				}
-				total += written
+		if res.err != nil {
+			http.Error(w, res.err.Error(), 500)
+		} else {
+			_, err := w.Write(res.payload)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
 			}
 		}
 	}
@@ -190,8 +176,8 @@ func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload 
 
 // CallEndpoint determines which function to call when an endpoint is hit, and
 // submits pubsub events to the work queue.
-func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []byte, resChan chan res) {
-	res := res{}
+func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []byte, resChan chan functionResponse) {
+	res := functionResponse{}
 
 	// 1. Figure out what function we're targeting
 
@@ -204,7 +190,7 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 
 	chosenFunction, err := backingFunctions.Choose()
 	if err != nil {
-		res.responseError = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
+		res.err = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
 		resChan <- res
 		return
 	}
@@ -219,7 +205,7 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 	if subscriberErr != nil {
 		// We don't return because this is not fatal, and we still want to
 		// call the function even though there's a problem with subscribers.
-		res.responseError = errors.New("unable to determine subscribers for function: " + err.Error())
+		res.err = errors.New("unable to determine subscribers for function: " + err.Error())
 	} else {
 		router.enqueueWork(sendInput, payload)
 	}
@@ -228,7 +214,7 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 	//		the resChan if it is not nil.
 	result, err := router.CallFunction(chosenFunction, payload)
 	if err != nil {
-		res.responseError = errors.New("unable to reach backing function: " + err.Error())
+		res.err = errors.New("unable to reach backing function: " + err.Error())
 		resChan <- res
 		return
 	}
