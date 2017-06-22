@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -39,7 +40,7 @@ type functionResponse struct {
 // New instantiates a new Router
 func New(TargetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
 	return &Router{
-		TargetCache: targetCache,
+		TargetCache: TargetCache,
 		dropMetric:  dropMetric,
 		log:         log,
 		NWorkers:    20,
@@ -183,7 +184,7 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 
 	backingFunctions, fnGroup, err := router.TargetCache.BackingFunctions(endpointID)
 	if err != nil {
-		res.responseError = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
+		res.err = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
 		resChan <- res
 		return
 	}
