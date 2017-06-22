@@ -21,10 +21,8 @@ import (
 )
 
 func newTestRouterServer(kv store.Store, log *zap.Logger) (*router.Router, *httptest.Server) {
-	targetCache := targetcache.New("/serverless-gateway", kv, log)
+	targetCache := targetcache.New("/serverless-gateway", kv, log, true)
 	router := router.New(targetCache, metrics.DroppedPubSubEvents, log)
-	listener.ReconciliationJitter = 0
-	listener.ReconciliationBaseDelay = 3
 
 	return router, httptest.NewServer(router)
 }
