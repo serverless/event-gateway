@@ -71,7 +71,7 @@ type OpenWhiskActionProperties struct {
 
 // GroupProperties contains a set of other functions and their load balancing weights.
 type GroupProperties struct {
-	Functions []WeightedFunction `json:"functions" validate:"required"`
+	Functions WeightedFunctions `json:"functions" validate:"required"`
 }
 
 // WeightedFunction is a function along with its load-balacing proportional weight.

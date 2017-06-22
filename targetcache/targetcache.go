@@ -35,8 +35,9 @@ type LibKVTargetCache struct {
 	subscriberCache *subscriberCache
 }
 
-// BackingFunctions returns the weighted functions and ID's for an endpoint and
-// the ID of a Group function if present.
+// BackingFunctions returns functions and their weights, along with the
+// group ID if this was a Group function target, so we can submit
+// events to topics that are fed by both.
 func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) (
 	functions.WeightedFunctions, *functions.FunctionID, error,
 ) {
@@ -46,7 +47,7 @@ func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) (
 	endpoint, exists := tc.endpointCache.cache[endpointID]
 	tc.endpointCache.RUnlock()
 	if !exists {
-		return []functions.WeightedFunction{}, nil, errors.New("endpoint not found")
+		return functions.WeightedFunctions{}, nil, errors.New("endpoint not found")
 	}
 
 	// try to get the function from our cache
@@ -56,12 +57,12 @@ func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) (
 	tc.functionCache.RUnlock()
 	if !exists {
 		errMsg := fmt.Sprintf("Function %s not found in function cache. Is it configured?", fid)
-		return []functions.WeightedFunction{}, nil, errors.New(errMsg)
+		return functions.WeightedFunctions{}, nil, errors.New(errMsg)
 	}
 
 	// if function is a group, get weights, otherwise, just return the ID
 	if function.Group == nil {
-		res := []functions.WeightedFunction{
+		res := functions.WeightedFunctions{
 			{
 				FunctionID: function.ID,
 				Weight:     1,

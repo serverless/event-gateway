@@ -13,7 +13,7 @@ func (p *HTTPProperties) Call(payload []byte) ([]byte, error) {
 		Timeout: time.Second * 5,
 	}
 
-	resp, err := client.Post(p.URL, "application/json; charset=utf-8", bytes.NewReader(payload))
+	resp, err := client.Post(p.URL, "application/json", bytes.NewReader(payload))
 	if err != nil {
 		return []byte{}, err
 	}
