@@ -12,8 +12,6 @@ import:
   version: v3
   subpackages:
   - capnslog
-- package: github.com/ventu-io/go-shortid
-  version: ^1.0.0
 - package: go.uber.org/zap
   version: ^1.4.0
 - package: go.uber.org/atomic

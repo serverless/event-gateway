@@ -84,6 +84,32 @@ func TestGetFunction_NotFound(t *testing.T) {
 	assert.EqualError(t, err, `Function "nofunc" not found.`)
 }
 
+func TestExistFunction_Found(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mock.NewMockStore(ctrl)
+	db.EXPECT().Get("testfunc").Return(&store.KVPair{Value: []byte(`{"functionId": "testfunc"}`)}, nil)
+	registry := &functions.Functions{DB: db, Logger: zap.NewNop()}
+
+	exists := registry.Exist("testfunc")
+
+	assert.Equal(t, true, exists)
+}
+
+func TestExistFunction_NotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mock.NewMockStore(ctrl)
+	db.EXPECT().Get("nofunc").Return(nil, errors.New("not found"))
+	registry := &functions.Functions{DB: db, Logger: zap.NewNop()}
+
+	exists := registry.Exist("nofunc")
+
+	assert.Equal(t, false, exists)
+}
+
 var registerFunctionFailedTests = []struct {
 	in    *functions.Function
 	error string

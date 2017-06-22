@@ -87,16 +87,18 @@ func main() {
 	go func() {
 		apiRouter := httprouter.New()
 
+		fnsDB := db.NewPrefixedStore("/serverless-gateway/functions", kv)
 		fns := &functions.Functions{
-			DB:     db.NewPrefixedStore("/serverless-gateway/functions", kv),
+			DB:     fnsDB,
 			Logger: logger,
 		}
 		fnsapi := &functions.HTTPAPI{Functions: fns}
 		fnsapi.RegisterRoutes(apiRouter)
 
 		ens := &endpoints.Endpoints{
-			DB:     db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
-			Logger: logger,
+			DB:          db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
+			Logger:      logger,
+			FunctionsDB: fnsDB,
 		}
 		ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 		ensapi.RegisterRoutes(apiRouter)
@@ -118,6 +120,5 @@ func main() {
 		close(shutdownInitiateChan)
 		router.Drain()
 	}()
-
 	<-shutdownCompleteChan
 }

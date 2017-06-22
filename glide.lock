@@ -166,8 +166,6 @@ imports:
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
   - codec
-- name: github.com/ventu-io/go-shortid
-  version: 6c56cef5189ca1b3d5ef01dc07f4d611dfc0bb33
 - name: github.com/xiang90/probing
   version: 07dd2e8dfe18522e9c447ba95f2fe95262f63bb2
 - name: go.uber.org/atomic

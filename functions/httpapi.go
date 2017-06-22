@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/serverless/event-gateway/httpapi"
 )
 
 // HTTPAPI for function discovery
@@ -30,7 +31,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		encoder.Encode(&httpError{err.Error()})
+		encoder.Encode(&httpapi.Error{Error: err.Error()})
 	} else {
 		encoder.Encode(fn)
 	}
@@ -60,12 +61,8 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		encoder.Encode(&httpError{err.Error()})
+		encoder.Encode(&httpapi.Error{Error: err.Error()})
 	} else {
 		encoder.Encode(output)
 	}
-}
-
-type httpError struct {
-	Error string `json:"error"`
 }
