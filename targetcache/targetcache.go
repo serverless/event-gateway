@@ -25,11 +25,11 @@ type TargetCache interface {
 // LibKVTargetCache is an implementation of TargetCache using the docker/libkv
 // library for watching data in etcd, zookeeper, and consul.
 type LibKVTargetCache struct {
-	shutdown        chan struct{}
-	functionCache   *functionCache
-	endpointCache   *endpointCache
-	publisherCache  *publisherCache
-	subscriberCache *subscriberCache
+	shutdown          chan struct{}
+	functionCache     *functionCache
+	endpointCache     *endpointCache
+	publisherCache    *publisherCache
+	subscriptionCache *subscriptionCache
 }
 
 // BackingFunction returns functions and their weights, along with the
@@ -89,9 +89,9 @@ func (tc *LibKVTargetCache) FunctionOutputToTopics(function functions.FunctionID
 
 // SubscribersOfTopic is used for determining which functions to forward messages in a topic to.
 func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID {
-	tc.subscriberCache.RLock()
-	fnSet, exists := tc.subscriberCache.topicToFns[topic]
-	tc.subscriberCache.RUnlock()
+	tc.subscriptionCache.RLock()
+	fnSet, exists := tc.subscriptionCache.topicToFns[topic]
+	tc.subscriptionCache.RUnlock()
 
 	if !exists {
 		return []functions.FunctionID{}
@@ -120,7 +120,7 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 	// path watchers
 	functionPathWatcher := db.NewPathWatcher(path+"functions", kv, log)
 	endpointPathWatcher := db.NewPathWatcher(path+"endpoints", kv, log)
-	subscriberPathWatcher := db.NewPathWatcher(path+"subscribers", kv, log)
+	subscriptionPathWatcher := db.NewPathWatcher(path+"subscriptions", kv, log)
 	publisherPathWatcher := db.NewPathWatcher(path+"publishers", kv, log)
 
 	if len(debug) == 1 && debug[0] {
@@ -131,7 +131,7 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 			}
 		}
 		debugReconciliation(functionPathWatcher, endpointPathWatcher,
-			subscriberPathWatcher, publisherPathWatcher)
+			subscriptionPathWatcher, publisherPathWatcher)
 	}
 
 	// updates dynamic routing information for endpoints when config changes are detected.
@@ -139,7 +139,7 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 	// serves lookups for function info
 	functionCache := newFunctionCache(log)
 	// serves lookups for which functions are subscribed to a topic
-	subscriberCache := newSubscriberCache(log)
+	subscriptionCache := newSubscriptionCache(log)
 	// serves lookups for which topics a function's input or output are published to
 	publisherCache := newPublisherCache(log)
 
@@ -147,14 +147,14 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 	shutdown := make(chan struct{})
 	functionPathWatcher.React(newCacheMaintainer(functionCache), shutdown)
 	endpointPathWatcher.React(newCacheMaintainer(endpointCache), shutdown)
-	subscriberPathWatcher.React(newCacheMaintainer(subscriberCache), shutdown)
+	subscriptionPathWatcher.React(newCacheMaintainer(subscriptionCache), shutdown)
 	publisherPathWatcher.React(newCacheMaintainer(publisherCache), shutdown)
 
 	return &LibKVTargetCache{
-		shutdown:        shutdown,
-		functionCache:   functionCache,
-		endpointCache:   endpointCache,
-		publisherCache:  publisherCache,
-		subscriberCache: subscriberCache,
+		shutdown:          shutdown,
+		functionCache:     functionCache,
+		endpointCache:     endpointCache,
+		publisherCache:    publisherCache,
+		subscriptionCache: subscriptionCache,
 	}
 }

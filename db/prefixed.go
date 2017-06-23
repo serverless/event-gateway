@@ -60,7 +60,21 @@ func (rfs *PrefixedStore) NewLock(key string, options *store.LockOptions) (store
 
 // List passes requests to the underlying libkv implementation, appending the root to paths for isolation.
 func (rfs *PrefixedStore) List(directory string) ([]*store.KVPair, error) {
-	return rfs.kv.List(rfs.root + directory)
+	prefixed, err := rfs.kv.List(rfs.root + directory)
+	if err != nil {
+		return nil, err
+	}
+
+	unprefixed := []*store.KVPair{}
+	for _, kv := range prefixed {
+		unprefixed = append(unprefixed, &store.KVPair{
+			Key:       strings.TrimPrefix(kv.Key, rfs.root),
+			Value:     kv.Value,
+			LastIndex: kv.LastIndex,
+		})
+	}
+
+	return unprefixed, nil
 }
 
 // DeleteTree passes requests to the underlying libkv implementation, appending the root to paths for isolation.

@@ -200,26 +200,26 @@ func (c *publisherCache) Del(k string, v []byte) {
 	}
 }
 
-type subscriberCache struct {
+type subscriptionCache struct {
 	sync.RWMutex
 	// topicToSub maps from a TopicID to a set of subscribing FunctionID's
 	topicToFns map[pubsub.TopicID]map[functions.FunctionID]struct{}
 	log        *zap.Logger
 }
 
-func newSubscriberCache(log *zap.Logger) *subscriberCache {
-	return &subscriberCache{
+func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
+	return &subscriptionCache{
 		// topicToFns is a map from TopicID to a set of FunctionID's
 		topicToFns: map[pubsub.TopicID]map[functions.FunctionID]struct{}{},
 		log:        log,
 	}
 }
 
-func (c *subscriberCache) Set(k string, v []byte) {
-	s := pubsub.Subscriber{}
+func (c *subscriptionCache) Set(k string, v []byte) {
+	s := pubsub.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&s)
 	if err != nil {
-		c.log.Error("Could not deserialize Subscriber state!", zap.Error(err), zap.String("key", k))
+		c.log.Error("Could not deserialize Subscription state!", zap.Error(err), zap.String("key", k))
 		return
 	}
 
@@ -237,14 +237,14 @@ func (c *subscriberCache) Set(k string, v []byte) {
 	}
 }
 
-func (c *subscriberCache) Del(k string, v []byte) {
+func (c *subscriptionCache) Del(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 
-	oldSub := pubsub.Subscriber{}
+	oldSub := pubsub.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&oldSub)
 	if err != nil {
-		c.log.Error("Could not deserialize Subscriber state during deletion!", zap.Error(err), zap.String("key", k))
+		c.log.Error("Could not deserialize Subscription state during deletion!", zap.Error(err), zap.String("key", k))
 		return
 	}
 
