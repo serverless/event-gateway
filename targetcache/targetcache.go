@@ -32,7 +32,7 @@ type LibKVTargetCache struct {
 	subscriberCache *subscriberCache
 }
 
-// BackingFunctions returns functions and their weights, along with the
+// BackingFunction returns functions and their weights, along with the
 // group ID if this was a Group function target, so we can submit
 // events to topics that are fed by both.
 func (tc *LibKVTargetCache) BackingFunction(endpointID endpoints.EndpointID) *functions.FunctionID {
