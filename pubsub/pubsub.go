@@ -51,8 +51,8 @@ type PubSub struct {
 	Logger *zap.Logger
 }
 
-// Create topic.
-func (p PubSub) Create(t *Topic) (*Topic, error) {
+// CreateTopic creates topic.
+func (p PubSub) CreateTopic(t *Topic) (*Topic, error) {
 	validate := validator.New()
 	err := validate.Struct(t)
 	if err != nil {
@@ -79,8 +79,8 @@ func (p PubSub) Create(t *Topic) (*Topic, error) {
 	return t, nil
 }
 
-// Delete topic.
-func (p PubSub) Delete(id TopicID) error {
+// DeleteTopic deletes topic.
+func (p PubSub) DeleteTopic(id TopicID) error {
 	err := p.DB.Delete(string(id))
 	if err != nil {
 		return &ErrorNotFound{string(id)}
@@ -88,8 +88,8 @@ func (p PubSub) Delete(id TopicID) error {
 	return nil
 }
 
-// GetAll returns array of all Topics.
-func (p PubSub) GetAll() ([]*Topic, error) {
+// GetAllTopics returns array of all Topics.
+func (p PubSub) GetAllTopics() ([]*Topic, error) {
 	topics := []*Topic{}
 
 	kvs, err := p.DB.List("")
