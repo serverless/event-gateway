@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/docker/libkv/store"
+	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/db"
 	"github.com/serverless/event-gateway/endpoints"
@@ -145,7 +144,7 @@ func (tc *LibKVTargetCache) Shutdown() {
 }
 
 // New instantiates a new LibKVTargetCache, rooted at a particular location.
-func New(path string, kv store.Store, log *zap.Logger) *LibKVTargetCache {
+func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTargetCache {
 	// make sure we have a trailing slash for trimming future updates
 	if !strings.HasSuffix(path, "/") {
 		path = path + "/"
@@ -156,6 +155,17 @@ func New(path string, kv store.Store, log *zap.Logger) *LibKVTargetCache {
 	endpointPathWatcher := db.NewPathWatcher(path+"endpoints", kv, log)
 	subscriberPathWatcher := db.NewPathWatcher(path+"subscribers", kv, log)
 	publisherPathWatcher := db.NewPathWatcher(path+"publishers", kv, log)
+
+	if len(debug) == 1 && debug[0] {
+		debugReconciliation := func(w ...*db.PathWatcher) {
+			for _, w := range w {
+				w.ReconciliationJitter = 0
+				w.ReconciliationBaseDelay = 3
+			}
+		}
+		debugReconciliation(functionPathWatcher, endpointPathWatcher,
+			subscriberPathWatcher, publisherPathWatcher)
+	}
 
 	// updates dynamic routing information for endpoints when config changes are detected.
 	endpointCache := newEndpointCache(log)

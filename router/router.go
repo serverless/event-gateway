@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -21,13 +22,14 @@ import (
 // handles pubsub message delivery.
 type Router struct {
 	sync.Mutex
-	targetCache   targetcache.TargetCache
-	dropMetric    prometheus.Counter
-	log           *zap.Logger
-	NWorkers      uint
-	drain         chan struct{}
-	drainComplete chan struct{}
-	work          chan work
+	TargetCache          targetcache.TargetCache
+	dropMetric           prometheus.Counter
+	log                  *zap.Logger
+	NWorkers             uint
+	drain                chan struct{}
+	drainComplete        sync.WaitGroup
+	work                 chan work
+	responseWriteTimeout time.Duration
 }
 
 type functionResponse struct {
@@ -36,15 +38,14 @@ type functionResponse struct {
 }
 
 // New instantiates a new Router
-func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
+func New(TargetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
 	return &Router{
-		targetCache:   targetCache,
-		dropMetric:    dropMetric,
-		log:           log,
-		NWorkers:      20,
-		drain:         make(chan struct{}),
-		drainComplete: make(chan struct{}),
-		work:          nil,
+		TargetCache: TargetCache,
+		dropMetric:  dropMetric,
+		log:         log,
+		NWorkers:    20,
+		drain:       make(chan struct{}),
+		work:        nil,
 	}
 }
 
@@ -67,7 +68,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	rawPath := r.URL.EscapedPath()
 	isAsync := strings.HasSuffix(rawPath, "/async")
-	trimmedPath := strings.TrimSuffix(rawPath, "/async")
+	trimmedSuffixPath := strings.TrimSuffix(rawPath, "/async")
+	trimmedPath := strings.TrimPrefix(trimmedSuffixPath, "/")
 	id := strings.ToUpper(r.Method) + "-" + trimmedPath
 	endpointID := endpoints.EndpointID(id)
 	router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
@@ -110,7 +112,7 @@ func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction 
 	sendOutput := map[pubsub.TopicID]struct{}{}
 
 	fillInputMap := func(fid functions.FunctionID) error {
-		inputDest, err := router.targetCache.FunctionInputToTopics(fid)
+		inputDest, err := router.TargetCache.FunctionInputToTopics(fid)
 		if err != nil {
 			return err
 		}
@@ -123,7 +125,7 @@ func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction 
 	}
 
 	fillOutputMap := func(fid functions.FunctionID) error {
-		outputDest, err := router.targetCache.FunctionInputToTopics(fid)
+		outputDest, err := router.TargetCache.FunctionInputToTopics(fid)
 		if err != nil {
 			return err
 		}
@@ -180,7 +182,12 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 
 	// 1. Figure out what function we're targeting
 
-	backingFunctions, fnGroup, err := router.targetCache.BackingFunctions(endpointID)
+	backingFunctions, fnGroup, err := router.TargetCache.BackingFunctions(endpointID)
+	if err != nil {
+		res.err = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
+		resChan <- res
+		return
+	}
 
 	chosenFunction, err := backingFunctions.Choose()
 	if err != nil {
@@ -227,7 +234,7 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 
 // CallFunction looks up a function and calls it.
 func (router *Router) CallFunction(fid functions.FunctionID, payload []byte) ([]byte, error) {
-	f, err := router.targetCache.Function(fid)
+	f, err := router.TargetCache.Function(fid)
 	if err != nil {
 		return []byte{}, nil
 	}
@@ -252,5 +259,5 @@ func (router *Router) Drain() {
 	router.Unlock()
 
 	// wait for children to drain the work queue
-	<-router.drainComplete
+	router.drainComplete.Wait()
 }
