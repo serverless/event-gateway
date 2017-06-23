@@ -207,7 +207,7 @@ Response:
 Response:
 
 - `endpoints` - `array` of `object`
-	- `id` - `string` - endpoint ID, which is method + path, e.g. `GET-/homepage`
+	- `endpointId` - `string` - endpoint ID, which is method + path, e.g. `GET-homepage`
 	- `functionId` - `string` - function ID
 	- `method` - HTTP method
 	- `path` - URL path
@@ -220,11 +220,11 @@ Response:
 
 Request:
 
-- `id` - `string` - name of topic
+- `topicId` - `string` - name of topic
 
 Response:
 
-- `id` - `string` - name of topic
+- `topicId` - `string` - name of topic
 
 #### Delete topic
 
@@ -237,7 +237,7 @@ Response:
 Response:
 
 - `topics` - `array` of `object` - topics
-  - `id` - `string` - topic name
+  - `topicId` - `string` - topic name
 
 #### Add subscription
 
@@ -249,7 +249,8 @@ Request:
 
 Response:
 
-- `subscriptionId` - `string` - subscription ID, which is topic + function ID, e.g. `newusers-/userProcessGroup`
+- `subscriptionId` - `string` - subscription ID, which is topic + function ID, e.g. `newusers-userProcessGroup`
+- `topicId` - `string` - ID of topic
 - `functionId` - ID of function or function group
 
 #### Delete subscription
@@ -262,8 +263,9 @@ Response:
 
 Response:
 
-- `subscriptions` - `array` of `object` - backing functions
+- `subscriptions` - `array` of `object` - subscriptions
   - `subscriptionId` - `string` - subscription ID
+  - `topicId` - `string` - ID of topic
   - `functionId` - ID of function or function group
 
 #### Add publisher

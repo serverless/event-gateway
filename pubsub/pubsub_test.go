@@ -16,10 +16,10 @@ func TestCreate_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("test").Return(nil, errors.New("not found"))
-	db.EXPECT().Put("test", []byte(`{"topicId":"test"}`), nil).Return(nil)
-	ps := &pubsub.PubSub{DB: db, Logger: zap.NewNop()}
+	topicsDB := mock.NewMockStore(ctrl)
+	topicsDB.EXPECT().Get("test").Return(nil, errors.New("not found"))
+	topicsDB.EXPECT().Put("test", []byte(`{"topicId":"test"}`), nil).Return(nil)
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, Logger: zap.NewNop()}
 
 	tc, _ := ps.CreateTopic(&pubsub.Topic{ID: "test"})
 
@@ -30,9 +30,9 @@ func TestCreate_TopicAlreadyExistsError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("test").Return(nil, nil)
-	ps := &pubsub.PubSub{DB: db, Logger: zap.NewNop()}
+	topicsDB := mock.NewMockStore(ctrl)
+	topicsDB.EXPECT().Get("test").Return(nil, nil)
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, Logger: zap.NewNop()}
 
 	_, err := ps.CreateTopic(&pubsub.Topic{ID: "test"})
 
@@ -43,8 +43,8 @@ func TestCreate_ValidationError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	ps := &pubsub.PubSub{DB: db, Logger: zap.NewNop()}
+	topicsDB := mock.NewMockStore(ctrl)
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, Logger: zap.NewNop()}
 
 	_, err := ps.CreateTopic(&pubsub.Topic{ID: ""})
 
@@ -55,10 +55,10 @@ func TestCreate_DBPutError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("test").Return(nil, errors.New("not found"))
-	db.EXPECT().Put(gomock.Any(), gomock.Any(), nil).Return(errors.New("db put failed"))
-	ps := &pubsub.PubSub{DB: db, Logger: zap.NewNop()}
+	topicsDB := mock.NewMockStore(ctrl)
+	topicsDB.EXPECT().Get("test").Return(nil, errors.New("not found"))
+	topicsDB.EXPECT().Put(gomock.Any(), gomock.Any(), nil).Return(errors.New("db put failed"))
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, Logger: zap.NewNop()}
 
 	_, err := ps.CreateTopic(&pubsub.Topic{ID: "test"})
 
@@ -69,9 +69,11 @@ func TestDelete_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Delete("testid").Return(nil)
-	ps := &pubsub.PubSub{DB: db, Logger: zap.NewNop()}
+	topicsDB := mock.NewMockStore(ctrl)
+	topicsDB.EXPECT().Delete("testid").Return(nil)
+	subsDB := mock.NewMockStore(ctrl)
+	subsDB.EXPECT().DeleteTree("").Return(nil)
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, SubscriptionsDB: subsDB, Logger: zap.NewNop()}
 
 	assert.Nil(t, ps.DeleteTopic("testid"))
 }
@@ -80,9 +82,11 @@ func TestDelete_DBDeleteError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Delete("testid").Return(errors.New("delete failed"))
-	ps := &pubsub.PubSub{DB: db, Logger: zap.NewNop()}
+	topicsDB := mock.NewMockStore(ctrl)
+	topicsDB.EXPECT().Delete("testid").Return(errors.New("delete failed"))
+	subsDB := mock.NewMockStore(ctrl)
+	subsDB.EXPECT().DeleteTree("").Return(nil)
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, SubscriptionsDB: subsDB, Logger: zap.NewNop()}
 
 	assert.EqualError(t, ps.DeleteTopic("testid"), `Topic "testid" not found.`)
 }
@@ -91,12 +95,12 @@ func TestGetAll_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().List("").Return([]*store.KVPair{{
+	topicsDB := mock.NewMockStore(ctrl)
+	topicsDB.EXPECT().List("").Return([]*store.KVPair{{
 		Key:   "",
 		Value: []byte(`{"topicId":"test"}`),
 	}}, nil)
-	ps := &pubsub.PubSub{DB: db, Logger: zap.NewNop()}
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, Logger: zap.NewNop()}
 
 	topics, err := ps.GetAllTopics()
 
@@ -108,9 +112,9 @@ func TestGetAll_EmptyListOnDBListError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().List("").Return(nil, errors.New("db failed"))
-	ps := &pubsub.PubSub{DB: db, Logger: zap.NewNop()}
+	topicsDB := mock.NewMockStore(ctrl)
+	topicsDB.EXPECT().List("").Return(nil, errors.New("db failed"))
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, Logger: zap.NewNop()}
 
 	topics, err := ps.GetAllTopics()
 
