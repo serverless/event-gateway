@@ -28,7 +28,7 @@ func (h HTTPAPI) createTopic(w http.ResponseWriter, r *http.Request, params http
 	dec := json.NewDecoder(r.Body)
 	dec.Decode(t)
 
-	output, err := h.PubSub.Create(t)
+	output, err := h.PubSub.CreateTopic(t)
 	if err != nil {
 		if _, ok := err.(*ErrorAlreadyExists); ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -48,7 +48,7 @@ func (h HTTPAPI) deleteTopic(w http.ResponseWriter, r *http.Request, params http
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.PubSub.Delete(TopicID(params.ByName("id")))
+	err := h.PubSub.DeleteTopic(TopicID(params.ByName("id")))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
@@ -59,7 +59,7 @@ func (h HTTPAPI) getTopics(w http.ResponseWriter, r *http.Request, params httpro
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	tps, err := h.PubSub.GetAll()
+	tps, err := h.PubSub.GetAllTopics()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
