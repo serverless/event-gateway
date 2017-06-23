@@ -49,7 +49,12 @@ func (p PubSub) CreateTopic(t *Topic) (*Topic, error) {
 
 // DeleteTopic deletes topic.
 func (p PubSub) DeleteTopic(id TopicID) error {
-	err := p.TopicsDB.Delete(string(id))
+	err := p.SubscriptionsDB.DeleteTree("")
+	if err != nil {
+		return err
+	}
+
+	err = p.TopicsDB.Delete(string(id))
 	if err != nil {
 		return &ErrorNotFound{id}
 	}

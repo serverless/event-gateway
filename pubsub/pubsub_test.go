@@ -71,7 +71,9 @@ func TestDelete_OK(t *testing.T) {
 
 	topicsDB := mock.NewMockStore(ctrl)
 	topicsDB.EXPECT().Delete("testid").Return(nil)
-	ps := &pubsub.PubSub{TopicsDB: topicsDB, Logger: zap.NewNop()}
+	subsDB := mock.NewMockStore(ctrl)
+	subsDB.EXPECT().DeleteTree("").Return(nil)
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, SubscriptionsDB: subsDB, Logger: zap.NewNop()}
 
 	assert.Nil(t, ps.DeleteTopic("testid"))
 }
@@ -82,7 +84,9 @@ func TestDelete_DBDeleteError(t *testing.T) {
 
 	topicsDB := mock.NewMockStore(ctrl)
 	topicsDB.EXPECT().Delete("testid").Return(errors.New("delete failed"))
-	ps := &pubsub.PubSub{TopicsDB: topicsDB, Logger: zap.NewNop()}
+	subsDB := mock.NewMockStore(ctrl)
+	subsDB.EXPECT().DeleteTree("").Return(nil)
+	ps := &pubsub.PubSub{TopicsDB: topicsDB, SubscriptionsDB: subsDB, Logger: zap.NewNop()}
 
 	assert.EqualError(t, ps.DeleteTopic("testid"), `Topic "testid" not found.`)
 }
