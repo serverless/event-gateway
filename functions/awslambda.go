@@ -7,6 +7,15 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 )
 
+// AWSLambdaProperties contains the configuration required to call an AWS Lambda function.
+type AWSLambdaProperties struct {
+	ARN             string `json:"arn" validate:"required"`
+	Region          string `json:"region" validate:"required"`
+	Version         string `json:"version" validate:"required"`
+	AccessKeyID     string `json:"accessKeyID" validate:"required"`
+	SecretAccessKey string `json:"secretAccessKey" validate:"required"`
+}
+
 // Call tries to send a payload to a target function
 func (p *AWSLambdaProperties) Call(payload []byte) ([]byte, error) {
 	creds := credentials.NewStaticCredentials(p.AccessKeyID, p.SecretAccessKey, "")
