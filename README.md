@@ -55,7 +55,7 @@ it to the stream, and you're good to go. This is not limited to metrics!
 - it's not a replacement for streaming platforms (no processing capability and consumers group)
 - it's not a replacement for existing service discovery solutions from the microservices world
 
-## Use cases
+## Use cases (Framework <> Gateway integration)
 
 ### REST API
 
@@ -64,7 +64,7 @@ serverless.yaml:
 ```yaml
 gateways:
   acme:
-    url: gateway.serverless.com/acme
+    url: acme.gateway.serverless.com
     apikey: xxx
 
 functions:
@@ -90,7 +90,7 @@ serverless.yaml:
 ```yaml
 gateways:
   acme:
-    url: gateway.serverless.com/acme
+    url: acme.gateway.serverless.com
     apikey: xxx
 
 functions:
@@ -109,7 +109,7 @@ serverless.yaml:
 ```yaml
 gateways:
   acme:
-    url: gateway.serverless.com/acme
+    url: acme.gateway.serverless.com
     apikey: xxx
 
 functions:
@@ -126,10 +126,10 @@ serverless.yaml:
 ```yaml
 gateways:
   acme:
-    url: gateway.serverless.com/acme
+    url: acme.gateway.serverless.com
     apikey: xxx
   evilcorp:
-    url: gateway.serverless.com/evilcorp
+    url: evilcorp.gateway.serverless.com
   internal:
     url: 127.0.0.1
 
@@ -211,7 +211,7 @@ serverless.yaml:
 ```yaml
 gateways:
   acme:
-    url: gateway.serverless.com/acme
+    url: acme.gateway.serverless.com
     apikey: xxx
 
 functions:
