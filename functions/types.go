@@ -39,15 +39,6 @@ func (f *Function) Call(payload []byte) ([]byte, error) {
 	return []byte{}, errors.New("calling this kind of function is not implemented")
 }
 
-// AWSLambdaProperties contains the configuration required to call an AWS Lambda function.
-type AWSLambdaProperties struct {
-	ARN             string `json:"arn" validate:"required"`
-	Region          string `json:"region" validate:"required"`
-	Version         string `json:"version" validate:"required"`
-	AccessKeyID     string `json:"accessKeyID" validate:"required"`
-	SecretAccessKey string `json:"secretAccessKey" validate:"required"`
-}
-
 // GCloudFunctionProperties contains the configuration required to call a Google Cloud Function.
 type GCloudFunctionProperties struct {
 	Name              string `json:"name" validate:"required"`

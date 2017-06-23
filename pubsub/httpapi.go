@@ -1,4 +1,4 @@
-package endpoints
+package pubsub
 
 import (
 	"encoding/json"
@@ -8,31 +8,29 @@ import (
 	"github.com/serverless/event-gateway/httpapi"
 )
 
-// HTTPAPI for endpoints sub-service
+// HTTPAPI for pubsub sub-service
 type HTTPAPI struct {
-	Endpoints *Endpoints
+	PubSub *PubSub
 }
 
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
-	router.POST("/v0/gateway/api/endpoint", h.createEndpoint)
-	router.DELETE("/v0/gateway/api/endpoint/:id", h.deleteEndpoint)
-	router.GET("/v0/gateway/api/endpoint", h.getEndpoints)
+	router.POST("/v0/gateway/api/topic", h.createTopic)
+	router.DELETE("/v0/gateway/api/topic/:id", h.deleteTopic)
+	router.GET("/v0/gateway/api/topic", h.getTopics)
 }
 
-func (h HTTPAPI) createEndpoint(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (h HTTPAPI) createTopic(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	en := &Endpoint{}
+	t := &Topic{}
 	dec := json.NewDecoder(r.Body)
-	dec.Decode(en)
+	dec.Decode(t)
 
-	output, err := h.Endpoints.Create(en)
+	output, err := h.PubSub.Create(t)
 	if err != nil {
-		if _, ok := err.(*ErrorFunctionNotFound); ok {
-			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*ErrorAlreadyExists); ok {
+		if _, ok := err.(*ErrorAlreadyExists); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*ErrorValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -46,30 +44,30 @@ func (h HTTPAPI) createEndpoint(w http.ResponseWriter, r *http.Request, params h
 	}
 }
 
-func (h HTTPAPI) deleteEndpoint(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (h HTTPAPI) deleteTopic(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.Endpoints.Delete(EndpointID(params.ByName("id")))
+	err := h.PubSub.Delete(TopicID(params.ByName("id")))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
 	}
 }
 
-func (h HTTPAPI) getEndpoints(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (h HTTPAPI) getTopics(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	ens, err := h.Endpoints.GetAll()
+	tps, err := h.PubSub.GetAll()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
 	} else {
-		encoder.Encode(&endpoints{ens})
+		encoder.Encode(&topics{tps})
 	}
 }
 
-type endpoints struct {
-	Endpoints []*Endpoint `json:"endpoints"`
+type topics struct {
+	Topics []*Topic `json:"topics"`
 }

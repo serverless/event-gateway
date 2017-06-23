@@ -18,6 +18,7 @@ import (
 	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/metrics"
+	"github.com/serverless/event-gateway/pubsub"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/targetcache"
 )
@@ -102,6 +103,13 @@ func main() {
 		}
 		ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 		ensapi.RegisterRoutes(apiRouter)
+
+		ps := &pubsub.PubSub{
+			DB:     db.NewPrefixedStore("/serverless-gateway/topics", kv),
+			Logger: logger,
+		}
+		psapi := &pubsub.HTTPAPI{PubSub: ps}
+		psapi.RegisterRoutes(apiRouter)
 
 		apiRouter.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 		apiRouter.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
