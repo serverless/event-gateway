@@ -216,10 +216,10 @@ func newSubscriberCache(log *zap.Logger) *subscriberCache {
 }
 
 func (c *subscriberCache) Set(k string, v []byte) {
-	s := pubsub.Subscriber{}
+	s := pubsub.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&s)
 	if err != nil {
-		c.log.Error("Could not deserialize Subscriber state!", zap.Error(err), zap.String("key", k))
+		c.log.Error("Could not deserialize Subscription state!", zap.Error(err), zap.String("key", k))
 		return
 	}
 
@@ -241,10 +241,10 @@ func (c *subscriberCache) Del(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 
-	oldSub := pubsub.Subscriber{}
+	oldSub := pubsub.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&oldSub)
 	if err != nil {
-		c.log.Error("Could not deserialize Subscriber state during deletion!", zap.Error(err), zap.String("key", k))
+		c.log.Error("Could not deserialize Subscription state during deletion!", zap.Error(err), zap.String("key", k))
 		return
 	}
 

@@ -105,8 +105,11 @@ func main() {
 		ensapi.RegisterRoutes(apiRouter)
 
 		ps := &pubsub.PubSub{
-			DB:     db.NewPrefixedStore("/serverless-gateway/topics", kv),
-			Logger: logger,
+			TopicsDB:        db.NewPrefixedStore("/serverless-gateway/topics", kv),
+			SubscriptionsDB: db.NewPrefixedStore("/serverless-gateway/subscriptions", kv),
+			PublishersDB:    db.NewPrefixedStore("/serverless-gateway/publishers", kv),
+			FunctionsDB:     fnsDB,
+			Logger:          logger,
 		}
 		psapi := &pubsub.HTTPAPI{PubSub: ps}
 		psapi.RegisterRoutes(apiRouter)
