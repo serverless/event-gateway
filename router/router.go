@@ -27,7 +27,8 @@ type Router struct {
 	log                  *zap.Logger
 	NWorkers             uint
 	drain                chan struct{}
-	drainComplete        sync.WaitGroup
+	drainWaitGroup       sync.WaitGroup
+	active               bool
 	work                 chan work
 	responseWriteTimeout time.Duration
 }
@@ -182,18 +183,24 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 
 	// 1. Figure out what function we're targeting
 
-	backingFunctions, fnGroup, err := router.TargetCache.BackingFunctions(endpointID)
+	backingFunction, err := router.TargetCache.BackingFunction(endpointID)
 	if err != nil {
 		res.err = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
 		resChan <- res
 		return
 	}
 
-	chosenFunction, err := backingFunctions.Choose()
-	if err != nil {
-		res.err = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
-		resChan <- res
-		return
+	var fnGroup *functions.FunctionID
+	var chosenFunction = backingFunction.ID
+	if backingFunction.Group != nil {
+		fnGroup = &backingFunction.ID
+		chosen, err := backingFunction.Group.Functions.Choose()
+		if err != nil {
+			res.err = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
+			resChan <- res
+			return
+		}
+		chosenFunction = chosen
 	}
 
 	// 2. check if we need to send the input or output of the function to
@@ -243,7 +250,67 @@ func (router *Router) CallFunction(fid functions.FunctionID, payload []byte) ([]
 
 // StartWorkers spins up NWorkers goroutines for processing
 // the event subscriptions.
-func (router *Router) StartWorkers() {}
+func (router *Router) StartWorkers() {
+	router.Lock()
+	defer router.Unlock()
+
+	if router.active {
+		// the system is already active or being started by another goroutine
+		return
+	}
+	router.active = true
+
+	for i := 0; i < int(router.NWorkers); i++ {
+		router.drainWaitGroup.Add(1)
+		go router.Work()
+	}
+}
+
+// Work is the main loop for a pub/sub worker goroutine
+func (router *Router) Work() {
+	for {
+		// we use three select statements here to give preference
+		// to the work chan, but fall-through to exiting when
+		// the drain chan is closed and there's nothing to do.
+
+		// 1. see if there's work in a non-blocking way
+		select {
+		case work := <-router.work:
+			router.ProcessEvents(work)
+			continue
+		default:
+		}
+
+		// 2. wait on either work or the drain to close,
+		//    blocking on either.
+		select {
+		case <-router.drain:
+			// check AGAIN to make sure there's no work.
+			// without this, there is a race condition
+			// where we exit before work is processed.
+			select {
+			case work := <-router.work:
+				router.ProcessEvents(work)
+				continue
+			default:
+			}
+
+			// no more work to do, decrement WaitGroup and return
+			router.drainWaitGroup.Done()
+			return
+		case work := <-router.work:
+			router.ProcessEvents(work)
+		}
+	}
+}
+
+// ProcessEvents sends events to a set of topics,
+// and for each of the functions that get called
+// as part of those topics, enqueue more work if
+// they are producers for other topics.
+func (router *Router) ProcessEvents(work work) {
+
+}
 
 // Drain causes new requests to return 503, and blocks until
 // the work queue is processed.
@@ -259,5 +326,11 @@ func (router *Router) Drain() {
 	router.Unlock()
 
 	// wait for children to drain the work queue
-	router.drainComplete.Wait()
+	router.drainWaitGroup.Wait()
+
+	router.Lock()
+	if router.active {
+		router.active = false
+	}
+	router.Unlock()
 }

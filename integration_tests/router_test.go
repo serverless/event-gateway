@@ -64,7 +64,7 @@ func TestFunctionDefAndCalling(t *testing.T) {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			_, _, err := router.TargetCache.BackingFunctions(endpoints.EndpointID("POST-smilez"))
+			_, err := router.TargetCache.BackingFunction(endpoints.EndpointID("POST-smilez"))
 			if err == nil {
 				break
 			}
