@@ -47,20 +47,20 @@ func (c *cacheMaintainer) Deleted(key string, lastKnownValue []byte) {
 type functionCache struct {
 	sync.RWMutex
 	// cache maps from FunctionID to Function
-	cache map[functions.FunctionID]functions.Function
+	cache map[functions.FunctionID]*functions.Function
 	log   *zap.Logger
 }
 
 func newFunctionCache(log *zap.Logger) *functionCache {
 	return &functionCache{
-		cache: map[functions.FunctionID]functions.Function{},
+		cache: map[functions.FunctionID]*functions.Function{},
 		log:   log,
 	}
 }
 
 func (c *functionCache) Set(k string, v []byte) {
-	f := functions.Function{}
-	err := json.NewDecoder(bytes.NewReader(v)).Decode(&f)
+	f := &functions.Function{}
+	err := json.NewDecoder(bytes.NewReader(v)).Decode(f)
 	if err != nil {
 		c.log.Error("Could not deserialize Function state!", zap.Error(err), zap.String("key", k))
 	} else {
@@ -79,20 +79,20 @@ func (c *functionCache) Del(k string, v []byte) {
 type endpointCache struct {
 	sync.RWMutex
 	// cache maps from EndpointID to Endpoint
-	cache map[endpoints.EndpointID]endpoints.Endpoint
+	cache map[endpoints.EndpointID]*endpoints.Endpoint
 	log   *zap.Logger
 }
 
 func newEndpointCache(log *zap.Logger) *endpointCache {
 	return &endpointCache{
-		cache: map[endpoints.EndpointID]endpoints.Endpoint{},
+		cache: map[endpoints.EndpointID]*endpoints.Endpoint{},
 		log:   log,
 	}
 }
 
 func (c *endpointCache) Set(k string, v []byte) {
-	e := endpoints.Endpoint{}
-	err := json.NewDecoder(bytes.NewReader(v)).Decode(&e)
+	e := &endpoints.Endpoint{}
+	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
 	c.log.Debug("endpoint cache received set key.", zap.String("key", k), zap.String("value", string(v)))
 	if err != nil {
 		c.log.Error("Could not deserialize Endpoint state!", zap.Error(err), zap.String("key", k))

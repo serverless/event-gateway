@@ -64,8 +64,8 @@ func TestFunctionDefAndCalling(t *testing.T) {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			_, err := router.TargetCache.BackingFunction(endpoints.EndpointID("POST-smilez"))
-			if err == nil {
+			res := router.TargetCache.BackingFunction(endpoints.EndpointID("POST-smilez"))
+			if res != nil {
 				break
 			}
 			time.Sleep(50 * time.Millisecond)

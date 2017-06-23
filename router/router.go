@@ -33,11 +33,6 @@ type Router struct {
 	responseWriteTimeout time.Duration
 }
 
-type functionResponse struct {
-	err     error
-	payload []byte
-}
-
 // New instantiates a new Router
 func New(TargetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
 	return &Router{
@@ -81,82 +76,56 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%s", err)
 	}
 
-	resChan := make(chan functionResponse)
-
-	go router.CallEndpoint(endpointID, reqBuf, resChan)
-
 	if isAsync {
 		w.WriteHeader(http.StatusAccepted)
+		// TODO use goroutine pool to avoid unbounded goroutine creation
+		go router.CallEndpoint(endpointID, reqBuf)
 	} else {
-		res, ok := <-resChan
-		if !ok {
-			http.Error(w, "response channel unexpectedly closed", 500)
+		res, err := router.CallEndpoint(endpointID, reqBuf)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
 			return
 		}
 
-		if res.err != nil {
-			http.Error(w, res.err.Error(), 500)
-		} else {
-			_, err := w.Write(res.payload)
-			if err != nil {
-				http.Error(w, err.Error(), 500)
-				return
-			}
+		_, err = w.Write(res)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
 		}
 	}
 }
 
 func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction functions.FunctionID) (
-	map[pubsub.TopicID]struct{}, map[pubsub.TopicID]struct{}, error) {
+	map[pubsub.TopicID]struct{}, map[pubsub.TopicID]struct{}) {
 
 	sendInput := map[pubsub.TopicID]struct{}{}
 	sendOutput := map[pubsub.TopicID]struct{}{}
 
-	fillInputMap := func(fid functions.FunctionID) error {
-		inputDest, err := router.TargetCache.FunctionInputToTopics(fid)
-		if err != nil {
-			return err
-		}
+	fillInputMap := func(fid functions.FunctionID) {
+		inputDest := router.TargetCache.FunctionInputToTopics(fid)
 
 		for _, topic := range inputDest {
 			sendInput[topic] = struct{}{}
 		}
-
-		return nil
 	}
 
-	fillOutputMap := func(fid functions.FunctionID) error {
-		outputDest, err := router.TargetCache.FunctionInputToTopics(fid)
-		if err != nil {
-			return err
-		}
+	fillOutputMap := func(fid functions.FunctionID) {
+		outputDest := router.TargetCache.FunctionInputToTopics(fid)
 
 		for _, topic := range outputDest {
 			sendOutput[topic] = struct{}{}
 		}
-
-		return nil
 	}
 
 	if fnGroup != nil {
-		if err := fillInputMap(*fnGroup); err != nil {
-			return nil, nil, err
-		}
-
-		if err := fillOutputMap(*fnGroup); err != nil {
-			return nil, nil, err
-		}
+		fillInputMap(*fnGroup)
+		fillOutputMap(*fnGroup)
 	}
 
-	if err := fillInputMap(chosenFunction); err != nil {
-		return nil, nil, err
-	}
+	fillInputMap(chosenFunction)
+	fillOutputMap(chosenFunction)
 
-	if err := fillOutputMap(chosenFunction); err != nil {
-		return nil, nil, err
-	}
-
-	return sendInput, sendOutput, nil
+	return sendInput, sendOutput
 }
 
 func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload []byte) {
@@ -178,74 +147,69 @@ func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload 
 
 // CallEndpoint determines which function to call when an endpoint is hit, and
 // submits pubsub events to the work queue.
-func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []byte, resChan chan functionResponse) {
-	res := functionResponse{}
+func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []byte) ([]byte, error) {
+	// Figure out what function we're targeting.
+	backingFunction := router.TargetCache.BackingFunction(endpointID)
+	if backingFunction == nil {
+		retErr := errors.New("for endpoint ID:" + string(endpointID) + ", could not find backing function")
+		return []byte{}, retErr
+	}
 
-	// 1. Figure out what function we're targeting
+	return router.CallFunction(*backingFunction, payload)
+}
 
-	backingFunction, err := router.TargetCache.BackingFunction(endpointID)
-	if err != nil {
-		res.err = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
-		resChan <- res
-		return
+// CallFunction looks up a function and calls it.
+func (router *Router) CallFunction(backingFunctionID functions.FunctionID, payload []byte) ([]byte, error) {
+	backingFunction := router.TargetCache.Function(backingFunctionID)
+	if backingFunction == nil {
+		resErr := errors.New("unable to look up backing function: " + string(backingFunctionID))
+		return []byte{}, resErr
 	}
 
 	var fnGroup *functions.FunctionID
 	var chosenFunction = backingFunction.ID
+
 	if backingFunction.Group != nil {
 		fnGroup = &backingFunction.ID
 		chosen, err := backingFunction.Group.Functions.Choose()
 		if err != nil {
-			res.err = errors.New("for endpoint ID:" + string(endpointID) + ", " + err.Error())
-			resChan <- res
-			return
+			return []byte{}, err
 		}
 		chosenFunction = chosen
 	}
 
-	// 2. check if we need to send the input or output of the function to
-	//    any topics, and if so, we add that work to the work queue. The
-	//    work queue is a bounded channel, and we never block if it's full.
-	//    We need to be very loud though, so that we can autoscale up more
-	//    gateway instances ASAP
+	// Check if we need to send the input or output of the function to
+	// any topics, and if so, we add that work to the work queue. The
+	// work queue is a bounded channel, and we never block if it's full.
+	// We need to be very loud though, so that we can autoscale up more
+	// gateway instances ASAP.
+	sendInput, sendOutput := router.subscribers(fnGroup, chosenFunction)
 
-	sendInput, sendOutput, subscriberErr := router.subscribers(fnGroup, chosenFunction)
-	if subscriberErr != nil {
-		// We don't return because this is not fatal, and we still want to
-		// call the function even though there's a problem with subscribers.
-		res.err = errors.New("unable to determine subscribers for function: " + err.Error())
-	} else {
+	if len(sendInput) > 0 {
 		router.enqueueWork(sendInput, payload)
 	}
 
-	// 3. call the target backing function and submit the response to
-	//		the resChan if it is not nil.
-	result, err := router.CallFunction(chosenFunction, payload)
-	if err != nil {
-		res.err = errors.New("unable to reach backing function: " + err.Error())
-		resChan <- res
-		return
+	// Call the target backing function.
+	f := router.TargetCache.Function(chosenFunction)
+	if f == nil {
+		resErr := errors.New("unable to look up backing function: " + string(chosenFunction))
+		return []byte{}, resErr
 	}
 
-	res.payload = result
-	resChan <- res
+	result, err := f.Call(payload)
+	if err != nil {
+		resErr := errors.New("unable to reach backing function: " + err.Error())
+		return []byte{}, resErr
+	}
 
-	// 4. similar to #2, check if we need to forward this to any topics
-	//		enqueue the work for forwarding events to subscribers, loudly
-	//		dropping it if we're congested.
-
-	if subscriberErr == nil {
+	// Check if we need to forward this to any topics enqueue the work
+	// for forwarding events to subscribers, loudly dropping it if
+	// we're congested.
+	if len(sendOutput) > 0 {
 		router.enqueueWork(sendOutput, result)
 	}
-}
 
-// CallFunction looks up a function and calls it.
-func (router *Router) CallFunction(fid functions.FunctionID, payload []byte) ([]byte, error) {
-	f, err := router.TargetCache.Function(fid)
-	if err != nil {
-		return []byte{}, nil
-	}
-	return f.Call(payload)
+	return result, nil
 }
 
 // StartWorkers spins up NWorkers goroutines for processing
@@ -309,7 +273,12 @@ func (router *Router) Work() {
 // as part of those topics, enqueue more work if
 // they are producers for other topics.
 func (router *Router) ProcessEvents(work work) {
-
+	for _, topicID := range work.topics {
+		subscribers := router.TargetCache.SubscribersOfTopic(topicID)
+		for _, subscriber := range subscribers {
+			router.CallFunction(subscriber, work.payload)
+		}
+	}
 }
 
 // Drain causes new requests to return 503, and blocks until

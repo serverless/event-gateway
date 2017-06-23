@@ -1,8 +1,6 @@
 package targetcache
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/docker/libkv/store"
@@ -17,11 +15,11 @@ import (
 // TargetCache is an interface for retrieving cached configuration
 // for driving performance-sensitive routing decisions.
 type TargetCache interface {
-	BackingFunction(endpoint endpoints.EndpointID) (*functions.Function, error)
-	Function(functionID functions.FunctionID) (functions.Function, error)
-	FunctionInputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error)
-	FunctionOutputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error)
-	SubscribersOfTopic(topic pubsub.TopicID) ([]functions.FunctionID, error)
+	BackingFunction(endpoint endpoints.EndpointID) *functions.FunctionID
+	Function(functionID functions.FunctionID) *functions.Function
+	FunctionInputToTopics(function functions.FunctionID) []pubsub.TopicID
+	FunctionOutputToTopics(function functions.FunctionID) []pubsub.TopicID
+	SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID
 }
 
 // LibKVTargetCache is an implementation of TargetCache using the docker/libkv
@@ -37,83 +35,66 @@ type LibKVTargetCache struct {
 // BackingFunctions returns functions and their weights, along with the
 // group ID if this was a Group function target, so we can submit
 // events to topics that are fed by both.
-func (tc *LibKVTargetCache) BackingFunction(endpointID endpoints.EndpointID) (*functions.Function, error) {
+func (tc *LibKVTargetCache) BackingFunction(endpointID endpoints.EndpointID) *functions.FunctionID {
 	// try to get the endpoint from our cache
 	tc.endpointCache.RLock()
-	endpoint, exists := tc.endpointCache.cache[endpointID]
-	tc.endpointCache.RUnlock()
-	if !exists {
-		return nil, errors.New("endpoint not found")
+	defer tc.endpointCache.RUnlock()
+	endpoint := tc.endpointCache.cache[endpointID]
+	if endpoint == nil {
+		return nil
 	}
-
-	// try to get the function from our cache
-	fid := endpoint.FunctionID
-	tc.functionCache.RLock()
-	function, exists := tc.functionCache.cache[fid]
-	tc.functionCache.RUnlock()
-	if !exists {
-		errMsg := fmt.Sprintf("Function %s not found in function cache. Is it configured?", fid)
-		return nil, errors.New(errMsg)
-	}
-
-	return &function, nil
+	return &endpoint.FunctionID
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
-func (tc *LibKVTargetCache) Function(functionID functions.FunctionID) (functions.Function, error) {
+func (tc *LibKVTargetCache) Function(functionID functions.FunctionID) *functions.Function {
 	tc.functionCache.RLock()
-	function, exists := tc.functionCache.cache[functionID]
-	tc.functionCache.RUnlock()
-	if !exists {
-		errMsg := fmt.Sprintf("Function %s not found in function cache. Is it configured?", functionID)
-		return function, errors.New(errMsg)
-	}
-
-	return function, nil
+	defer tc.functionCache.RUnlock()
+	return tc.functionCache.cache[functionID]
 }
 
 // FunctionInputToTopics is used for determining the topics to forward inputs to a function to.
-func (tc *LibKVTargetCache) FunctionInputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error) {
+func (tc *LibKVTargetCache) FunctionInputToTopics(function functions.FunctionID) []pubsub.TopicID {
 	tc.publisherCache.RLock()
 	topicSet, exists := tc.publisherCache.fnInToTopic[function]
 	tc.publisherCache.RUnlock()
 
 	if !exists {
-		return []pubsub.TopicID{}, nil
+		return []pubsub.TopicID{}
 	}
 
 	res := []pubsub.TopicID{}
 	for tid := range topicSet {
 		res = append(res, tid)
 	}
-	return res, nil
+	return res
 }
 
 // FunctionOutputToTopics is used for determining the topics to forward outputs of a function to.
-func (tc *LibKVTargetCache) FunctionOutputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error) {
+func (tc *LibKVTargetCache) FunctionOutputToTopics(function functions.FunctionID) []pubsub.TopicID {
 	tc.publisherCache.RLock()
 	topicSet, exists := tc.publisherCache.fnOutToTopic[function]
 	tc.publisherCache.RUnlock()
 
 	if !exists {
-		return []pubsub.TopicID{}, nil
+		return []pubsub.TopicID{}
 	}
 
 	res := []pubsub.TopicID{}
 	for tid := range topicSet {
 		res = append(res, tid)
 	}
-	return res, nil
+	return res
 }
 
 // SubscribersOfTopic is used for determining which functions to forward messages in a topic to.
-func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsub.TopicID) ([]functions.FunctionID, error) {
+func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID {
 	tc.subscriberCache.RLock()
 	fnSet, exists := tc.subscriberCache.topicToFns[topic]
 	tc.subscriberCache.RUnlock()
 
 	if !exists {
-		return []functions.FunctionID{}, nil
+		return []functions.FunctionID{}
 	}
 
 	res := []functions.FunctionID{}
@@ -121,7 +102,7 @@ func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsub.TopicID) ([]function
 		res = append(res, fid)
 	}
 
-	return res, nil
+	return res
 }
 
 // Shutdown causes all state watchers to clean up their state.
