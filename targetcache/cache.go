@@ -3,7 +3,6 @@ package targetcache
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"go.uber.org/zap"

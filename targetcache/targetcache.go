@@ -1,7 +1,6 @@
 package targetcache
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/docker/libkv/store"

@@ -328,7 +328,7 @@ func (router *Router) WaitForEndpoint(endpointID endpoints.EndpointID) <-chan st
 	return updatedChan
 }
 
-// WaitForPublisher returns a chan that is closed when a publisher is created.
+// WaitForFnPublisher returns a chan that is closed when a publisher is created.
 // Primarily for testing purposes.
 func (router *Router) WaitForFnPublisher(function functions.FunctionID, end string) <-chan struct{} {
 	updatedChan := make(chan struct{})
