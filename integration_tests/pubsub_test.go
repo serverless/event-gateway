@@ -15,6 +15,14 @@ import (
 	"github.com/serverless/event-gateway/pubsub"
 )
 
+func wait5Seconds(ch <-chan struct{}, errMsg string) {
+	select {
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		panic(errMsg)
+	}
+}
+
 func TestFunctionPubSub(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
@@ -53,11 +61,8 @@ func TestFunctionPubSub(t *testing.T) {
 		Path:       "/smilez",
 	})
 
-	select {
-	case <-router.WaitForEndpoint(endpoints.EndpointID("POST-smilez")):
-	case <-time.After(5 * time.Second):
-		panic("timed out waiting for endpoint to be configured!")
-	}
+	wait5Seconds(router.WaitForEndpoint(endpoints.EndpointID("POST-smilez")),
+		"timed out waiting for endpoint to be configured!")
 
 	// register subscriber function
 	smileyReceived := make(chan struct{})
@@ -97,11 +102,8 @@ func TestFunctionPubSub(t *testing.T) {
 			FunctionID: subscriberFnID,
 		})
 
-	select {
-	case <-router.WaitForSubscriber(pubsub.TopicID(topicName)):
-	case <-time.After(5 * time.Second):
-		panic("timed out waiting for subscriber to be configured!")
-	}
+	wait5Seconds(router.WaitForSubscriber(pubsub.TopicID(topicName)),
+		"timed out waiting for subscriber to be configured!")
 
 	post(testAPIServer.URL+"/v0/gateway/api/topic/"+topicName+"/publisher",
 		pubsub.Publisher{
@@ -109,11 +111,8 @@ func TestFunctionPubSub(t *testing.T) {
 			FunctionID: publisherFnID,
 		})
 
-	select {
-	case <-router.WaitForFnPublisher(publisherFnID, "output"):
-	case <-time.After(5 * time.Second):
-		panic("timed out waiting for publisher to be configured!")
-	}
+	wait5Seconds(router.WaitForFnPublisher(publisherFnID, "output"),
+		"timed out waiting for publisher to be configured!")
 
 	// trigger the endpoint function and wait for the
 	// subscriber function to receive the callback.
@@ -124,11 +123,8 @@ func TestFunctionPubSub(t *testing.T) {
 			"\", unexpected value: \"" + res + "\"")
 	}
 
-	select {
-	case <-smileyReceived:
-	case <-time.After(5 * time.Second):
-		panic("timed out waiting to receive pub/sub event in subscriber!")
-	}
+	wait5Seconds(smileyReceived,
+		"timed out waiting to receive pub/sub event in subscriber!")
 
 	close(shutdown)
 	router.Drain()
