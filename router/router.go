@@ -22,7 +22,7 @@ import (
 // handles pubsub message delivery.
 type Router struct {
 	sync.Mutex
-	TargetCache          targetcache.TargetCache
+	targetCache          targetcache.TargetCache
 	dropMetric           prometheus.Counter
 	log                  *zap.Logger
 	NWorkers             uint
@@ -34,9 +34,9 @@ type Router struct {
 }
 
 // New instantiates a new Router
-func New(TargetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
+func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
 	return &Router{
-		TargetCache: TargetCache,
+		targetCache: targetCache,
 		dropMetric:  dropMetric,
 		log:         log,
 		NWorkers:    20,
@@ -102,7 +102,7 @@ func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction 
 	sendOutput := map[pubsub.TopicID]struct{}{}
 
 	fillInputMap := func(fid functions.FunctionID) {
-		inputDest := router.TargetCache.FunctionInputToTopics(fid)
+		inputDest := router.targetCache.FunctionInputToTopics(fid)
 
 		for _, topic := range inputDest {
 			sendInput[topic] = struct{}{}
@@ -110,7 +110,7 @@ func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction 
 	}
 
 	fillOutputMap := func(fid functions.FunctionID) {
-		outputDest := router.TargetCache.FunctionInputToTopics(fid)
+		outputDest := router.targetCache.FunctionOutputToTopics(fid)
 
 		for _, topic := range outputDest {
 			sendOutput[topic] = struct{}{}
@@ -129,6 +129,9 @@ func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction 
 }
 
 func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload []byte) {
+	if len(topicMap) == 0 {
+		return
+	}
 	topics := []pubsub.TopicID{}
 	for topic := range topicMap {
 		topics = append(topics, topic)
@@ -149,7 +152,7 @@ func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload 
 // submits pubsub events to the work queue.
 func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []byte) ([]byte, error) {
 	// Figure out what function we're targeting.
-	backingFunction := router.TargetCache.BackingFunction(endpointID)
+	backingFunction := router.targetCache.BackingFunction(endpointID)
 	if backingFunction == nil {
 		retErr := errors.New("for endpoint ID:" + string(endpointID) + ", could not find backing function")
 		return []byte{}, retErr
@@ -160,7 +163,7 @@ func (router *Router) CallEndpoint(endpointID endpoints.EndpointID, payload []by
 
 // CallFunction looks up a function and calls it.
 func (router *Router) CallFunction(backingFunctionID functions.FunctionID, payload []byte) ([]byte, error) {
-	backingFunction := router.TargetCache.Function(backingFunctionID)
+	backingFunction := router.targetCache.Function(backingFunctionID)
 	if backingFunction == nil {
 		resErr := errors.New("unable to look up backing function: " + string(backingFunctionID))
 		return []byte{}, resErr
@@ -190,7 +193,7 @@ func (router *Router) CallFunction(backingFunctionID functions.FunctionID, paylo
 	}
 
 	// Call the target backing function.
-	f := router.TargetCache.Function(chosenFunction)
+	f := router.targetCache.Function(chosenFunction)
 	if f == nil {
 		resErr := errors.New("unable to look up backing function: " + string(chosenFunction))
 		return []byte{}, resErr
@@ -223,6 +226,10 @@ func (router *Router) StartWorkers() {
 		return
 	}
 	router.active = true
+
+	if router.work == nil {
+		router.work = make(chan work, router.NWorkers*2)
+	}
 
 	for i := 0; i < int(router.NWorkers); i++ {
 		router.drainWaitGroup.Add(1)
@@ -274,7 +281,7 @@ func (router *Router) Work() {
 // they are producers for other topics.
 func (router *Router) ProcessEvents(work work) {
 	for _, topicID := range work.topics {
-		subscribers := router.TargetCache.SubscribersOfTopic(topicID)
+		subscribers := router.targetCache.SubscribersOfTopic(topicID)
 		for _, subscriber := range subscribers {
 			router.CallFunction(subscriber, work.payload)
 		}
@@ -302,4 +309,62 @@ func (router *Router) Drain() {
 		router.active = false
 	}
 	router.Unlock()
+}
+
+// WaitForEndpoint returns a chan that is closed when an endpoint is created.
+// Primarily for testing purposes.
+func (router *Router) WaitForEndpoint(endpointID endpoints.EndpointID) <-chan struct{} {
+	updatedChan := make(chan struct{})
+	go func() {
+		for {
+			res := router.targetCache.BackingFunction(endpointID)
+			if res != nil {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		close(updatedChan)
+	}()
+	return updatedChan
+}
+
+// WaitForPublisher returns a chan that is closed when a publisher is created.
+// Primarily for testing purposes.
+func (router *Router) WaitForFnPublisher(function functions.FunctionID, end string) <-chan struct{} {
+	updatedChan := make(chan struct{})
+	go func() {
+		for {
+			res := []pubsub.TopicID{}
+			if end == "input" {
+				res = router.targetCache.FunctionInputToTopics(function)
+			} else if end == "output" {
+				res = router.targetCache.FunctionOutputToTopics(function)
+			} else {
+				panic("WaitForFnPublisher received non-input/output function type.")
+			}
+			if len(res) > 0 {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		close(updatedChan)
+	}()
+	return updatedChan
+}
+
+// WaitForSubscriber returns a chan that is closed when a topic has a subscriber.
+// Primarily for testing purposes.
+func (router *Router) WaitForSubscriber(topic pubsub.TopicID) <-chan struct{} {
+	updatedChan := make(chan struct{})
+	go func() {
+		for {
+			res := router.targetCache.SubscribersOfTopic(topic)
+			if len(res) > 0 {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		close(updatedChan)
+	}()
+	return updatedChan
 }

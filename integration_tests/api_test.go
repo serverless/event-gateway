@@ -10,6 +10,7 @@ import (
 	"github.com/serverless/event-gateway/db"
 	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/pubsub"
 )
 
 func newTestAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
@@ -31,6 +32,16 @@ func newTestAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
 	}
 	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
 	ensapi.RegisterRoutes(apiRouter)
+
+	ps := &pubsub.PubSub{
+		TopicsDB:        db.NewPrefixedStore("/serverless-gateway/topics", kv),
+		SubscriptionsDB: db.NewPrefixedStore("/serverless-gateway/subscriptions", kv),
+		PublishersDB:    db.NewPrefixedStore("/serverless-gateway/publishers", kv),
+		FunctionsDB:     fnsDB,
+		Logger:          log,
+	}
+	psapi := &pubsub.HTTPAPI{PubSub: ps}
+	psapi.RegisterRoutes(apiRouter)
 
 	return httptest.NewServer(apiRouter)
 }

@@ -161,3 +161,47 @@ func (p PubSub) GetAllSubscriptions(tid TopicID) ([]*Subscription, error) {
 
 	return subs, nil
 }
+
+// CreatePublisher creates a publisher.
+func (ps PubSub) CreatePublisher(topicID TopicID, p *Publisher) (*Publisher, error) {
+	p.ID = publisherID(topicID, p.Type, p.FunctionID)
+	p.TopicID = topicID
+
+	validate := validator.New()
+	err := validate.Struct(p)
+	if err != nil {
+		return nil, &ErrorPublisherValidation{err}
+	}
+
+	_, err = ps.PublishersDB.Get(string(p.ID))
+	if err == nil {
+		return nil, &ErrorPublisherAlreadyExists{
+			ID: p.ID,
+		}
+	}
+
+	_, err = ps.TopicsDB.Get(string(p.TopicID))
+	if err != nil {
+		return nil, &ErrorNotFound{p.TopicID}
+	}
+
+	exists, err := ps.FunctionsDB.Exists(string(p.FunctionID))
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, &ErrorFunctionNotFound{string(p.FunctionID)}
+	}
+
+	buf, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ps.PublishersDB.Put(string(p.ID), buf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}

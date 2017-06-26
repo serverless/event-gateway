@@ -1,6 +1,7 @@
 package targetcache
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/docker/libkv/store"
@@ -25,6 +26,7 @@ type TargetCache interface {
 // LibKVTargetCache is an implementation of TargetCache using the docker/libkv
 // library for watching data in etcd, zookeeper, and consul.
 type LibKVTargetCache struct {
+	log               *zap.Logger
 	shutdown          chan struct{}
 	functionCache     *functionCache
 	endpointCache     *endpointCache
@@ -67,6 +69,7 @@ func (tc *LibKVTargetCache) FunctionInputToTopics(function functions.FunctionID)
 	for tid := range topicSet {
 		res = append(res, tid)
 	}
+
 	return res
 }
 
@@ -84,6 +87,7 @@ func (tc *LibKVTargetCache) FunctionOutputToTopics(function functions.FunctionID
 	for tid := range topicSet {
 		res = append(res, tid)
 	}
+
 	return res
 }
 
@@ -151,6 +155,7 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 	publisherPathWatcher.React(newCacheMaintainer(publisherCache), shutdown)
 
 	return &LibKVTargetCache{
+		log:               log,
 		shutdown:          shutdown,
 		functionCache:     functionCache,
 		endpointCache:     endpointCache,
