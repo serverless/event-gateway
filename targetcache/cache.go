@@ -47,20 +47,20 @@ func (c *cacheMaintainer) Deleted(key string, lastKnownValue []byte) {
 type functionCache struct {
 	sync.RWMutex
 	// cache maps from FunctionID to Function
-	cache map[functions.FunctionID]functions.Function
+	cache map[functions.FunctionID]*functions.Function
 	log   *zap.Logger
 }
 
 func newFunctionCache(log *zap.Logger) *functionCache {
 	return &functionCache{
-		cache: map[functions.FunctionID]functions.Function{},
+		cache: map[functions.FunctionID]*functions.Function{},
 		log:   log,
 	}
 }
 
 func (c *functionCache) Set(k string, v []byte) {
-	f := functions.Function{}
-	err := json.NewDecoder(bytes.NewReader(v)).Decode(&f)
+	f := &functions.Function{}
+	err := json.NewDecoder(bytes.NewReader(v)).Decode(f)
 	if err != nil {
 		c.log.Error("Could not deserialize Function state!", zap.Error(err), zap.String("key", k))
 	} else {
@@ -79,20 +79,20 @@ func (c *functionCache) Del(k string, v []byte) {
 type endpointCache struct {
 	sync.RWMutex
 	// cache maps from EndpointID to Endpoint
-	cache map[endpoints.EndpointID]endpoints.Endpoint
+	cache map[endpoints.EndpointID]*endpoints.Endpoint
 	log   *zap.Logger
 }
 
 func newEndpointCache(log *zap.Logger) *endpointCache {
 	return &endpointCache{
-		cache: map[endpoints.EndpointID]endpoints.Endpoint{},
+		cache: map[endpoints.EndpointID]*endpoints.Endpoint{},
 		log:   log,
 	}
 }
 
 func (c *endpointCache) Set(k string, v []byte) {
-	e := endpoints.Endpoint{}
-	err := json.NewDecoder(bytes.NewReader(v)).Decode(&e)
+	e := &endpoints.Endpoint{}
+	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
 	c.log.Debug("endpoint cache received set key.", zap.String("key", k), zap.String("value", string(v)))
 	if err != nil {
 		c.log.Error("Could not deserialize Endpoint state!", zap.Error(err), zap.String("key", k))
@@ -127,6 +127,7 @@ type publisherCache struct {
 func newPublisherCache(log *zap.Logger) *publisherCache {
 	return &publisherCache{
 		log:          log,
+		cache:        map[pubsub.PublisherID]pubsub.Publisher{},
 		fnInToTopic:  map[functions.FunctionID]map[pubsub.TopicID]struct{}{},
 		fnOutToTopic: map[functions.FunctionID]map[pubsub.TopicID]struct{}{},
 	}
@@ -145,7 +146,7 @@ func (c *publisherCache) Set(k string, v []byte) {
 
 	c.cache[pubsub.PublisherID(k)] = p
 
-	if p.FunctionEnd == pubsub.Input {
+	if p.Type == "input" {
 		pubSet, exists := c.fnInToTopic[p.FunctionID]
 		if exists {
 			pubSet[p.TopicID] = struct{}{}
@@ -154,7 +155,7 @@ func (c *publisherCache) Set(k string, v []byte) {
 			pubSet[p.TopicID] = struct{}{}
 			c.fnInToTopic[p.FunctionID] = pubSet
 		}
-	} else if p.FunctionEnd == pubsub.Output {
+	} else if p.Type == "output" {
 		pubSet, exists := c.fnOutToTopic[p.FunctionID]
 		if exists {
 			pubSet[p.TopicID] = struct{}{}
@@ -164,7 +165,7 @@ func (c *publisherCache) Set(k string, v []byte) {
 			c.fnOutToTopic[p.FunctionID] = pubSet
 		}
 	} else {
-		c.log.Error("received a new Publisher with an invalid FunctionEnd!")
+		c.log.Error("received a new Publisher with an invalid Type!")
 	}
 }
 
@@ -177,7 +178,7 @@ func (c *publisherCache) Del(k string, v []byte) {
 		return
 	}
 
-	if oldProd.FunctionEnd == pubsub.Input {
+	if oldProd.Type == "input" {
 		inTopicSet, exists := c.fnInToTopic[oldProd.FunctionID]
 		if exists {
 			delete(inTopicSet, oldProd.TopicID)
@@ -186,7 +187,7 @@ func (c *publisherCache) Del(k string, v []byte) {
 				delete(c.fnInToTopic, oldProd.FunctionID)
 			}
 		}
-	} else if oldProd.FunctionEnd == pubsub.Output {
+	} else if oldProd.Type == "output" {
 		outTopicSet, exists := c.fnOutToTopic[oldProd.FunctionID]
 		if exists {
 			delete(outTopicSet, oldProd.TopicID)
@@ -196,7 +197,7 @@ func (c *publisherCache) Del(k string, v []byte) {
 			}
 		}
 	} else {
-		c.log.Error("trying to delete a Publisher with an invalid FunctionEnd!")
+		c.log.Error("trying to delete a Publisher with an invalid Type!")
 	}
 }
 

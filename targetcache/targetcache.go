@@ -1,8 +1,6 @@
 package targetcache
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/docker/libkv/store"
@@ -17,16 +15,17 @@ import (
 // TargetCache is an interface for retrieving cached configuration
 // for driving performance-sensitive routing decisions.
 type TargetCache interface {
-	BackingFunctions(endpoint endpoints.EndpointID) (functions.WeightedFunctions, *functions.FunctionID, error)
-	Function(functionID functions.FunctionID) (functions.Function, error)
-	FunctionInputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error)
-	FunctionOutputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error)
-	SubscribersOfTopic(topic pubsub.TopicID) ([]functions.FunctionID, error)
+	BackingFunction(endpoint endpoints.EndpointID) *functions.FunctionID
+	Function(functionID functions.FunctionID) *functions.Function
+	FunctionInputToTopics(function functions.FunctionID) []pubsub.TopicID
+	FunctionOutputToTopics(function functions.FunctionID) []pubsub.TopicID
+	SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID
 }
 
 // LibKVTargetCache is an implementation of TargetCache using the docker/libkv
 // library for watching data in etcd, zookeeper, and consul.
 type LibKVTargetCache struct {
+	log               *zap.Logger
 	shutdown          chan struct{}
 	functionCache     *functionCache
 	endpointCache     *endpointCache
@@ -34,100 +33,71 @@ type LibKVTargetCache struct {
 	subscriptionCache *subscriptionCache
 }
 
-// BackingFunctions returns functions and their weights, along with the
+// BackingFunction returns functions and their weights, along with the
 // group ID if this was a Group function target, so we can submit
 // events to topics that are fed by both.
-func (tc *LibKVTargetCache) BackingFunctions(endpointID endpoints.EndpointID) (
-	functions.WeightedFunctions, *functions.FunctionID, error,
-) {
-
+func (tc *LibKVTargetCache) BackingFunction(endpointID endpoints.EndpointID) *functions.FunctionID {
 	// try to get the endpoint from our cache
 	tc.endpointCache.RLock()
-	endpoint, exists := tc.endpointCache.cache[endpointID]
-	tc.endpointCache.RUnlock()
-	if !exists {
-		return functions.WeightedFunctions{}, nil, errors.New("endpoint not found")
+	defer tc.endpointCache.RUnlock()
+	endpoint := tc.endpointCache.cache[endpointID]
+	if endpoint == nil {
+		return nil
 	}
-
-	// try to get the function from our cache
-	fid := endpoint.FunctionID
-	tc.functionCache.RLock()
-	function, exists := tc.functionCache.cache[fid]
-	tc.functionCache.RUnlock()
-	if !exists {
-		errMsg := fmt.Sprintf("Function %s not found in function cache. Is it configured?", fid)
-		return functions.WeightedFunctions{}, nil, errors.New(errMsg)
-	}
-
-	// if function is a group, get weights, otherwise, just return the ID
-	if function.Group == nil {
-		res := functions.WeightedFunctions{
-			{
-				FunctionID: function.ID,
-				Weight:     1,
-			},
-		}
-		return res, nil, nil
-	}
-
-	return functions.WeightedFunctions(function.Group.Functions), &function.ID, nil
+	return &endpoint.FunctionID
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
-func (tc *LibKVTargetCache) Function(functionID functions.FunctionID) (functions.Function, error) {
+func (tc *LibKVTargetCache) Function(functionID functions.FunctionID) *functions.Function {
 	tc.functionCache.RLock()
-	function, exists := tc.functionCache.cache[functionID]
-	tc.functionCache.RUnlock()
-	if !exists {
-		errMsg := fmt.Sprintf("Function %s not found in function cache. Is it configured?", functionID)
-		return function, errors.New(errMsg)
-	}
-
-	return function, nil
+	defer tc.functionCache.RUnlock()
+	return tc.functionCache.cache[functionID]
 }
 
 // FunctionInputToTopics is used for determining the topics to forward inputs to a function to.
-func (tc *LibKVTargetCache) FunctionInputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error) {
+func (tc *LibKVTargetCache) FunctionInputToTopics(function functions.FunctionID) []pubsub.TopicID {
 	tc.publisherCache.RLock()
 	topicSet, exists := tc.publisherCache.fnInToTopic[function]
 	tc.publisherCache.RUnlock()
 
 	if !exists {
-		return []pubsub.TopicID{}, nil
+		return []pubsub.TopicID{}
 	}
 
 	res := []pubsub.TopicID{}
 	for tid := range topicSet {
 		res = append(res, tid)
 	}
-	return res, nil
+
+	return res
 }
 
 // FunctionOutputToTopics is used for determining the topics to forward outputs of a function to.
-func (tc *LibKVTargetCache) FunctionOutputToTopics(function functions.FunctionID) ([]pubsub.TopicID, error) {
+func (tc *LibKVTargetCache) FunctionOutputToTopics(function functions.FunctionID) []pubsub.TopicID {
 	tc.publisherCache.RLock()
 	topicSet, exists := tc.publisherCache.fnOutToTopic[function]
 	tc.publisherCache.RUnlock()
 
 	if !exists {
-		return []pubsub.TopicID{}, nil
+		return []pubsub.TopicID{}
 	}
 
 	res := []pubsub.TopicID{}
 	for tid := range topicSet {
 		res = append(res, tid)
 	}
-	return res, nil
+
+	return res
 }
 
 // SubscribersOfTopic is used for determining which functions to forward messages in a topic to.
-func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsub.TopicID) ([]functions.FunctionID, error) {
+func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID {
 	tc.subscriptionCache.RLock()
 	fnSet, exists := tc.subscriptionCache.topicToFns[topic]
 	tc.subscriptionCache.RUnlock()
 
 	if !exists {
-		return []functions.FunctionID{}, nil
+		return []functions.FunctionID{}
 	}
 
 	res := []functions.FunctionID{}
@@ -135,7 +105,7 @@ func (tc *LibKVTargetCache) SubscribersOfTopic(topic pubsub.TopicID) ([]function
 		res = append(res, fid)
 	}
 
-	return res, nil
+	return res
 }
 
 // Shutdown causes all state watchers to clean up their state.
@@ -184,6 +154,7 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 	publisherPathWatcher.React(newCacheMaintainer(publisherCache), shutdown)
 
 	return &LibKVTargetCache{
+		log:               log,
 		shutdown:          shutdown,
 		functionCache:     functionCache,
 		endpointCache:     endpointCache,

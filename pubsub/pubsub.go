@@ -20,14 +20,14 @@ type PubSub struct {
 }
 
 // CreateTopic creates topic.
-func (p PubSub) CreateTopic(t *Topic) (*Topic, error) {
+func (ps PubSub) CreateTopic(t *Topic) (*Topic, error) {
 	validate := validator.New()
 	err := validate.Struct(t)
 	if err != nil {
 		return nil, &ErrorValidation{err}
 	}
 
-	_, err = p.TopicsDB.Get(string(t.ID))
+	_, err = ps.TopicsDB.Get(string(t.ID))
 	if err == nil {
 		return nil, &ErrorAlreadyExists{
 			ID: t.ID,
@@ -39,7 +39,7 @@ func (p PubSub) CreateTopic(t *Topic) (*Topic, error) {
 		return nil, err
 	}
 
-	err = p.TopicsDB.Put(string(t.ID), buf, nil)
+	err = ps.TopicsDB.Put(string(t.ID), buf, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48,13 +48,13 @@ func (p PubSub) CreateTopic(t *Topic) (*Topic, error) {
 }
 
 // DeleteTopic deletes topic.
-func (p PubSub) DeleteTopic(id TopicID) error {
-	err := p.SubscriptionsDB.DeleteTree("")
+func (ps PubSub) DeleteTopic(id TopicID) error {
+	err := ps.SubscriptionsDB.DeleteTree("")
 	if err != nil {
 		return err
 	}
 
-	err = p.TopicsDB.Delete(string(id))
+	err = ps.TopicsDB.Delete(string(id))
 	if err != nil {
 		return &ErrorNotFound{id}
 	}
@@ -62,10 +62,10 @@ func (p PubSub) DeleteTopic(id TopicID) error {
 }
 
 // GetAllTopics returns array of all Topics.
-func (p PubSub) GetAllTopics() ([]*Topic, error) {
+func (ps PubSub) GetAllTopics() ([]*Topic, error) {
 	topics := []*Topic{}
 
-	kvs, err := p.TopicsDB.List("")
+	kvs, err := ps.TopicsDB.List("")
 	if err != nil {
 		return topics, nil
 	}
@@ -85,7 +85,7 @@ func (p PubSub) GetAllTopics() ([]*Topic, error) {
 }
 
 // CreateSubscription creates subscription.
-func (p PubSub) CreateSubscription(topicID TopicID, s *Subscription) (*Subscription, error) {
+func (ps PubSub) CreateSubscription(topicID TopicID, s *Subscription) (*Subscription, error) {
 	s.ID = subscriptionID(topicID, s.FunctionID)
 	s.TopicID = topicID
 
@@ -95,19 +95,19 @@ func (p PubSub) CreateSubscription(topicID TopicID, s *Subscription) (*Subscript
 		return nil, &ErrorSubscriptionValidation{err}
 	}
 
-	_, err = p.SubscriptionsDB.Get(string(s.ID))
+	_, err = ps.SubscriptionsDB.Get(string(s.ID))
 	if err == nil {
 		return nil, &ErrorSubscriptionAlreadyExists{
 			ID: s.ID,
 		}
 	}
 
-	_, err = p.TopicsDB.Get(string(s.TopicID))
+	_, err = ps.TopicsDB.Get(string(s.TopicID))
 	if err != nil {
 		return nil, &ErrorNotFound{s.TopicID}
 	}
 
-	exists, err := p.FunctionsDB.Exists(string(s.FunctionID))
+	exists, err := ps.FunctionsDB.Exists(string(s.FunctionID))
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (p PubSub) CreateSubscription(topicID TopicID, s *Subscription) (*Subscript
 		return nil, err
 	}
 
-	err = p.SubscriptionsDB.Put(string(s.ID), buf, nil)
+	err = ps.SubscriptionsDB.Put(string(s.ID), buf, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +129,8 @@ func (p PubSub) CreateSubscription(topicID TopicID, s *Subscription) (*Subscript
 }
 
 // DeleteSubscription deletes subscription.
-func (p PubSub) DeleteSubscription(id SubscriptionID) error {
-	err := p.SubscriptionsDB.Delete(string(id))
+func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
+	err := ps.SubscriptionsDB.Delete(string(id))
 	if err != nil {
 		return &ErrorSubscriptionNotFound{id}
 	}
@@ -138,10 +138,10 @@ func (p PubSub) DeleteSubscription(id SubscriptionID) error {
 }
 
 // GetAllSubscriptions returns array of all Subscription.
-func (p PubSub) GetAllSubscriptions(tid TopicID) ([]*Subscription, error) {
+func (ps PubSub) GetAllSubscriptions(tid TopicID) ([]*Subscription, error) {
 	subs := []*Subscription{}
 
-	kvs, err := p.SubscriptionsDB.List("")
+	kvs, err := ps.SubscriptionsDB.List("")
 	if err != nil {
 		return subs, nil
 	}
@@ -160,4 +160,48 @@ func (p PubSub) GetAllSubscriptions(tid TopicID) ([]*Subscription, error) {
 	}
 
 	return subs, nil
+}
+
+// CreatePublisher creates a publisher.
+func (ps PubSub) CreatePublisher(topicID TopicID, publisher *Publisher) (*Publisher, error) {
+	publisher.ID = publisherID(topicID, publisher.Type, publisher.FunctionID)
+	publisher.TopicID = topicID
+
+	validate := validator.New()
+	err := validate.Struct(publisher)
+	if err != nil {
+		return nil, &ErrorPublisherValidation{err}
+	}
+
+	_, err = ps.PublishersDB.Get(string(publisher.ID))
+	if err == nil {
+		return nil, &ErrorPublisherAlreadyExists{
+			ID: publisher.ID,
+		}
+	}
+
+	_, err = ps.TopicsDB.Get(string(publisher.TopicID))
+	if err != nil {
+		return nil, &ErrorNotFound{publisher.TopicID}
+	}
+
+	exists, err := ps.FunctionsDB.Exists(string(publisher.FunctionID))
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, &ErrorFunctionNotFound{string(publisher.FunctionID)}
+	}
+
+	buf, err := json.Marshal(publisher)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ps.PublishersDB.Put(string(publisher.ID), buf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return publisher, nil
 }

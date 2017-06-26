@@ -3,7 +3,7 @@ package tests
 import "sync/atomic"
 
 var (
-	testPortAllocator = uint32(2370)
+	testPortAllocator = uint32(3370)
 )
 
 func newPort() int {

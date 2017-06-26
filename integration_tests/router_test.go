@@ -61,22 +61,10 @@ func TestFunctionDefAndCalling(t *testing.T) {
 		Path:       "/smilez",
 	})
 
-	updatedChan := make(chan struct{})
-	go func() {
-		for {
-			_, _, err := router.TargetCache.BackingFunctions(endpoints.EndpointID("POST-smilez"))
-			if err == nil {
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		close(updatedChan)
-	}()
-
 	select {
-	case <-updatedChan:
-	case <-time.After(30 * time.Second):
-		panic("failed to receive endpoint configuration within 30 seconds")
+	case <-router.WaitForEndpoint(endpoints.EndpointID("POST-smilez")):
+	case <-time.After(5 * time.Second):
+		panic("timed out waiting for endpoint to be configured!")
 	}
 
 	res := get(testRouterServer.URL + "/smilez")
@@ -90,7 +78,7 @@ func TestFunctionDefAndCalling(t *testing.T) {
 	<-shutdownComplete
 }
 
-func post(url string, thing interface{}) {
+func post(url string, thing interface{}) ([]byte, error) {
 	reqBytes := &bytes.Buffer{}
 	json.NewEncoder(reqBytes).Encode(thing)
 
@@ -100,15 +88,7 @@ func post(url string, thing interface{}) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	response := &functions.Function{}
-	err = json.Unmarshal(body, response)
-	if err != nil {
-		panic(err)
-	}
+	return ioutil.ReadAll(resp.Body)
 }
 
 func get(url string) string {
