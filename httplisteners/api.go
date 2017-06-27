@@ -48,25 +48,25 @@ func StartAPI(conf HandlerConf) {
 	apiRouter.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	apiRouter.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
 
-	handler := metrics.HTTPLogger{
+	apiHandler := metrics.HTTPLogger{
 		Handler:         apiRouter,
 		RequestDuration: metrics.RequestDuration,
 	}
 	ev := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(conf.Port)),
-		Handler:      handler,
+		Handler:      apiHandler,
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
 
-	h := Handler{
+	h := handler{
 		Conf:        conf,
 		HTTPHandler: ev,
 	}
 
 	go func() {
 		conf.ShutdownGuard.Add(1)
-		h.Listen()
+		h.listen()
 		conf.ShutdownGuard.Done()
 	}()
 }

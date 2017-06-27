@@ -21,14 +21,14 @@ func StartGateway(conf HandlerConf) {
 		WriteTimeout: 3 * time.Second,
 	}
 
-	h := Handler{
+	h := handler{
 		Conf:        conf,
 		HTTPHandler: ev,
 	}
 
 	go func() {
 		conf.ShutdownGuard.Add(1)
-		h.Listen()
+		h.listen()
 		router.Drain()
 		conf.ShutdownGuard.Done()
 	}()
