@@ -25,9 +25,9 @@ var (
 	}
 )
 
-// HandlerConf contains information for an http listener to
+// Config contains information for an http listener to
 // interact with its environment.
-type HandlerConf struct {
+type Config struct {
 	KV            store.Store
 	Log           *zap.Logger
 	TLSCrt        *string
@@ -38,7 +38,7 @@ type HandlerConf struct {
 
 // handler is a context-aware http server.
 type handler struct {
-	Conf        HandlerConf
+	Conf        Config
 	HTTPHandler *http.Server
 }
 

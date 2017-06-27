@@ -11,7 +11,7 @@ import (
 )
 
 // StartGateway creates a new gateway endpoint and listens for requests.
-func StartGateway(conf HandlerConf) {
+func StartGateway(conf Config) {
 	targetCache := targetcache.New("/serverless-gateway", conf.KV, conf.Log)
 	router := router.New(targetCache, metrics.DroppedPubSubEvents, conf.Log)
 	ev := &http.Server{

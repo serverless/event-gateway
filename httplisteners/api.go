@@ -16,7 +16,7 @@ import (
 )
 
 // StartAPI creates a new API server and listens for requests.
-func StartAPI(conf HandlerConf) {
+func StartAPI(conf Config) {
 	apiRouter := httprouter.New()
 
 	fnsDB := db.NewPrefixedStore("/serverless-gateway/functions", conf.KV)
