@@ -55,6 +55,174 @@ it to the stream, and you're good to go. This is not limited to metrics!
 - it's not a replacement for streaming platforms (no processing capability and consumers group)
 - it's not a replacement for existing service discovery solutions from the microservices world
 
+## Use cases (Framework <> Gateway integration)
+
+### REST API
+
+serverless.yaml:
+
+```yaml
+gateways:
+  acme:
+    url: acme.gateway.serverless.com
+    apikey: xxx
+
+functions:
+  greeter:
+    handler: greeter.greeter
+    events:
+      - gateway.acme.http:
+          method: GET
+          path: greet
+
+// General event naming convention
+      - gateway.<gateway name>.<event name>:
+          <props>
+```
+
+### SaaS webhooks - Predifined events
+
+Gateway supports predefined set of events that correspond to webhooks exposed by companies like e.g. GitHub, Twilio. Each predefined
+event has a specific structure.
+
+serverless.yaml:
+
+```yaml
+gateways:
+  acme:
+    url: acme.gateway.serverless.com
+    apikey: xxx
+
+functions:
+  greeter:
+    handler: greeter.greeter
+    events:
+      - gateway.acme.github:
+        repo: serverless/serverless
+        type: commit_comment
+```
+
+### Reacting on custom events
+
+serverless.yaml:
+
+```yaml
+gateways:
+  acme:
+    url: acme.gateway.serverless.com
+    apikey: xxx
+
+functions:
+  greeter:
+    handler: greeter.greeter
+    events:
+      - gateway.acme.userCreated
+```
+
+### Reacting on custom events from multiple gateways
+
+serverless.yaml:
+
+```yaml
+gateways:
+  acme:
+    url: acme.gateway.serverless.com
+    apikey: xxx
+  evilcorp:
+    url: evilcorp.gateway.serverless.com
+  internal:
+    url: 127.0.0.1
+
+functions:
+  welcomeEmail:
+    handler: emails.welcomeEmail
+    events:
+      - gateway.internal.userCreated
+    events:
+      - gateway.acme.userCreated
+```
+
+### Publishing custom events
+
+Publishing events happens in the code usind FDK
+
+```javascript
+const fdk = require('serverless/fdk')
+
+module.exports.hello = fdk().handler((event, ctx) => {
+  fdk.emit("acme", {
+    "userCreated": {
+      id: "xxx"
+    }
+  })
+
+  return "hello"
+})
+```
+
+### Publishing multiple custom events
+
+```javascript
+const stdlib = require('stdlib')
+
+module.exports.hello = stdlib().handler((event, ctx) => {
+  stdlib.emit({
+    "userCreated": {
+      id: "xxx"
+    }
+  })
+
+  stdlib.emit({
+    "userSaved": {
+      id: "xxx"
+    }
+  })
+
+  return "hello"
+})
+```
+
+### Event discovery
+
+Event discovery is available via Platform UI or the framework.
+
+```
+$ serverless events search "user*"
+
+- userCreated
+  gateway: acme
+  published at: 3 minutes age
+
+- userDeleted
+  gateway: evilcorp
+  published at: 2 days ago
+```
+
+### Reacting to operational data from function
+
+There is special `function` event that allows reacting on function low-level events like:
+
+- invocation - metrics about invocation (memory usage, duration)
+- logs - logs reported by the function
+- result - raw result returned by the function
+
+serverless.yaml:
+
+```yaml
+gateways:
+  acme:
+    url: acme.gateway.serverless.com
+    apikey: xxx
+
+functions:
+  pushMetricsToDataDog:
+    handler: metrics.datadog
+    events:
+      - gateway.acme.function:
+        - name: welcomeEmail
+        - type: invocation
+```
+
 ## Architecture
 
 ```
