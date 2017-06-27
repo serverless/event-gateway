@@ -2,109 +2,23 @@ package main
 
 import (
 	"flag"
-	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/docker/libkv"
 	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/etcd"
-	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/db"
-	"github.com/serverless/event-gateway/endpoints"
-	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/httpapi"
+	"github.com/serverless/event-gateway/httplisteners"
 	"github.com/serverless/event-gateway/metrics"
-	"github.com/serverless/event-gateway/pubsub"
-	"github.com/serverless/event-gateway/router"
-	"github.com/serverless/event-gateway/targetcache"
 	"github.com/serverless/event-gateway/util"
 )
 
 func init() {
 	etcd.Register()
-}
-
-func startGateway(conf httpapi.HandlerConf) {
-	targetCache := targetcache.New("/serverless-gateway", conf.KV, conf.Log)
-	router := router.New(targetCache, metrics.DroppedPubSubEvents, conf.Log)
-	ev := &http.Server{
-		Addr:         ":" + strconv.Itoa(int(conf.Port)),
-		Handler:      router,
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
-	}
-
-	h := httpapi.Handler{
-		Conf:        conf,
-		HTTPHandler: ev,
-	}
-
-	go func() {
-		conf.ShutdownGuard.Add(1)
-		h.Listen()
-		router.Drain()
-		conf.ShutdownGuard.Done()
-	}()
-}
-
-func startAPI(conf httpapi.HandlerConf) {
-	apiRouter := httprouter.New()
-
-	fnsDB := db.NewPrefixedStore("/serverless-gateway/functions", conf.KV)
-	fns := &functions.Functions{
-		DB:     fnsDB,
-		Logger: conf.Log,
-	}
-	fnsapi := &functions.HTTPAPI{Functions: fns}
-	fnsapi.RegisterRoutes(apiRouter)
-
-	ens := &endpoints.Endpoints{
-		DB:          db.NewPrefixedStore("/serverless-gateway/endpoints", conf.KV),
-		Logger:      conf.Log,
-		FunctionsDB: fnsDB,
-	}
-	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
-	ensapi.RegisterRoutes(apiRouter)
-
-	ps := &pubsub.PubSub{
-		TopicsDB:        db.NewPrefixedStore("/serverless-gateway/topics", conf.KV),
-		SubscriptionsDB: db.NewPrefixedStore("/serverless-gateway/subscriptions", conf.KV),
-		PublishersDB:    db.NewPrefixedStore("/serverless-gateway/publishers", conf.KV),
-		FunctionsDB:     fnsDB,
-		Logger:          conf.Log,
-	}
-	psapi := &pubsub.HTTPAPI{PubSub: ps}
-	psapi.RegisterRoutes(apiRouter)
-
-	apiRouter.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
-	apiRouter.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
-
-	handler := metrics.HTTPLogger{
-		Handler:         apiRouter,
-		RequestDuration: metrics.RequestDuration,
-	}
-	ev := &http.Server{
-		Addr:         ":" + strconv.Itoa(int(conf.Port)),
-		Handler:      handler,
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
-	}
-
-	h := httpapi.Handler{
-		Conf:        conf,
-		HTTPHandler: ev,
-	}
-
-	go func() {
-		conf.ShutdownGuard.Add(1)
-		h.Listen()
-		conf.ShutdownGuard.Done()
-	}()
 }
 
 func main() {
@@ -157,7 +71,7 @@ func main() {
 	}
 
 	// start API handler
-	startAPI(httpapi.HandlerConf{
+	httplisteners.StartAPI(httplisteners.HandlerConf{
 		KV:            kv,
 		Log:           log,
 		TLSCrt:        apiTLSCrt,
@@ -167,7 +81,7 @@ func main() {
 	})
 
 	// start Event Gateway handler
-	startGateway(httpapi.HandlerConf{
+	httplisteners.StartGateway(httplisteners.HandlerConf{
 		KV:            kv,
 		Log:           log,
 		TLSCrt:        gatewayTLSCrt,
