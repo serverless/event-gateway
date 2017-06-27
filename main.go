@@ -133,7 +133,7 @@ func main() {
 			WriteTimeout: 3 * time.Second,
 		}
 
-		if *gatewayTLSCrt != "" && *gatewayTLSKey != "" {
+		if *apiTLSCrt != "" && *apiTLSKey != "" {
 			cfg := &tls.Config{
 				MinVersion:               tls.VersionTLS12,
 				CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
