@@ -11,6 +11,8 @@ import (
 	"github.com/serverless/event-gateway/util"
 )
 
+// HandlerConf contains information for an http listener to
+// interact with its environment.
 type HandlerConf struct {
 	KV            store.Store
 	Log           *zap.Logger
@@ -20,11 +22,14 @@ type HandlerConf struct {
 	ShutdownGuard *util.ShutdownGuard
 }
 
+// Handler is a context-aware http server.
 type Handler struct {
 	Conf        HandlerConf
 	HTTPHandler *http.Server
 }
 
+// Listen sets up a graceful shutdown mechanism and
+// runs the http.Server.
 func (h Handler) Listen() {
 	go func() {
 		<-h.Conf.ShutdownGuard.ShuttingDown
@@ -33,7 +38,7 @@ func (h Handler) Listen() {
 
 	var err error
 	if *h.Conf.TLSCrt != "" && *h.Conf.TLSKey != "" {
-		h.HTTPHandler.TLSConfig = TLSConf()
+		h.HTTPHandler.TLSConfig = tlsConf()
 		h.HTTPHandler.TLSNextProto = map[string]func(*http.Server, *tls.Conn, http.Handler){}
 
 		err = h.HTTPHandler.ListenAndServeTLS(*h.Conf.TLSCrt, *h.Conf.TLSKey)
@@ -45,7 +50,7 @@ func (h Handler) Listen() {
 	h.Conf.ShutdownGuard.InitiateShutdown()
 }
 
-func TLSConf() *tls.Config {
+func tlsConf() *tls.Config {
 	return &tls.Config{
 		MinVersion:               tls.VersionTLS12,
 		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
