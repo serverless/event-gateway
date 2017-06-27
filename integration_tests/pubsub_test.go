@@ -28,7 +28,7 @@ func TestFunctionPubSub(t *testing.T) {
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
 
-	kv, shutdown, shutdownComplete := TestingEtcd()
+	kv, shutdownGuard := TestingEtcd()
 
 	testAPIServer := newTestAPIServer(kv, log)
 	defer testAPIServer.Close()
@@ -126,7 +126,6 @@ func TestFunctionPubSub(t *testing.T) {
 	wait5Seconds(smileyReceived,
 		"timed out waiting to receive pub/sub event in subscriber!")
 
-	close(shutdown)
 	router.Drain()
-	<-shutdownComplete
+	shutdownGuard.ShutdownAndWait()
 }

@@ -32,7 +32,7 @@ func TestFunctionDefAndCalling(t *testing.T) {
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
 
-	kv, shutdown, shutdownComplete := TestingEtcd()
+	kv, shutdownGuard := TestingEtcd()
 
 	testAPIServer := newTestAPIServer(kv, log)
 	defer testAPIServer.Close()
@@ -73,9 +73,8 @@ func TestFunctionDefAndCalling(t *testing.T) {
 		panic("returned value was not \"" + expected + "\", unexpected value: \"" + res + "\"")
 	}
 
-	close(shutdown)
 	router.Drain()
-	<-shutdownComplete
+	shutdownGuard.ShutdownAndWait()
 }
 
 func post(url string, thing interface{}) ([]byte, error) {
