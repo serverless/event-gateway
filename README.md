@@ -101,11 +101,11 @@ sdk.updateFunction("hello-world-group", {
 }, function(error, response) {})
 ```
 
-#### Middlewares
+#### Middleware
 
-A middleware is a function that runs before or after other function and has the ability to modify the input and the output of the function. A middleware is a function registered in the event gateway. In case of error in the input middleware the error is returned and the actual function is not invoked. If the output middleware is defined the result from that output function is returned to the caller.
+Middleware consists of functions that before or after other function and has the ability to modify the input and the output of the function. A middleware is a function registered in the event gateway. In case of error in the input middleware the error is returned and the actual function is not invoked. If the output middleware is defined the result from that output function is returned to the caller.
 
-#### Example: Register An AWS Lambda Function With Input/Output Middlewares
+#### Example: Register An AWS Lambda Function With Input/Output Middleware
 
 ```javascript
 var sdk = require('sdk')
