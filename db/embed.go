@@ -6,6 +6,8 @@ import (
 
 	"github.com/coreos/etcd/embed"
 	"github.com/coreos/pkg/capnslog"
+
+	"github.com/serverless/event-gateway/util"
 )
 
 func parse(input string) *url.URL {
@@ -18,9 +20,8 @@ func parse(input string) *url.URL {
 
 // EmbedEtcd starts an embedded etcd instance. It can be shut down by closing the shutdown chan.
 // It returns a chan that is closed upon startup, and a chan that is closed once shutdown is complete.
-func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdown chan struct{}, verboseLogging bool) (<-chan struct{}, <-chan struct{}) {
-	startedChan := make(chan struct{})
-	stoppedChan := make(chan struct{})
+func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGuard,
+	verboseLogging bool) {
 
 	cfg := embed.NewConfig()
 
@@ -42,6 +43,7 @@ func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdown chan struct{}, verbos
 	if !verboseLogging {
 		etcdLogger, err := capnslog.GetRepoLogger("github.com/coreos/etcd")
 		if err != nil {
+			shutdownGuard.ShutdownAndWait()
 			panic(err)
 		}
 		etcdLogger.SetLogLevel(map[string]capnslog.LogLevel{
@@ -56,31 +58,31 @@ func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdown chan struct{}, verbos
 
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
+		shutdownGuard.ShutdownAndWait()
 		panic(err)
+	}
+
+	select {
+	case <-e.Server.ReadyNotify():
+		shutdownGuard.Add(1)
+	case <-time.After(60 * time.Second):
+		e.Server.Stop()
+		shutdownGuard.ShutdownAndWait()
+		panic("Embedded etcd took too long to start!")
 	}
 
 	// startup or timeout
 	go func() {
-		select {
-		case <-e.Server.ReadyNotify():
-			close(startedChan)
-		case <-time.After(60 * time.Second):
-			e.Server.Stop()
-			close(stoppedChan)
-			panic("Embedded etcd took too long to start!")
-		}
-
 		// run until error or shutdown
 		select {
-		case <-shutdown:
+		case <-shutdownGuard.ShuttingDown:
 			e.Server.Stop()
-			close(stoppedChan)
+			shutdownGuard.Done()
 		case err := <-e.Err():
 			e.Server.Stop()
-			close(stoppedChan)
+			shutdownGuard.ShutdownAndDone()
+			shutdownGuard.Wait()
 			panic("Etcd failed to start: " + err.Error())
 		}
 	}()
-
-	return startedChan, stoppedChan
 }

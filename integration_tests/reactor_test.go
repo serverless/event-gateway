@@ -81,10 +81,7 @@ func TestReactiveCfgStore(t *testing.T) {
 	cfg.DisableStacktrace = true
 	log, _ := cfg.Build()
 
-	kv, shutdownChan, stoppedChan := TestingEtcd()
-	if shutdownChan == nil {
-		panic("could not start testing etcd")
-	}
+	kv, shutdownGuard := TestingEtcd()
 
 	buf := randomHumanReadableBytes(10)
 
@@ -107,6 +104,5 @@ func TestReactiveCfgStore(t *testing.T) {
 	watchTests(listener, buf, trx, kv, log)
 
 	close(closeReact)
-	close(shutdownChan)
-	<-stoppedChan
+	shutdownGuard.ShutdownAndWait()
 }

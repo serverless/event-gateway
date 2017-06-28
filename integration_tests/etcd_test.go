@@ -10,6 +10,7 @@ import (
 	"github.com/docker/libkv/store/etcd"
 
 	"github.com/serverless/event-gateway/db"
+	"github.com/serverless/event-gateway/util"
 )
 
 func init() {
@@ -20,12 +21,12 @@ func kvAddr(port int) string {
 	return "127.0.0.1:" + strconv.Itoa(port)
 }
 
-func TestingEtcd() (store.Store, chan struct{}, <-chan struct{}) {
-	shutdownInitiateChan := make(chan struct{})
-	cleanupChan := make(chan struct{})
+func TestingEtcd() (store.Store, *util.ShutdownGuard) {
+	shutdownGuard := util.NewShutdownGuard()
 
 	wd, err := os.Getwd()
 	if err != nil {
+		shutdownGuard.ShutdownAndWait()
 		panic(err)
 	}
 
@@ -39,7 +40,7 @@ func TestingEtcd() (store.Store, chan struct{}, <-chan struct{}) {
 	cliKvAddr := kvAddr(cliPort)
 	cliAddr := "http://" + cliKvAddr
 
-	startedChan, stoppedChan := db.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownInitiateChan, false)
+	db.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownGuard, false)
 
 	cli, err := libkv.NewStore(
 		store.ETCD,
@@ -49,23 +50,19 @@ func TestingEtcd() (store.Store, chan struct{}, <-chan struct{}) {
 		},
 	)
 	if err != nil {
+		shutdownGuard.ShutdownAndWait()
 		panic(err)
 	}
 
-	select {
-	case <-startedChan:
-	case <-stoppedChan:
-		panic("Failed to start testing etcd")
-	}
-
 	go func() {
-		<-stoppedChan
+		shutdownGuard.Add(1)
+		<-shutdownGuard.ShuttingDown
 		err := os.RemoveAll(dataDir)
+		shutdownGuard.Done()
 		if err != nil {
 			panic(err)
 		}
-		close(cleanupChan)
 	}()
 
-	return cli, shutdownInitiateChan, cleanupChan
+	return cli, shutdownGuard
 }
