@@ -205,3 +205,37 @@ func (ps PubSub) CreatePublisher(topicID TopicID, publisher *Publisher) (*Publis
 
 	return publisher, nil
 }
+
+// DeletePublisher deletes publisher.
+func (ps PubSub) DeletePublisher(id PublisherID) error {
+	err := ps.PublishersDB.Delete(string(id))
+	if err != nil {
+		return &ErrorPublisherNotFound{id}
+	}
+	return nil
+}
+
+// GetAllPublishers returns array of all Publishers.
+func (ps PubSub) GetAllPublishers(tid TopicID) ([]*Publisher, error) {
+	pubs := []*Publisher{}
+
+	kvs, err := ps.PublishersDB.List("")
+	if err != nil {
+		return pubs, nil
+	}
+
+	for _, kv := range kvs {
+		if strings.HasPrefix(kv.Key, string(tid)) {
+			p := &Publisher{}
+			dec := json.NewDecoder(bytes.NewReader(kv.Value))
+			err = dec.Decode(p)
+			if err != nil {
+				return nil, err
+			}
+
+			pubs = append(pubs, p)
+		}
+	}
+
+	return pubs, nil
+}

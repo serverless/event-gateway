@@ -24,6 +24,8 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v0/gateway/api/topic/:topicID/subscription", h.getSubscriptions)
 
 	router.POST("/v0/gateway/api/topic/:topicID/publisher", h.createPublisher)
+	router.DELETE("/v0/gateway/api/topic/:topicID/publisher/:publisherID", h.deletePublisher)
+	router.GET("/v0/gateway/api/topic/:topicID/publisher", h.getPublishers)
 }
 
 func (h HTTPAPI) createTopic(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -163,10 +165,42 @@ func (h HTTPAPI) createPublisher(w http.ResponseWriter, r *http.Request, params 
 	}
 }
 
+func (h HTTPAPI) deletePublisher(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	err := h.PubSub.DeletePublisher(PublisherID(params.ByName("publisherID")))
+	if err != nil {
+		if _, ok := err.(*ErrorSubscriptionNotFound); ok {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		encoder.Encode(&httpapi.Error{Error: err.Error()})
+	}
+}
+
+func (h HTTPAPI) getPublishers(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	pubs, err := h.PubSub.GetAllPublishers(TopicID(params.ByName("topicID")))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(&httpapi.Error{Error: err.Error()})
+	} else {
+		encoder.Encode(&publishers{pubs})
+	}
+}
+
 type topics struct {
 	Topics []*Topic `json:"topics"`
 }
 
 type subscriptions struct {
 	Subscriptions []*Subscription `json:"subscriptions"`
+}
+
+type publishers struct {
+	Publishers []*Publisher `json:"publishers"`
 }
