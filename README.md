@@ -7,7 +7,7 @@ Dataflow for event-driven, serverless architectures. It routes Events (data) to 
 1. [Philosophy](#philosophy)
 2. [Motivation](#motivation)
 3. [Features](#features)
-   1. [Function discovery](#function-discovery)
+   1. [Function Discovery](#function-discovery)
    2. [Pub/Sub](#pubsub)
    3. [Endpoints](#endpoints)
    4. [Multiple Emit](#multiple-emit)
@@ -103,7 +103,7 @@ sdk.updateFunction("hello-world-group", {
 
 #### Middlewares
 
-A middleware is a function that runs before or after other function and has the ability to modify the input and the output of the function. A middleware is a function registered in the event gateway.
+A middleware is a function that runs before or after other function and has the ability to modify the input and the output of the function. A middleware is a function registered in the event gateway. In case of error in the input middleware the error is returned and the actual function is not invoked. If the output middleware is defined the result from that output function is returned to the caller.
 
 #### Example: Register An AWS Lambda Function With Input/Output Middlewares
 
@@ -212,7 +212,7 @@ A rule describes the policy that must be enforced. Rules are defined on namespac
   - create-token
   - delete-token
 
-#### Example: subscribe to an event from the another namespace
+#### Example: Subscribe To An Event From The Another Namespace
 
 ```javascript
 var sdk = require('sdk')
