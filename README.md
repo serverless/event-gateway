@@ -40,13 +40,13 @@ Dataflow for event-driven, serverless architectures. It routes Events (data) to 
 
 ### Function Discovery
 
-Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports following function types:
+Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the following function types:
 
-- FaaS function (AWS Lambda, Google Cloud Function, Azure Function, OpenWhisk Action)
-- HTTP endpoint with HTTP method specified (e.g. GET http://example.com/function)
-- group function
+- FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
+- HTTP endpoints with an HTTP method specified (e.g. GET http://example.com/function)
+- group functions
 
-#### Example: register a AWS Lambda function
+#### Example: Register An AWS Lambda Function
 
 ```javascript
 var sdk = require('sdk')
@@ -62,13 +62,13 @@ sdk.registerFunction("hello-world", {
 }, function(error, response) {})
 ```
 
-#### Group function
+#### Group Functions
 
 A group function has multiple backing functions, each with a "weight" value that determines the proportional amount of traffic each should receive. If all are the same, they all receive requests equally. If one is 99 and another is 1, 99% of traffic will be sent to the one with a weight of 99.
 
-Backing function is a function registered in the discovery.
+The backing function is a function registered in the event gateway.
 
-#### Example: blue/grean deployent
+#### Example: Blue/Green Deployment
 
 ```javascript
 var sdk = require('sdk')
@@ -112,7 +112,7 @@ using the Event Gateway. This completely decouples functions from one another, r
 teams, eliminates effort spent redeploying functions, and allows you to easily share events across functions,
 HTTP services, even different cloud providers.
 
-#### Example: subscribe to an event from the same namespace
+#### Example: Subscribe To An Event From The Same Namespace
 
 ```javascript
 var sdk = require('sdk')
@@ -122,7 +122,7 @@ sdk.createTopic("userCreated", function(error, response) {})
 sdk.subscribeToTopic("sendWelcomeEmail", "userCreated", function(error, response) {})
 ```
 
-#### Example: subscribe to an event from the same namespace via the Framework
+#### Example: Subscribe To An Event From The Same Namespace Via The Framework
 
 ```yaml
 gateways:
