@@ -29,7 +29,7 @@ of the system.
 Key management is generally considered one of the most painful issues in security. Pain points:
 
 * When using tokens without any key management, you quickly get to a point where
-  the system is expensive and error-prone to mange.
+  the system is expensive and error-prone to manage.
 * If a team has to interface with a changing set of external functions / orgs / topics, they will
   have a token for each one, and they will spend a ton of energy keeping track of the tokens.
 * If a team wants to revoke access for a user, they need to have kept records (maybe an excel doc or something)
