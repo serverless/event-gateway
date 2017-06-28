@@ -2,7 +2,7 @@
 
 ## Goals
 
-* enable organizations to share resources in a familiar, easy way
+* enable organizations to share resources in a powerful, familiar, easy way
 * define a target based on industry best-practices
 * access-control configuration fully-decoupled from code (full separation of policy and mechanism,
   in security-speak)
@@ -12,7 +12,7 @@
 
 ## Non-Goals
 
-* complete implementation by the time of the Emit conference. multi-user access control usually takes 
+* complete implementation by the time of the Emit conference. multi-user access control usually takes
   years to implement (see kubernetes: RBAC only available as beta after several years of work, nomad:
   issue open since october 2015, docker swarm: issue open since september 2015, dcos: after a
   year of active development, only the ability to add users with no access control is finished,
@@ -20,44 +20,104 @@
 
 ## Concepts
 
-* Rules are defined as a tuple of (Subject, Action, Object, Environment)
-* Subject may be a user or a group of users
-* Object may be a user, function, endpoint, topic, or a group of entities from one type of object
-* Environment may relate to a logical namespace, datacenter, geographical region or time
-* Users, Functions, Endpoints, and Topics may all be grouped, similar to "roles" in other systems.
-* Groups may only be comprised of a single type of entity, no mixing users and functions, for example.
-* Users, Functions, Endpoints, Topics, and groups of them may be created, deleted, granted
-  permissions, and revoked of their permissions.
-* Groups, Functions, Endpoints, and Topics have an owning user or user group.
+### Identities
+
+An identity is a mapping between an identity ID and a set of tokens. It solves key
+management problems of just supporting tokens without limiting the interoperability
+of the system.
+
+Key management is generally considered one of the most painful issues in security. Pain points:
+
+* When using tokens without any key management, you quickly get to a point where
+  the system is expensive and error-prone to mange.
+* If a team has to interface with a changing set of external functions / orgs / topics, they will
+  have a token for each one, and they will spend a ton of energy keeping track of the tokens.
+* If a team wants to revoke access for a user, they need to have kept records (maybe an excel doc or something)
+  about all of the tokens they've granted to that user, and then revoke each one.
+* If an org wants to lock out a particular user, they need to have a record of every token they may have acquired,
+  and revoke each one
+* A user does a deploy at 5:57PM then jumps in the subway to go home. It starts misbehaving, and teams running
+  other systems are the first to notice. All effected teams need to coordinate to block that system from bringing
+  down their systems. They better all have up-to-date excel docs.
+* People sometimes get their laptops stolen. We sometimes need to keep a user's systems running, but change
+  the way that they are accessed. Key rotation is impossible with a static token, and we need to re-grant all
+  privileges for all systems, then update all the excel docs. Hopefully we have time, and catch our typos. We incur
+  downtime as our systems cut over to a new token.
+
+A better way:
+
+* Associate an ID name with a set of backing tokens.
+* Grant and revoke privileges based on that ID, no need to securely transmit a secret token.
+* No authentication requirements, we just have a mapping between a identity and their tokens.
+* The identity/team behind the ID does not need to manage 50+ changing tokens for use with specific other services,
+  they just keep their one token.
+* Our security team is happy because we can enforce mandatory periodic key rotation. by supporting a mapping from
+  ID to several tokens, we can let teams gracefully cut over to their new tokens, and phase out old ones, without
+  needing a "hard cut-over" that requires downtime.
+* It's not much more than a hashmap on our end, but it dramatically simplifies the lives of our identitys, and we do not
+  impose any additional constraints. They can make their token the ID if they want to do fully-manual key management.
+
+```
+{
+  id: "alice",
+  tokens: [
+    "XXX1",
+    "XX2X"
+  ]
+}
+```
+
+Granting and revoking rules no longer involves messy manual management of tokens. You include
+your token in your requests, and you don't need to think about which token you need to use
+for each backing system.
+
+Authentication is outside the scope of this system for now, but we could prioritize it in the future.
+
+### Rules
+
+* Rules are defined as a tuple of (Subject, Action, Object, Environment).
+* Subject is an identity or function ID.
+* Object may be an identity, function, endpoint, topic, or a group of them.
+* Environment may relate to a logical namespace, datacenter, geographical region or the event gateway's
+  conception of time.
+* Identities, Functions, Endpoints, and Topics may all be grouped, similar to "roles" in other systems.
+* Groups, Functions, Endpoints, and Topics have an owning identity or identity group.
 * The owner of a group, Function, Endpoint, or Topic may grant permissions to others on their owned resources.
-* Users have a revokable API token, which may be retrieved by authenticating with the gateway, or
-  distributed by an administrator
-* When a user calls a function through the gateway, they pass their API token along in a header
+* When a identity calls a function through the gateway, they pass their API token along in a header
 * That token is passed into the context of called functions, and is used in subsequent calls to the
   gateway. A called function assumes the identity of the caller, avoiding privilege escalation attacks by
-  conflating code with owning teams. Breaking a function's security should not grant the attacker the
-  ability to reconfigure other resources owned by the same team.
+  conflating code with owning teams in cases where you never want a user to even indirectly trigger access
+  on a particular system, similar to the MLS security model. Breaking a function's security should not grant 
+  the attacker the ability to reconfigure other resources owned by the function's owning identity.
 * This is based on evaluations of existing multitenancy solutions in popular cloud-based systems, as well
   as ideas from [Attribute-Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control)
   to improve the expressivity of the rules that we allow.
+
+#### Example Rules
+
+* function A can call function B
+* all functions in AZ 1 can call function group C in AZ 3
+* a function triggered by user Eve should never (even indirectly) call our payment system functions.
+* unauthenticated users should never, even indirectly, trigger data to be published in our "admin comments" topic
 
 ## Workflows
 
 ### Initial Setup
 
-1. admin logs in, changes default login credentials
-1. admin creates a new user group, currently empty, called "dev team". "dev team" is
+1. admin starts system
+1. admin changes default admin token
+1. admin creates a new identity group, currently empty, called "dev team". "dev team" is
    owned by the creator, admin.
-1. admin creates a new user, "alice" who is then assigned ownership of "dev team" and
+1. admin creates a new identity, "alice" who is then assigned ownership of "dev team" and
    granted membership
 1. admin grants "dev team" the freedom to create functions, topics, and endpoints
 
 ### Creating and Using Functions and Topics
 
-1. alice logs in and retrives their API token
-1. using their API token, alice creates function f1 and topic t1. f1 is configured 
+1. alice is given their API token by the admin
+1. using their API token, alice creates function f1 and topic t1. f1 is configured
    by alice as a producer that sends its output to t1.
-1. admin creates a "business intelligence" team, adds user "zoltan" to it, and grants
+1. admin creates a "business intelligence" team, adds identity "zoltan" to it, and grants
    the team the ability to create new functions.
 1. zoltan creates a function, "t1 analyzer"
 1. zoltan requests that alice either allow zoltan to have permission to add new
@@ -74,4 +134,4 @@
    permission to reach it.
 1. alice configures e1 to be callable by the world with no auth required
 1. zoltan successfully tests their function, and starts processing
-   all results of f1 as users around the world access it.
+   all results of f1 as identitys around the world access it.
