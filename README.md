@@ -16,10 +16,9 @@ Dataflow for event-driven, serverless architectures. It routes Events (data) to 
 4. [What The Event Gateway is NOT](#what-the-event-gateway-is-not)
 5. [Architecture](#architecture)
 6. [HTTP API](#http-api)
-7. [Background](#background)
-8. [Comparison](#comparison)
-
-
+7. [Plugins](#plugins)
+8. [Background](#background)
+9. [Comparison](#comparison)
 
 ## Philosophy
 
@@ -98,6 +97,30 @@ sdk.updateFunction("hello-world-group", {
       functionId: "hello-world-v2",
       weight: 50
     }]
+  }
+}, function(error, response) {})
+```
+
+#### Middlewares
+
+A middleware is a function that runs before or after other function and has the ability to modify the input and the output of the function. A middleware is a function registered in the event gateway.
+
+#### Example: Register An AWS Lambda Function With Input/Output Middlewares
+
+```javascript
+var sdk = require('sdk')
+
+sdk.registerFunction("hello-world", {
+  awsLambda: {
+    arn: "xxx",
+    region: "us-west-2",
+    version: 2,
+    accessKeyId: "xxx",
+    secretAccessKey: "xxx"
+  },
+  middleware: {
+    input: "validate-data",
+    output: "transform-to-html"
   }
 }, function(error, response) {})
 ```
@@ -480,6 +503,12 @@ Response:
 `POST /api/topic/<topic id>/publish`
 
 Request: arbitrary payload
+
+## Plugins
+
+The Event Gateway is extensible via plugins. A plugin is a Golang package with exported functions and variables. Plugins have an access to internal structures and many integration points exposed by the event gateway. A plugin is a .so file that is stored on the same host as the event gateway instance.
+
+Plugins are the most performant way to extend the event gateway.
 
 ## Background
 
