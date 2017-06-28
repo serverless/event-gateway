@@ -49,3 +49,12 @@ type ErrorPublisherAlreadyExists struct {
 func (e ErrorPublisherAlreadyExists) Error() string {
 	return fmt.Sprintf("Publisher %q already exits.", e.ID)
 }
+
+// ErrorPublisherNotFound occurs when publisher cannot be found.
+type ErrorPublisherNotFound struct {
+	ID PublisherID
+}
+
+func (e ErrorPublisherNotFound) Error() string {
+	return fmt.Sprintf("Publisher %q not found.", e.ID)
+}
