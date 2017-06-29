@@ -163,6 +163,37 @@ functions:
 
 Expose public HTTP/GraphQL/WebSocket endpoints backed by serverless functions or HTTP services.
 
+Endpoint is a mapping between path and HTTP method, and function.
+
+#### Example: Create A REST API Endpoint
+
+```javascript
+var sdk = require('sdk')
+
+// Assuming that there are following functions registered: getUser, createUser, deleteUser
+
+sdk.createEndpoint({
+  functionId: "getUser",
+  method: "GET",
+  path: "/users"
+}, function(error, response) {})
+
+sdk.createEndpoint({
+  functionId: "createUser",
+  method: "POST",
+  path: "/users"
+}, function(error, response) {})
+
+sdk.createEndpoint({
+  functionId: "deleteUser",
+  method: "DELETE",
+  path: "/users"
+}, function(error, response) {})
+
+```
+
+Above SDK calls create single <The Event Gateway URL>/users endpoint that supports three HTTP methods.
+
 ### Multiple Emit
 
 Optionally return multiple events, such as log messages or metrics, without sending it all back to
