@@ -78,8 +78,8 @@ Authentication is outside the scope of this system for now, but we could priorit
 * Rules are defined as a tuple of (Subject, Action, Object, Environment).
 * Subject is an identity or function ID.
 * Object may be an identity, function, endpoint, topic, or a group of them.
-* Environment may relate to a logical namespace, datacenter, geographical region or the event gateway's
-  conception of time.
+* Environment may relate to a logical namespace, datacenter, geographical region, the event gateway's
+  conception of time, etc...
 * Identities, Functions, Endpoints, and Topics may all be grouped, similar to "roles" in other systems.
 * Groups, Functions, Endpoints, and Topics have an owning identity or identity group.
 * The owner of a group, Function, Endpoint, or Topic may grant permissions to others on their owned resources.
@@ -135,3 +135,52 @@ Authentication is outside the scope of this system for now, but we could priorit
 1. alice configures e1 to be callable by the world with no auth required
 1. zoltan successfully tests their function, and starts processing
    all results of f1 as identitys around the world access it.
+
+## Usage
+
+The identity's token is hydrated into serverless.yml through an
+env var, based on the deployment environment.
+
+The sdk passes along the token in an http header with every request to the API.
+
+```
+// as admin
+sdk.createIdentity("alice")
+sdk.bindToken("alice", "120347aea9d1f25c1ca3b4d64eb561947e8418b33d")
+sdk.grant("alice", "create", "topics")
+sdk.grant("alice", "create", "functions")
+
+// as alice, who passes the token 120347aea9d1f25c1ca3b4d64eb561947e8418b33d in a header
+sdk.createFunction("f1"...)
+sdk.createTopic("t1"...)
+
+// admin creates new user
+sdk.createIdentity("bob")
+sdk.bindToken("bob", "a9d1f25c1ca3b4d64eb561947e")
+sdk.grant("bob", "create", "functions")
+
+// alice grants permissions on things they own to bob
+sdk.grant("bob", "call", "f1")
+sdk.grant("bob", "subscribe", "t1")
+
+// bob uses their new access, passing their token along
+sdk.createFunction("f2"...)
+sdk.subscribe("f2", "t1")
+
+// eve does not have an identity, or they have one without permissions
+sdk.grant("eve", "ownership", "t1") // FAILS
+```
+
+## Implementation Path
+
+the following MAY be possible by emit:
+
+1. feature on/off switch: add a flag to start the gateway in mandatory access control mode
+1. storage: identities and associated rules and tokens
+1. api: identity management CRUD
+1. api: rule management CRUD
+1. api: thread rule enforcement into all existing api's
+1. router: thread rule enforcement into endpoint decisions
+1. router: thread rule enforcement into pub/sub decisions
+1. encryption: add flag for symmetric encryption key to gateway
+1. encryption: encrypt all keys and values in the backing database
