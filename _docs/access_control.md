@@ -73,8 +73,23 @@ for each backing system.
 
 Authentication is outside the scope of this system for now, but we could prioritize it in the future.
 
+### Ownership
+
+* all objects are assigned an owning identity upon creation, including new identities
+* ownership is hierarchical
+
+### Namespaces
+
+* A Namespace is a coarse-grained sandbox in which entities can interact freely.
+* An identity is a member of one or more namespaces.
+* Topics, Functions, and Endpoints belong to one or more namespaces.
+* All actions are possible within a namespace: publishing, subscribing and calling
+* All access cross-namespace is disabled by default.
+* To perform cross-namespace access, use Rules (see below, not initial dev focus before Emit)
+
 ### Rules
 
+* Probably not going to exist before Emit. Maybe never, if Namespaces are good enough.
 * Rules are defined as a tuple of (Subject, Action, Object, Environment).
 * Subject is an identity or function ID.
 * Object may be an identity, function, endpoint, topic, or a group of them.
@@ -143,6 +158,21 @@ env var, based on the deployment environment.
 
 The sdk passes along the token in an http header with every request to the API.
 
+### Namespaces
+
+```
+// as admin
+sdk.createNamespace("analytics")
+sdk.createIdentity("hendrik")
+sdk.bindToken("hendrik", "120347aea9d1f25c1ca3b4d64eb561947e8418b33d")
+sdk.assignNamespace("function", "f1", "analytics") // type, object, namespace
+sdk.assignNamespace("identity", "hendrik", "analytics")
+
+// hendrik can now call f1 by passing their token in a header to the gateway
+```
+
+### Rules
+
 ```
 // as admin
 sdk.createIdentity("alice")
@@ -177,17 +207,20 @@ the following MAY be possible by emit:
 
 1. feature on/off switch: add a flag to start the gateway in mandatory access control mode
 1. storage: identity to tokens mapping
-1. storage: identity to associated rule mapping
 1. storage: identity to namespaces mapping
 1. api: identity management CRUD
 1. api: topic, function, endpoint ownership CRUD
 1. api: namespace management CRUD
-1. api: thread rule enforcement into all existing config api's
-1. router: thread rule enforcement into endpoint decisions
-1. router: thread rule enforcement into pub/sub decisions
+1. api: thread namespace enforcement into all existing config api's
+1. router: thread namespace enforcement into endpoint decisions
+1. router: thread namespace enforcement into pub/sub decisions
 1. encryption: add flag for symmetric encryption key to gateway
 1. encryption: encrypt all keys and values in the backing database
 
 ----- EMIT -----
 
+1. storage: identity to associated rule mapping
 1. api: rule management CRUD
+1. api: thread rule enforcement into all existing config api's
+1. router: thread rule enforcement into endpoint decisions
+1. router: thread rule enforcement into pub/sub decisions
