@@ -163,7 +163,7 @@ functions:
 
 Expose public HTTP/GraphQL/WebSocket endpoints backed by serverless functions or HTTP services.
 
-Endpoint is a mapping between path and HTTP method, and function.
+Endpoint is a mapping between path and HTTP method, and a function.
 
 #### Example: Create A REST API Endpoint
 
@@ -192,7 +192,7 @@ sdk.createEndpoint({
 
 ```
 
-Above SDK calls create single <The Event Gateway URL>/users endpoint that supports three HTTP methods.
+Above SDK calls create single `<The Event Gateway URL>/users` endpoint that supports three HTTP methods pointing to different backing functions.
 
 ### Multiple Emit
 
