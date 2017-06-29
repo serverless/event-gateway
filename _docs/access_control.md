@@ -176,11 +176,18 @@ sdk.grant("eve", "ownership", "t1") // FAILS
 the following MAY be possible by emit:
 
 1. feature on/off switch: add a flag to start the gateway in mandatory access control mode
-1. storage: identities and associated rules and tokens
+1. storage: identity to tokens mapping
+1. storage: identity to associated rule mapping
+1. storage: identity to namespaces mapping
 1. api: identity management CRUD
-1. api: rule management CRUD
-1. api: thread rule enforcement into all existing api's
+1. api: topic, function, endpoint ownership CRUD
+1. api: namespace management CRUD
+1. api: thread rule enforcement into all existing config api's
 1. router: thread rule enforcement into endpoint decisions
 1. router: thread rule enforcement into pub/sub decisions
 1. encryption: add flag for symmetric encryption key to gateway
 1. encryption: encrypt all keys and values in the backing database
+
+----- EMIT -----
+
+1. api: rule management CRUD
