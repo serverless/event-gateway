@@ -49,8 +49,7 @@ Discover and call serverless functions from anything that can reach the Event Ga
 #### Example: Register An AWS Lambda Function
 
 ```javascript
-var sdk = require('sdk')
-
+// sdk.registerFunction(<function name>, <params>, <callback>)
 sdk.registerFunction("hello-world", {
   awsLambda: {
     arn: "xxx",
@@ -59,6 +58,31 @@ sdk.registerFunction("hello-world", {
     accessKeyId: "xxx",
     secretAccessKey: "xxx"
   }
+}, function(error, response) {})
+```
+
+#### Example: Framework Integration
+
+Every function that subscribes to an event from the gateway is automatically registered in the gateway.
+
+```yaml
+gateways:
+  acme:
+    url: localhost
+
+functions:
+  greeter:
+    handler: greeter.greeter
+    events:
+      - gateway.acme.userCreated
+```
+
+#### Example: Function-To-Function call
+
+```javascript
+// sdk.invoke(<function name>, <payload>, <callback>)
+sdk.invoke("createUser", {
+  name: "John"
 }, function(error, response) {})
 ```
 
@@ -71,8 +95,6 @@ The backing function is a function registered in the event gateway.
 #### Example: Blue/Green Deployment
 
 ```javascript
-var sdk = require('sdk')
-
 // Assuming that we've already registered two functions "hello-world-v1" and "hello-world-v2"
 
 sdk.registerFunction("hello-world-group", {
@@ -102,6 +124,30 @@ sdk.updateFunction("hello-world-group", {
 }, function(error, response) {})
 ```
 
+#### Example: Framework Integration
+
+```yaml
+gateways:
+  acme:
+    url: localhost
+
+functions:
+  helloa:
+    handler: hello.a
+  hellob:
+    handler: hello.b
+  hello:
+    handler:
+      - helloa
+          weight: 10
+      - hellob
+          weight: 90
+    events:
+      - gateway.http:
+          path: /hello
+          method: get
+```
+
 #### Middleware
 
 Middleware consists of functions that before or after other function and has the ability to modify the input and the output of the function. A middleware is a function registered in the event gateway. In case of error in the input middleware the error is returned and the actual function is not invoked. If the output middleware is defined the result from that output function is returned to the caller.
@@ -109,8 +155,6 @@ Middleware consists of functions that before or after other function and has the
 #### Example: Register An AWS Lambda Function With Input/Output Middleware
 
 ```javascript
-var sdk = require('sdk')
-
 sdk.registerFunction("hello-world", {
   awsLambda: {
     arn: "xxx",
@@ -150,10 +194,10 @@ HTTP services, even different cloud providers.
 #### Example: Subscribe To An Event From The Same Namespace
 
 ```javascript
-var sdk = require('sdk')
-
 sdk.createTopic("userCreated", function(error, response) {})
-// Assuming that we registed "sendWelcomeEmail" function earlier
+
+// Assuming that we registered the "sendWelcomeEmail" function earlier
+// sdk.subscribeToTopic(<function name>, <event name>, <callback>)
 sdk.subscribeToTopic("sendWelcomeEmail", "userCreated", function(error, response) {})
 ```
 
@@ -165,8 +209,8 @@ gateways:
     url: localhost
 
 functions:
-  greeter:
-    handler: greeter.greeter
+  sendWelcomeEmail:
+    handler: emails.welcome
     events:
       - gateway.acme.userCreated
 ```
@@ -180,10 +224,8 @@ Endpoint is a mapping between path and HTTP method, and a function.
 #### Example: Create A REST API Endpoint
 
 ```javascript
-var sdk = require('sdk')
-
 // Assuming that there are following functions registered: getUser, createUser, deleteUser
-
+// sdk.createEndpoint(<endpoint params>, <callback>)
 sdk.createEndpoint({
   functionId: "getUser",
   method: "GET",
@@ -202,6 +244,30 @@ sdk.createEndpoint({
   path: "/users"
 }, function(error, response) {})
 
+```
+
+The above SDK calls create a single `<The Event Gateway URL>/users` endpoint that supports three HTTP methods pointing to different backing functions.
+
+#### Example: Framework Integration
+
+Every function that subscribes to an event from the gateway is automatically registered in the gateway.
+
+```yaml
+gateways:
+  acme:
+    url: localhost
+
+functions:
+  createUser:
+    events:
+      - gateway.acme.http:
+          path: /users
+          method: POST
+  getUser:
+    events:
+      - gateway.acme.http:
+          path: /users
+          method: GET
 ```
 
 The above SDK calls create a single `<The Event Gateway URL>/users` endpoint that supports three HTTP methods pointing to different backing functions.
@@ -253,11 +319,11 @@ token. When the migration is complete, the old token is removed.
 
 #### Example Identity and Namespace Usage
 
-```
+```javascript
 // as admin
 sdk.createNamespace("analytics")
 sdk.createIdentity("hendrik")
-sdk.bindToken("hendrik", "120347aea9d1f25c1ca3b4d64eb561947e8418b33d")
+sdk.generateToken("hendrik") // -> "a9d1f25c1ca3b4d64eb561947e" or sdk.bindToken("hendrik", "a9d1f25c1ca3b4d64eb561947e")
 sdk.assignNamespace("function", "f1", "analytics") // type, object, namespace
 sdk.assignNamespace("identity", "hendrik", "analytics")
 
@@ -303,15 +369,15 @@ sdk.assignNamespace("identity", "hendrik", "analytics")
 - identities:
   - create-identity
   - delete-identity
-  - bind-token-to
+  - generate-token
   - remove-token-from
 
 #### Example Rule Usage
 
-```
+```javascript
 // as admin
 sdk.createIdentity("alice")
-sdk.bindToken("alice", "120347aea9d1f25c1ca3b4d64eb561947e8418b33d")
+sdk.generateToken("alice") // -> 120347aea9d1f25c1ca3b4d64eb561947e8418b33d
 sdk.grant("alice", "create", "topics")
 sdk.grant("alice", "create", "functions")
 
@@ -321,7 +387,7 @@ sdk.createTopic("t1"...)
 
 // admin creates new user
 sdk.createIdentity("bob")
-sdk.bindToken("bob", "a9d1f25c1ca3b4d64eb561947e")
+sdk.generateToken("bob") // -> a9d1f25c1ca3b4d64eb561947e
 sdk.grant("bob", "create", "functions")
 
 // alice grants permissions on things they own to bob
