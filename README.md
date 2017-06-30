@@ -2,7 +2,7 @@
 
 Dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute). The Event Gateway is a layer-7 proxy and realtime dataflow engine.
 
-## TOC
+## Contents
 
 1. [Philosophy](#philosophy)
 2. [Motivation](#motivation)
@@ -11,8 +11,10 @@ Dataflow for event-driven, serverless architectures. It routes Events (data) to 
    2. [Pub/Sub](#pubsub)
    3. [Endpoints](#endpoints)
    4. [Multiple Emit](#multiple-emit)
+   5. [Identities](#identities)
    5. [Namespaces](#namespaces)
-   6. [Access Control List](#access-control-list)
+   6. [Ownership](#ownership)
+   6. [Rules](#rules)
 4. [What The Event Gateway is NOT](#what-the-event-gateway-is-not)
 5. [Architecture](#architecture)
 6. [HTTP API](#http-api)
@@ -135,6 +137,17 @@ using the Event Gateway. This completely decouples functions from one another, r
 teams, eliminates effort spent redeploying functions, and allows you to easily share events across functions,
 HTTP services, even different cloud providers.
 
+* Function input or output may be configured to feed a topic
+* Functions may be registered as subscribers to topics. When an event is published into the
+  topic, all subscribers are called asynchronously with the event as its argument. The gateway
+  recursively passes events from publishing functions to subscribing ones.
+* If a function produces to two topics, and another function subscribes to both, the
+  produced event is deduplicated so that the subscribing function is not called twice for
+  the same thing.
+* A topic may feed into another topic. This is useful for simplifying configuration of both
+  publishers and subscribers who would like to operate at a variety of granularities
+  and groupings. Can form graphs, rather than rigid trees that result from a hierarchical model.
+
 #### Example: Subscribe To An Event From The Same Namespace
 
 ```javascript
@@ -192,92 +205,161 @@ sdk.createEndpoint({
 
 ```
 
-Above SDK calls create single `<The Event Gateway URL>/users` endpoint that supports three HTTP methods pointing to different backing functions.
+The above SDK calls create a single `<The Event Gateway URL>/users` endpoint that supports three HTTP methods pointing to different backing functions.
 
 ### Multiple Emit
 
-Optionally return multiple events, such as log messages or metrics, without sending it all back to
+Optionally return multiple events, such as log messages or metrics, without sending them all back to
 the caller. This plays particularly well with Pub/Sub systems. If you have an existing metrics aggregator, but don't
 want to send metrics to it from within your serverless function (forcing your caller to wait while this completes)
 you can return additional metrics destined for a topic of your choosing, say, "homepage-metrics". You can then
 create a function that knows how to insert metrics into your existing metric system, subscribe it to "homepage-metrics", and it will forward all metrics to your existing system. You just integrated your new function with your existing systems without the function needing to know anything about them! And when you use a different metric system in the future, your code doesn't need to be updated at all. Just spin up another forwarder function, subscribe
 it to the stream, and you're good to go. This is not limited to metrics!
 
+### Identities
+
+* Associate an ID name with a set of backing access tokens.
+* Tokens are included in a header in requests to the Event Gateway.
+* Priviledges may be granted and revoked by specifying a target ID, there is no need to securely transmit a secret token when granting permissions.
+* No authentication requirements, we just have a mapping between a identity and their tokens.
+* The identity/team behind the ID does not need to manage 50+ changing tokens for use with specific other services,
+  they just keep their one token.
+* The identities that we grant permissions do not have the ability to grant others the same permission by sharing tokens without asking the owner.
+* Our security team is happy because we can enforce mandatory periodic key rotation. by supporting a mapping from
+  ID to several tokens, we can let teams gracefully cut over to their new tokens, and phase out old ones, without
+  needing a "hard cut-over" that requires downtime.
+* It's not much more than a hashmap on our end, but it dramatically simplifies the lives of our identitys, and we do not
+  impose any additional constraints. They can make their token the ID if they want to do fully-manual key management.
+
+Granting and revoking rules no longer involves messy manual management of tokens. You include
+your token in your requests, and you don't need to think about which token you need to use
+for each backing system.
+
+Authentication is outside the scope of the core of the system. It may be possible for plugins to implement this eventually.
+
+### Ownership
+
+* all objects are assigned an owning identity upon creation, including new identities
+* ownership is hierarchical
+
 ### Namespaces
 
-Namespaces are a logical partitioning capability that enables one Event Gateway cluster to be used by multiple users, teams of users, or a single user with multiple applications without concern for undesired interaction. They provide a scope for names. Names of functions, topics, and endpoints need to be unique within a namespace, but not across namespaces.
+* A Namespace is a coarse-grained sandbox in which entities can interact freely.
+* An identity is a member of one or more namespaces.
+* Topics, Functions, and Endpoints belong to one or more namespaces.
+* All actions are possible within a namespace: publishing, subscribing and calling
+* All access cross-namespace is disabled by default.
+* To perform cross-namespace access, use Rules (see below, not initial dev focus before Emit)
 
-Communication inside a namespace is open which means that function-to-function call or subscribing to an event from the same namespace doesn't involve authorization and authentication.
+### Rules
 
-Communication across namespaces involves authorization and authentication process described in Access Control List section.
+* Probably not going to exist before Emit. Maybe never, if Namespaces are good enough. But they are likely considered below table stakes for enterprise access control.
+* Rules are defined as a tuple of (Subject, Action, Object, Environment).
+* Subject is an identity or function ID.
+* Object may be an identity, function, endpoint, topic, or a group of them.
+* Environment may relate to a logical namespace, datacenter, geographical region, the event gateway's
+  conception of time, etc...
+* Identities, Functions, Endpoints, and Topics may all be grouped, similar to "roles" in other systems.
+* Groups, Functions, Endpoints, and Topics have an owning identity or identity group.
+* The owner of a group, Function, Endpoint, or Topic may grant permissions to others on their owned resources.
+* When the Event Gateway is accessed, the holder of an identity token passes the token along in a header
 
-For better single user experience there is a default namespace in which all functions, topics, and endpoints are created if no namespace is specified. Also, by default authentication is disabled.
-
-### Access Control List
-
-ACL system can be used to control access to functions, topics, and endpoints. The ACL is based on tokens. The ACL is capability-based, relying on tokens to which fine-grained rules can be applied.
-
-#### Tokens
-
-Every token has an ID, description and rule set. Tokens are bound to a set of rules that control which Gateway resources/APIs the token has access to.
-
-#### Rules
-
-A rule describes the policy that must be enforced. Rules are defined on namespace level (wildcard namespace`*` can be used to apply rule to all namespaces). A rule can be enforced on following Event Gateway APIs:
-
-- functions - function discovery operations:
+- functions:
   - create-function
   - delete-function
-- pubsub - ACL system operations:
+- pubsub:
   - create-topic
   - delete-topic
   - subscribe-to
   - unsubscribe-from
   - publish-to
-  - unbpulish-from
+  - stop-publishing-to
   - publish-event
-- endpoints - endpoints operations:
+- endpoints:
   - create-endpoint
   - delete-endpoint
-- tokens - tokens operations:
-  - create-token
-  - delete-token
+- identities:
+  - create-identity
+  - delete-identity
+  - bind-token-to
+  - remove-token-from
 
-#### Example: Subscribe To An Event From The Another Namespace
+#### Identity Usage
 
-```javascript
-var sdk = require('sdk')
+The identity's token is hydrated into serverless.yml through an
+env var or argument, based on the deployment environment.
 
-// First, create a token that allows subscribing to events from your namespace "project A"
+The sdk passes along the token in an http header with every request to the API.
 
-sdk.createToken({
-  rules: {
-    pubsub: [{
-      namespace: "project-a",
-      policy: "susbcribe-to"
-      resource: "userCreated"
-    }],
-  }
-}, function (err, token) {
-  // token:
-  {
-    token: "xxx-xxx-xxx"
-    rules: {
-      pubsub: [{
-        namespace: "project-a",
-        policy: "susbcribe-to"
-        resource: "userCreated"
-      }],
-    }
-  }
-})
+When it's time to perform a key rotation, a new token is added to an identity, and the owner of the identity incrementally redeploys their systems with the new
+token. When the migration is complete, the old token is removed.
 
-// Pass the token to the function deployed in namespace "project B"
-sdk.subscribeToTopic("sendWelcomeEmail", "userCreated", {
-  namespace: "project-a",
-  token: "xxx-xxx-xxx"
-} function(error, response) {})
+#### Example Identity and Namespace Usage
+
 ```
+// as admin
+sdk.createNamespace("analytics")
+sdk.createIdentity("hendrik")
+sdk.bindToken("hendrik", "120347aea9d1f25c1ca3b4d64eb561947e8418b33d")
+sdk.assignNamespace("function", "f1", "analytics") // type, object, namespace
+sdk.assignNamespace("identity", "hendrik", "analytics")
+
+// hendrik can now call f1 by passing their token in a header to the gateway
+```
+
+### Example Rule Usage
+
+```
+// as admin
+sdk.createIdentity("alice")
+sdk.bindToken("alice", "120347aea9d1f25c1ca3b4d64eb561947e8418b33d")
+sdk.grant("alice", "create", "topics")
+sdk.grant("alice", "create", "functions")
+
+// as alice, who passes the token 120347aea9d1f25c1ca3b4d64eb561947e8418b33d in a header
+sdk.createFunction("f1"...)
+sdk.createTopic("t1"...)
+
+// admin creates new user
+sdk.createIdentity("bob")
+sdk.bindToken("bob", "a9d1f25c1ca3b4d64eb561947e")
+sdk.grant("bob", "create", "functions")
+
+// alice grants permissions on things they own to bob
+sdk.grant("bob", "call", "f1")
+sdk.grant("bob", "subscribe", "t1")
+
+// bob uses their new access, passing their token along
+sdk.createFunction("f2"...)
+sdk.subscribe("f2", "t1")
+
+// eve does not have an identity, or they have one without permissions
+sdk.grant("eve", "ownership", "t1") // FAILS
+```
+
+## Identity and Namespace Implementation Path
+
+the following MAY be possible by emit:
+
+1. feature on/off switch: add a flag to start the gateway in mandatory access control mode
+1. storage: identity to tokens mapping
+1. storage: identity to namespaces mapping
+1. api: identity management CRUD
+1. api: topic, function, endpoint ownership CRUD
+1. api: namespace management CRUD
+1. api: thread namespace enforcement into all existing config api's
+1. router: thread namespace enforcement into endpoint decisions
+1. router: thread namespace enforcement into pub/sub decisions
+1. encryption: add flag for symmetric encryption key to gateway
+1. encryption: encrypt all keys and values in the backing database
+
+----- EMIT -----
+
+1. storage: identity to associated rule mapping
+1. api: rule management CRUD
+1. api: thread rule enforcement into all existing config api's
+1. router: thread rule enforcement into endpoint decisions
+1. router: thread rule enforcement into pub/sub decisions
 
 ## What The Event Gateway is NOT
 
@@ -288,26 +370,26 @@ sdk.subscribeToTopic("sendWelcomeEmail", "userCreated", {
 ## Architecture
 
 ```
-                              AWS us-east-1 (main ─┐                                 
-                              region)              │                                 
-                              │   ┌─────────────┐  │                                 
-                              │   │             │  │                                 
-           ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ▶│    etcd     │◀ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─           
-                              │   │             │  │                      │          
-           │                  │   └─────────────┘  │                                 
-                              │          ▲         │                      │          
-           │                  │          │         │                                 
-                              │          ▼         │                      │          
-           │                  │  ┌──────────────┐  │                                 
-                              │  │              │  │                      │          
-           │                  │  │   Gateway    │  │                                 
-                              │  │   instance   │  │                      │          
-           │                  │  │              │  │                                 
-                              │  └──────────────┘  │                      │          
-           │                  │          ▲         │                                 
-                              │          │         │                      │          
-           │                  │          ▼         │                                 
-                              │        ┌───┐       │                      │          
+                              AWS us-east-1 (main ─┐
+                              region)              │
+                              │   ┌─────────────┐  │
+                              │   │             │  │
+           ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ▶│    etcd     │◀ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+                              │   │             │  │                      │
+           │                  │   └─────────────┘  │
+                              │          ▲         │                      │
+           │                  │          │         │
+                              │          ▼         │                      │
+           │                  │  ┌──────────────┐  │
+                              │  │              │  │                      │
+           │                  │  │   Gateway    │  │
+                              │  │   instance   │  │                      │
+           │                  │  │              │  │
+                              │  └──────────────┘  │                      │
+           │                  │          ▲         │
+                              │          │         │                      │
+           │                  │          ▼         │
+                              │        ┌───┐       │                      │
 GCloud us-c│ntral1───┐        │        │ λ ├┐      │           Azure West US────────┐
 │          ▼         │        │        └┬──┘│      │           │          ▼         │
 │  ┌──────────────┐  │        │         └───┘      │           │  ┌──────────────┐  │
@@ -537,31 +619,33 @@ Request: arbitrary payload
 
 ## Plugins
 
-The Event Gateway is extensible via plugins. A plugin is a Golang package with exported functions and variables. Plugins have an access to internal structures and many integration points exposed by the event gateway. A plugin is a .so file that is stored on the same host as the event gateway instance.
+Plugins are available for extending the behavior of the Event Gateway core. Examples include authentication, integration with external identity management systems,
+event validation systems, etc...
 
-Plugins are the most performant way to extend the event gateway.
+They are implemented in any language as a local sidecar that adheres to the plugin calling interface. It listens on a local TCP socket for a nice mix of
+interoperability and performance.
 
 ## Background
 
 ### SOA challenges
 
-SOA introduced completely new domain of problems. In monolithic architectures, it was simple to call a service. In SOA it became a little more problematic as services are remote and calling a service involves network communication which [is not reliable](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing). The main problems to solve:
+SOA came along with a new set of challenges. In monolithic architectures, it was simple to call a built-in library or rarely-changing external service. In SOA it involves much more network communication which [is not reliable](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing). The main problems to solve include:
 
-1. Where is the service deployed? With how many instances? Which instance if the closest to me? (service discovery)
+1. Where is the service deployed? How many instances are there? Which instance is the closest to me? (service discovery)
 2. Requests to the service should be balanced between all service instances (load balancing)
 3. If a remote service call failed I want to retry it (retries)
 4. If the service instance failed I want to stop sending requests there (circuit breaking)
-5. Services are written in multiple languages, I want to communicate between them without writing dedicated libraries (sidecar)
+5. Services are written in multiple languages, I want to communicate between them using the best language for the particular task (sidecar)
 6. Calling remote service should not require setting up new connection every time as it increases request time (persistent connections)
 
-Following tech solves those problems:
+The following systems are solutions those problems:
 
 - [Linkerd](https://linkerd.io/)
 - [Istio](https://istio.io/)
 - [Hystrix](https://github.com/Netflix/Hystrix/wiki) (library, not sidecar)
 - [Finagle](https://twitter.github.io/finagle/) (library, not sidecar)
 
-The main goal of those tools is to hide all inconveniences of network communication. They abstract network. They run on the same host as the service (or are included in the service), listen on localhost and then, based on knowledge about the whole system, know where to send a request. They use persistent connections between nodes running on the different host so there is no overhead related to connection setup (which is painful especially for secure connections).
+The main goal of those tools is to manage the inconveniences of network communication.
 
 ### Microservices challenges & FaaS
 
@@ -574,28 +658,28 @@ The greatest benefit of serverless/FaaS is that it solves almost all of above pr
 5. sidecar: calling function is as simple as calling method from cloud provider SDK.
 6. in FaaS setting up persistent connection between two functions defeats the purpose as functions instances are ephemeral.
 
-Tools like Envoy/Linkerd solve different domain of technical problems that doesn't occur in serverless space. They have a lot of features that are simply not needed. Of course, it's possible to use them but that would be over-engineering.
+Tools like Envoy/Linkerd solve different domain of technical problems that doesn't occur in serverless space. They have a lot of features that are unnecessary in the context of serverless computing.
 
 ### Service discovery in FaaS = Function discovery
 
-Service discovery problem may be relevant to serverless architectures especially when we have multi-cloud setup or we want to call a serverless function from legacy system (by legacy I mean microservices architectures). There is a need for some proxy that will know where the function is actually deployed and have  retry logic built-in. It is a bit different problem (mapping function name -> function metadata) than (tracking where each instance of service is available). That's why there is a room for new tools that solves **function discovery** problem rather than service discovery problem. Those problems are fundamentally different.
+Service discovery problems may be relevant to serverless architectures, especially when we have a multi-cloud setup or we want to call a serverless function from a legacy system (microservices, etc...). There is a need for some proxy that will know where the function is actually deployed and have  retry logic built-in. Mapping from function name to serverless function calling metadata is a different problem from tracking the availability of a changing number of service instances. That's why there is a room for new tools that solves **function discovery** problem rather than the service discovery problem. Those problems are fundamentally different.
 
 ## Comparison
 
-### Gateway vs FaaS providers
+### Event Gateway vs FaaS providers
 
-Gateway is NOT FaaS providers. It doesn't allow to deploy or call a function. Gateway integrates with existing FaaS providers (AWS Lambda, Google Cloud Functions, OpenWhisk Actions). Gateway features enable building large, serverless architectures in a unified way across different providers.
+The Event Gateway is NOT a FaaS platform. It integrates with existing FaaS providers (AWS Lambda, Google Cloud Functions, OpenWhisk Actions). The Event Gateway enables building large serverless architectures in a unified way across different providers.
 
 ### Gateway vs OpenWhisk
 
-Apache OpenWhisk is a integrate serverless platform. OpenWhisk is built around three concepts:
+Apache OpenWhisk is an integrated serverless platform. OpenWhisk is built around three concepts:
 
 - actions
 - triggers
 - rules
 
-OpenWhisk actions, as mentioned above, is a FaaS platform. Triggers & Rules enable building event-driven systems. Those two concepts are similar to Gateway's Pub/Sub system. Though, there are few differences:
+OpenWhisk, as mentioned above, is a FaaS platform. Triggers & Rules enable building event-driven systems. Those two concepts are similar to the Event Gateway's Pub/Sub system. However, there are few differences:
 
-- OpenWhisk Rules doesn't integrate with other FaaS provider
-- OpenWhisk doesn't provide fine-grained ACL system
+- OpenWhisk Rules don't integrate with other FaaS providers
+- OpenWhisk doesn't provide a fine-grained access control system
 - OpenWhisk doesn't enable exporting events outside OpenWhisk
