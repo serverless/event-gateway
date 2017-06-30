@@ -81,7 +81,7 @@ functions:
 
 ```javascript
 // sdk.invoke(<function name>, <payload>, <callback>)
-sdk.invoke("createUser", {
+sdk.invoke("greeter", {
   name: "John"
 }, function(error, response) {})
 ```
