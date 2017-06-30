@@ -13,7 +13,6 @@ Dataflow for event-driven, serverless architectures. It routes Events (data) to 
    4. [Multiple Emit](#multiple-emit)
    5. [Identities](#identities)
    5. [Namespaces](#namespaces)
-   6. [Ownership](#ownership)
    6. [Rules](#rules)
 4. [What The Event Gateway is NOT](#what-the-event-gateway-is-not)
 5. [Architecture](#architecture)
@@ -237,10 +236,33 @@ for each backing system.
 
 Authentication is outside the scope of the core of the system. It may be possible for plugins to implement this eventually.
 
-### Ownership
+#### Ownership
 
 * all objects are assigned an owning identity upon creation, including new identities
 * ownership is hierarchical
+
+#### Identity Usage
+
+The identity's token is hydrated into serverless.yml through an
+env var or argument, based on the deployment environment.
+
+The sdk passes along the token in an http header with every request to the API.
+
+When it's time to perform a key rotation, a new token is added to an identity, and the owner of the identity incrementally redeploys their systems with the new
+token. When the migration is complete, the old token is removed.
+
+#### Example Identity and Namespace Usage
+
+```
+// as admin
+sdk.createNamespace("analytics")
+sdk.createIdentity("hendrik")
+sdk.bindToken("hendrik", "120347aea9d1f25c1ca3b4d64eb561947e8418b33d")
+sdk.assignNamespace("function", "f1", "analytics") // type, object, namespace
+sdk.assignNamespace("identity", "hendrik", "analytics")
+
+// hendrik can now call f1 by passing their token in a header to the gateway
+```
 
 ### Namespaces
 
@@ -284,30 +306,7 @@ Authentication is outside the scope of the core of the system. It may be possibl
   - bind-token-to
   - remove-token-from
 
-#### Identity Usage
-
-The identity's token is hydrated into serverless.yml through an
-env var or argument, based on the deployment environment.
-
-The sdk passes along the token in an http header with every request to the API.
-
-When it's time to perform a key rotation, a new token is added to an identity, and the owner of the identity incrementally redeploys their systems with the new
-token. When the migration is complete, the old token is removed.
-
-#### Example Identity and Namespace Usage
-
-```
-// as admin
-sdk.createNamespace("analytics")
-sdk.createIdentity("hendrik")
-sdk.bindToken("hendrik", "120347aea9d1f25c1ca3b4d64eb561947e8418b33d")
-sdk.assignNamespace("function", "f1", "analytics") // type, object, namespace
-sdk.assignNamespace("identity", "hendrik", "analytics")
-
-// hendrik can now call f1 by passing their token in a header to the gateway
-```
-
-### Example Rule Usage
+#### Example Rule Usage
 
 ```
 // as admin
@@ -338,28 +337,7 @@ sdk.grant("eve", "ownership", "t1") // FAILS
 ```
 
 ## Identity and Namespace Implementation Path
-
-the following MAY be possible by emit:
-
-1. feature on/off switch: add a flag to start the gateway in mandatory access control mode
-1. storage: identity to tokens mapping
-1. storage: identity to namespaces mapping
-1. api: identity management CRUD
-1. api: topic, function, endpoint ownership CRUD
-1. api: namespace management CRUD
-1. api: thread namespace enforcement into all existing config api's
-1. router: thread namespace enforcement into endpoint decisions
-1. router: thread namespace enforcement into pub/sub decisions
-1. encryption: add flag for symmetric encryption key to gateway
-1. encryption: encrypt all keys and values in the backing database
-
------ EMIT -----
-
-1. storage: identity to associated rule mapping
-1. api: rule management CRUD
-1. api: thread rule enforcement into all existing config api's
-1. router: thread rule enforcement into endpoint decisions
-1. router: thread rule enforcement into pub/sub decisions
+[See the bottom of the Access Control spec](_docs/access_control.md)
 
 ## What The Event Gateway is NOT
 
