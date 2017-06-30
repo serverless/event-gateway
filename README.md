@@ -323,7 +323,7 @@ token. When the migration is complete, the old token is removed.
 // as admin
 sdk.createNamespace("analytics")
 sdk.createIdentity("hendrik")
-sdk.generateToken("hendrik") // -> 120347aea9d1f25c1ca3b4d64eb561947e8418b33d
+sdk.generateToken("hendrik") // -> "a9d1f25c1ca3b4d64eb561947e" or sdk.bindToken("hendrik", "a9d1f25c1ca3b4d64eb561947e")
 sdk.assignNamespace("function", "f1", "analytics") // type, object, namespace
 sdk.assignNamespace("identity", "hendrik", "analytics")
 
