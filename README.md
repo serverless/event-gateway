@@ -63,7 +63,7 @@ sdk.registerFunction("hello-world", {
 
 #### Example: Framework Integration
 
-Every function that subscribes to a event from the gateway is automatically registered in the gateway.
+Every function that subscribes to an event from the gateway is automatically registered in the gateway.
 
 ```yaml
 gateways:
@@ -196,7 +196,7 @@ HTTP services, even different cloud providers.
 ```javascript
 sdk.createTopic("userCreated", function(error, response) {})
 
-// Assuming that we registered "sendWelcomeEmail" function earlier
+// Assuming that we registered the "sendWelcomeEmail" function earlier
 // sdk.subscribeToTopic(<function name>, <event name>, <callback>)
 sdk.subscribeToTopic("sendWelcomeEmail", "userCreated", function(error, response) {})
 ```
@@ -250,7 +250,7 @@ The above SDK calls create a single `<The Event Gateway URL>/users` endpoint tha
 
 #### Example: Framework Integration
 
-Every function that subscribes to a event from the gateway is automatically registered in the gateway.
+Every function that subscribes to an event from the gateway is automatically registered in the gateway.
 
 ```yaml
 gateways:
