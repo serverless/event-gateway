@@ -462,7 +462,7 @@ The Event Gateway exposes a RESTful configuration API.
 
 #### Register function
 
-`POST /api/function`
+`POST /v0/gateway/api/function`
 
 Request:
 
@@ -509,7 +509,7 @@ Response:
 
 #### Change configuration of group function
 
-`PUT /api/function/<function ID>/functions`
+`PUT /v0/gateway/api/function/<function ID>/functions`
 
 Allows changing configuration of group function
 
@@ -527,7 +527,7 @@ Response:
 
 #### Deregister function
 
-`DELETE /api/function/<function id>`
+`DELETE /v0/gateway/api/function/<function id>`
 
 Notes:
 
@@ -538,7 +538,7 @@ Notes:
 
 #### Create endpoint
 
-`POST /api/endpoint`
+`POST /v0/gateway/api/endpoint`
 
 Request:
 
@@ -555,11 +555,11 @@ Response:
 
 #### Delete endpoint
 
-`DELETE /api/endpoint/<endpoint ID>`
+`DELETE /v0/gateway/api/endpoint/<endpoint ID>`
 
 #### Get endpoints
 
-`GET /api/endpoint`
+`GET /v0/gateway/api/endpoint`
 
 Response:
 
@@ -573,7 +573,7 @@ Response:
 
 #### Create topic
 
-`POST /api/topic`
+`POST /v0/gateway/api/topic`
 
 Request:
 
@@ -585,11 +585,11 @@ Response:
 
 #### Delete topic
 
-`DELETE /api/topic/<topic id>`
+`DELETE /v0/gateway/api/topic/<topic id>`
 
 #### Get topics
 
-`GET /api/topic`
+`GET /v0/gateway/api/topic`
 
 Response:
 
@@ -598,7 +598,7 @@ Response:
 
 #### Add subscription
 
-`POST /api/topic/<topic id>/subscription`
+`POST /v0/gateway/api/topic/<topic id>/subscription`
 
 Request:
 
@@ -612,11 +612,11 @@ Response:
 
 #### Delete subscription
 
-`DELETE /api/topic/<topic id>/subscription/<subscription id>`
+`DELETE /v0/gateway/api/topic/<topic id>/subscription/<subscription id>`
 
 #### Get subscriptions
 
-`GET /api/topic/<topic id>/subscription`
+`GET /v0/gateway/api/topic/<topic id>/subscription`
 
 Response:
 
@@ -627,7 +627,7 @@ Response:
 
 #### Add publisher
 
-`POST /api/topic/<topic id>/publisher`
+`POST /v0/gateway/api/topic/<topic id>/publisher`
 
 Request:
 
@@ -642,11 +642,11 @@ Response:
 
 #### Delete publisher
 
-`DELETE /api/topic/<topic id>/publisher/<publisher id>`
+`DELETE /v0/gateway/api/topic/<topic id>/publisher/<publisher id>`
 
 #### Get Publishers
 
-`GET /api/topic/<topic id>/publisher`
+`GET /v0/gateway/api/topic/<topic id>/publisher`
 
 Response:
 
@@ -657,7 +657,7 @@ Response:
 
 #### Publish message to the topic
 
-`POST /api/topic/<topic id>/publish`
+`POST /v0/gateway/api/topic/<topic id>/publish`
 
 Request: arbitrary payload
 
