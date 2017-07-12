@@ -14,6 +14,7 @@ import (
 func StartGateway(conf Config) {
 	targetCache := targetcache.New("/serverless-gateway", conf.KV, conf.Log)
 	router := router.New(targetCache, metrics.DroppedPubSubEvents, conf.Log)
+	router.StartWorkers()
 	ev := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(conf.Port)),
 		Handler:      router,
