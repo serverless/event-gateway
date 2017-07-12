@@ -456,7 +456,7 @@ The Event Gateway instances use a strongly consistent, subscribable DB (initiall
 
 ## HTTP API
 
-The Event Gateway exposes a RESTful configuration API.
+The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:8080` port.
 
 ### Function discovery
 
