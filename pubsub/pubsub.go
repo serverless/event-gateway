@@ -14,7 +14,6 @@ import (
 type PubSub struct {
 	TopicsDB        store.Store
 	SubscriptionsDB store.Store
-	PublishersDB    store.Store
 	FunctionsDB     store.Store
 	Logger          *zap.Logger
 }
@@ -160,82 +159,4 @@ func (ps PubSub) GetAllSubscriptions(tid TopicID) ([]*Subscription, error) {
 	}
 
 	return subs, nil
-}
-
-// CreatePublisher creates a publisher.
-func (ps PubSub) CreatePublisher(topicID TopicID, publisher *Publisher) (*Publisher, error) {
-	publisher.ID = publisherID(topicID, publisher.Type, publisher.FunctionID)
-	publisher.TopicID = topicID
-
-	validate := validator.New()
-	err := validate.Struct(publisher)
-	if err != nil {
-		return nil, &ErrorPublisherValidation{err}
-	}
-
-	_, err = ps.PublishersDB.Get(string(publisher.ID))
-	if err == nil {
-		return nil, &ErrorPublisherAlreadyExists{
-			ID: publisher.ID,
-		}
-	}
-
-	_, err = ps.TopicsDB.Get(string(publisher.TopicID))
-	if err != nil {
-		return nil, &ErrorNotFound{publisher.TopicID}
-	}
-
-	exists, err := ps.FunctionsDB.Exists(string(publisher.FunctionID))
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, &ErrorFunctionNotFound{string(publisher.FunctionID)}
-	}
-
-	buf, err := json.Marshal(publisher)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ps.PublishersDB.Put(string(publisher.ID), buf, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return publisher, nil
-}
-
-// DeletePublisher deletes publisher.
-func (ps PubSub) DeletePublisher(id PublisherID) error {
-	err := ps.PublishersDB.Delete(string(id))
-	if err != nil {
-		return &ErrorPublisherNotFound{id}
-	}
-	return nil
-}
-
-// GetAllPublishers returns array of all Publishers.
-func (ps PubSub) GetAllPublishers(tid TopicID) ([]*Publisher, error) {
-	pubs := []*Publisher{}
-
-	kvs, err := ps.PublishersDB.List("")
-	if err != nil {
-		return pubs, nil
-	}
-
-	for _, kv := range kvs {
-		if strings.HasPrefix(kv.Key, string(tid)) {
-			p := &Publisher{}
-			dec := json.NewDecoder(bytes.NewReader(kv.Value))
-			err = dec.Decode(p)
-			if err != nil {
-				return nil, err
-			}
-
-			pubs = append(pubs, p)
-		}
-	}
-
-	return pubs, nil
 }

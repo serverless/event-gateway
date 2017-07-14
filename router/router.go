@@ -95,39 +95,6 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (router *Router) subscribers(fnGroup *functions.FunctionID, chosenFunction functions.FunctionID) (
-	map[pubsub.TopicID]struct{}, map[pubsub.TopicID]struct{}) {
-
-	sendInput := map[pubsub.TopicID]struct{}{}
-	sendOutput := map[pubsub.TopicID]struct{}{}
-
-	fillInputMap := func(fid functions.FunctionID) {
-		inputDest := router.targetCache.FunctionInputToTopics(fid)
-
-		for _, topic := range inputDest {
-			sendInput[topic] = struct{}{}
-		}
-	}
-
-	fillOutputMap := func(fid functions.FunctionID) {
-		outputDest := router.targetCache.FunctionOutputToTopics(fid)
-
-		for _, topic := range outputDest {
-			sendOutput[topic] = struct{}{}
-		}
-	}
-
-	if fnGroup != nil {
-		fillInputMap(*fnGroup)
-		fillOutputMap(*fnGroup)
-	}
-
-	fillInputMap(chosenFunction)
-	fillOutputMap(chosenFunction)
-
-	return sendInput, sendOutput
-}
-
 func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload []byte) {
 	if len(topicMap) == 0 {
 		return
@@ -169,27 +136,13 @@ func (router *Router) CallFunction(backingFunctionID functions.FunctionID, paylo
 		return []byte{}, resErr
 	}
 
-	var fnGroup *functions.FunctionID
 	var chosenFunction = backingFunction.ID
-
 	if backingFunction.Group != nil {
-		fnGroup = &backingFunction.ID
 		chosen, err := backingFunction.Group.Functions.Choose()
 		if err != nil {
 			return []byte{}, err
 		}
 		chosenFunction = chosen
-	}
-
-	// Check if we need to send the input or output of the function to
-	// any topics, and if so, we add that work to the work queue. The
-	// work queue is a bounded channel, and we never block if it's full.
-	// We need to be very loud though, so that we can autoscale up more
-	// gateway instances ASAP.
-	sendInput, sendOutput := router.subscribers(fnGroup, chosenFunction)
-
-	if len(sendInput) > 0 {
-		router.enqueueWork(sendInput, payload)
 	}
 
 	// Call the target backing function.
@@ -203,13 +156,6 @@ func (router *Router) CallFunction(backingFunctionID functions.FunctionID, paylo
 	if err != nil {
 		resErr := errors.New("unable to reach backing function: " + err.Error())
 		return []byte{}, resErr
-	}
-
-	// Check if we need to forward this to any topics enqueue the work
-	// for forwarding events to subscribers, loudly dropping it if
-	// we're congested.
-	if len(sendOutput) > 0 {
-		router.enqueueWork(sendOutput, result)
 	}
 
 	return result, nil
@@ -319,30 +265,6 @@ func (router *Router) WaitForEndpoint(endpointID endpoints.EndpointID) <-chan st
 		for {
 			res := router.targetCache.BackingFunction(endpointID)
 			if res != nil {
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		close(updatedChan)
-	}()
-	return updatedChan
-}
-
-// WaitForFnPublisher returns a chan that is closed when a publisher is created.
-// Primarily for testing purposes.
-func (router *Router) WaitForFnPublisher(function functions.FunctionID, end string) <-chan struct{} {
-	updatedChan := make(chan struct{})
-	go func() {
-		for {
-			res := []pubsub.TopicID{}
-			if end == "input" {
-				res = router.targetCache.FunctionInputToTopics(function)
-			} else if end == "output" {
-				res = router.targetCache.FunctionOutputToTopics(function)
-			} else {
-				panic("WaitForFnPublisher received non-input/output function type.")
-			}
-			if len(res) > 0 {
 				break
 			}
 			time.Sleep(50 * time.Millisecond)

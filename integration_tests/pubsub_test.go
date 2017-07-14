@@ -105,15 +105,6 @@ func TestFunctionPubSub(t *testing.T) {
 	wait5Seconds(router.WaitForSubscriber(pubsub.TopicID(topicName)),
 		"timed out waiting for subscriber to be configured!")
 
-	post(testAPIServer.URL+"/v0/gateway/api/topic/"+topicName+"/publisher",
-		pubsub.Publisher{
-			Type:       "output",
-			FunctionID: publisherFnID,
-		})
-
-	wait5Seconds(router.WaitForFnPublisher(publisherFnID, "output"),
-		"timed out waiting for publisher to be configured!")
-
 	// trigger the endpoint function and wait for the
 	// subscriber function to receive the callback.
 	res := get(testRouterServer.URL + "/smilez")

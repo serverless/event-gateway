@@ -17,8 +17,6 @@ import (
 type TargetCache interface {
 	BackingFunction(endpoint endpoints.EndpointID) *functions.FunctionID
 	Function(functionID functions.FunctionID) *functions.Function
-	FunctionInputToTopics(function functions.FunctionID) []pubsub.TopicID
-	FunctionOutputToTopics(function functions.FunctionID) []pubsub.TopicID
 	SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID
 }
 
@@ -29,7 +27,6 @@ type LibKVTargetCache struct {
 	shutdown          chan struct{}
 	functionCache     *functionCache
 	endpointCache     *endpointCache
-	publisherCache    *publisherCache
 	subscriptionCache *subscriptionCache
 }
 
@@ -52,42 +49,6 @@ func (tc *LibKVTargetCache) Function(functionID functions.FunctionID) *functions
 	tc.functionCache.RLock()
 	defer tc.functionCache.RUnlock()
 	return tc.functionCache.cache[functionID]
-}
-
-// FunctionInputToTopics is used for determining the topics to forward inputs to a function to.
-func (tc *LibKVTargetCache) FunctionInputToTopics(function functions.FunctionID) []pubsub.TopicID {
-	tc.publisherCache.RLock()
-	topicSet, exists := tc.publisherCache.fnInToTopic[function]
-	tc.publisherCache.RUnlock()
-
-	if !exists {
-		return []pubsub.TopicID{}
-	}
-
-	res := []pubsub.TopicID{}
-	for tid := range topicSet {
-		res = append(res, tid)
-	}
-
-	return res
-}
-
-// FunctionOutputToTopics is used for determining the topics to forward outputs of a function to.
-func (tc *LibKVTargetCache) FunctionOutputToTopics(function functions.FunctionID) []pubsub.TopicID {
-	tc.publisherCache.RLock()
-	topicSet, exists := tc.publisherCache.fnOutToTopic[function]
-	tc.publisherCache.RUnlock()
-
-	if !exists {
-		return []pubsub.TopicID{}
-	}
-
-	res := []pubsub.TopicID{}
-	for tid := range topicSet {
-		res = append(res, tid)
-	}
-
-	return res
 }
 
 // SubscribersOfTopic is used for determining which functions to forward messages in a topic to.
@@ -143,22 +104,18 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 	functionCache := newFunctionCache(log)
 	// serves lookups for which functions are subscribed to a topic
 	subscriptionCache := newSubscriptionCache(log)
-	// serves lookups for which topics a function's input or output are published to
-	publisherCache := newPublisherCache(log)
 
 	// start reacting to changes
 	shutdown := make(chan struct{})
 	functionPathWatcher.React(newCacheMaintainer(functionCache), shutdown)
 	endpointPathWatcher.React(newCacheMaintainer(endpointCache), shutdown)
 	subscriptionPathWatcher.React(newCacheMaintainer(subscriptionCache), shutdown)
-	publisherPathWatcher.React(newCacheMaintainer(publisherCache), shutdown)
 
 	return &LibKVTargetCache{
 		log:               log,
 		shutdown:          shutdown,
 		functionCache:     functionCache,
 		endpointCache:     endpointCache,
-		publisherCache:    publisherCache,
 		subscriptionCache: subscriptionCache,
 	}
 }
