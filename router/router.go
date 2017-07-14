@@ -62,36 +62,26 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(503), 503)
 	}
 
-	rawPath := r.URL.EscapedPath()
-	isAsync := strings.HasSuffix(rawPath, "/async")
-	trimmedSuffixPath := strings.TrimSuffix(rawPath, "/async")
-	trimmedPath := strings.TrimPrefix(trimmedSuffixPath, "/")
-	id := strings.ToUpper(r.Method) + "-" + trimmedPath
+	path := strings.TrimPrefix(r.URL.EscapedPath(), "/")
+	id := strings.ToUpper(r.Method) + "-" + path
 	endpointID := endpoints.EndpointID(id)
 	router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
 	reqBuf, err := ioutil.ReadAll(r.Body)
-
 	if err != nil {
 		fmt.Fprintf(w, "%s", err)
 	}
 
-	if isAsync {
-		w.WriteHeader(http.StatusAccepted)
-		// TODO use goroutine pool to avoid unbounded goroutine creation
-		go router.CallEndpoint(endpointID, reqBuf)
-	} else {
-		res, err := router.CallEndpoint(endpointID, reqBuf)
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
+	res, err := router.CallEndpoint(endpointID, reqBuf)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 
-		_, err = w.Write(res)
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
+	_, err = w.Write(res)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
 	}
 }
 
