@@ -625,42 +625,6 @@ Response:
   - `topicId` - `string` - ID of topic
   - `functionId` - ID of function or function group
 
-#### Add publisher
-
-`POST /v0/gateway/api/topic/<topic id>/publisher`
-
-Request:
-
-- `functionId` - ID of function or function group to publish events to the topic
-- `type` - either `input` or `output`
-
-Response:
-
-- `publisherId` - `string` - publisher ID, which is topic + function ID, e.g. `newusers-/userCreateGroup`
-- `functionId` - ID of function or function group to publish events to the topic
-- `type` - either `input` or `output`
-
-#### Delete publisher
-
-`DELETE /v0/gateway/api/topic/<topic id>/publisher/<publisher id>`
-
-#### Get Publishers
-
-`GET /v0/gateway/api/topic/<topic id>/publisher`
-
-Response:
-
-- `publishers` - `array` of `object` - backing functions
-  - `publisherId` - `string` - publisher ID
-  - `functionId` - ID of function or function group
-  - `type` - either `input` or `output`
-
-#### Publish message to the topic
-
-`POST /v0/gateway/api/topic/<topic id>/publish`
-
-Request: arbitrary payload
-
 ## Plugins
 
 Plugins are available for extending the behavior of the Event Gateway core. Examples include authentication, integration with external identity management systems,
