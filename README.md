@@ -462,7 +462,7 @@ The Event Gateway exposes a RESTful configuration API. By default Configuration 
 
 #### Register function
 
-`POST /v0/gateway/api/function`
+`POST /v0/gateway/api/functions`
 
 Request:
 
@@ -507,27 +507,9 @@ Response:
 - `group` - `object` - Group function properties
 - `http` - `object` - HTTP function properties
 
-#### Change configuration of group function
+#### Delete function
 
-`PUT /v0/gateway/api/function/<function ID>/functions`
-
-Allows changing configuration of group function
-
-Request:
-
-- `functions` - `array` of `object` - backing functions
-  - `functionId` - `string` - function ID
-  - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
-
-Response:
-
-- `functions` - `array` of `object` - backing functions
-  - `functionId` - `string` - function ID
-  - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
-
-#### Deregister function
-
-`DELETE /v0/gateway/api/function/<function id>`
+`DELETE /v0/gateway/api/functions/<function id>`
 
 Notes:
 
