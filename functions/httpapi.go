@@ -15,8 +15,9 @@ type HTTPAPI struct {
 
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
-	router.GET("/v0/gateway/api/function/:name", h.getFunction)
-	router.POST("/v0/gateway/api/function", h.registerFunction)
+	router.GET("/v0/gateway/api/functions/:name", h.getFunction)
+	router.POST("/v0/gateway/api/functions", h.registerFunction)
+	router.DELETE("/v0/gateway/api/functions/:name", h.deleteFunction)
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -64,5 +65,21 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
 	} else {
 		encoder.Encode(output)
+	}
+}
+
+func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	err := h.Functions.DeleteFunction(params.ByName("name"))
+	if err != nil {
+		if _, ok := err.(*ErrorNotFound); ok {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		encoder.Encode(&httpapi.Error{Error: err.Error()})
 	}
 }

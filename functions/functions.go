@@ -16,7 +16,7 @@ type Functions struct {
 	Logger *zap.Logger
 }
 
-// RegisterFunction registers function in the discovery.
+// RegisterFunction registers function in configuration.
 func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 	if err := f.validateFunction(fn); err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 	return fn, nil
 }
 
-// GetFunction returns function from the discovery.
+// GetFunction returns function from configuration.
 func (f *Functions) GetFunction(name string) (*Function, error) {
 	kv, err := f.DB.Get(name)
 	if err != nil {
@@ -50,6 +50,15 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 		return nil, err
 	}
 	return &fn, nil
+}
+
+// DeleteFunction deletes function from configuration.
+func (f *Functions) DeleteFunction(name string) error {
+	err := f.DB.Delete(name)
+	if err != nil {
+		return &ErrorNotFound{name}
+	}
+	return nil
 }
 
 func (fn *Function) targetCount() int {
