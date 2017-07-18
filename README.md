@@ -571,38 +571,14 @@ Response:
 
 ### Pub/Sub
 
-#### Create topic
+#### Create subscription
 
-`POST /v0/gateway/api/topic`
-
-Request:
-
-- `topicId` - `string` - name of topic
-
-Response:
-
-- `topicId` - `string` - name of topic
-
-#### Delete topic
-
-`DELETE /v0/gateway/api/topic/<topic id>`
-
-#### Get topics
-
-`GET /v0/gateway/api/topic`
-
-Response:
-
-- `topics` - `array` of `object` - topics
-  - `topicId` - `string` - topic name
-
-#### Add subscription
-
-`POST /v0/gateway/api/topic/<topic id>/subscription`
+`POST /v0/gateway/api/subscriptions`
 
 Request:
 
-- `functionId` - ID of function or function group to receive events from the topic
+- `topicId` - `string` - ID of topic
+- `functionId` - `string` - ID of function or function group to receive events
 
 Response:
 
@@ -612,11 +588,11 @@ Response:
 
 #### Delete subscription
 
-`DELETE /v0/gateway/api/topic/<topic id>/subscription/<subscription id>`
+`DELETE /v0/gateway/api/subscriptions/<subscription id>`
 
 #### Get subscriptions
 
-`GET /v0/gateway/api/topic/<topic id>/subscription`
+`GET /v0/gateway/api/subscriptions`
 
 Response:
 
