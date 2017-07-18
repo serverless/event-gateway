@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,18 +11,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/pubsub"
 )
-
-func wait5Seconds(ch <-chan struct{}, errMsg string) {
-	select {
-	case <-ch:
-	case <-time.After(5 * time.Second):
-		panic(errMsg)
-	}
-}
 
 func TestFunctionPubSub(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
@@ -37,32 +29,7 @@ func TestFunctionPubSub(t *testing.T) {
 	defer testRouterServer.Close()
 	router.StartWorkers()
 
-	// register endpoint function
 	expected := "😸"
-
-	testTargetServer := httptest.NewServer(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, expected)
-		}))
-	defer testTargetServer.Close()
-
-	publisherFnID := functions.FunctionID("super smiley function")
-	post(testAPIServer.URL+"/v0/gateway/api/function",
-		functions.Function{
-			ID: publisherFnID,
-			HTTP: &functions.HTTPProperties{
-				URL: testTargetServer.URL,
-			},
-		})
-
-	post(testAPIServer.URL+"/v0/gateway/api/endpoint", endpoints.Endpoint{
-		FunctionID: publisherFnID,
-		Method:     "POST",
-		Path:       "/smilez",
-	})
-
-	wait5Seconds(router.WaitForEndpoint(endpoints.EndpointID("POST-smilez")),
-		"timed out waiting for endpoint to be configured!")
 
 	// register subscriber function
 	smileyReceived := make(chan struct{})
@@ -73,6 +40,7 @@ func TestFunctionPubSub(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
+
 			if string(reqBuf) == expected {
 				close(smileyReceived)
 			} else {
@@ -105,27 +73,33 @@ func TestFunctionPubSub(t *testing.T) {
 	wait5Seconds(router.WaitForSubscriber(pubsub.TopicID(topicName)),
 		"timed out waiting for subscriber to be configured!")
 
-	post(testAPIServer.URL+"/v0/gateway/api/topic/"+topicName+"/publisher",
-		pubsub.Publisher{
-			Type:       "output",
-			FunctionID: publisherFnID,
-		})
-
-	wait5Seconds(router.WaitForFnPublisher(publisherFnID, "output"),
-		"timed out waiting for publisher to be configured!")
-
-	// trigger the endpoint function and wait for the
-	// subscriber function to receive the callback.
-	res := get(testRouterServer.URL + "/smilez")
-
-	if res != expected {
-		panic("returned value was not \"" + expected +
-			"\", unexpected value: \"" + res + "\"")
-	}
+	emit(testRouterServer.URL, topicName, []byte(expected))
 
 	wait5Seconds(smileyReceived,
 		"timed out waiting to receive pub/sub event in subscriber!")
 
 	router.Drain()
 	shutdownGuard.ShutdownAndWait()
+}
+
+func emit(url, topic string, body []byte) {
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+	if err != nil {
+		panic(err)
+	}
+
+	req.Header.Add("event", topic)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+}
+
+func wait5Seconds(ch <-chan struct{}, errMsg string) {
+	select {
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		panic(errMsg)
+	}
 }

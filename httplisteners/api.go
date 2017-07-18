@@ -38,7 +38,6 @@ func StartAPI(conf Config) {
 	ps := &pubsub.PubSub{
 		TopicsDB:        db.NewPrefixedStore("/serverless-gateway/topics", conf.KV),
 		SubscriptionsDB: db.NewPrefixedStore("/serverless-gateway/subscriptions", conf.KV),
-		PublishersDB:    db.NewPrefixedStore("/serverless-gateway/publishers", conf.KV),
 		FunctionsDB:     fnsDB,
 		Logger:          conf.Log,
 	}

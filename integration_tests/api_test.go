@@ -36,7 +36,6 @@ func newTestAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
 	ps := &pubsub.PubSub{
 		TopicsDB:        db.NewPrefixedStore("/serverless-gateway/topics", kv),
 		SubscriptionsDB: db.NewPrefixedStore("/serverless-gateway/subscriptions", kv),
-		PublishersDB:    db.NewPrefixedStore("/serverless-gateway/publishers", kv),
 		FunctionsDB:     fnsDB,
 		Logger:          log,
 	}

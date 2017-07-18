@@ -4,7 +4,7 @@ import (
 	"github.com/serverless/event-gateway/pubsub"
 )
 
-type work struct {
+type event struct {
 	topics  []pubsub.TopicID
 	payload []byte
 }
