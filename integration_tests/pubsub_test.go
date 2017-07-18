@@ -50,7 +50,7 @@ func TestFunctionPubSub(t *testing.T) {
 	defer testSubscriberServer.Close()
 
 	subscriberFnID := functions.FunctionID("smiley subscriber")
-	post(testAPIServer.URL+"/v0/gateway/api/function",
+	post(testAPIServer.URL+"/v0/gateway/api/functions",
 		functions.Function{
 			ID: subscriberFnID,
 			HTTP: &functions.HTTPProperties{

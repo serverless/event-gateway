@@ -47,7 +47,7 @@ func TestFunctionDefAndCalling(t *testing.T) {
 	}))
 	defer testTargetServer.Close()
 
-	post(testAPIServer.URL+"/v0/gateway/api/function",
+	post(testAPIServer.URL+"/v0/gateway/api/functions",
 		functions.Function{
 			ID: functions.FunctionID("super smiley function"),
 			HTTP: &functions.HTTPProperties{
