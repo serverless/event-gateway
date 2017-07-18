@@ -553,38 +553,14 @@ Response:
 
 ### Pub/Sub
 
-#### Create topic
+#### Create subscription
 
-`POST /v0/gateway/api/topic`
-
-Request:
-
-- `topicId` - `string` - name of topic
-
-Response:
-
-- `topicId` - `string` - name of topic
-
-#### Delete topic
-
-`DELETE /v0/gateway/api/topic/<topic id>`
-
-#### Get topics
-
-`GET /v0/gateway/api/topic`
-
-Response:
-
-- `topics` - `array` of `object` - topics
-  - `topicId` - `string` - topic name
-
-#### Add subscription
-
-`POST /v0/gateway/api/topic/<topic id>/subscription`
+`POST /v0/gateway/api/subscriptions`
 
 Request:
 
-- `functionId` - ID of function or function group to receive events from the topic
+- `topicId` - `string` - ID of topic
+- `functionId` - `string` - ID of function or function group to receive events
 
 Response:
 
@@ -594,11 +570,11 @@ Response:
 
 #### Delete subscription
 
-`DELETE /v0/gateway/api/topic/<topic id>/subscription/<subscription id>`
+`DELETE /v0/gateway/api/subscriptions/<subscription id>`
 
 #### Get subscriptions
 
-`GET /v0/gateway/api/topic/<topic id>/subscription`
+`GET /v0/gateway/api/subscriptions`
 
 Response:
 
@@ -606,42 +582,6 @@ Response:
   - `subscriptionId` - `string` - subscription ID
   - `topicId` - `string` - ID of topic
   - `functionId` - ID of function or function group
-
-#### Add publisher
-
-`POST /v0/gateway/api/topic/<topic id>/publisher`
-
-Request:
-
-- `functionId` - ID of function or function group to publish events to the topic
-- `type` - either `input` or `output`
-
-Response:
-
-- `publisherId` - `string` - publisher ID, which is topic + function ID, e.g. `newusers-/userCreateGroup`
-- `functionId` - ID of function or function group to publish events to the topic
-- `type` - either `input` or `output`
-
-#### Delete publisher
-
-`DELETE /v0/gateway/api/topic/<topic id>/publisher/<publisher id>`
-
-#### Get Publishers
-
-`GET /v0/gateway/api/topic/<topic id>/publisher`
-
-Response:
-
-- `publishers` - `array` of `object` - backing functions
-  - `publisherId` - `string` - publisher ID
-  - `functionId` - ID of function or function group
-  - `type` - either `input` or `output`
-
-#### Publish message to the topic
-
-`POST /v0/gateway/api/topic/<topic id>/publish`
-
-Request: arbitrary payload
 
 ## Plugins
 

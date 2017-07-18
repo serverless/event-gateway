@@ -12,7 +12,7 @@ type SubscriptionID string
 // Subscription maps from Topic to Function
 type Subscription struct {
 	ID         SubscriptionID       `json:"subscriptionId" validate:"required"`
-	TopicID    TopicID              `json:"topicId" validate:"required"`
+	TopicID    TopicID              `json:"event" validate:"required"`
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
 }
 
