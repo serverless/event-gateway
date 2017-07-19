@@ -13,9 +13,9 @@ import (
 	"github.com/docker/libkv/store"
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/metrics"
+	"github.com/serverless/event-gateway/pubsub"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/targetcache"
 )
@@ -55,14 +55,15 @@ func TestFunctionDefAndCalling(t *testing.T) {
 			},
 		})
 
-	post(testAPIServer.URL+"/v0/gateway/api/endpoint", endpoints.Endpoint{
+	post(testAPIServer.URL+"/v0/gateway/api/subscriptions", pubsub.Subscription{
 		FunctionID: functions.FunctionID("super smiley function"),
+		TopicID:    "http",
 		Method:     "POST",
 		Path:       "/smilez",
 	})
 
 	select {
-	case <-router.WaitForEndpoint(endpoints.EndpointID("POST-smilez")):
+	case <-router.WaitForEndpoint(pubsub.EndpointID("POST-smilez")):
 	case <-time.After(5 * time.Second):
 		panic("timed out waiting for endpoint to be configured!")
 	}

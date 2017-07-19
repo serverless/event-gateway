@@ -11,7 +11,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/pubsub"
 	"github.com/serverless/event-gateway/targetcache"
@@ -67,7 +66,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		path := strings.TrimPrefix(r.URL.EscapedPath(), "/")
 		id := strings.ToUpper(r.Method) + "-" + path
-		endpointID := endpoints.EndpointID(id)
+		endpointID := pubsub.EndpointID(id)
 		router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
 		res, err := router.callEndpoint(endpointID, reqBuf)
@@ -131,7 +130,7 @@ func (router *Router) Drain() {
 
 // WaitForEndpoint returns a chan that is closed when an endpoint is created.
 // Primarily for testing purposes.
-func (router *Router) WaitForEndpoint(endpointID endpoints.EndpointID) <-chan struct{} {
+func (router *Router) WaitForEndpoint(endpointID pubsub.EndpointID) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
@@ -164,7 +163,7 @@ func (router *Router) WaitForSubscriber(topic pubsub.TopicID) <-chan struct{} {
 }
 
 // callEndpoint determines which function to call when an endpoint is hit.
-func (router *Router) callEndpoint(endpointID endpoints.EndpointID, payload []byte) ([]byte, error) {
+func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte) ([]byte, error) {
 	// Figure out what function we're targeting.
 	backingFunction := router.targetCache.BackingFunction(endpointID)
 	if backingFunction == nil {

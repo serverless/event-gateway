@@ -9,7 +9,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/serverless/event-gateway/db"
-	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/pubsub"
@@ -27,17 +26,10 @@ func StartAPI(conf Config) {
 	fnsapi := &functions.HTTPAPI{Functions: fns}
 	fnsapi.RegisterRoutes(apiRouter)
 
-	ens := &endpoints.Endpoints{
-		DB:          db.NewPrefixedStore("/serverless-gateway/endpoints", conf.KV),
-		Logger:      conf.Log,
-		FunctionsDB: fnsDB,
-	}
-	ensapi := &endpoints.HTTPAPI{Endpoints: ens}
-	ensapi.RegisterRoutes(apiRouter)
-
 	ps := &pubsub.PubSub{
 		TopicsDB:        db.NewPrefixedStore("/serverless-gateway/topics", conf.KV),
 		SubscriptionsDB: db.NewPrefixedStore("/serverless-gateway/subscriptions", conf.KV),
+		EndpointsDB:     db.NewPrefixedStore("/serverless-gateway/endpoints", conf.KV),
 		FunctionsDB:     fnsDB,
 		Logger:          conf.Log,
 	}
