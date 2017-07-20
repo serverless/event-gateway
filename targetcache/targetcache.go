@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/db"
-	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/pubsub"
 )
@@ -15,7 +14,7 @@ import (
 // TargetCache is an interface for retrieving cached configuration
 // for driving performance-sensitive routing decisions.
 type TargetCache interface {
-	BackingFunction(endpoint endpoints.EndpointID) *functions.FunctionID
+	BackingFunction(endpoint pubsub.EndpointID) *functions.FunctionID
 	Function(functionID functions.FunctionID) *functions.Function
 	SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID
 }
@@ -33,7 +32,7 @@ type LibKVTargetCache struct {
 // BackingFunction returns functions and their weights, along with the
 // group ID if this was a Group function target, so we can submit
 // events to topics that are fed by both.
-func (tc *LibKVTargetCache) BackingFunction(endpointID endpoints.EndpointID) *functions.FunctionID {
+func (tc *LibKVTargetCache) BackingFunction(endpointID pubsub.EndpointID) *functions.FunctionID {
 	// try to get the endpoint from our cache
 	tc.endpointCache.RLock()
 	defer tc.endpointCache.RUnlock()
@@ -85,7 +84,6 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 	functionPathWatcher := db.NewPathWatcher(path+"functions", kv, log)
 	endpointPathWatcher := db.NewPathWatcher(path+"endpoints", kv, log)
 	subscriptionPathWatcher := db.NewPathWatcher(path+"subscriptions", kv, log)
-	publisherPathWatcher := db.NewPathWatcher(path+"publishers", kv, log)
 
 	if len(debug) == 1 && debug[0] {
 		debugReconciliation := func(w ...*db.PathWatcher) {
@@ -94,8 +92,7 @@ func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTarg
 				w.ReconciliationBaseDelay = 3
 			}
 		}
-		debugReconciliation(functionPathWatcher, endpointPathWatcher,
-			subscriptionPathWatcher, publisherPathWatcher)
+		debugReconciliation(functionPathWatcher, endpointPathWatcher, subscriptionPathWatcher)
 	}
 
 	// updates dynamic routing information for endpoints when config changes are detected.

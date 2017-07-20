@@ -11,13 +11,18 @@ type SubscriptionID string
 
 // Subscription maps from Topic to Function
 type Subscription struct {
-	ID         SubscriptionID       `json:"subscriptionId" validate:"required"`
+	ID         SubscriptionID       `json:"subscriptionId"`
 	TopicID    TopicID              `json:"event" validate:"required"`
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
+	Method     string               `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
+	Path       string               `json:"path,omitempty"`
 }
 
-func subscriptionID(tid TopicID, fid functions.FunctionID) SubscriptionID {
-	return SubscriptionID(string(tid) + "-" + string(fid))
+func newSubscriptionID(s *Subscription) SubscriptionID {
+	if s.Method == "" && s.Path == "" {
+		return SubscriptionID(string(s.TopicID) + "-" + string(s.FunctionID))
+	}
+	return SubscriptionID(string(s.TopicID) + "-" + string(s.FunctionID) + "-" + s.Method + "-" + s.Path)
 }
 
 // ErrorSubscriptionAlreadyExists occurs when subscription with the same ID already exists.

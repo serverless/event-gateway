@@ -74,10 +74,6 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 	}
 }
 
-type topics struct {
-	Topics []*Topic `json:"topics"`
-}
-
 type subscriptions struct {
 	Subscriptions []*Subscription `json:"subscriptions"`
 }

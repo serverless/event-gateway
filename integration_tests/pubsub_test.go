@@ -61,11 +61,10 @@ func TestFunctionPubSub(t *testing.T) {
 	// set up pub/sub
 	eventName := "smileys"
 
-	post(testAPIServer.URL+"/v0/gateway/api/subscriptions",
-		pubsub.Subscription{
-			FunctionID: subscriberFnID,
-			TopicID:    pubsub.TopicID(eventName),
-		})
+	post(testAPIServer.URL+"/v0/gateway/api/subscriptions", pubsub.Subscription{
+		FunctionID: subscriberFnID,
+		TopicID:    pubsub.TopicID(eventName),
+	})
 
 	wait5Seconds(router.WaitForSubscriber(pubsub.TopicID(eventName)),
 		"timed out waiting for subscriber to be configured!")

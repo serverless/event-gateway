@@ -7,7 +7,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/endpoints"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/pubsub"
 )
@@ -79,19 +78,19 @@ func (c *functionCache) Del(k string, v []byte) {
 type endpointCache struct {
 	sync.RWMutex
 	// cache maps from EndpointID to Endpoint
-	cache map[endpoints.EndpointID]*endpoints.Endpoint
+	cache map[pubsub.EndpointID]*pubsub.Endpoint
 	log   *zap.Logger
 }
 
 func newEndpointCache(log *zap.Logger) *endpointCache {
 	return &endpointCache{
-		cache: map[endpoints.EndpointID]*endpoints.Endpoint{},
+		cache: map[pubsub.EndpointID]*pubsub.Endpoint{},
 		log:   log,
 	}
 }
 
 func (c *endpointCache) Set(k string, v []byte) {
-	e := &endpoints.Endpoint{}
+	e := &pubsub.Endpoint{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
 	c.log.Debug("endpoint cache received set key.", zap.String("key", k), zap.String("value", string(v)))
 	if err != nil {
@@ -99,14 +98,14 @@ func (c *endpointCache) Set(k string, v []byte) {
 	} else {
 		c.Lock()
 		defer c.Unlock()
-		c.cache[endpoints.EndpointID(k)] = e
+		c.cache[pubsub.EndpointID(k)] = e
 	}
 }
 
 func (c *endpointCache) Del(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
-	delete(c.cache, endpoints.EndpointID(k))
+	delete(c.cache, pubsub.EndpointID(k))
 }
 
 type subscriptionCache struct {
