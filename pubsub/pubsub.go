@@ -83,18 +83,10 @@ func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
 	}
 
 	if sub.TopicID == "http" {
-		err = ps.deleteEndpoint(sub.Method, sub.Path)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = ps.deleteEmptyTopic(sub.TopicID)
-		if err != nil {
-			return err
-		}
+		return ps.deleteEndpoint(sub.Method, sub.Path)
 	}
 
-	return nil
+	return ps.deleteEmptyTopic(sub.TopicID)
 }
 
 // GetAllSubscriptions returns array of all Subscription.
