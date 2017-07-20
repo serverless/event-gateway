@@ -15,7 +15,7 @@ import (
 func newTestAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
 	apiRouter := httprouter.New()
 
-	fnsDB := db.NewPrefixedStore("/serverless-gateway/functions", kv)
+	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", kv)
 	fns := &functions.Functions{
 		DB:     fnsDB,
 		Logger: log,
@@ -24,9 +24,9 @@ func newTestAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
 	fnsapi.RegisterRoutes(apiRouter)
 
 	ps := &pubsub.PubSub{
-		TopicsDB:        db.NewPrefixedStore("/serverless-gateway/topics", kv),
-		SubscriptionsDB: db.NewPrefixedStore("/serverless-gateway/subscriptions", kv),
-		EndpointsDB:     db.NewPrefixedStore("/serverless-gateway/endpoints", kv),
+		TopicsDB:        db.NewPrefixedStore("/serverless-event-gateway/topics", kv),
+		SubscriptionsDB: db.NewPrefixedStore("/serverless-event-gateway/subscriptions", kv),
+		EndpointsDB:     db.NewPrefixedStore("/serverless-event-gateway/endpoints", kv),
 		FunctionsDB:     fnsDB,
 		Logger:          log,
 	}

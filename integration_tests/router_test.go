@@ -21,7 +21,7 @@ import (
 )
 
 func newTestRouterServer(kv store.Store, log *zap.Logger) (*router.Router, *httptest.Server) {
-	targetCache := targetcache.New("/serverless-gateway", kv, log, true)
+	targetCache := targetcache.New("/serverless-event-gateway", kv, log, true)
 	router := router.New(targetCache, metrics.DroppedPubSubEvents, log)
 
 	return router, httptest.NewServer(router)
@@ -47,7 +47,7 @@ func TestFunctionDefAndCalling(t *testing.T) {
 	}))
 	defer testTargetServer.Close()
 
-	post(testAPIServer.URL+"/v0/gateway/api/functions",
+	post(testAPIServer.URL+"/v1/functions",
 		functions.Function{
 			ID: functions.FunctionID("super smiley function"),
 			HTTP: &functions.HTTPProperties{
@@ -55,7 +55,7 @@ func TestFunctionDefAndCalling(t *testing.T) {
 			},
 		})
 
-	post(testAPIServer.URL+"/v0/gateway/api/subscriptions", pubsub.Subscription{
+	post(testAPIServer.URL+"/v1/subscriptions", pubsub.Subscription{
 		FunctionID: functions.FunctionID("super smiley function"),
 		TopicID:    "http",
 		Method:     "POST",

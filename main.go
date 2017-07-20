@@ -24,7 +24,7 @@ func init() {
 func main() {
 	verbose := flag.Bool("verbose", false, "Verbose logging.")
 	dbHosts := flag.String("db-hosts", "localhost:2379", "Comma-separated list of database hosts to connect to.")
-	embedMaster := flag.Bool("embed-master", false, "Run embedded etcd for testing.")
+	embedMaster := flag.Bool("dev", false, "Run embedded etcd for testing.")
 	embedPeerAddr := flag.String("embed-peer-addr", "http://localhost:2380", "Address for testing embedded etcd to receive peer connections.")
 	embedCliAddr := flag.String("embed-cli-addr", "http://localhost:2379", "Address for testing embedded etcd to receive client connections.")
 	embedDataDir := flag.String("embed-data-dir", "default.etcd", "Path for testing embedded etcd to store its state.")
