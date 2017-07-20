@@ -15,9 +15,9 @@ type HTTPAPI struct {
 
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
-	router.GET("/v0/gateway/api/functions/:name", h.getFunction)
-	router.POST("/v0/gateway/api/functions", h.registerFunction)
-	router.DELETE("/v0/gateway/api/functions/:name", h.deleteFunction)
+	router.GET("/v1/functions/:name", h.getFunction)
+	router.POST("/v1/functions", h.registerFunction)
+	router.DELETE("/v1/functions/:name", h.deleteFunction)
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

@@ -15,9 +15,9 @@ type HTTPAPI struct {
 
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
-	router.POST("/v0/gateway/api/subscriptions", h.createSubscription)
-	router.DELETE("/v0/gateway/api/subscriptions/:subscriptionID", h.deleteSubscription)
-	router.GET("/v0/gateway/api/subscriptions", h.getSubscriptions)
+	router.POST("/v1/subscriptions", h.createSubscription)
+	router.DELETE("/v1/subscriptions/:subscriptionID", h.deleteSubscription)
+	router.GET("/v1/subscriptions", h.getSubscriptions)
 }
 
 func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

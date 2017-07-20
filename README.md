@@ -1,6 +1,47 @@
 # The Event Gateway
 
+[![Build Status](https://travis-ci.com/serverless/event-gateway.svg?token=jjfmiKqqzKMQrFyUDpMP&branch=master)](https://travis-ci.com/serverless/event-gateway)
+
 Dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute). The Event Gateway is a layer-7 proxy and realtime dataflow engine.
+
+## Quick Start
+
+### Running Locally (Docker)
+
+```
+git clone https://github.com/serverless/event-gateway.git
+cd event-gateway
+docker build -t event-gateway .
+docker run -p 8080:8080 -p 8081:8081 event-gateway --dev
+```
+
+### Register a Function
+
+```
+curl --request POST \
+  --url http://127.0.0.1:8081/v1/functions \
+  --header 'content-type: application/json' \
+  --data '{"functionId": "hello", "awsLambda":{"arn": "<Function AWS ARN>", "region": "<Region>", "accessKeyId": "<Access Key ID>", "secretAccessKey": "<Secret Access Key>"}}'
+```
+
+### Subscribe to an Event
+
+```
+curl --request POST \
+  --url http://127.0.0.1:8081/v1/subscriptions \
+  --header 'content-type: application/json' \
+  --data '{"functionId": "hello", "event": "pageVisited"}'
+```
+
+### Emit an Event
+
+```
+curl --request POST \
+  --url http://127.0.0.1:8080/ \
+  --header 'content-type: application/json' \
+  --header 'event: pageVisited' \
+  --data '{"foo": "bar"}'
+```
 
 ## Contents
 
@@ -473,23 +514,12 @@ Only one of the following function type can be provided.
 - `awsLambda` - `object` - AWS Lambda properties:
   - `arn` - `string` - AWS ARN identifier
   - `region` - `string` - region name
-  - `version` - `string` - a specific version ID
   - `accessKeyID` - `string` - AWS API key ID
   - `secretAccessKey` - `string` - AWS API key
 - `gcloudFunction` - `object` - Google Cloud Function properties:
   - `name` - `string` - function name
   - `region` - `string` - region name
   - `serviceAccountKey` - `json` - Google Service Account key
-- `azureFunction` - `object` - Azure Function properties:
-  - `name` - `string` - function name
-  - `appName` - `string` - azure app name
-  - `functionsAdminKey` - `string` - Azure API key
-- `openWhiskAction` - `object` - OpenWhisk Action properties:
-  - `name` - `string` - action name
-  - `namespace` - `string` - OpenWhisk namespace
-  - `apiHost` - `string` - OpenWhisk platform endpoint, e.g. openwhisk.ng.bluemix.net
-  - `auth` - `string` - OpenWhisk authentication key, e.g. xxxxxx:yyyyy
-  - `apiGwAccessToken` - `string` - OpenWhisk optional API gateway access token
 - `group` - `object` - Group function properties:
   - `functions` - `array` of `object` - backing functions
     - `functionId` - `string` - function ID
@@ -502,8 +532,6 @@ Response:
 - `functionId` - `string` - function name
 - `awsLambda` - `object` - AWS Lambda properties
 - `gcloudFunction` - `object` - Google Cloud Function properties
-- `azureFunction` - `object` - Azure Function properties
-- `openWhiskAction` - `object` - OpenWhisk Action properties
 - `group` - `object` - Group function properties
 - `http` - `object` - HTTP function properties
 
@@ -514,73 +542,38 @@ Response:
 Notes:
 
 - used to delete all types of functions, including groups
-- fails if the function ID is currently in-use by an endpoint or topic
+- fails if the function ID is currently in-use by a subscription
 
-### Endpoints
-
-#### Create endpoint
-
-`POST /v0/gateway/api/endpoint`
-
-Request:
-
-- `functionId` - `string` - ID of backing function or function group
-- `method` - `string` - HTTP method
-- `path` - `string` - URL path
-
-Response:
-
-- `endpointId` - `string` - a short UUID that represents this endpoint mapping
-- `functionId` - `string` - function ID
-- `method` - `string` - HTTP method
-- `path` - `string` - URL path
-
-#### Delete endpoint
-
-`DELETE /v0/gateway/api/endpoint/<endpoint ID>`
-
-#### Get endpoints
-
-`GET /v0/gateway/api/endpoint`
-
-Response:
-
-- `endpoints` - `array` of `object`
-  - `endpointId` - `string` - endpoint ID, which is method + path, e.g. `GET-homepage`
-  - `functionId` - `string` - function ID
-  - `method` - HTTP method
-  - `path` - URL path
-
-### Pub/Sub
+### Subcriptions
 
 #### Create subscription
 
-`POST /v0/gateway/api/subscriptions`
+`POST /v1/subscriptions`
 
 Request:
 
-- `topicId` - `string` - ID of topic
+- `event` - `string` - event name
 - `functionId` - `string` - ID of function or function group to receive events
 
 Response:
 
-- `subscriptionId` - `string` - subscription ID, which is topic + function ID, e.g. `newusers-userProcessGroup`
-- `topicId` - `string` - ID of topic
+- `subscriptionId` - `string` - subscription ID, which is event name + function ID, e.g. `newusers-userProcessGroup`
+- `event` - `string` - event name
 - `functionId` - ID of function or function group
 
 #### Delete subscription
 
-`DELETE /v0/gateway/api/subscriptions/<subscription id>`
+`DELETE /v1/subscriptions/<subscription id>`
 
 #### Get subscriptions
 
-`GET /v0/gateway/api/subscriptions`
+`GET /v1/subscriptions`
 
 Response:
 
 - `subscriptions` - `array` of `object` - subscriptions
   - `subscriptionId` - `string` - subscription ID
-  - `topicId` - `string` - ID of topic
+  - `event` - `string` - evetn name
   - `functionId` - ID of function or function group
 
 ## Plugins

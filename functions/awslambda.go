@@ -11,7 +11,6 @@ import (
 type AWSLambdaProperties struct {
 	ARN             string `json:"arn" validate:"required"`
 	Region          string `json:"region" validate:"required"`
-	Version         string `json:"version" validate:"required"`
 	AccessKeyID     string `json:"accessKeyID" validate:"required"`
 	SecretAccessKey string `json:"secretAccessKey" validate:"required"`
 }
@@ -26,5 +25,6 @@ func (p *AWSLambdaProperties) Call(payload []byte) ([]byte, error) {
 		FunctionName: &p.ARN,
 		Payload:      payload,
 	})
+
 	return invokeOutput.Payload, err
 }

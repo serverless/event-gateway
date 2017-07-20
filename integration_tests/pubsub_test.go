@@ -50,7 +50,7 @@ func TestFunctionPubSub(t *testing.T) {
 	defer testSubscriberServer.Close()
 
 	subscriberFnID := functions.FunctionID("smiley subscriber")
-	post(testAPIServer.URL+"/v0/gateway/api/functions",
+	post(testAPIServer.URL+"/v1/functions",
 		functions.Function{
 			ID: subscriberFnID,
 			HTTP: &functions.HTTPProperties{
@@ -61,7 +61,7 @@ func TestFunctionPubSub(t *testing.T) {
 	// set up pub/sub
 	eventName := "smileys"
 
-	post(testAPIServer.URL+"/v0/gateway/api/subscriptions", pubsub.Subscription{
+	post(testAPIServer.URL+"/v1/subscriptions", pubsub.Subscription{
 		FunctionID: subscriberFnID,
 		TopicID:    pubsub.TopicID(eventName),
 	})

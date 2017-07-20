@@ -18,7 +18,7 @@ import (
 func StartAPI(conf Config) {
 	apiRouter := httprouter.New()
 
-	fnsDB := db.NewPrefixedStore("/serverless-gateway/functions", conf.KV)
+	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", conf.KV)
 	fns := &functions.Functions{
 		DB:     fnsDB,
 		Logger: conf.Log,
@@ -27,17 +27,16 @@ func StartAPI(conf Config) {
 	fnsapi.RegisterRoutes(apiRouter)
 
 	ps := &pubsub.PubSub{
-		TopicsDB:        db.NewPrefixedStore("/serverless-gateway/topics", conf.KV),
-		SubscriptionsDB: db.NewPrefixedStore("/serverless-gateway/subscriptions", conf.KV),
-		EndpointsDB:     db.NewPrefixedStore("/serverless-gateway/endpoints", conf.KV),
+		TopicsDB:        db.NewPrefixedStore("/serverless-event-gateway/topics", conf.KV),
+		SubscriptionsDB: db.NewPrefixedStore("/serverless-event-gateway/subscriptions", conf.KV),
+		EndpointsDB:     db.NewPrefixedStore("/serverless-event-gateway/endpoints", conf.KV),
 		FunctionsDB:     fnsDB,
 		Logger:          conf.Log,
 	}
 	psapi := &pubsub.HTTPAPI{PubSub: ps}
 	psapi.RegisterRoutes(apiRouter)
 
-	apiRouter.GET("/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
-	apiRouter.Handler("GET", "/v0/gateway/metrics", prometheus.Handler())
+	apiRouter.Handler("GET", "/metrics", prometheus.Handler())
 
 	apiHandler := metrics.HTTPLogger{
 		Handler:         apiRouter,

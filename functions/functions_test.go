@@ -18,7 +18,7 @@ func TestRegisterFunction_Success(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	payload := `{"functionId":"testfunc",` +
-		`"awsLambda":{"arn":"arn:","region":"us-east-1","version":"latest","accessKeyID":"xxx","secretAccessKey":"xxx"}}`
+		`"awsLambda":{"arn":"arn:","region":"us-east-1","accessKeyID":"xxx","secretAccessKey":"xxx"}}`
 	db.EXPECT().Put("testfunc", []byte(payload), nil).Return(nil)
 	registry := &functions.Functions{DB: db, Logger: zap.NewNop()}
 
@@ -27,7 +27,6 @@ func TestRegisterFunction_Success(t *testing.T) {
 		AWSLambda: &functions.AWSLambdaProperties{
 			ARN:             "arn:",
 			Region:          "us-east-1",
-			Version:         "latest",
 			AccessKeyID:     "xxx",
 			SecretAccessKey: "xxx",
 		},
@@ -38,7 +37,6 @@ func TestRegisterFunction_Success(t *testing.T) {
 		AWSLambda: &functions.AWSLambdaProperties{
 			ARN:             "arn:",
 			Region:          "us-east-1",
-			Version:         "latest",
 			AccessKeyID:     "xxx",
 			SecretAccessKey: "xxx",
 		},
@@ -120,7 +118,6 @@ var registerFunctionFailedTests = []struct {
 		AWSLambda: &functions.AWSLambdaProperties{
 			ARN:             "",
 			Region:          "us-east-1",
-			Version:         "latest",
 			AccessKeyID:     "xxx",
 			SecretAccessKey: "xx",
 		},
@@ -130,7 +127,6 @@ var registerFunctionFailedTests = []struct {
 		AWSLambda: &functions.AWSLambdaProperties{
 			ARN:             "",
 			Region:          "us-east-1",
-			Version:         "latest",
 			AccessKeyID:     "xxx",
 			SecretAccessKey: "xx",
 		},
