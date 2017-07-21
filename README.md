@@ -50,7 +50,7 @@ curl --request POST \
 1. [Features](#features)
    1. [Function Discovery](#function-discovery)
    1. [Subscriptions](#subscriptions)
-1. [HTTP API](#http-api)
+1. [Configuration API](#configuration-api)
 1. [Architecture](#architecture)
 1. [What The Event Gateway is NOT](#what-the-event-gateway-is-not)
 1. [Background](#background)
@@ -253,7 +253,7 @@ functions:
           method: GET
 ```
 
-## HTTP API
+## Configuration API
 
 The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:8080` port.
 
@@ -302,7 +302,7 @@ Notes:
 - used to delete all types of functions, including groups
 - fails if the function ID is currently in-use by a subscription
 
-### Subcriptions
+### Subscriptions
 
 #### Create subscription
 
