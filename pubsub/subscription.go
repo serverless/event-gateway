@@ -22,7 +22,7 @@ func newSubscriptionID(s *Subscription) SubscriptionID {
 	if s.Method == "" && s.Path == "" {
 		return SubscriptionID(string(s.TopicID) + "-" + string(s.FunctionID))
 	}
-	return SubscriptionID(string(s.TopicID) + "-" + string(s.FunctionID) + "-" + s.Method + "-" + s.Path)
+	return SubscriptionID(string(s.TopicID) + "-" + s.Method + "-" + s.Path)
 }
 
 // ErrorSubscriptionAlreadyExists occurs when subscription with the same ID already exists.
