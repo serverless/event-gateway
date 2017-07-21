@@ -135,13 +135,13 @@ func (c *subscriptionCache) Set(k string, v []byte) {
 	defer c.Unlock()
 
 	// set FunctionID as destination in topicToSub
-	fnSet, exists := c.topicToFns[s.TopicID]
+	fnSet, exists := c.topicToFns[s.Event]
 	if exists {
 		fnSet[s.FunctionID] = struct{}{}
 	} else {
 		fnSet := map[functions.FunctionID]struct{}{}
 		fnSet[s.FunctionID] = struct{}{}
-		c.topicToFns[s.TopicID] = fnSet
+		c.topicToFns[s.Event] = fnSet
 	}
 }
 
@@ -156,12 +156,12 @@ func (c *subscriptionCache) Del(k string, v []byte) {
 		return
 	}
 
-	fnSet, exists := c.topicToFns[oldSub.TopicID]
+	fnSet, exists := c.topicToFns[oldSub.Event]
 	if exists {
 		delete(fnSet, oldSub.FunctionID)
 
 		if len(fnSet) == 0 {
-			delete(c.topicToFns, oldSub.TopicID)
+			delete(c.topicToFns, oldSub.Event)
 		}
 	}
 }

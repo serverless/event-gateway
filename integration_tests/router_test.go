@@ -57,13 +57,13 @@ func TestFunctionDefAndCalling(t *testing.T) {
 
 	post(testAPIServer.URL+"/v1/subscriptions", pubsub.Subscription{
 		FunctionID: functions.FunctionID("super smiley function"),
-		TopicID:    "http",
+		Event:      "http",
 		Method:     "POST",
 		Path:       "/smilez",
 	})
 
 	select {
-	case <-router.WaitForEndpoint(pubsub.EndpointID("POST-smilez")):
+	case <-router.WaitForEndpoint(pubsub.NewEndpointID("POST", "/smilez")):
 	case <-time.After(5 * time.Second):
 		panic("timed out waiting for endpoint to be configured!")
 	}

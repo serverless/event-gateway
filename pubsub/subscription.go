@@ -2,27 +2,33 @@ package pubsub
 
 import (
 	"fmt"
+	"net/url"
+	"path"
 
 	"github.com/serverless/event-gateway/functions"
+	validator "gopkg.in/go-playground/validator.v9"
 )
 
 // SubscriptionID uniquely identifies a subscription
 type SubscriptionID string
 
+// EventHTTP represents sync HTTP subscription
+const EventHTTP = "http"
+
 // Subscription maps from Topic to Function
 type Subscription struct {
 	ID         SubscriptionID       `json:"subscriptionId"`
-	TopicID    TopicID              `json:"event" validate:"required"`
+	Event      TopicID              `json:"event" validate:"required,alphanum,httpevent"`
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
 	Method     string               `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
-	Path       string               `json:"path,omitempty"`
+	Path       string               `json:"path,omitempty" validate:"omitempty,urlpath"`
 }
 
 func newSubscriptionID(s *Subscription) SubscriptionID {
 	if s.Method == "" && s.Path == "" {
-		return SubscriptionID(string(s.TopicID) + "-" + string(s.FunctionID))
+		return SubscriptionID(string(s.Event) + "-" + string(s.FunctionID))
 	}
-	return SubscriptionID(string(s.TopicID) + "-" + s.Method + "-" + s.Path)
+	return SubscriptionID(string(s.Event) + "-" + s.Method + "-" + url.PathEscape(s.Path))
 }
 
 // ErrorSubscriptionAlreadyExists occurs when subscription with the same ID already exists.
@@ -59,4 +65,24 @@ type ErrorFunctionNotFound struct {
 
 func (e ErrorFunctionNotFound) Error() string {
 	return fmt.Sprintf("Function %q not found.", e.functionID)
+}
+
+// httpEventValidator validates if "http" event subscription has path and method specified
+func httpEventValidator(fl validator.FieldLevel) bool {
+	top := fl.Top().Elem()
+	method := top.FieldByName("Method").String()
+	path := top.FieldByName("Path").String()
+
+	if fl.Field().String() == "http" {
+		if method == "" || path == "" {
+			return false
+		}
+	}
+
+	return true
+}
+
+// urlPathValidator validates if field contains URL path
+func urlPathValidator(fl validator.FieldLevel) bool {
+	return path.IsAbs(fl.Field().String())
 }

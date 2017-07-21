@@ -64,9 +64,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusAccepted)
 	} else {
-		path := strings.TrimPrefix(r.URL.EscapedPath(), "/")
-		id := strings.ToUpper(r.Method) + "-" + path
-		endpointID := pubsub.EndpointID(id)
+		endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
 		res, err := router.callEndpoint(endpointID, reqBuf)

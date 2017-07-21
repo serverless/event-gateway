@@ -312,8 +312,8 @@ Request:
 
 - `event` - `string` - event name
 - `functionId` - `string` - ID of function or function group to receive events
-- `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
-- `path` - `string` - optionally, in case of `http` event, path that accepts requests
+- `method` - `string` - optionally, in case of `http` event, uppercase HTTP method that accepts requests
+- `path` - `string` - optionally, in case of `http` event, path that accepts requests, it starts with "/"
 
 Response:
 
