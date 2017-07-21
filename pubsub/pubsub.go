@@ -3,7 +3,6 @@ package pubsub
 import (
 	"bytes"
 	"encoding/json"
-	"strings"
 
 	"github.com/docker/libkv/store"
 	"github.com/serverless/event-gateway/functions"
@@ -23,6 +22,8 @@ type PubSub struct {
 // CreateSubscription creates subscription.
 func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 	validate := validator.New()
+	validate.RegisterValidation("httpevent", httpEventValidator)
+	validate.RegisterValidation("urlpath", urlPathValidator)
 	err := validate.Struct(s)
 	if err != nil {
 		return nil, &ErrorSubscriptionValidation{err}
@@ -37,13 +38,13 @@ func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 		}
 	}
 
-	if s.TopicID == "http" {
-		err = ps.createEndpoint(s.FunctionID, s.Method, strings.TrimPrefix(s.Path, "/"))
+	if s.Event == EventHTTP {
+		err = ps.createEndpoint(s.FunctionID, s.Method, s.Path)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		err = ps.ensureTopic(s.TopicID)
+		err = ps.ensureTopic(s.Event)
 		if err != nil {
 			return nil, err
 		}
@@ -82,11 +83,11 @@ func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
 		return &ErrorSubscriptionNotFound{sub.ID}
 	}
 
-	if sub.TopicID == "http" {
+	if sub.Event == EventHTTP {
 		return ps.deleteEndpoint(sub.Method, sub.Path)
 	}
 
-	return ps.deleteEmptyTopic(sub.TopicID)
+	return ps.deleteEmptyTopic(sub.Event)
 }
 
 // GetAllSubscriptions returns array of all Subscription.
@@ -156,7 +157,7 @@ func (ps PubSub) deleteEmptyTopic(id TopicID) error {
 	}
 
 	for _, sub := range subs {
-		if sub.TopicID == id {
+		if sub.Event == id {
 			return nil
 		}
 	}
@@ -171,7 +172,7 @@ func (ps PubSub) deleteEmptyTopic(id TopicID) error {
 // createEndpoint creates endpoint.
 func (ps PubSub) createEndpoint(functionID functions.FunctionID, method, path string) error {
 	e := &Endpoint{
-		ID:         newEndpointID(method, path),
+		ID:         NewEndpointID(method, path),
 		FunctionID: functionID,
 		Method:     method,
 		Path:       path,
@@ -192,7 +193,7 @@ func (ps PubSub) createEndpoint(functionID functions.FunctionID, method, path st
 
 // deleteEndpoint deletes endpoint.
 func (ps PubSub) deleteEndpoint(method, path string) error {
-	err := ps.EndpointsDB.Delete(string(newEndpointID(method, path)))
+	err := ps.EndpointsDB.Delete(string(NewEndpointID(method, path)))
 	if err != nil {
 		return err
 	}

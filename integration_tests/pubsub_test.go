@@ -63,7 +63,7 @@ func TestFunctionPubSub(t *testing.T) {
 
 	post(testAPIServer.URL+"/v1/subscriptions", pubsub.Subscription{
 		FunctionID: subscriberFnID,
-		TopicID:    pubsub.TopicID(eventName),
+		Event:      pubsub.TopicID(eventName),
 	})
 
 	wait5Seconds(router.WaitForSubscriber(pubsub.TopicID(eventName)),

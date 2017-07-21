@@ -1,6 +1,10 @@
 package pubsub
 
-import "github.com/serverless/event-gateway/functions"
+import (
+	"net/url"
+
+	"github.com/serverless/event-gateway/functions"
+)
 
 // EndpointID uniquely identifies an endpoint
 type EndpointID string
@@ -13,6 +17,7 @@ type Endpoint struct {
 	Path       string               `json:"path"`
 }
 
-func newEndpointID(method, path string) EndpointID {
-	return EndpointID(method + "-" + path)
+// NewEndpointID returns Endpoint ID
+func NewEndpointID(method, path string) EndpointID {
+	return EndpointID(method + "-" + url.PathEscape(path))
 }
