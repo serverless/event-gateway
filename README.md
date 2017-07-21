@@ -255,7 +255,7 @@ functions:
 
 ## Configuration API
 
-The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:8080` port.
+The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:8081` port.
 
 ### Function discovery
 
