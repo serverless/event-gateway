@@ -1,7 +1,4 @@
 event-gateway
-.terraform
-terraform.tfstate.backup
-bin
 vendor
 *.swp
 *.swo
