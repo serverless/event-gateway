@@ -52,6 +52,31 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 	return &fn, nil
 }
 
+// GetAllFunctions returns an array of all Function
+func (f *Functions) GetAllFunctions() ([]*Function, error) {
+    fns := []*Function{}
+
+    kvs, err := f.DB.List("")
+    // ABD: Should this return the empty list of functions, or the error?
+    // Compare to https://github.com/serverless/event-gateway/blob/29d16c3fa36ad8927c90019e5f601e91a9285a9c/pubsub/pubsub.go#L98-L100
+    if err != nil {
+        return nil, err
+    }
+
+    for _, kv := range kvs {
+        fn := &Function{}
+        dec := json.NewDecoder(bytes.NewReader(kv.Value))
+        err = dec.Decode(fn)
+        if err != nil {
+            return nil, err
+        }
+
+        fns = append(fns, fn)
+    }
+
+    return fns, nil
+}
+
 // DeleteFunction deletes function from configuration.
 func (f *Functions) DeleteFunction(name string) error {
 	err := f.DB.Delete(name)
