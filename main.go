@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 	"strings"
 	"time"
 
@@ -17,11 +18,14 @@ import (
 	"github.com/serverless/event-gateway/util"
 )
 
+var version = "master"
+
 func init() {
 	etcd.Register()
 }
 
 func main() {
+	showVersion := flag.Bool("version", false, "Show version.")
 	verbose := flag.Bool("verbose", false, "Verbose logging.")
 	dbHosts := flag.String("db-hosts", "127.0.0.1:2379", "Comma-separated list of database hosts to connect to.")
 	embedMaster := flag.Bool("dev", false, "Run embedded etcd for testing.")
@@ -35,6 +39,11 @@ func main() {
 	gatewayTLSKey := flag.String("gateway-tls-key", "", "Path to gateway TLS key file.")
 	gatewayPort := flag.Uint("gateway-port", 8080, "Port to serve configured endpoints on.")
 	flag.Parse()
+
+	if *showVersion {
+		println(version)
+		os.Exit(0)
+	}
 
 	dbHostStrings := strings.Split(*dbHosts, ",")
 
