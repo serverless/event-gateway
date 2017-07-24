@@ -80,7 +80,6 @@ Discover and call serverless functions from anything that can reach the Event Ga
 
 - FaaS functions (AWS Lambda, Google Cloud Functions)
 - HTTP endpoints with an HTTP method specified (e.g. GET http://example.com/function)
-- group functions
 
 #### Example: Register An AWS Lambda Function
 
@@ -113,64 +112,6 @@ functions:
 fdk.invoke("greeter", {
   name: "John"
 })
-```
-
-#### Group Functions
-
-A group function has multiple backing functions, each with a "weight" value that determines the proportional amount of traffic each should receive. If all are the same, they all receive requests equally. If one is 99 and another is 1, 99% of traffic will be sent to the one with a weight of 99.
-
-The backing function is a function registered in the event gateway.
-
-#### Example: Blue/Green Deployment
-
-```javascript
-// Assuming that we've already registered two functions "hello-world-v1" and "hello-world-v2"
-
-fdk.registerFunction("hello-world", {
-  group: {
-    functions: [{
-      functionId: "hello-world-v1",
-      weight: 99
-    }, {
-      functionId: "hello-world-v2",
-      weight: 1
-    }]
-  }
-})
-
-// After some time we decide to route more traffic to v2 version (50%/50%)
-
-fdk.updateFunction("hello-world-group", {
-  group: {
-    functions: [{
-      functionId: "hello-world-v1",
-      weight: 50
-    }, {
-      functionId: "hello-world-v2",
-      weight: 50
-    }]
-  }
-})
-```
-
-#### Example: Framework Integration
-
-```yaml
-functions:
-  helloa:
-    handler: hello.a
-  hellob:
-    handler: hello.b
-  hello:
-    handler:
-      - helloa
-          weight: 10
-      - hellob
-          weight: 90
-    events:
-      - http:
-          path: /hello
-          method: get
 ```
 
 ### Subscriptions
@@ -330,32 +271,26 @@ The Event Gateway exposes a RESTful configuration API. By default Configuration 
 Request:
 
 - `functionId` - `string` - required, function name
-
-Only one of the following function type MUST be provided.
-
-- `awsLambda` - `object` - AWS Lambda properties:
-  - `arn` - `string` - AWS ARN identifier
-  - `region` - `string` - region name
-  - `accessKeyID` - `string` - AWS API key ID
-  - `secretAccessKey` - `string` - AWS API key
-- `gcloudFunction` - `object` - Google Cloud Function properties:
-  - `name` - `string` - function name
-  - `region` - `string` - region name
-  - `serviceAccountKey` - `json` - Google Service Account key
-- `group` - `object` - Group function properties:
-  - `functions` - `array` of `object` - backing functions
-    - `functionId` - `string` - function ID
-    - `weight` - `number` - proportion of requests destined to this function, defaulting to 1
-- `http` - `object` - HTTP function properties:
-  - `url` - `string` - the URL of an http or https remote endpoint
+- `provider` - `object` - required, provider specific information about a function, depends on type:
+  - for AWS Lambda:
+    - `type` - `string` - provider type: `awslambda`
+    - `arn` - `string` - AWS ARN identifier
+    - `region` - `string` - region name
+    - `awsAccessKeyID` - `string` - AWS API key ID
+    - `awsSecretAccessKey` - `string` - AWS API key
+  - for Google Cloud Functions:
+    - `type` - `string` - provider type: `gcloudfunction`
+    - `name` - `string` - function name
+    - `region` - `string` - region name
+    - `gcloudServiceAccountKey` - `json` - Google Service Account key
+  - for HTTP function:
+    - `type` - `string` - provider type: `http`
+    - `url` - `string` - the URL of an http or https remote endpoint  
 
 Response:
 
 - `functionId` - `string` - function name
-- `awsLambda` - `object` - AWS Lambda properties
-- `gcloudFunction` - `object` - Google Cloud Function properties
-- `group` - `object` - Group function properties
-- `http` - `object` - HTTP function properties
+- `provider` - `object` - provider specific information about a function
 
 #### Delete function
 
@@ -363,7 +298,7 @@ Response:
 
 Notes:
 
-- used to delete all types of functions, including groups
+- used to delete all types of functions
 - fails if the function ID is currently in-use by a subscription
 
 ### Subscriptions
@@ -375,7 +310,7 @@ Notes:
 Request:
 
 - `event` - `string` - event name
-- `functionId` - `string` - ID of function or function group to receive events
+- `functionId` - `string` - ID of function to receive events
 - `method` - `string` - optionally, in case of `http` event, uppercase HTTP method that accepts requests
 - `path` - `string` - optionally, in case of `http` event, path that accepts requests, it starts with "/"
 
@@ -383,7 +318,7 @@ Response:
 
 - `subscriptionId` - `string` - subscription ID, which is event name + function ID, e.g. `newusers-userProcessGroup`
 - `event` - `string` - event name
-- `functionId` - ID of function or function group
+- `functionId` - ID of function
 - `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
 - `path` - `string` - optionally, in case of `http` event, path that accepts requests
 
@@ -400,7 +335,7 @@ Response:
 - `subscriptions` - `array` of `object` - subscriptions
   - `subscriptionId` - `string` - subscription ID
   - `event` - `string` - event name
-  - `functionId` - ID of function or function group
+  - `functionId` - ID of function
   - `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
   - `path` - `string` - optionally, in case of `http` event, path that accepts requests
 
