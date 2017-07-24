@@ -57,8 +57,6 @@ func (f *Functions) GetAllFunctions() ([]*Function, error) {
     fns := []*Function{}
 
     kvs, err := f.DB.List("")
-    // ABD: Should this return the empty list of functions, or the error?
-    // Compare to https://github.com/serverless/event-gateway/blob/29d16c3fa36ad8927c90019e5f601e91a9285a9c/pubsub/pubsub.go#L98-L100
     if err != nil {
         return nil, err
     }
