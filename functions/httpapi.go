@@ -16,6 +16,7 @@ type HTTPAPI struct {
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/functions/:name", h.getFunction)
+	router.GET("/v1/functions", h.getFunctions)
 	router.POST("/v1/functions", h.registerFunction)
 	router.DELETE("/v1/functions/:name", h.deleteFunction)
 }
@@ -36,6 +37,23 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 	} else {
 		encoder.Encode(fn)
 	}
+}
+
+func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	fns, err := h.Functions.GetAllFunctions()
+	if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        encoder.Encode(&httpapi.Error{Error: err.Error()})
+	} else {
+		encoder.Encode(&functions{fns})
+	}
+}
+
+type functions struct {
+    Functions []*Function `json:"functions"`
 }
 
 func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

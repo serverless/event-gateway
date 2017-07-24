@@ -52,6 +52,29 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 	return &fn, nil
 }
 
+// GetAllFunctions returns an array of all Function
+func (f *Functions) GetAllFunctions() ([]*Function, error) {
+    fns := []*Function{}
+
+    kvs, err := f.DB.List("")
+    if err != nil {
+        return nil, err
+    }
+
+    for _, kv := range kvs {
+        fn := &Function{}
+        dec := json.NewDecoder(bytes.NewReader(kv.Value))
+        err = dec.Decode(fn)
+        if err != nil {
+            return nil, err
+        }
+
+        fns = append(fns, fn)
+    }
+
+    return fns, nil
+}
+
 // DeleteFunction deletes function from configuration.
 func (f *Functions) DeleteFunction(name string) error {
 	err := f.DB.Delete(name)

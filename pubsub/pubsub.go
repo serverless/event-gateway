@@ -96,7 +96,7 @@ func (ps PubSub) GetAllSubscriptions() ([]*Subscription, error) {
 
 	kvs, err := ps.SubscriptionsDB.List("")
 	if err != nil {
-		return subs, nil
+		return nil, err
 	}
 
 	for _, kv := range kvs {
