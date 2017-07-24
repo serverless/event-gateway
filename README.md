@@ -50,6 +50,7 @@ curl --request POST \
 1. [Features](#features)
    1. [Function Discovery](#function-discovery)
    1. [Subscriptions](#subscriptions)
+1. [Events API](#events-api)
 1. [Configuration API](#configuration-api)
 1. [Architecture](#architecture)
 1. [What The Event Gateway is NOT](#what-the-event-gateway-is-not)
@@ -252,6 +253,69 @@ functions:
           path: /users
           method: GET
 ```
+
+## Events API
+
+The Event Gateway exposes an API for emitting events. By default Events API runs on `:8080` port. Events API can be used for
+emitting both custom and HTTP events.
+
+### How We Define Events
+
+All data that passes through the Event Gateway is formatted as an Event, based on our default Event schema:
+
+- **Event (Required)**:  The Event name.
+- **ID (Required)**: The Event's universally unique event ID. The Event Gateway provides this.
+- **Received (Required)**: The time (milliseconds) when the Event was received by the Event Gateway. The Event Gateway provides this.
+- **Data (Required):** All data associated with the Event should be contained in here.
+- **Encoding (Required):** The encoding method of the data. (json, text, binary, etc.)
+
+Example:
+
+```json
+{
+  "event": "myapp.subscription.created",
+  "id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
+  "received": 1500897327098,
+  "data": "{\"foo\": \"bar\"}",
+  "encoding": "json"
+}
+```
+
+### Emit a Custom Event (Async Function Invocation)
+
+`POST /_emit` with `Event` header set to event name.
+
+Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
+
+Response: HTTP status 202 - in case of success
+
+### Emit a HTTP Event
+
+Creating HTTP subscription requires `method` and `path` properties. Those properties are used to emit HTTP event.
+
+`<method> /<path>`
+
+Request: arbitrary payload, subscribed function receives an event in above schema. `data` field has following fields:
+
+```json
+{
+  "data": {
+    "headers": <request headers>,
+    "query": <request query params>,
+    "body": <request payload>
+  }
+}
+```
+
+Response: function response
+
+### Invoking a Registered Function (Sync Function Invocation)
+
+`POST /_invoke`
+
+Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
+
+Response: function response
 
 ## Configuration API
 
