@@ -301,6 +301,16 @@ Notes:
 - used to delete all types of functions
 - fails if the function ID is currently in-use by a subscription
 
+#### Get functions
+
+`GET /v1/functions`
+
+Response:
+
+- `functions` - `array` of `object` - functions:
+  - `functionId` - `string` - function name
+  - `provider` - `object` - provider specific information about a function
+
 ### Subscriptions
 
 #### Create subscription
