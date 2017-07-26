@@ -6,13 +6,21 @@ The Event Gateway combines both API Gateway and Pub/Sub functionality into a sin
 
 ## Quick Start
 
-### Running Locally (Docker)
+### Running Locally
+
+Download a binary file from the latest [release page](https://github.com/serverless/event-gateway/releases) and run `event-gateway` in `dev` mode:
 
 ```
-git clone https://github.com/serverless/event-gateway.git
+event-gateway -dev
+```
+
+Alternatively, run in Docker container:
+
+```
+git clone git@github.com:serverless/event-gateway.git
 cd event-gateway
 docker build -t event-gateway .
-docker run -p 8080:8080 -p 8081:8081 event-gateway --dev
+docker run -p 8080:8080 -p 8081:8081 event-gateway -dev
 ```
 
 ### Register a Function
