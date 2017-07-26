@@ -50,8 +50,9 @@ func TestFunctionDefAndCalling(t *testing.T) {
 	post(testAPIServer.URL+"/v1/functions",
 		functions.Function{
 			ID: functions.FunctionID("super smiley function"),
-			HTTP: &functions.HTTPProperties{
-				URL: testTargetServer.URL,
+			Provider: &functions.Provider{
+				Type: functions.HTTPEndpoint,
+				URL:  testTargetServer.URL,
 			},
 		})
 

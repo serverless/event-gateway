@@ -181,8 +181,8 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, paylo
 	}
 
 	var chosenFunction = backingFunction.ID
-	if backingFunction.Group != nil {
-		chosen, err := backingFunction.Group.Functions.Choose()
+	if backingFunction.Provider.Type == functions.Weighted {
+		chosen, err := backingFunction.Provider.Weighted.Choose()
 		if err != nil {
 			return []byte{}, err
 		}

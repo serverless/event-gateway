@@ -54,25 +54,25 @@ func (f *Functions) GetFunction(name string) (*Function, error) {
 
 // GetAllFunctions returns an array of all Function
 func (f *Functions) GetAllFunctions() ([]*Function, error) {
-    fns := []*Function{}
+	fns := []*Function{}
 
-    kvs, err := f.DB.List("")
-    if err != nil {
-        return nil, err
-    }
+	kvs, err := f.DB.List("")
+	if err != nil {
+		return nil, err
+	}
 
-    for _, kv := range kvs {
-        fn := &Function{}
-        dec := json.NewDecoder(bytes.NewReader(kv.Value))
-        err = dec.Decode(fn)
-        if err != nil {
-            return nil, err
-        }
+	for _, kv := range kvs {
+		fn := &Function{}
+		dec := json.NewDecoder(bytes.NewReader(kv.Value))
+		err = dec.Decode(fn)
+		if err != nil {
+			return nil, err
+		}
 
-        fns = append(fns, fn)
-    }
+		fns = append(fns, fn)
+	}
 
-    return fns, nil
+	return fns, nil
 }
 
 // DeleteFunction deletes function from configuration.
@@ -84,59 +84,26 @@ func (f *Functions) DeleteFunction(name string) error {
 	return nil
 }
 
-func (fn *Function) targetCount() int {
-	count := 0
-	if fn.AWSLambda != nil {
-		count++
-	}
-	if fn.AzureFunction != nil {
-		count++
-	}
-	if fn.GCloudFunction != nil {
-		count++
-	}
-	if fn.OpenWhiskAction != nil {
-		count++
-	}
-	if fn.Group != nil {
-		count++
-	}
-	if fn.HTTP != nil {
-		count++
-	}
-	return count
-}
-
 func (f *Functions) validateFunction(fn *Function) error {
-	if fn.Group != nil {
-		if len(fn.Group.Functions) == 0 {
+	validate := validator.New()
+	err := validate.Struct(fn)
+	if err != nil {
+		return &ErrorValidation{err}
+	}
+
+	if fn.Provider.Type == Weighted {
+		if len(fn.Provider.Weighted) == 0 {
 			return &ErrorNoFunctionsProvided{}
 		}
 
 		weightTotal := uint(0)
-		for _, wf := range fn.Group.Functions {
+		for _, wf := range fn.Provider.Weighted {
 			weightTotal += wf.Weight
 		}
 
 		if weightTotal < 1 {
 			return &ErrorTotalFunctionWeightsZero{}
 		}
-	}
-
-	count := fn.targetCount()
-
-	if count == 0 {
-		return &ErrorPropertiesNotSpecified{}
-	}
-
-	if count > 1 {
-		return &ErrorMoreThanOneFunctionTypeSpecified{}
-	}
-
-	validate := validator.New()
-	err := validate.Struct(fn)
-	if err != nil {
-		return &ErrorValidation{err}
 	}
 
 	return nil

@@ -1,11 +1,20 @@
 package functions
 
 import (
+	"bytes"
 	"errors"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/lambda"
 )
 
-// Caller tries to send a payload to a target function
+// Caller sends a payload to a target function
 type Caller interface {
 	Call([]byte) ([]byte, error)
 }
@@ -13,58 +22,51 @@ type Caller interface {
 // FunctionID uniquely identifies a function
 type FunctionID string
 
-// FunctionType represents what kind of function this is.
-type FunctionType uint
-
 // Function repesents a deployed on one of the supported providers.
 type Function struct {
-	ID FunctionID `json:"functionId"`
+	ID       FunctionID `json:"functionId"`
+	Provider *Provider  `json:"provider" validate:"required"`
+}
 
-	// Only one of the following properties can be defined.
-	AWSLambda       *AWSLambdaProperties       `json:"awsLambda,omitempty"`
-	GCloudFunction  *GCloudFunctionProperties  `json:"gcloudFunction,omitempty"`
-	AzureFunction   *AzureFunctionProperties   `json:"azureFunction,omitempty"`
-	OpenWhiskAction *OpenWhiskActionProperties `json:"openWhiskAction,omitempty"`
-	Group           *GroupProperties           `json:"group,omitempty"`
-	HTTP            *HTTPProperties            `json:"http,omitempty"`
+// ProviderType represents what kind of function provider this is.
+type ProviderType string
+
+const (
+	// AWSLambda represents AWS Lambda function.
+	AWSLambda ProviderType = "awslambda"
+	// Weighted contains a set of other functions and their load balancing weights.
+	Weighted ProviderType = "weighted"
+	// HTTPEndpoint represents function defined as HTTP endpoint.
+	HTTPEndpoint ProviderType = "http"
+)
+
+// Provider provides provider specific info about a function
+type Provider struct {
+	Type ProviderType `json:"type" validate:"required,eq=awslambda|eq=http|eq=weighted"`
+
+	// AWS Lambda function
+	ARN                string `json:"arn,omitempty"`
+	Region             string `json:"region,omitempty"`
+	AWSAccessKeyID     string `json:"awsAccessKeyID,omitempty"`
+	AWSSecretAccessKey string `json:"awsSecretAccessKey,omitempty"`
+
+	// Group weighted function
+	Weighted WeightedFunctions `json:"weighted,omitempty"`
+
+	// HTTP function
+	URL string `json:"url,omitempty" validate:"omitempty,url"`
 }
 
 // Call tries to send a payload to a target function
 func (f *Function) Call(payload []byte) ([]byte, error) {
-	if f.AWSLambda != nil {
-		return f.AWSLambda.Call(payload)
-	} else if f.HTTP != nil {
-		return f.HTTP.Call(payload)
+	switch f.Provider.Type {
+	case AWSLambda:
+		return f.callAWSLambda(payload)
+	case HTTPEndpoint:
+		return f.callHTTP(payload)
 	}
+
 	return []byte{}, errors.New("calling this kind of function is not implemented")
-}
-
-// GCloudFunctionProperties contains the configuration required to call a Google Cloud Function.
-type GCloudFunctionProperties struct {
-	Name              string `json:"name" validate:"required"`
-	Region            string `json:"region" validate:"required"`
-	ServiceAccountKey string `json:"serviceAccountKey" validate:"required"`
-}
-
-// AzureFunctionProperties contains the configuration required to call an Azure Function.
-type AzureFunctionProperties struct {
-	Name              string `json:"name" validate:"required"`
-	AppName           string `json:"appName" validate:"required"`
-	FunctionsAdminKey string `json:"functionsAdminKey" validate:"required"`
-}
-
-// OpenWhiskActionProperties contains the configuration required to call an OpenWhisk action.
-type OpenWhiskActionProperties struct {
-	Name             string `json:"name" validate:"required"`
-	Namespace        string `json:"namespace" validate:"required"`
-	APIHost          string `json:"apiHost" validate:"required"`
-	Auth             string `json:"auth" validate:"required"`
-	APIGWAccessToken string `json:"apiGwAccessToken" validate:"required"`
-}
-
-// GroupProperties contains a set of other functions and their load balancing weights.
-type GroupProperties struct {
-	Functions WeightedFunctions `json:"functions" validate:"required"`
 }
 
 // WeightedFunction is a function along with its load-balacing proportional weight.
@@ -107,7 +109,28 @@ func (w WeightedFunctions) Choose() (FunctionID, error) {
 	return chosenFunction, nil
 }
 
-// HTTPProperties contains the configuration required to call an http endpoint.
-type HTTPProperties struct {
-	URL string `json:"url" validate:"required,url"`
+func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
+	creds := credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, "")
+	awslambda := lambda.New(session.New(aws.NewConfig().WithRegion(f.Provider.Region).WithCredentials(creds)))
+
+	invokeOutput, err := awslambda.Invoke(&lambda.InvokeInput{
+		FunctionName: &f.Provider.ARN,
+		Payload:      payload,
+	})
+
+	return invokeOutput.Payload, err
+}
+
+func (f *Function) callHTTP(payload []byte) ([]byte, error) {
+	client := http.Client{
+		Timeout: time.Second * 5,
+	}
+
+	resp, err := client.Post(f.Provider.URL, "application/json", bytes.NewReader(payload))
+	if err != nil {
+		return []byte{}, err
+	}
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
 }

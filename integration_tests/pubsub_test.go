@@ -53,8 +53,9 @@ func TestFunctionPubSub(t *testing.T) {
 	post(testAPIServer.URL+"/v1/functions",
 		functions.Function{
 			ID: subscriberFnID,
-			HTTP: &functions.HTTPProperties{
-				URL: testSubscriberServer.URL,
+			Provider: &functions.Provider{
+				Type: functions.HTTPEndpoint,
+				URL:  testSubscriberServer.URL,
 			},
 		})
 
