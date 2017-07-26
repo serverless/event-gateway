@@ -29,7 +29,7 @@ docker run -p 8080:8080 -p 8081:8081 event-gateway -dev
 curl --request POST \
   --url http://127.0.0.1:8081/v1/functions \
   --header 'content-type: application/json' \
-  --data '{"functionId": "hello", "awsLambda":{"arn": "<Function AWS ARN>", "region": "<Region>", "accessKeyId": "<Access Key ID>", "secretAccessKey": "<Secret Access Key>"}}'
+  --data '{"functionId": "hello", "provider":{"type": "awslambda", "arn": "<Function AWS ARN>", "region": "<Region>", "accessKeyId": "<Access Key ID>", "secretAccessKey": "<Secret Access Key>"}}'
 ```
 
 ### Subscribe to an Event
@@ -93,7 +93,8 @@ Discover and call serverless functions from anything that can reach the Event Ga
 
 ```javascript
 fdk.registerFunction("hello-world", {
-  awsLambda: {
+  provider: {
+    type: "awslambda",
     arn: "xxx",
     region: "us-west-2",
     accessKeyId: "xxx",
