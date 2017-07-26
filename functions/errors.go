@@ -6,11 +6,11 @@ import (
 
 // ErrorNotFound occurs when function couldn't been found in the discovery.
 type ErrorNotFound struct {
-	name string
+	ID FunctionID
 }
 
 func (e ErrorNotFound) Error() string {
-	return fmt.Sprintf("Function %q not found.", e.name)
+	return fmt.Sprintf("Function %q not found.", string(e.ID))
 }
 
 // ErrorAlreadyRegistered occurs when function with specified name is already registered..
@@ -22,23 +22,9 @@ func (e ErrorAlreadyRegistered) Error() string {
 	return fmt.Sprintf("Function %q already registered.", string(e.ID))
 }
 
-// ErrorNoFunctionsProvided occurs when a weighted function is created without any target functions.
-type ErrorNoFunctionsProvided struct{}
-
-func (e ErrorNoFunctionsProvided) Error() string {
-	return "No backing functions provided."
-}
-
-// ErrorTotalFunctionWeightsZero occurs when target functions provided to a weighted function have a total weight of 0.
-type ErrorTotalFunctionWeightsZero struct{}
-
-func (e ErrorTotalFunctionWeightsZero) Error() string {
-	return "Function weights sum to zero."
-}
-
 // ErrorValidation occurs when function payload doesn't validate.
 type ErrorValidation struct {
-	original error
+	original string
 }
 
 func (e ErrorValidation) Error() string {

@@ -25,7 +25,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fn, err := h.Functions.GetFunction(params.ByName("name"))
+	fn, err := h.Functions.GetFunction(FunctionID(params.ByName("name")))
 	if err != nil {
 		if _, ok := err.(*ErrorNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -68,9 +68,7 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 	if err != nil {
 		if _, ok := err.(*ErrorValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*ErrorNoFunctionsProvided); ok {
-			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*ErrorTotalFunctionWeightsZero); ok {
+		} else if _, ok := err.(*ErrorAlreadyRegistered); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -86,7 +84,7 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.Functions.DeleteFunction(params.ByName("name"))
+	err := h.Functions.DeleteFunction(FunctionID(params.ByName("name")))
 	if err != nil {
 		if _, ok := err.(*ErrorNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)

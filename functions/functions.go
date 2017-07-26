@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 
+	validator "gopkg.in/go-playground/validator.v9"
+
 	"go.uber.org/zap"
 
 	"github.com/docker/libkv/store"
-	validator "gopkg.in/go-playground/validator.v9"
 )
 
 // Functions implements Registry.
@@ -41,10 +42,10 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 }
 
 // GetFunction returns function from configuration.
-func (f *Functions) GetFunction(name string) (*Function, error) {
-	kv, err := f.DB.Get(name)
+func (f *Functions) GetFunction(id FunctionID) (*Function, error) {
+	kv, err := f.DB.Get(string(id))
 	if err != nil {
-		return nil, &ErrorNotFound{name}
+		return nil, &ErrorNotFound{id}
 	}
 
 	fn := Function{}
@@ -81,10 +82,10 @@ func (f *Functions) GetAllFunctions() ([]*Function, error) {
 }
 
 // DeleteFunction deletes function from configuration.
-func (f *Functions) DeleteFunction(name string) error {
-	err := f.DB.Delete(name)
+func (f *Functions) DeleteFunction(id FunctionID) error {
+	err := f.DB.Delete(string(id))
 	if err != nil {
-		return &ErrorNotFound{name}
+		return &ErrorNotFound{id}
 	}
 	return nil
 }
@@ -93,12 +94,24 @@ func (f *Functions) validateFunction(fn *Function) error {
 	validate := validator.New()
 	err := validate.Struct(fn)
 	if err != nil {
-		return &ErrorValidation{err}
+		return &ErrorValidation{err.Error()}
+	}
+
+	if fn.Provider.Type == AWSLambda {
+		if fn.Provider.ARN == "" || fn.Provider.AWSAccessKeyID == "" || fn.Provider.AWSSecretAccessKey == "" || fn.Provider.Region == "" {
+			return &ErrorValidation{"Missing required fields for AWS Lambda function."}
+		}
+	}
+
+	if fn.Provider.Type == HTTPEndpoint {
+		if fn.Provider.URL == "" {
+			return &ErrorValidation{"Missing required fields for HTTP endpoint."}
+		}
 	}
 
 	if fn.Provider.Type == Weighted {
 		if len(fn.Provider.Weighted) == 0 {
-			return &ErrorNoFunctionsProvided{}
+			return &ErrorValidation{"Missing required fields for weighted function."}
 		}
 
 		weightTotal := uint(0)
@@ -107,7 +120,7 @@ func (f *Functions) validateFunction(fn *Function) error {
 		}
 
 		if weightTotal < 1 {
-			return &ErrorTotalFunctionWeightsZero{}
+			return &ErrorValidation{"Function weights sum to zero."}
 		}
 	}
 

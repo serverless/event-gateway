@@ -21,12 +21,9 @@ type PubSub struct {
 
 // CreateSubscription creates subscription.
 func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
-	validate := validator.New()
-	validate.RegisterValidation("httpevent", httpEventValidator)
-	validate.RegisterValidation("urlpath", urlPathValidator)
-	err := validate.Struct(s)
+	err := ps.validateSubscription(s)
 	if err != nil {
-		return nil, &ErrorSubscriptionValidation{err}
+		return nil, err
 	}
 
 	s.ID = newSubscriptionID(s)
@@ -197,5 +194,22 @@ func (ps PubSub) deleteEndpoint(method, path string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (ps PubSub) validateSubscription(s *Subscription) error {
+	validate := validator.New()
+	validate.RegisterValidation("urlpath", urlPathValidator)
+	err := validate.Struct(s)
+	if err != nil {
+		return &ErrorSubscriptionValidation{err.Error()}
+	}
+
+	if s.Event == EventHTTP {
+		if s.Method == "" || s.Path == "" {
+			return &ErrorSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
+		}
+	}
+
 	return nil
 }
