@@ -103,25 +103,29 @@ func (f *Functions) validateFunction(fn *Function) error {
 		}
 	}
 
-	if fn.Provider.Type == HTTPEndpoint {
-		if fn.Provider.URL == "" {
-			return &ErrorValidation{"Missing required fields for HTTP endpoint."}
-		}
+	if fn.Provider.Type == HTTPEndpoint && fn.Provider.URL == "" {
+		return &ErrorValidation{"Missing required fields for HTTP endpoint."}
 	}
 
 	if fn.Provider.Type == Weighted {
-		if len(fn.Provider.Weighted) == 0 {
-			return &ErrorValidation{"Missing required fields for weighted function."}
-		}
+		return f.validateWeighted(fn)
+	}
 
-		weightTotal := uint(0)
-		for _, wf := range fn.Provider.Weighted {
-			weightTotal += wf.Weight
-		}
+	return nil
+}
 
-		if weightTotal < 1 {
-			return &ErrorValidation{"Function weights sum to zero."}
-		}
+func (f *Functions) validateWeighted(fn *Function) error {
+	if len(fn.Provider.Weighted) == 0 {
+		return &ErrorValidation{"Missing required fields for weighted function."}
+	}
+
+	weightTotal := uint(0)
+	for _, wf := range fn.Provider.Weighted {
+		weightTotal += wf.Weight
+	}
+
+	if weightTotal < 1 {
+		return &ErrorValidation{"Function weights sum to zero."}
 	}
 
 	return nil

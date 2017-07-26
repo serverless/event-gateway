@@ -159,11 +159,7 @@ func (ps PubSub) deleteEmptyTopic(id TopicID) error {
 		}
 	}
 
-	err = ps.TopicsDB.Delete(string(id))
-	if err != nil {
-		return err
-	}
-	return nil
+	return ps.TopicsDB.Delete(string(id))
 }
 
 // createEndpoint creates endpoint.
