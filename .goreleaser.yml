@@ -1,0 +1,8 @@
+builds:
+  - goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - 386
+      - amd64

@@ -15,6 +15,11 @@ script:
 - gometalinter --install --force
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --skip=mock ./...
 - go test -race $(glide novendor)
+after_success:
+- test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 notifications:
   email:
   - platform@serverless.com
+env:
+  global:
+    secure: jZKRs8Gbxwuk40/Z6+KrppHC3B/xtDwFKlU/w5nbtpEE5VrDu6GVoC4bwJiRT1nsVDeDQaAtsyHA4B4ntj6Smbs18dn+POE8U2Tx9MNGmKN7weWlOq9Tpv468vown8/gOgt5TQTpdMg3aWzWA5vRt9f4pJwiWR5prS6fPzLTBwkT7bPixMdHG/HQT5PnZodViCNgcXKRsx0tcr5KwJVFNmdlivdMRj/ltpm+axT2X7eKC4tBZDTv7QFRzlEqcgdZtf00fQ1DamVK032biVZIfqNUTaHo/Yuuhl2zDVreNA3bvR3R1ZKtZAea5M+yFN4zlJNX3W4L8dA+wCtKS39CLhIdPKzIc8fYKj76JLKJj6qkZLH/rXfWXtvZLcr43Ro8IRPG4AWqA/7fK0/8f6st6SEs6tTg1vv4tnFmo//4VUppbxn3J8xo3pyh2BCOtqksMQyo2EBxknuqUae6cYgjxFYA/csD6mNdapGq3A2KKu1BNOATlYda54p7ju4pIBjFyG8NtKD0ZMT2VtnnMqz6Mu7X78U3qouvpoF5idLCo8nlp1ZIVDBoU2Llq9O3ExyopCHvwSLUZM/wFJEYy/AZK0VWGajRHLYJPHEWyKKuymZg53m6Yoxw8P4A/8pGxDdkdtqTgrrps3GhZoerIfg6stmbOBSR7xm7RqCxAkPlFgg=
