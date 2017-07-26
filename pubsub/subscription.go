@@ -18,7 +18,7 @@ const EventHTTP = "http"
 // Subscription maps from Topic to Function
 type Subscription struct {
 	ID         SubscriptionID       `json:"subscriptionId"`
-	Event      TopicID              `json:"event" validate:"required,alphanum,httpevent"`
+	Event      TopicID              `json:"event" validate:"required,alphanum"`
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
 	Method     string               `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
 	Path       string               `json:"path,omitempty" validate:"omitempty,urlpath"`
@@ -42,7 +42,7 @@ func (e ErrorSubscriptionAlreadyExists) Error() string {
 
 // ErrorSubscriptionValidation occurs when subscription payload doesn't validate.
 type ErrorSubscriptionValidation struct {
-	original error
+	original string
 }
 
 func (e ErrorSubscriptionValidation) Error() string {
@@ -65,21 +65,6 @@ type ErrorFunctionNotFound struct {
 
 func (e ErrorFunctionNotFound) Error() string {
 	return fmt.Sprintf("Function %q not found.", e.functionID)
-}
-
-// httpEventValidator validates if "http" event subscription has path and method specified
-func httpEventValidator(fl validator.FieldLevel) bool {
-	top := fl.Top().Elem()
-	method := top.FieldByName("Method").String()
-	path := top.FieldByName("Path").String()
-
-	if fl.Field().String() == "http" {
-		if method == "" || path == "" {
-			return false
-		}
-	}
-
-	return true
 }
 
 // urlPathValidator validates if field contains URL path
