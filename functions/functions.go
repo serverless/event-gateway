@@ -18,7 +18,12 @@ type Functions struct {
 
 // RegisterFunction registers function in configuration.
 func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
-	if err := f.validateFunction(fn); err != nil {
+	_, err := f.DB.Get(string(fn.ID))
+	if err == nil {
+		return nil, &ErrorAlreadyRegistered{fn.ID}
+	}
+
+	if err = f.validateFunction(fn); err != nil {
 		return nil, err
 	}
 

@@ -13,6 +13,15 @@ func (e ErrorNotFound) Error() string {
 	return fmt.Sprintf("Function %q not found.", e.name)
 }
 
+// ErrorAlreadyRegistered occurs when function with specified name is already registered..
+type ErrorAlreadyRegistered struct {
+	ID FunctionID
+}
+
+func (e ErrorAlreadyRegistered) Error() string {
+	return fmt.Sprintf("Function %q already registered.", string(e.ID))
+}
+
 // ErrorNoFunctionsProvided occurs when a weighted function is created without any target functions.
 type ErrorNoFunctionsProvided struct{}
 
