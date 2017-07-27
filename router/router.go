@@ -55,10 +55,10 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	topic := r.Header.Get("event")
-	if r.Method == http.MethodPost && topic != "" {
+	eventHeader := r.Header.Get("event")
+	if eventHeader != "" && r.Method == http.MethodPost && r.URL.Path == "/" {
 		router.processEvent(event{
-			topics:  []pubsub.TopicID{pubsub.TopicID(topic)},
+			topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
 			payload: reqBuf,
 		})
 
