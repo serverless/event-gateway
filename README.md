@@ -233,7 +233,7 @@ Example:
 
 ### Emit a Custom Event (Async Function Invocation)
 
-`POST /_emit` with `Event` header set to event name.
+`POST /` with `Event` header set to event name.
 
 Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
 
