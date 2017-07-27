@@ -110,8 +110,12 @@ func (w WeightedFunctions) Choose() (FunctionID, error) {
 }
 
 func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
-	creds := credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, "")
-	awslambda := lambda.New(session.New(aws.NewConfig().WithRegion(f.Provider.Region).WithCredentials(creds)))
+	awslambda := lambda.New(session.New(aws.NewConfig().WithRegion(f.Provider.Region)))
+
+	if f.Provider.AWSAccessKeyID != "" {
+		creds := credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, "")
+		awslambda = lambda.New(session.New(aws.NewConfig().WithRegion(f.Provider.Region).WithCredentials(creds)))
+	}
 
 	invokeOutput, err := awslambda.Invoke(&lambda.InvokeInput{
 		FunctionName: &f.Provider.ARN,

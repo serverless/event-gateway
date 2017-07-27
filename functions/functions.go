@@ -98,7 +98,7 @@ func (f *Functions) validateFunction(fn *Function) error {
 	}
 
 	if fn.Provider.Type == AWSLambda {
-		if fn.Provider.ARN == "" || fn.Provider.AWSAccessKeyID == "" || fn.Provider.AWSSecretAccessKey == "" || fn.Provider.Region == "" {
+		if fn.Provider.ARN == "" || fn.Provider.Region == "" {
 			return &ErrorValidation{"Missing required fields for AWS Lambda function."}
 		}
 	}
