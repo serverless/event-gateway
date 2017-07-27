@@ -1,6 +1,10 @@
 # The Event Gateway
 
+[![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
 [![Build Status](https://travis-ci.com/serverless/event-gateway.svg?token=jjfmiKqqzKMQrFyUDpMP&branch=master)](https://travis-ci.com/serverless/event-gateway)
+
+[Website](https://serverless.com) • [Docs](./_docs/) • [Newsletter](http://eepurl.com/b8dv4P) • [Slack](https://serverless-contrib.slack.com)
+
 
 The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience, intended for use with Functions-as-a-Service on AWS, Azure, Google & IBM. It's dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute). The Event Gateway is a layer-7 proxy and realtime dataflow engine.
 
@@ -467,3 +471,12 @@ OpenWhisk, as mentioned above, is a FaaS platform. Triggers & Rules enable build
 - OpenWhisk Rules don't integrate with other FaaS providers
 - OpenWhisk doesn't provide a fine-grained access control system
 - OpenWhisk doesn't enable exporting events outside OpenWhisk
+
+## Community
+
+* [Website](https://serverless.com)
+* [Blog](https://serverless.com/blog)
+* [Example use-cases](./_docs/use-cases.md)
+* [Email Updates](http://eepurl.com/b8dv4P)
+* [Slack](https://serverless-contrib.slack.com)
+* [Contact Us](mailto:hello@serverless.com)
