@@ -353,6 +353,13 @@ Response:
   - `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
   - `path` - `string` - optionally, in case of `http` event, path that accepts requests
 
+### Status
+
+Dummy endpoint (always returning 200 status code) for checking if the event gateway instance is running.
+
+`GET /v1/status`
+
+
 ## Architecture
 
 ```
