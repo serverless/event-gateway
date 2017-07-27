@@ -23,7 +23,8 @@ SDK Example
 ```javascript
 // Step 1. Register A Function (done only once per function)
 sdk.registerFunction("creataUser", {
-  awsLambda: {
+  provider: {
+    type: "awslambda",
     arn: "xxx",
     region: "us-west-2",
     version: 2,
@@ -79,17 +80,17 @@ sdk.emit({
     name: "Foo"
   }
 })
-
-// emails-service can subscribe to userCreated event via the framework
-
+```
+emails-service can subscribe to userCreated event via the framework
+```yaml
 functions:
   sendWelcomeEmail:
     handler: emails.welcome
     events:
       - userCreated
-
-// Or via SDK
-
+```
+Or via SDK
+```js
 sdk.subscribe({
   function: "emails-service/sendWelcomeEmail",
   event: "userCreated"
@@ -106,21 +107,11 @@ Cocacola company wants to share "fooBar" event with Nike. They are running on Sa
 
 Coca cola admin needs to grant access for creating subscription on "fooBar" event for Nike user.
 
-```javascript
-var sdk = new SDK("cocacola.serverless.com", "myapikey")
-
-sdk.grant({
-  gateway: "nike.serverless.com",
-  action: "create-subscription",
-  event: "fooBar"
-})
-```
-
 Nike can subscribe to that event on CocaCola gateway
 
 ```yaml
 gateways:
-	cocacola: cocacola.serverless.com
+  cocacola: cocacola.serverless.com
 
 functions:
   bar:
@@ -129,23 +120,6 @@ functions:
       - cocacola.fooBar
 ```
 
-## Allow Another Team To Publish Events
-
-If both teams are deployed on the same gateway there is no need to explicitly grant permissions.
-
-## Allow An End User To Publish Events
-
-Cocacola admin allows Nike's gateway to publish "fooBar" event into Cocacola's gateway.
-
-```javascript
-var sdk = new SDK("cocacola.serverless.com", "myapikey")
-
-sdk.grant({
-  gateway: "nike.serverless.com",
-  action: "publish-subscription",
-  event: "fooBar"
-})
-```
 
 ## Log/process HTTP Requests coming in on an Endpoint
 
@@ -161,9 +135,6 @@ sdk.subscribe({
   }
 })
 ```
-
-## Log/process HTTP Requests coming in on any Endpoint subpath
-
 
 
 ## Subscribe to Events across the entire Event Gateway
@@ -186,58 +157,3 @@ The Event Gateway exposes internal events:
 - gateway.subscription.created
 - gateway.subscription.deleted
 - ...
-
-## Canary Deployments
-
-User is able to register a group function that uses already registered function as a backing functions
-
-SDK Example
-
-```javascript
-sdk.registerFunction("hello-world-group", {
-  group: {
-    functions: [{
-      functionId: "hello-world-v1",
-      weight: 99
-    }, {
-      functionId: "hello-world-v2",
-      weight: 1
-    }]
-  }
-})
-```
-
-## Retries
-
-Retries are defined during a function registration.
-
-SDK Example
-
-```javascript
-sdk.registerFunction("creataUser", {
-  awsLambda: {
-    arn: "xxx",
-    region: "us-west-2",
-    version: 2,
-    accessKeyId: "xxx",
-    secretAccessKey: "xxx"
-  },
-  retries: {
-    retry: 3,
-    exponentialBackoff: true
-  }
-})
-```
-
-## Chaining synchronous function calls
-
-User is able to register a chain function that uses already registered function as a backing functions
-
-```javascript
-sdk.registerFunction("hello-world-chain", {
-  chain: {
-    functions: ["hello-world-step1", "hello-world-step2"]
-  }
-})
-```
-
