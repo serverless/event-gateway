@@ -205,7 +205,7 @@ functions:
 
 ## Events API
 
-The Event Gateway exposes an API for emitting events. By default Events API runs on `:8080` port. Events API can be used for
+The Event Gateway exposes an API for emitting events. By default Events API runs on `:4000` port. Events API can be used for
 emitting both custom and HTTP events.
 
 ### How We Define Events
@@ -268,7 +268,7 @@ Response: function response
 
 ## Configuration API
 
-The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:8081` port.
+The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:4001` port.
 
 ### Function discovery
 

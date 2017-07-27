@@ -32,12 +32,12 @@ func main() {
 	embedPeerAddr := flag.String("embed-peer-addr", "http://127.0.0.1:2380", "Address for testing embedded etcd to receive peer connections.")
 	embedCliAddr := flag.String("embed-cli-addr", "http://127.0.0.1:2379", "Address for testing embedded etcd to receive client connections.")
 	embedDataDir := flag.String("embed-data-dir", "default.etcd", "Path for testing embedded etcd to store its state.")
-	apiPort := flag.Uint("api-port", 8081, "Port to serve configuration API on.")
-	apiTLSCrt := flag.String("api-tls-cert", "", "Path to API TLS certificate file.")
-	apiTLSKey := flag.String("api-tls-key", "", "Path to API TLS key file.")
-	gatewayTLSCrt := flag.String("gateway-tls-cert", "", "Path to gateway TLS certificate file.")
-	gatewayTLSKey := flag.String("gateway-tls-key", "", "Path to gateway TLS key file.")
-	gatewayPort := flag.Uint("gateway-port", 8080, "Port to serve configured endpoints on.")
+	configPort := flag.Uint("config-port", 4001, "Port to serve configuration API on.")
+	configTLSCrt := flag.String("config-tls-cert", "", "Path to configuration API TLS certificate file.")
+	configTLSKey := flag.String("config-tls-key", "", "Path to configuration API TLS key file.")
+	eventsPort := flag.Uint("events-port", 4000, "Port to serve events API on.")
+	eventsTLSCrt := flag.String("events-tls-cert", "", "Path to events API TLS certificate file.")
+	eventsTLSKey := flag.String("events-tls-key", "", "Path to events API TLS key file.")
 	flag.Parse()
 
 	if *showVersion {
@@ -83,9 +83,9 @@ func main() {
 	httplisteners.StartAPI(httplisteners.Config{
 		KV:            kv,
 		Log:           log,
-		TLSCrt:        apiTLSCrt,
-		TLSKey:        apiTLSKey,
-		Port:          *apiPort,
+		TLSCrt:        configTLSCrt,
+		TLSKey:        configTLSKey,
+		Port:          *configPort,
 		ShutdownGuard: shutdownGuard,
 	})
 
@@ -93,9 +93,9 @@ func main() {
 	httplisteners.StartGateway(httplisteners.Config{
 		KV:            kv,
 		Log:           log,
-		TLSCrt:        gatewayTLSCrt,
-		TLSKey:        gatewayTLSKey,
-		Port:          *gatewayPort,
+		TLSCrt:        eventsTLSCrt,
+		TLSKey:        eventsTLSKey,
+		Port:          *eventsPort,
 		ShutdownGuard: shutdownGuard,
 	})
 
