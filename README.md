@@ -20,14 +20,14 @@ Alternatively, run in Docker container:
 git clone git@github.com:serverless/event-gateway.git
 cd event-gateway
 docker build -t event-gateway .
-docker run -p 8080:8080 -p 8081:8081 event-gateway -dev
+docker run -p 4000:4000 -p 4001:4001 event-gateway -dev
 ```
 
 ### Register a Function
 
 ```
 curl --request POST \
-  --url http://127.0.0.1:8081/v1/functions \
+  --url http://127.0.0.1:4001/v1/functions \
   --header 'content-type: application/json' \
   --data '{"functionId": "hello", "provider":{"type": "awslambda", "arn": "<Function AWS ARN>", "region": "<Region>", "accessKeyId": "<Access Key ID>", "secretAccessKey": "<Secret Access Key>"}}'
 ```
@@ -36,7 +36,7 @@ curl --request POST \
 
 ```
 curl --request POST \
-  --url http://127.0.0.1:8081/v1/subscriptions \
+  --url http://127.0.0.1:4001/v1/subscriptions \
   --header 'content-type: application/json' \
   --data '{"functionId": "hello", "event": "pageVisited"}'
 ```
@@ -45,7 +45,7 @@ curl --request POST \
 
 ```
 curl --request POST \
-  --url http://127.0.0.1:8080/ \
+  --url http://127.0.0.1:4000/ \
   --header 'content-type: application/json' \
   --header 'event: pageVisited' \
   --data '{"foo": "bar"}'
@@ -206,7 +206,7 @@ functions:
 
 ## Events API
 
-The Event Gateway exposes an API for emitting events. By default Events API runs on `:8080` port. Events API can be used for
+The Event Gateway exposes an API for emitting events. By default Events API runs on `:4000` port. Events API can be used for
 emitting both custom and HTTP events.
 
 ### How We Define Events
@@ -269,7 +269,7 @@ Response: function response
 
 ## Configuration API
 
-The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:8081` port.
+The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:4001` port.
 
 ### Function discovery
 
