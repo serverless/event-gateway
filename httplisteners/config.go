@@ -14,8 +14,8 @@ import (
 	"github.com/serverless/event-gateway/pubsub"
 )
 
-// StartAPI creates a new API server and listens for requests.
-func StartAPI(conf Config) {
+// StartConfigAPI creates a new configuration API server and listens for requests.
+func StartConfigAPI(conf Config) {
 	apiRouter := httprouter.New()
 
 	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", conf.KV)
@@ -36,6 +36,7 @@ func StartAPI(conf Config) {
 	psapi := &pubsub.HTTPAPI{PubSub: ps}
 	psapi.RegisterRoutes(apiRouter)
 
+	apiRouter.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	apiRouter.Handler("GET", "/metrics", prometheus.Handler())
 
 	apiHandler := metrics.HTTPLogger{

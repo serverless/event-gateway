@@ -10,8 +10,8 @@ import (
 	"github.com/serverless/event-gateway/targetcache"
 )
 
-// StartGateway creates a new gateway endpoint and listens for requests.
-func StartGateway(conf Config) {
+// StartEventsAPI creates a new gateway endpoint and listens for requests.
+func StartEventsAPI(conf Config) {
 	targetCache := targetcache.New("/serverless-event-gateway", conf.KV, conf.Log)
 	router := router.New(targetCache, metrics.DroppedPubSubEvents, conf.Log)
 	router.StartWorkers()

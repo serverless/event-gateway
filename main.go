@@ -80,7 +80,7 @@ func main() {
 	}
 
 	// start API handler
-	httplisteners.StartAPI(httplisteners.Config{
+	httplisteners.StartConfigAPI(httplisteners.Config{
 		KV:            kv,
 		Log:           log,
 		TLSCrt:        configTLSCrt,
@@ -90,7 +90,7 @@ func main() {
 	})
 
 	// start Event Gateway handler
-	httplisteners.StartGateway(httplisteners.Config{
+	httplisteners.StartEventsAPI(httplisteners.Config{
 		KV:            kv,
 		Log:           log,
 		TLSCrt:        eventsTLSCrt,
