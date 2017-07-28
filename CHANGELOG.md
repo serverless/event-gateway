@@ -1,4 +1,25 @@
 
+0.3.0 / 2017-07-28
+==================
+
+  * add missing package with integration tests
+  * fix package name
+  * move httpapi to util
+  * refactor tests. Clearer structure
+  * add endpoint for updating function. Closes #190 (#191)
+  * update AWS Lambda func readme docs. Refactor calling Lambda func.
+  * allows exec via all AWS configs. Closes #186 (#187)
+  * Remove unsupported use-cases. Add community sections to readme. (#188)
+  * add status endpoint. Closes #177 (#185)
+  * fix emitting custom events. Closes #160 (#184)
+  * fix readme inconsistency about the emit functionality (#182)
+  * update default ports and cli params for setting ports. Closes #180 (#181)
+  * Update examples (#178)
+  * Add license file (#176)
+  * fix cyclomatic complexity of validation function. #174
+  * validate Functions Disc API. Closes #174 (#175)
+  * add info about releases to README
+
 0.2.0 / 2017-07-26
 ==================
 
