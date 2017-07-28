@@ -41,6 +41,30 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 	return fn, nil
 }
 
+// UpdateFunction updates function configuration.
+func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
+	_, err := f.DB.Get(string(fn.ID))
+	if err != nil {
+		return nil, &ErrorNotFound{fn.ID}
+	}
+
+	if err = f.validateFunction(fn); err != nil {
+		return nil, err
+	}
+
+	byt, err := json.Marshal(fn)
+	if err != nil {
+		return nil, err
+	}
+
+	err = f.DB.Put(string(fn.ID), byt, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return fn, nil
+}
+
 // GetFunction returns function from configuration.
 func (f *Functions) GetFunction(id FunctionID) (*Function, error) {
 	kv, err := f.DB.Get(string(id))

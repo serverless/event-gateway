@@ -300,6 +300,29 @@ Response:
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
+#### Update function
+
+`POST /v1/functions/<function id>`
+
+Request:
+
+- `functionId` - `string` - required, function name
+- `provider` - `object` - required, provider specific information about a function, depends on type:
+  - for AWS Lambda:
+    - `type` - `string` - required, provider type: `awslambda`
+    - `arn` - `string` - required, AWS ARN identifier
+    - `region` - `string` - required, region name
+    - `awsAccessKeyID` - `string` - optional, AWS API key ID
+    - `awsSecretAccessKey` - `string` - optional, AWS API key
+  - for HTTP function:
+    - `type` - `string` - required, provider type: `http`
+    - `url` - `string` - required, the URL of an http or https remote endpoint
+
+Response:
+
+- `functionId` - `string` - function name
+- `provider` - `object` - provider specific information about a function
+
 #### Delete function
 
 `DELETE /v1/functions/<function id>`
