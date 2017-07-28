@@ -24,7 +24,7 @@ type FunctionID string
 
 // Function repesents a deployed on one of the supported providers.
 type Function struct {
-	ID       FunctionID `json:"functionId"`
+	ID       FunctionID `json:"functionId" validate:"required"`
 	Provider *Provider  `json:"provider" validate:"required"`
 }
 
