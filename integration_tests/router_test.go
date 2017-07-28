@@ -65,7 +65,7 @@ func TestFunctionDefAndCalling(t *testing.T) {
 
 	select {
 	case <-router.WaitForEndpoint(pubsub.NewEndpointID("POST", "/smilez")):
-	case <-time.After(5 * time.Second):
+	case <-time.After(10 * time.Second):
 		panic("timed out waiting for endpoint to be configured!")
 	}
 
