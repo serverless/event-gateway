@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/serverless/event-gateway/httpapi"
+	"github.com/serverless/event-gateway/util/httpapi"
 )
 
 // HTTPAPI for pubsub sub-service
