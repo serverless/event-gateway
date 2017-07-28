@@ -1,4 +1,4 @@
-package tests
+package stub
 
 import (
 	"net/http/httptest"
@@ -12,7 +12,8 @@ import (
 	"github.com/serverless/event-gateway/pubsub"
 )
 
-func newTestAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
+// ConfigAPIServer creates test Configuration API server.
+func ConfigAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
 	apiRouter := httprouter.New()
 
 	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", kv)

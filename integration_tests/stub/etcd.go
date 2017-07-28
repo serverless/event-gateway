@@ -1,8 +1,9 @@
-package tests
+package stub
 
 import (
 	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/docker/libkv"
@@ -17,11 +18,8 @@ func init() {
 	etcd.Register()
 }
 
-func kvAddr(port int) string {
-	return "127.0.0.1:" + strconv.Itoa(port)
-}
-
-func TestingEtcd() (store.Store, *util.ShutdownGuard) {
+// TestEtcd returns etcd store for testing.
+func TestEtcd() (store.Store, *util.ShutdownGuard) {
 	shutdownGuard := util.NewShutdownGuard()
 
 	wd, err := os.Getwd()
@@ -65,4 +63,16 @@ func TestingEtcd() (store.Store, *util.ShutdownGuard) {
 	}()
 
 	return cli, shutdownGuard
+}
+
+func kvAddr(port int) string {
+	return "127.0.0.1:" + strconv.Itoa(port)
+}
+
+var (
+	testPortAllocator = uint32(3370)
+)
+
+func newPort() int {
+	return int(atomic.AddUint32(&testPortAllocator, 1))
 }

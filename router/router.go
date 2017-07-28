@@ -56,14 +56,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eventHeader := r.Header.Get("event")
-	if eventHeader != "" && r.Method == http.MethodPost && r.URL.Path == "/" {
-		router.processEvent(event{
-			topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
-			payload: reqBuf,
-		})
-
-		w.WriteHeader(http.StatusAccepted)
-	} else {
+	if eventHeader == "" {
 		endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
@@ -78,6 +71,13 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
+		router.processEvent(event{
+			topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
+			payload: reqBuf,
+		})
+
+		w.WriteHeader(http.StatusAccepted)
 	}
 }
 

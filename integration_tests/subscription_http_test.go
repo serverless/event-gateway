@@ -1,4 +1,4 @@
-package tests
+package integration_tests
 
 import (
 	"bytes"
@@ -14,27 +14,21 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/integration_tests/stub"
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/pubsub"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/targetcache"
 )
 
-func newTestRouterServer(kv store.Store, log *zap.Logger) (*router.Router, *httptest.Server) {
-	targetCache := targetcache.New("/serverless-event-gateway", kv, log, true)
-	router := router.New(targetCache, metrics.DroppedPubSubEvents, log)
-
-	return router, httptest.NewServer(router)
-}
-
-func TestFunctionDefAndCalling(t *testing.T) {
+func TestSubscriptionHTTP(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
 
-	kv, shutdownGuard := TestingEtcd()
+	kv, shutdownGuard := stub.TestEtcd()
 
-	testAPIServer := newTestAPIServer(kv, log)
+	testAPIServer := stub.ConfigAPIServer(kv, log)
 	defer testAPIServer.Close()
 
 	router, testRouterServer := newTestRouterServer(kv, log)
@@ -104,4 +98,11 @@ func get(url string) string {
 	}
 
 	return string(body)
+}
+
+func newTestRouterServer(kv store.Store, log *zap.Logger) (*router.Router, *httptest.Server) {
+	targetCache := targetcache.New("/serverless-event-gateway", kv, log, true)
+	router := router.New(targetCache, metrics.DroppedPubSubEvents, log)
+
+	return router, httptest.NewServer(router)
 }

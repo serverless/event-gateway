@@ -1,4 +1,4 @@
-package tests
+package integration_tests
 
 import (
 	"bytes"
@@ -12,17 +12,18 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/integration_tests/stub"
 	"github.com/serverless/event-gateway/pubsub"
 )
 
-func TestFunctionPubSub(t *testing.T) {
+func TestSubscription(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
 
-	kv, shutdownGuard := TestingEtcd()
+	kv, shutdownGuard := stub.TestEtcd()
 
-	testAPIServer := newTestAPIServer(kv, log)
+	testAPIServer := stub.ConfigAPIServer(kv, log)
 	defer testAPIServer.Close()
 
 	router, testRouterServer := newTestRouterServer(kv, log)
