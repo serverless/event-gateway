@@ -241,7 +241,7 @@ Example:
 
 Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
 
-Response: HTTP status 202 - in case of success
+Response: `202 Accepted` in case of success
 
 ### Emit a HTTP Event
 
@@ -265,9 +265,9 @@ Response: function response
 
 ### Invoking a Registered Function (Sync Function Invocation)
 
-`POST /_invoke`
+`POST /` with `Event` header set to `invoke` and `Event-Metadata` set to `{"functionId": "<function ID>"}`.
 
-Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
+Request: arbitrary payload, invoked function receives an event in above schema, where request payload is passed as `data` field
 
 Response: function response
 

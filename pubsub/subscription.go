@@ -12,8 +12,8 @@ import (
 // SubscriptionID uniquely identifies a subscription
 type SubscriptionID string
 
-// EventHTTP represents sync HTTP subscription
-const EventHTTP = "http"
+// SubscriptionHTTP represents sync HTTP subscription
+const SubscriptionHTTP = "http"
 
 // Subscription maps from Topic to Function
 type Subscription struct {

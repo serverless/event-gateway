@@ -1,6 +1,8 @@
 package router
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -15,6 +17,9 @@ import (
 	"github.com/serverless/event-gateway/pubsub"
 	"github.com/serverless/event-gateway/targetcache"
 )
+
+// EventInvoke is a special type of event for sync function invocation.
+const EventInvoke = "invoke"
 
 // Router calls a target function when an endpoint is hit, and
 // handles pubsub message delivery.
@@ -72,12 +77,33 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		router.processEvent(event{
-			topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
-			payload: reqBuf,
-		})
+		if eventHeader == EventInvoke {
+			md := &invokeMetadata{}
+			dec := json.NewDecoder(bytes.NewBufferString(r.Header.Get("event-metadata")))
+			err := dec.Decode(md)
+			if err != nil {
 
-		w.WriteHeader(http.StatusAccepted)
+			}
+
+			res, err := router.callFunction(functions.FunctionID(md.FunctionID), reqBuf)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			_, err = w.Write(res)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			router.processEvent(event{
+				topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
+				payload: reqBuf,
+			})
+
+			w.WriteHeader(http.StatusAccepted)
+		}
 	}
 }
 
@@ -284,4 +310,8 @@ func (router *Router) isDraining() bool {
 	default:
 	}
 	return false
+}
+
+type invokeMetadata struct {
+	FunctionID functions.FunctionID `json:"functionId"`
 }
