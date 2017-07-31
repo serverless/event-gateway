@@ -500,7 +500,6 @@ OpenWhisk, as mentioned above, is a FaaS platform. Triggers & Rules enable build
 * [Serverless Forum](http://forum.serverless.com)
 * [Gitter Chatroom](https://gitter.im/serverless/serverless)
 * [Serverless Meetups](http://www.meetup.com/serverless/)
-* [Stackoverflow](http://stackoverflow.com/questions/tagged/serverless-framework)
 * [Facebook](https://www.facebook.com/serverless)
 * [Twitter](https://twitter.com/goserverless)
 * [Contact Us](mailto:hello@serverless.com)
