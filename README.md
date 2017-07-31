@@ -3,8 +3,7 @@
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
 [![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway)
 
-[Website](https://serverless.com) • [Docs](./_docs/) • [Newsletter](http://eepurl.com/b8dv4P) • [Slack](https://serverless-contrib.slack.com)
-
+[Website](http://www.serverless.com) • [Newsletter](http://eepurl.com/b8dv4P) • [Gitter](https://gitter.im/serverless/serverless) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless)
 
 The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience, intended for use with Functions-as-a-Service on AWS, Azure, Google & IBM. It's dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute). The Event Gateway is a layer-7 proxy and realtime dataflow engine.
 
@@ -497,9 +496,11 @@ OpenWhisk, as mentioned above, is a FaaS platform. Triggers & Rules enable build
 
 ## Community
 
-* [Website](https://serverless.com)
-* [Blog](https://serverless.com/blog)
-* [Example use-cases](./_docs/use-cases.md)
 * [Email Updates](http://eepurl.com/b8dv4P)
-* [Slack](https://serverless-contrib.slack.com)
+* [Serverless Forum](http://forum.serverless.com)
+* [Gitter Chatroom](https://gitter.im/serverless/serverless)
+* [Serverless Meetups](http://www.meetup.com/serverless/)
+* [Stackoverflow](http://stackoverflow.com/questions/tagged/serverless-framework)
+* [Facebook](https://www.facebook.com/serverless)
+* [Twitter](https://twitter.com/goserverless)
 * [Contact Us](mailto:hello@serverless.com)
