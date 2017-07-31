@@ -19,6 +19,9 @@ import (
 // EventInvoke is a special type of event for sync function invocation.
 const EventInvoke = "invoke"
 
+// FunctionIDHeader is a header name for specifing function id for sync invocation.
+const FunctionIDHeader = "function-id"
+
 // Router calls a target function when an endpoint is hit, and
 // handles pubsub message delivery.
 type Router struct {
@@ -76,7 +79,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
 		if eventHeader == EventInvoke {
-			res, err := router.callFunction(functions.FunctionID(r.Header.Get("functionid")), reqBody)
+			res, err := router.callFunction(functions.FunctionID(r.Header.Get(FunctionIDHeader)), reqBody)
 			_, err = w.Write(res)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

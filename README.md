@@ -265,7 +265,7 @@ Response: function response
 
 ### Invoking a Registered Function (Sync Function Invocation)
 
-`POST /` with `Event` header set to `invoke` and `FunctionID` set to function ID.
+`POST /` with `Event` header set to `invoke` and `Function-ID` set to function ID.
 
 Request: arbitrary payload, invoked function receives an event in above schema, where request payload is passed as `data` field
 
