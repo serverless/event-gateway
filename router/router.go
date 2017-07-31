@@ -16,6 +16,9 @@ import (
 	"github.com/serverless/event-gateway/targetcache"
 )
 
+// EventInvoke is a special type of event for sync function invocation.
+const EventInvoke = "invoke"
+
 // Router calls a target function when an endpoint is hit, and
 // handles pubsub message delivery.
 type Router struct {
@@ -49,7 +52,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 	}
 
-	reqBuf, err := ioutil.ReadAll(r.Body)
+	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,7 +63,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
-		res, err := router.callEndpoint(endpointID, reqBuf)
+		res, err := router.callEndpoint(endpointID, reqBody)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -72,12 +75,21 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		router.processEvent(event{
-			topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
-			payload: reqBuf,
-		})
+		if eventHeader == EventInvoke {
+			res, err := router.callFunction(functions.FunctionID(r.Header.Get("functionid")), reqBody)
+			_, err = w.Write(res)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			router.processEvent(event{
+				topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
+				payload: reqBody,
+			})
 
-		w.WriteHeader(http.StatusAccepted)
+			w.WriteHeader(http.StatusAccepted)
+		}
 	}
 }
 

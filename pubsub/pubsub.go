@@ -35,7 +35,7 @@ func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 		}
 	}
 
-	if s.Event == EventHTTP {
+	if s.Event == SubscriptionHTTP {
 		err = ps.createEndpoint(s.FunctionID, s.Method, s.Path)
 		if err != nil {
 			return nil, err
@@ -80,7 +80,7 @@ func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
 		return &ErrorSubscriptionNotFound{sub.ID}
 	}
 
-	if sub.Event == EventHTTP {
+	if sub.Event == SubscriptionHTTP {
 		return ps.deleteEndpoint(sub.Method, sub.Path)
 	}
 
@@ -201,7 +201,7 @@ func (ps PubSub) validateSubscription(s *Subscription) error {
 		return &ErrorSubscriptionValidation{err.Error()}
 	}
 
-	if s.Event == EventHTTP {
+	if s.Event == SubscriptionHTTP {
 		if s.Method == "" || s.Path == "" {
 			return &ErrorSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
 		}
