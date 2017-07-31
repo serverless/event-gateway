@@ -1,7 +1,7 @@
 # The Event Gateway
 
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
-[![Build Status](https://travis-ci.com/serverless/event-gateway.svg?token=jjfmiKqqzKMQrFyUDpMP&branch=master)](https://travis-ci.com/serverless/event-gateway)
+[![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway)
 
 [Website](https://serverless.com) • [Docs](./_docs/) • [Newsletter](http://eepurl.com/b8dv4P) • [Slack](https://serverless-contrib.slack.com)
 
