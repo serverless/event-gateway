@@ -18,7 +18,7 @@ import (
 	"github.com/serverless/event-gateway/util"
 )
 
-var version = "master"
+var version = "dev"
 
 func init() {
 	etcd.Register()

@@ -1,5 +1,6 @@
 builds:
-  - goos:
+  - main: ./cmd/event-gateway/main.go
+    goos:
       - windows
       - darwin
       - linux
