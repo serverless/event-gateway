@@ -1,8 +1,6 @@
 package router
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -54,7 +52,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 	}
 
-	reqBuf, err := ioutil.ReadAll(r.Body)
+	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -65,7 +63,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
-		res, err := router.callEndpoint(endpointID, reqBuf)
+		res, err := router.callEndpoint(endpointID, reqBody)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -78,19 +76,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
 		if eventHeader == EventInvoke {
-			md := &invokeMetadata{}
-			dec := json.NewDecoder(bytes.NewBufferString(r.Header.Get("event-metadata")))
-			err := dec.Decode(md)
-			if err != nil {
-
-			}
-
-			res, err := router.callFunction(functions.FunctionID(md.FunctionID), reqBuf)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
+			res, err := router.callFunction(functions.FunctionID(r.Header.Get("functionid")), reqBody)
 			_, err = w.Write(res)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -99,7 +85,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			router.processEvent(event{
 				topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
-				payload: reqBuf,
+				payload: reqBody,
 			})
 
 			w.WriteHeader(http.StatusAccepted)
@@ -310,8 +296,4 @@ func (router *Router) isDraining() bool {
 	default:
 	}
 	return false
-}
-
-type invokeMetadata struct {
-	FunctionID functions.FunctionID `json:"functionId"`
 }
