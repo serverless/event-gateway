@@ -216,11 +216,11 @@ emitting both custom and HTTP events.
 
 All data that passes through the Event Gateway is formatted as an Event, based on our default Event schema:
 
-- **Event (Required)**:  The Event name.
-- **ID (Required)**: The Event's universally unique event ID. The Event Gateway provides this.
-- **Received (Required)**: The time (milliseconds) when the Event was received by the Event Gateway. The Event Gateway provides this.
-- **Data (Required):** All data associated with the Event should be contained in here.
-- **Encoding (Required):** The encoding method of the data. (json, text, binary, etc.)
+- `event` - `string` - the event name
+- `id` - `string` - the event's instance universally unique ID (provided by the event gateway)
+- `receivedAt` - `number` - the time (milliseconds) when the Event was received by the Event Gateway (provided by the event gateway)
+- `data` - type depends on `encoding` - the event payload
+- `encoding` - `string` - the encoding method of the data (json, text, binary, etc.), by default it's `binary`
 
 Example:
 
@@ -228,15 +228,19 @@ Example:
 {
   "event": "myapp.subscription.created",
   "id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
-  "received": 1500897327098,
-  "data": "{\"foo\": \"bar\"}",
+  "receivedAt": 1500897327098,
+  "data": {"foo": "bar"},
   "encoding": "json"
 }
 ```
 
+### Event Data Types
+
+The type of the data block can be specified using the Content-Type header. This allows the event gateway to understand how to deserialize the data block if it needs to. If not specified `binary` type is assumed and no deserialization happens. In case of `json` encoding the event gateway passes deserialized JSON payload to target functions.
+
 ### Emit a Custom Event (Async Function Invocation)
 
-`POST /` with `Event` header set to event name.
+`POST /` with `Event` header set to event name. Optionally `Content-Type: event/<encoding>` header can be set to specify payload encoding.
 
 Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
 

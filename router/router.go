@@ -16,14 +16,7 @@ import (
 	"github.com/serverless/event-gateway/targetcache"
 )
 
-// EventInvoke is a special type of event for sync function invocation.
-const EventInvoke = "invoke"
-
-// FunctionIDHeader is a header name for specifing function id for sync invocation.
-const FunctionIDHeader = "function-id"
-
-// Router calls a target function when an endpoint is hit, and
-// handles pubsub message delivery.
+// Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
 type Router struct {
 	sync.Mutex
 	targetCache          targetcache.TargetCache
@@ -53,6 +46,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// if we're draining requests, spit back a 503
 	if router.isDraining() {
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+		return
 	}
 
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -61,25 +55,27 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventHeader := r.Header.Get("event")
-	if eventHeader == "" {
+	eventName := r.Header.Get("event")
+	if eventName == "" {
 		endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
 
 		res, err := router.callEndpoint(endpointID, reqBody)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		_, err = w.Write(res)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		if eventHeader == EventInvoke {
-			res, err := router.callFunction(functions.FunctionID(r.Header.Get(FunctionIDHeader)), reqBody)
+		encoding := strings.TrimPrefix(r.Header.Get(headerContentType), "event/")
+		instance, err := transform(eventName, encoding, reqBody)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if eventName == eventInvoke {
+			res, err := router.callFunction(functions.FunctionID(r.Header.Get(headerFunctionID)), instance)
 			_, err = w.Write(res)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -87,8 +83,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			router.processEvent(event{
-				topics:  []pubsub.TopicID{pubsub.TopicID(eventHeader)},
-				payload: reqBody,
+				topics:  []pubsub.TopicID{pubsub.TopicID(eventName)},
+				payload: instance,
 			})
 
 			w.WriteHeader(http.StatusAccepted)
@@ -174,6 +170,16 @@ func (router *Router) WaitForSubscriber(topic pubsub.TopicID) <-chan struct{} {
 	}()
 	return updatedChan
 }
+
+const (
+	// eventInvoke is a special type of event for sync function invocation.
+	eventInvoke = "invoke"
+
+	// headerFunctionID is a header name for specifing function id for sync invocation.
+	headerFunctionID = "function-id"
+	// headerContentType is a header name for specifing content type.
+	headerContentType = "content-type"
+)
 
 // callEndpoint determines which function to call when an endpoint is hit.
 func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte) ([]byte, error) {
