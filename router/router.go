@@ -67,8 +67,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		encoding := strings.TrimPrefix(r.Header.Get(headerContentType), "event/")
-		instance, err := transform(eventName, encoding, reqBody)
+		instance, err := transform(eventName, r.Header.Get(headerContentType), reqBody)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

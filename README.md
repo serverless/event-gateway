@@ -220,7 +220,7 @@ All data that passes through the Event Gateway is formatted as an Event, based o
 - `id` - `string` - the event's instance universally unique ID (provided by the event gateway)
 - `receivedAt` - `number` - the time (milliseconds) when the Event was received by the Event Gateway (provided by the event gateway)
 - `data` - type depends on `encoding` - the event payload
-- `encoding` - `string` - the encoding method of the data (json, text, binary, etc.), by default it's `binary`
+- `mime` - `string` - the mime type of `data` payload
 
 Example:
 
@@ -230,17 +230,17 @@ Example:
   "id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
   "receivedAt": 1500897327098,
   "data": {"foo": "bar"},
-  "encoding": "json"
+  "mime": "application/json"
 }
 ```
 
 ### Event Data Types
 
-The type of the data block can be specified using the Content-Type header. This allows the event gateway to understand how to deserialize the data block if it needs to. If not specified `binary` type is assumed and no deserialization happens. In case of `json` encoding the event gateway passes deserialized JSON payload to target functions.
+The MIME type of the data block can be specified using the Content-Type header. This allows the event gateway to understand how to deserialize the data block if it needs to. If not specified `application/octet-stream` type is assumed and no deserialization happens. In case of `application/json` encoding the event gateway passes deserialized JSON payload to target functions.
 
 ### Emit a Custom Event (Async Function Invocation)
 
-`POST /` with `Event` header set to event name. Optionally `Content-Type: event/<encoding>` header can be set to specify payload encoding.
+`POST /` with `Event` header set to event name. Optionally `Content-Type: <MIME type>` header can be set to specify payload encoding.
 
 Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
 

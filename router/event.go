@@ -13,29 +13,29 @@ type Schema struct {
 	Event      string      `json:"event"`
 	ID         string      `json:"id"`
 	ReceivedAt uint        `json:"receivedAt"`
-	Encoding   string      `json:"encoding"`
 	Data       interface{} `json:"data"`
+	MIME       string      `json:"mime"`
 }
 
 const (
-	encodingJSON   = "json"
-	encodingBinary = "binary"
+	mimeJSON       = "application/json"
+	mimeOctetStrem = "application/octet-stream"
 )
 
-func transform(event, encoding string, payload []byte) ([]byte, error) {
-	if encoding == "" {
-		encoding = encodingBinary
+func transform(event, mime string, payload []byte) ([]byte, error) {
+	if mime == "" {
+		mime = mimeOctetStrem
 	}
 
 	instance := &Schema{
 		Event:      event,
 		ID:         uuid.NewV4().String(),
 		ReceivedAt: uint(time.Now().UnixNano() / int64(time.Millisecond)),
-		Encoding:   encoding,
+		MIME:       mime,
 		Data:       payload,
 	}
 
-	if encoding == encodingJSON {
+	if mime == mimeJSON {
 		err := json.Unmarshal(payload, &instance.Data)
 		if err != nil {
 			return nil, err
