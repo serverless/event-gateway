@@ -1,4 +1,4 @@
-package httplisteners
+package api
 
 import (
 	"net/http"
@@ -8,10 +8,11 @@ import (
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/targetcache"
+	"github.com/serverless/event-gateway/util/httpapi"
 )
 
 // StartEventsAPI creates a new gateway endpoint and listens for requests.
-func StartEventsAPI(conf Config) {
+func StartEventsAPI(conf httpapi.Config) {
 	targetCache := targetcache.New("/serverless-event-gateway", conf.KV, conf.Log)
 	router := router.New(targetCache, metrics.DroppedPubSubEvents, conf.Log)
 	router.StartWorkers()
@@ -22,14 +23,14 @@ func StartEventsAPI(conf Config) {
 		WriteTimeout: 3 * time.Second,
 	}
 
-	h := handler{
-		Conf:        conf,
+	h := httpapi.Handler{
+		Config:      conf,
 		HTTPHandler: ev,
 	}
 
 	go func() {
 		conf.ShutdownGuard.Add(1)
-		h.listen()
+		h.Listen()
 		router.Drain()
 		conf.ShutdownGuard.Done()
 	}()

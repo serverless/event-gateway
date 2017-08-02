@@ -1,4 +1,4 @@
-package httplisteners
+package api
 
 import (
 	"net/http"
@@ -12,10 +12,11 @@ import (
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/pubsub"
+	"github.com/serverless/event-gateway/util/httpapi"
 )
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
-func StartConfigAPI(conf Config) {
+func StartConfigAPI(conf httpapi.Config) {
 	apiRouter := httprouter.New()
 
 	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", conf.KV)
@@ -50,14 +51,14 @@ func StartConfigAPI(conf Config) {
 		WriteTimeout: 3 * time.Second,
 	}
 
-	h := handler{
-		Conf:        conf,
+	h := httpapi.Handler{
+		Config:      conf,
 		HTTPHandler: ev,
 	}
 
 	go func() {
 		conf.ShutdownGuard.Add(1)
-		h.listen()
+		h.Listen()
 		conf.ShutdownGuard.Done()
 	}()
 }

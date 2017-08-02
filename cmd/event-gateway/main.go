@@ -12,10 +12,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/serverless/event-gateway/api"
 	"github.com/serverless/event-gateway/db"
-	"github.com/serverless/event-gateway/httplisteners"
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/util"
+	"github.com/serverless/event-gateway/util/httpapi"
 )
 
 var version = "dev"
@@ -80,7 +81,7 @@ func main() {
 	}
 
 	// start API handler
-	httplisteners.StartConfigAPI(httplisteners.Config{
+	api.StartConfigAPI(httpapi.Config{
 		KV:            kv,
 		Log:           log,
 		TLSCrt:        configTLSCrt,
@@ -90,7 +91,7 @@ func main() {
 	})
 
 	// start Event Gateway handler
-	httplisteners.StartEventsAPI(httplisteners.Config{
+	api.StartEventsAPI(httpapi.Config{
 		KV:            kv,
 		Log:           log,
 		TLSCrt:        eventsTLSCrt,
