@@ -220,7 +220,7 @@ All data that passes through the Event Gateway is formatted as an Event, based o
 - `id` - `string` - the event's instance universally unique ID (provided by the event gateway)
 - `receivedAt` - `number` - the time (milliseconds) when the Event was received by the Event Gateway (provided by the event gateway)
 - `data` - type depends on `encoding` - the event payload
-- `mime` - `string` - the mime type of `data` payload
+- `dataType` - `string` - the mime type of `data` payload
 
 Example:
 
@@ -230,7 +230,7 @@ Example:
   "id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
   "receivedAt": 1500897327098,
   "data": {"foo": "bar"},
-  "mime": "application/json"
+  "dataType": "application/json"
 }
 ```
 

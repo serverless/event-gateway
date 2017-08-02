@@ -14,7 +14,7 @@ type Schema struct {
 	ID         string      `json:"id"`
 	ReceivedAt uint        `json:"receivedAt"`
 	Data       interface{} `json:"data"`
-	MIME       string      `json:"mime"`
+	DataType   string      `json:"dataType"`
 }
 
 const (
@@ -31,7 +31,7 @@ func transform(event, mime string, payload []byte) ([]byte, error) {
 		Event:      event,
 		ID:         uuid.NewV4().String(),
 		ReceivedAt: uint(time.Now().UnixNano() / int64(time.Millisecond)),
-		MIME:       mime,
+		DataType:   mime,
 		Data:       payload,
 	}
 
