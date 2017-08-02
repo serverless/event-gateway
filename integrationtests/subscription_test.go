@@ -2,6 +2,8 @@ package integrationtests
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +16,8 @@ import (
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/integrationtests/stub"
 	"github.com/serverless/event-gateway/pubsub"
+
+	routerpkg "github.com/serverless/event-gateway/router"
 )
 
 func TestSubscription(t *testing.T) {
@@ -36,13 +40,16 @@ func TestSubscription(t *testing.T) {
 	smileyReceived := make(chan struct{})
 	testSubscriberServer := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			// read the body, compare the value, close notification chan
-			reqBuf, err := ioutil.ReadAll(r.Body)
+			reqBuf, _ := ioutil.ReadAll(r.Body)
+
+			var event routerpkg.Schema
+			err := json.Unmarshal(reqBuf, &event)
 			if err != nil {
 				panic(err)
 			}
+			decoded, _ := base64.StdEncoding.DecodeString(event.Data.(string))
 
-			if string(reqBuf) == expected {
+			if string(decoded) == expected {
 				close(smileyReceived)
 			} else {
 				log.Error("received non-smiley!", zap.String("value", fmt.Sprintf("%+v", reqBuf)))

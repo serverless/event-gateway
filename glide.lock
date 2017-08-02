@@ -1,8 +1,36 @@
-hash: e13e97916cb64a81c1974eef9744c1cba969fae59f21568e3f334b037af3bdd1
-updated: 2017-06-20T16:36:11.013032203+02:00
+hash: f905eb2acba380e30a72dc1874572a0f678e8471332dfb85e09aa1805a34f417
+updated: 2017-07-31T16:40:04.594855076+02:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 0ddc167e85ddb40d9fbc97bfabda2175e49b3dbc
+  version: 5e436e55ac5eddc739f26a2a209b3f4248ee8e0e
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - internal/shareddefaults
+  - private/protocol
+  - private/protocol/json/jsonutil
+  - private/protocol/jsonrpc
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/restjson
+  - private/protocol/xml/xmlutil
+  - service/lambda
+  - service/sts
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
   subpackages:
@@ -12,7 +40,7 @@ imports:
 - name: github.com/cockroachdb/cmux
   version: 112f0506e7743d64a6eb8fedbcff13d9979bbf92
 - name: github.com/coreos/etcd
-  version: 66722b1ada68fcd5227db853ee92003169a975c8
+  version: c31bec0f29facff13f7c3e3d948e55dd6689ed42
   subpackages:
   - alarm
   - auth
@@ -103,6 +131,8 @@ imports:
   - store/etcd
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
+- name: github.com/go-ini/ini
+  version: c437d20015c2ab6454b7a66a13109ff0fb99e17a
 - name: github.com/go-playground/locales
   version: 084b0226cf88d891a2bdeccac01d592af13a8f7b
   subpackages:
@@ -132,6 +162,8 @@ imports:
   - runtime
   - runtime/internal
   - utilities
+- name: github.com/jmespath/go-jmespath
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/jonboulle/clockwork
   version: 2eee05ed794112d45db504eb05aa693efd2b8b09
 - name: github.com/julienschmidt/httprouter
@@ -158,6 +190,8 @@ imports:
   version: a1dba9ce8baed984a2495b658c82687f8157b98f
   subpackages:
   - xfs
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
@@ -170,14 +204,15 @@ imports:
   version: 07dd2e8dfe18522e9c447ba95f2fe95262f63bb2
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+- name: go.uber.org/multierr
+  version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/zap
-  version: 9cabc84638b70e564c3dab2766efcb1ded2aac9f
+  version: 9d9d6135afe89b6fc4a05e9a8552526caba38048
   subpackages:
   - buffer
   - internal/bufferpool
   - internal/color
   - internal/exit
-  - internal/multierror
   - zapcore
 - name: golang.org/x/crypto
   version: 1351f936d976c60a0a48d728281922cf63eafb8d
@@ -220,7 +255,7 @@ imports:
   - tap
   - transport
 - name: gopkg.in/go-playground/validator.v9
-  version: fb68f39656d7ebf8aa339ad4917aa0c260ecc237
+  version: 0f6f568263a1ab5105b57f66f446d2625e4f545c
 - name: gopkg.in/yaml.v2
   version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports: []
