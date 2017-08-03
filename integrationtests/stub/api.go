@@ -18,8 +18,8 @@ func ConfigAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
 
 	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", kv)
 	fns := &functions.Functions{
-		DB:     fnsDB,
-		Logger: log,
+		DB:  fnsDB,
+		Log: log,
 	}
 	fnsapi := &functions.HTTPAPI{Functions: fns}
 	fnsapi.RegisterRoutes(apiRouter)
@@ -29,7 +29,7 @@ func ConfigAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
 		SubscriptionsDB: db.NewPrefixedStore("/serverless-event-gateway/subscriptions", kv),
 		EndpointsDB:     db.NewPrefixedStore("/serverless-event-gateway/endpoints", kv),
 		FunctionsDB:     fnsDB,
-		Logger:          log,
+		Log:             log,
 	}
 	psapi := &pubsub.HTTPAPI{PubSub: ps}
 	psapi.RegisterRoutes(apiRouter)

@@ -13,8 +13,8 @@ import (
 
 // Functions implements Registry.
 type Functions struct {
-	DB     store.Store
-	Logger *zap.Logger
+	DB  store.Store
+	Log *zap.Logger
 }
 
 // RegisterFunction registers function in configuration.
@@ -37,6 +37,8 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	f.Log.Info("function registered", zap.String("functionId", string(fn.ID)), zap.String("type", string(fn.Provider.Type)))
 
 	return fn, nil
 }
@@ -62,6 +64,8 @@ func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
 		return nil, err
 	}
 
+	f.Log.Info("function updated", zap.String("functionId", string(fn.ID)))
+
 	return fn, nil
 }
 
@@ -76,7 +80,6 @@ func (f *Functions) GetFunction(id FunctionID) (*Function, error) {
 	dec := json.NewDecoder(bytes.NewReader(kv.Value))
 	err = dec.Decode(&fn)
 	if err != nil {
-		f.Logger.Info("Fetching function failed.", zap.Error(err))
 		return nil, err
 	}
 	return &fn, nil

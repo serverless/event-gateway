@@ -16,23 +16,23 @@ import (
 )
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
-func StartConfigAPI(conf httpapi.Config) {
+func StartConfigAPI(config httpapi.Config) {
 	apiRouter := httprouter.New()
 
-	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", conf.KV)
+	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", config.KV)
 	fns := &functions.Functions{
-		DB:     fnsDB,
-		Logger: conf.Log,
+		DB:  fnsDB,
+		Log: config.Log,
 	}
 	fnsapi := &functions.HTTPAPI{Functions: fns}
 	fnsapi.RegisterRoutes(apiRouter)
 
 	ps := &pubsub.PubSub{
-		TopicsDB:        db.NewPrefixedStore("/serverless-event-gateway/topics", conf.KV),
-		SubscriptionsDB: db.NewPrefixedStore("/serverless-event-gateway/subscriptions", conf.KV),
-		EndpointsDB:     db.NewPrefixedStore("/serverless-event-gateway/endpoints", conf.KV),
+		TopicsDB:        db.NewPrefixedStore("/serverless-event-gateway/topics", config.KV),
+		SubscriptionsDB: db.NewPrefixedStore("/serverless-event-gateway/subscriptions", config.KV),
+		EndpointsDB:     db.NewPrefixedStore("/serverless-event-gateway/endpoints", config.KV),
 		FunctionsDB:     fnsDB,
-		Logger:          conf.Log,
+		Log:             config.Log,
 	}
 	psapi := &pubsub.HTTPAPI{PubSub: ps}
 	psapi.RegisterRoutes(apiRouter)
@@ -45,20 +45,20 @@ func StartConfigAPI(conf httpapi.Config) {
 		RequestDuration: metrics.RequestDuration,
 	}
 	ev := &http.Server{
-		Addr:         ":" + strconv.Itoa(int(conf.Port)),
+		Addr:         ":" + strconv.Itoa(int(config.Port)),
 		Handler:      apiHandler,
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
 
 	h := httpapi.Handler{
-		Config:      conf,
+		Config:      config,
 		HTTPHandler: ev,
 	}
 
 	go func() {
-		conf.ShutdownGuard.Add(1)
+		config.ShutdownGuard.Add(1)
 		h.Listen()
-		conf.ShutdownGuard.Done()
+		config.ShutdownGuard.Done()
 	}()
 }

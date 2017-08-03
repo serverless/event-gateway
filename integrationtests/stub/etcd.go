@@ -38,7 +38,7 @@ func TestEtcd() (store.Store, *util.ShutdownGuard) {
 	cliKvAddr := kvAddr(cliPort)
 	cliAddr := "http://" + cliKvAddr
 
-	db.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownGuard, false)
+	db.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownGuard)
 
 	cli, err := libkv.NewStore(
 		store.ETCD,

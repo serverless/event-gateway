@@ -12,26 +12,26 @@ import (
 )
 
 // StartEventsAPI creates a new gateway endpoint and listens for requests.
-func StartEventsAPI(conf httpapi.Config) {
-	targetCache := targetcache.New("/serverless-event-gateway", conf.KV, conf.Log)
-	router := router.New(targetCache, metrics.DroppedPubSubEvents, conf.Log)
+func StartEventsAPI(config httpapi.Config) {
+	targetCache := targetcache.New("/serverless-event-gateway", config.KV, config.Log)
+	router := router.New(targetCache, metrics.DroppedPubSubEvents, config.Log)
 	router.StartWorkers()
 	ev := &http.Server{
-		Addr:         ":" + strconv.Itoa(int(conf.Port)),
+		Addr:         ":" + strconv.Itoa(int(config.Port)),
 		Handler:      router,
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
 
 	h := httpapi.Handler{
-		Config:      conf,
+		Config:      config,
 		HTTPHandler: ev,
 	}
 
 	go func() {
-		conf.ShutdownGuard.Add(1)
+		config.ShutdownGuard.Add(1)
 		h.Listen()
 		router.Drain()
-		conf.ShutdownGuard.Done()
+		config.ShutdownGuard.Done()
 	}()
 }

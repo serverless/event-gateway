@@ -16,7 +16,7 @@ type PubSub struct {
 	SubscriptionsDB store.Store
 	FunctionsDB     store.Store
 	EndpointsDB     store.Store
-	Logger          *zap.Logger
+	Log             *zap.Logger
 }
 
 // CreateSubscription creates subscription.
@@ -65,7 +65,9 @@ func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 		return nil, err
 	}
 
+	ps.Log.Info("subscription created", zap.String("event", string(s.Event)), zap.String("functionId", string(s.FunctionID)))
 	return s, nil
+
 }
 
 // DeleteSubscription deletes subscription.
@@ -84,7 +86,14 @@ func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
 		return ps.deleteEndpoint(sub.Method, sub.Path)
 	}
 
-	return ps.deleteEmptyTopic(sub.Event)
+	ps.deleteEmptyTopic(sub.Event)
+	if err != nil {
+		return err
+	}
+
+	ps.Log.Info("subscription deleted", zap.String("event", string(sub.Event)), zap.String("functionId", string(sub.FunctionID)))
+
+	return nil
 }
 
 // GetAllSubscriptions returns array of all Subscription.

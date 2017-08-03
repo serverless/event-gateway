@@ -42,6 +42,7 @@ func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log
 	}
 }
 
+// nolint: gocyclo
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// if we're draining requests, spit back a 503
 	if router.isDraining() {
@@ -58,9 +59,15 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	eventName := r.Header.Get("event")
 	if eventName == "" {
 		endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
-		router.log.Debug("router serving request", zap.String("endpoint", string(endpointID)))
+		router.log.Info("serving HTTP request", zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
 
 		res, err := router.callEndpoint(endpointID, reqBody)
+		if err != nil {
+			router.log.Info("serving HTTP request failed", zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		_, err = w.Write(res)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -74,13 +81,22 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if eventName == eventInvoke {
-			res, err := router.callFunction(functions.FunctionID(r.Header.Get(headerFunctionID)), instance)
+			functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
+			router.log.Info("received sync invoke event", zap.String("functionId", string(functionID)))
+			res, err := router.callFunction(functionID, instance)
+			if err != nil {
+				router.log.Error("sync invocation failed", zap.String("functionId", string(functionID)), zap.Error(err))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			_, err = w.Write(res)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		} else {
+			router.log.Info("received event", zap.String("event", eventName))
 			router.processEvent(event{
 				topics:  []pubsub.TopicID{pubsub.TopicID(eventName)},
 				payload: instance,
@@ -196,7 +212,7 @@ func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte)
 func (router *Router) callFunction(backingFunctionID functions.FunctionID, payload []byte) ([]byte, error) {
 	backingFunction := router.targetCache.Function(backingFunctionID)
 	if backingFunction == nil {
-		resErr := errors.New("unable to look up backing function: " + string(backingFunctionID))
+		resErr := errors.New("unable to look up subscribed function")
 		return []byte{}, resErr
 	}
 
@@ -212,7 +228,7 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, paylo
 	// Call the target backing function.
 	f := router.targetCache.Function(chosenFunction)
 	if f == nil {
-		resErr := errors.New("unable to look up backing function: " + string(chosenFunction))
+		resErr := errors.New("unable to look up backing function")
 		return []byte{}, resErr
 	}
 
@@ -270,7 +286,16 @@ func (router *Router) processEvent(e event) {
 	for _, topicID := range e.topics {
 		subscribers := router.targetCache.SubscribersOfTopic(topicID)
 		for _, subscriber := range subscribers {
-			router.callFunction(subscriber, e.payload)
+			router.log.Info("calling function", zap.String("functionId", string(subscriber)), zap.String("event", string(topicID)))
+			_, err := router.callFunction(subscriber, e.payload)
+			if err != nil {
+				router.log.Error(
+					"calling function failed",
+					zap.String("functionId", string(subscriber)),
+					zap.String("event", string(topicID)),
+					zap.Error(err),
+				)
+			}
 		}
 	}
 }
