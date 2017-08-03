@@ -42,6 +42,7 @@ func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log
 	}
 }
 
+// nolint: gocyclo
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// if we're draining requests, spit back a 503
 	if router.isDraining() {
