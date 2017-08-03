@@ -27,9 +27,9 @@ func init() {
 
 func main() {
 	showVersion := flag.Bool("version", false, "Show version.")
-	verbose := flag.Bool("verbose", false, "Verbose logging.")
+	logLevel := zap.LevelFlag("log-level", zap.InfoLevel, `The level of logging to show after the event gateway has started. The available log levels are "debug", "info", "warn", and "err".`)
 	dbHosts := flag.String("db-hosts", "127.0.0.1:2379", "Comma-separated list of database hosts to connect to.")
-	embedMaster := flag.Bool("dev", false, "Run embedded etcd for testing.")
+	developmentMode := flag.Bool("dev", false, "Run embedded etcd for testing.")
 	embedPeerAddr := flag.String("embed-peer-addr", "http://127.0.0.1:2380", "Address for testing embedded etcd to receive peer connections.")
 	embedCliAddr := flag.String("embed-cli-addr", "http://127.0.0.1:2379", "Address for testing embedded etcd to receive client connections.")
 	embedDataDir := flag.String("embed-data-dir", "default.etcd", "Path for testing embedded etcd to store its state.")
@@ -46,17 +46,16 @@ func main() {
 		os.Exit(0)
 	}
 
-	dbHostStrings := strings.Split(*dbHosts, ",")
-
 	prometheus.MustRegister(metrics.RequestDuration)
 	prometheus.MustRegister(metrics.DroppedPubSubEvents)
 
-	logCfg := zap.NewDevelopmentConfig()
-	if !*verbose {
-		logCfg = zap.NewProductionConfig()
+	logCfg := zap.NewProductionConfig()
+	logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
+	if *developmentMode {
+		logCfg = zap.NewDevelopmentConfig()
+		logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
 		logCfg.DisableStacktrace = true
 	}
-
 	log, err := logCfg.Build()
 	if err != nil {
 		panic(err)
@@ -65,10 +64,12 @@ func main() {
 
 	shutdownGuard := util.NewShutdownGuard()
 
-	if *embedMaster {
-		db.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard, *verbose)
+	if *developmentMode {
+		db.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
+		log.Info("running in development mode with embedded etcd")
 	}
 
+	dbHostStrings := strings.Split(*dbHosts, ",")
 	kv, err := libkv.NewStore(
 		store.ETCD,
 		dbHostStrings,
@@ -77,7 +78,7 @@ func main() {
 		},
 	)
 	if err != nil {
-		log.Fatal("Cannot create kv client.", zap.Error(err))
+		log.Fatal("cannot create KV client", zap.Error(err))
 	}
 
 	// start API handler

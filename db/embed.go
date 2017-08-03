@@ -20,8 +20,7 @@ func parse(input string) *url.URL {
 
 // EmbedEtcd starts an embedded etcd instance. It can be shut down by closing the shutdown chan.
 // It returns a chan that is closed upon startup, and a chan that is closed once shutdown is complete.
-func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGuard,
-	verboseLogging bool) {
+func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGuard) {
 
 	cfg := embed.NewConfig()
 
@@ -40,19 +39,20 @@ func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGu
 	cfg.InitialCluster = "default=" + peerAddr
 
 	// reduce log spam unless in verbose mode
-	if !verboseLogging {
-		etcdLogger, err := capnslog.GetRepoLogger("github.com/coreos/etcd")
-		if err != nil {
-			shutdownGuard.ShutdownAndWait()
-			panic(err)
-		}
-		etcdLogger.SetLogLevel(map[string]capnslog.LogLevel{
-			"etcdserver/api":        capnslog.CRITICAL,
-			"etcdserver/membership": capnslog.CRITICAL,
-			"etcdserver":            capnslog.CRITICAL,
-			"raft":                  capnslog.CRITICAL,
-		})
+	etcdLogger, err := capnslog.GetRepoLogger("github.com/coreos/etcd")
+	if err != nil {
+		shutdownGuard.ShutdownAndWait()
+		panic(err)
 	}
+	etcdLogger.SetLogLevel(map[string]capnslog.LogLevel{
+		"etcdserver/api":        capnslog.CRITICAL,
+		"etcdserver/membership": capnslog.CRITICAL,
+		"etcdserver":            capnslog.CRITICAL,
+		"raft":                  capnslog.CRITICAL,
+		"auth":                  capnslog.CRITICAL,
+		"embed":                 capnslog.CRITICAL,
+		"wal":                   capnslog.CRITICAL,
+	})
 
 	cfg.Dir = dataDir
 
