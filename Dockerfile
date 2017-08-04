@@ -7,6 +7,6 @@ WORKDIR $GOPATH/src/github.com/serverless/event-gateway
 COPY . .
 
 RUN glide install
-RUN go build
+RUN go build -o event-gateway cmd/event-gateway/main.go
 
 ENTRYPOINT ["./event-gateway"]
