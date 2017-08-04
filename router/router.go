@@ -202,7 +202,7 @@ func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte)
 	// Figure out what function we're targeting.
 	backingFunction := router.targetCache.BackingFunction(endpointID)
 	if backingFunction == nil {
-		retErr := errors.New("For endpoint ID:" + string(endpointID) + ", could not find backing function.")
+		retErr := errors.New("for endpoint ID:" + string(endpointID) + ", could not find backing function")
 		return []byte{}, retErr
 	}
 
@@ -213,7 +213,7 @@ func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte)
 func (router *Router) callFunction(backingFunctionID functions.FunctionID, payload []byte) ([]byte, error) {
 	backingFunction := router.targetCache.Function(backingFunctionID)
 	if backingFunction == nil {
-		resErr := errors.New("Unable to look up subscribed function.")
+		resErr := errors.New("unable to look up subscribed function")
 		return []byte{}, resErr
 	}
 
@@ -229,13 +229,13 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, paylo
 	// Call the target backing function.
 	f := router.targetCache.Function(chosenFunction)
 	if f == nil {
-		resErr := errors.New("Unable to look up backing function.")
+		resErr := errors.New("unable to look up backing function")
 		return []byte{}, resErr
 	}
 
 	result, err := f.Call(payload)
 	if err != nil {
-		resErr := errors.New("Unable to reach backing function: " + err.Error())
+		resErr := errors.New("unable to reach backing function: " + err.Error())
 		return []byte{}, resErr
 	}
 
