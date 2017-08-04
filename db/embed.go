@@ -10,14 +10,6 @@ import (
 	"github.com/serverless/event-gateway/util"
 )
 
-func parse(input string) *url.URL {
-	output, err := url.Parse(input)
-	if err != nil {
-		panic(err)
-	}
-	return output
-}
-
 // EmbedEtcd starts an embedded etcd instance. It can be shut down by closing the shutdown chan.
 // It returns a chan that is closed upon startup, and a chan that is closed once shutdown is complete.
 func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGuard) {
@@ -85,4 +77,12 @@ func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGu
 			panic("Etcd failed to start: " + err.Error())
 		}
 	}()
+}
+
+func parse(input string) *url.URL {
+	output, err := url.Parse(input)
+	if err != nil {
+		panic(err)
+	}
+	return output
 }

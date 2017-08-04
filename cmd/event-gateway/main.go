@@ -53,8 +53,9 @@ func main() {
 	logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
 	if *developmentMode {
 		logCfg = zap.NewDevelopmentConfig()
-		logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
+		logCfg.DisableCaller = true
 		logCfg.DisableStacktrace = true
+		logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
 	}
 	log, err := logCfg.Build()
 	if err != nil {
@@ -66,7 +67,7 @@ func main() {
 
 	if *developmentMode {
 		db.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
-		log.Info("running in development mode with embedded etcd")
+		log.Info("Running in development mode with embedded etcd.")
 	}
 
 	dbHostStrings := strings.Split(*dbHosts, ",")
@@ -78,7 +79,7 @@ func main() {
 		},
 	)
 	if err != nil {
-		log.Fatal("cannot create KV client", zap.Error(err))
+		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
 	// start API handler

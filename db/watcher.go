@@ -11,34 +11,11 @@ import (
 	"github.com/docker/libkv/store"
 )
 
-// eventType is used for distinguishing kinds of events.
-type eventType uint
-
-const (
-	createdNode eventType = iota
-	modifiedNode
-	deletedNode
-)
-
 // Reactive is a type that can react to state changes on keys in a directory.
 type Reactive interface {
 	Created(key string, value []byte)
 	Modified(key string, newValue []byte)
 	Deleted(key string, lastKnownValue []byte)
-}
-
-type event struct {
-	eventType eventType
-	key       string
-
-	// Value is set to the new value for CREATED/MODIFIED events,
-	// and it is set to the last known value for DELETED events.
-	value []byte
-}
-
-type cachedValue struct {
-	Value     []byte
-	LastIndex uint64
 }
 
 // PathWatcher provides a means of watching for changes to
@@ -104,10 +81,33 @@ func (rfs *PathWatcher) React(reactor Reactive, shutdown chan struct{}) {
 			case deletedNode:
 				reactor.Deleted(key, event.value)
 			default:
-				panic("received unknown event type.")
+				panic("Received unknown event type.")
 			}
 		}
 	}()
+}
+
+const (
+	createdNode eventType = iota
+	modifiedNode
+	deletedNode
+)
+
+// eventType is used for distinguishing kinds of events.
+type eventType uint
+
+type event struct {
+	eventType eventType
+	key       string
+
+	// Value is set to the new value for CREATED/MODIFIED events,
+	// and it is set to the last known value for DELETED events.
+	value []byte
+}
+
+type cachedValue struct {
+	Value     []byte
+	LastIndex uint64
 }
 
 func (rfs *PathWatcher) resetBackoff() {
@@ -230,10 +230,6 @@ func (rfs *PathWatcher) processEvents(cache *map[string]cachedValue, incomingEve
 			}
 		case <-shutdown:
 			return true
-		case <-rfs.reconciliationTimeout():
-			// it's time to reconnect to catch any lost updates
-			rfs.log.Debug("attempting reconnection to reconcile possibly lost updates.")
-			return false
 		}
 	}
 }

@@ -60,6 +60,7 @@ func newFunctionCache(log *zap.Logger) *functionCache {
 func (c *functionCache) Set(k string, v []byte) {
 	f := &functions.Function{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(f)
+	c.log.Debug("Function cache received set key.", zap.String("key", k), zap.String("value", string(v)))
 	if err != nil {
 		c.log.Error("Could not deserialize Function state!", zap.Error(err), zap.String("key", k))
 	} else {
@@ -92,7 +93,7 @@ func newEndpointCache(log *zap.Logger) *endpointCache {
 func (c *endpointCache) Set(k string, v []byte) {
 	e := &pubsub.Endpoint{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
-	c.log.Debug("endpoint cache received set key.", zap.String("key", k), zap.String("value", string(v)))
+	c.log.Debug("Endpoint cache received set key.", zap.String("key", k), zap.String("value", string(v)))
 	if err != nil {
 		c.log.Error("Could not deserialize Endpoint state!", zap.Error(err), zap.String("key", k))
 	} else {
@@ -126,6 +127,7 @@ func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 func (c *subscriptionCache) Set(k string, v []byte) {
 	s := pubsub.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&s)
+	c.log.Debug("Subscription cache received set key.", zap.String("key", k), zap.String("value", string(v)))
 	if err != nil {
 		c.log.Error("Could not deserialize Subscription state!", zap.Error(err), zap.String("key", k))
 		return
