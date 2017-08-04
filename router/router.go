@@ -2,7 +2,6 @@ package router
 
 import (
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -42,7 +41,6 @@ func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log
 	}
 }
 
-// nolint: gocyclo
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// if we're draining requests, spit back a 503
 	if router.isDraining() {
@@ -50,61 +48,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reqBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	eventName := r.Header.Get("event")
 	if eventName == "" {
-		endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
-		router.log.Debug("Serving HTTP request.", zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
-
-		res, err := router.callEndpoint(endpointID, reqBody)
-		if err != nil {
-			router.log.Warn("Serving HTTP request failed.", zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		_, err = w.Write(res)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		router.handleHTTPEvent(w, r)
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		instance, err := transform(eventName, r.Header.Get(headerContentType), reqBody)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if eventName == eventInvoke {
-			functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
-			router.log.Debug("Received sync invocation event.",
-				zap.String("functionId", string(functionID)), zap.String("event", string(instance)))
-			res, err := router.callFunction(functionID, instance)
-			if err != nil {
-				router.log.Warn("Sync invocation failed.", zap.String("functionId", string(functionID)), zap.Error(err))
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			_, err = w.Write(res)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		} else {
-			router.log.Debug("Event received.", zap.String("event", string(instance)))
-			router.processEvent(event{
-				topics:  []pubsub.TopicID{pubsub.TopicID(eventName)},
-				payload: instance,
-			})
-
-			w.WriteHeader(http.StatusAccepted)
-		}
+		router.handleEvent(eventName, w, r)
 	}
 }
 
@@ -193,9 +141,67 @@ const (
 
 	// headerFunctionID is a header name for specifing function id for sync invocation.
 	headerFunctionID = "function-id"
-	// headerContentType is a header name for specifing content type.
-	headerContentType = "content-type"
 )
+
+func (router *Router) handleHTTPEvent(w http.ResponseWriter, r *http.Request) {
+	endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
+	router.log.Debug("Serving HTTP request.", zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
+
+	httpevent, err := transformHTTP(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res, err := router.callEndpoint(endpointID, httpevent)
+	if err != nil {
+		router.log.Warn("Serving HTTP request failed.", zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = w.Write(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (router *Router) handleEvent(eventName string, w http.ResponseWriter, r *http.Request) {
+	customevent, err := transform(eventName, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if eventName == eventInvoke {
+		functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
+		router.log.Debug("Received sync invocation event.",
+			zap.String("functionId", string(functionID)), zap.String("event", string(customevent)))
+
+		res, err := router.callFunction(functionID, customevent)
+		if err != nil {
+			router.log.Warn("Sync invocation failed.", zap.String("functionId", string(functionID)), zap.Error(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = w.Write(res)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		router.log.Debug("Event received.", zap.String("event", string(customevent)))
+
+		router.processEvent(event{
+			topics:  []pubsub.TopicID{pubsub.TopicID(eventName)},
+			payload: customevent,
+		})
+
+		w.WriteHeader(http.StatusAccepted)
+	}
+}
 
 // callEndpoint determines which function to call when an endpoint is hit.
 func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte) ([]byte, error) {
