@@ -305,7 +305,7 @@ Response:
 
 #### Update function
 
-`POST /v1/functions/<function id>`
+`PUT /v1/functions/<function id>`
 
 Request:
 
