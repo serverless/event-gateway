@@ -1,4 +1,24 @@
 
+0.5.0 / 2017-08-04
+==================
+
+  * remove secured env vars from travis.yml as they don't work for public repos
+  * update GITHUB_TOKEN
+  * add support for HTTP event schema. Closes #201. Closes #203 (#212)
+  * fix HTTP API method for updating function. Closes #204 (#211)
+  * fix a spelling typo (#209)
+  * fix built package in Dockerfile. Closes #210
+  * fix lint errors
+  * remove time from dev logs. Closes #167
+  * cleanup emitted logs. Closes #167
+  * add more Info level logs about emitted event and config API actions. Closes #167 (#202)
+  * use existing content-type mime values. Closes #199 (#200)
+  * refactor `httplisteners` package. Move it to `api` package.
+  * implement event schema and add support for content-type header. Closes #161. Closes #145 (#198)
+  * update community links (#196)
+  * move main package to cmd subdir
+  * switch to public Travis
+
 0.4.1 / 2017-07-31
 ==================
 
