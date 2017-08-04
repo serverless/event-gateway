@@ -22,7 +22,7 @@ type Caller interface {
 // FunctionID uniquely identifies a function
 type FunctionID string
 
-// Function repesents a deployed on one of the supported providers.
+// Function represents a deployed on one of the supported providers.
 type Function struct {
 	ID       FunctionID `json:"functionId" validate:"required"`
 	Provider *Provider  `json:"provider" validate:"required"`
