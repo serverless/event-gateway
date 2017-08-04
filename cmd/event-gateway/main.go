@@ -11,6 +11,7 @@ import (
 	"github.com/docker/libkv/store/etcd"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/serverless/event-gateway/api"
 	"github.com/serverless/event-gateway/db"
@@ -53,6 +54,7 @@ func main() {
 	logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
 	if *developmentMode {
 		logCfg = zap.NewDevelopmentConfig()
+		logCfg.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
 		logCfg.DisableCaller = true
 		logCfg.DisableStacktrace = true
 		logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
