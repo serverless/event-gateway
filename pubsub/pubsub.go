@@ -65,7 +65,7 @@ func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 		return nil, err
 	}
 
-	ps.Log.Info("subscription created", zap.String("event", string(s.Event)), zap.String("functionId", string(s.FunctionID)))
+	ps.Log.Info("Subscription created.", zap.String("event", string(s.Event)), zap.String("functionId", string(s.FunctionID)))
 	return s, nil
 
 }
@@ -91,7 +91,7 @@ func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
 		return err
 	}
 
-	ps.Log.Info("subscription deleted", zap.String("event", string(sub.Event)), zap.String("functionId", string(sub.FunctionID)))
+	ps.Log.Info("Subscription deleted.", zap.String("event", string(sub.Event)), zap.String("functionId", string(sub.FunctionID)))
 
 	return nil
 }
