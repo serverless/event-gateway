@@ -120,4 +120,5 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
