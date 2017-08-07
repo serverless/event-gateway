@@ -114,6 +114,9 @@ func (f *Functions) DeleteFunction(id FunctionID) error {
 	if err != nil {
 		return &ErrorNotFound{id}
 	}
+
+	f.Log.Debug("Function deleted.", zap.String("functionId", string(id)))
+
 	return nil
 }
 
