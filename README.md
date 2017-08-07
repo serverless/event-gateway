@@ -61,6 +61,7 @@ curl --request POST \
 1. [Features](#features)
    1. [Function Discovery](#function-discovery)
    1. [Subscriptions](#subscriptions)
+1. [Client Libraries](#client-libraries)
 1. [Events API](#events-api)
 1. [Configuration API](#configuration-api)
 1. [Architecture](#architecture)
@@ -94,35 +95,57 @@ Discover and call serverless functions from anything that can reach the Event Ga
 
 #### Example: Register An AWS Lambda Function
 
+##### curl example
+
+```http
+curl --request POST \
+  --url http://localhost:4001/v1/functions \
+  --header 'content-type: application/json' \
+  --data '{
+    "functionId": "hello",
+    "provider":{
+      "type": "awslambda",
+      "arn": "arn:aws:lambda:us-east-1:377024778620:function:bluegreen-dev-helloa",
+      "region": "us-east-1"
+    }
+}'
+```
+
+##### FDK example
+
 ```javascript
-fdk.registerFunction("hello-world", {
+const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+eventGateway.registerFunction({
+  functionId: "sendEmail"
   provider: {
-    type: "awslambda",
+    type: "awslambda"
     arn: "xxx",
     region: "us-west-2",
-    accessKeyId: "xxx",
-    secretAccessKey: "xxx"
   }
 })
 ```
 
-#### Example: Framework Integration
-
-Every function that subscribes to an event from the gateway is automatically registered in the gateway.
-
-```yaml
-functions:
-  greeter:
-    handler: greeter.greeter
-    events:
-      - userCreated
-```
-
 #### Example: Function-To-Function call
 
+##### curl example
+
+```http
+curl --request POST \
+  --url http://localhost:4000/ \
+  --header ': ' \
+  --header 'content-type: application/json' \
+  --header 'event: invoke' \
+  --header 'function-id: createUser' \
+  --data '{ "name": "Max" }'
+```
+
+##### FDK example
+
 ```javascript
-fdk.invoke("greeter", {
-  name: "John"
+const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+eventGateway.invoke({
+  functionId: "createUser",
+  data: JSON.stringify({ name: "Max" }),
 })
 ```
 
@@ -137,20 +160,48 @@ When an event occurs, all subscribers are called asynchronously with the event a
 
 #### Example: Subscribe to an Event
 
-```javascript
-// Assuming that we registered the "sendWelcomeEmail" function earlier
+##### curl example
 
-fdk.subscribe("sendWelcomeEmail", "userCreated")
+```http
+curl --request POST \
+  --url http://locahost:4001/v1/subscriptions \
+  --header 'content-type: application/json' \
+  --data '{
+    "functionId": "sendEmail",
+    "event": "user.created"
+  }'
 ```
 
-#### Example: Subscribe to an Event via the Framework
+##### FDK example
 
-```yaml
-functions:
-  sendWelcomeEmail:
-    handler: emails.welcome
-    events:
-      - userCreated
+```javascript
+const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+eventGateway.subscribe({
+  event: "user.created",
+  functionId: "sendEmail"
+})
+```
+
+#### Example: Emit an Event
+
+##### curl example
+
+```http
+curl --request POST \
+  --url http://localhost:4000/ \
+  --header 'content-type: application/json' \
+  --header 'event: usercreated' \
+  --data '{ "name": "Max" }'
+```
+
+##### FDK example
+
+```javascript
+const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+eventGateway.emit({
+  event: "userCreated",
+  data: JSON.stringify({ name: "Max" }),
+})
 ```
 
 #### Sync subscriptions via HTTP event
@@ -160,52 +211,35 @@ a HTTP request received on specified path and for specified HTTP method.
 
 #### Example: Subscribe to an "http" Event
 
+##### curl example
+
+```http
+curl --request POST \
+  --url http://locahost:4001/v1/subscriptions \
+  --header 'content-type: application/json' \
+  --data '{
+    "functionId": "listUsers",
+    "event": "http",
+    "method": "GET",
+    "path": "/users"
+  }'
+```
+
+##### FDK example
+
 ```javascript
-fdk.subscribe("createUser", {
-  event: "http",
-  method: "GET",
-  path: "/users"
+const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+eventGateway.subscribe({
+  functionId: 'listUsers',
+  event: 'http',
+  method: 'GET',
+  path: '/users'
 })
 ```
 
-#### Example: Create a REST API
+## Client Libraries
 
-```javascript
-// Assuming that there are following functions registered: getUser, createUser, deleteUser
-
-fdk.subscribe("getUser", {
-  method: "GET",
-  path: "/users"
-})
-
-fdk.subscribe("createUser", {
-  method: "POST",
-  path: "/users"
-})
-
-fdk.subscribe("deleteUser", {
-  method: "DELETE",
-  path: "/users"
-})
-```
-
-The above FDK calls create a single `<The Event Gateway URL>/users` endpoint that supports three HTTP methods pointing to different backing functions.
-
-#### Example: Subscribe to an "http" Event via the Framework
-
-```yaml
-functions:
-  createUser:
-    events:
-      - http:
-          path: /users
-          method: POST
-  getUser:
-    events:
-      - http:
-          path: /users
-          method: GET
-```
+- [FDK for Node.js](https://github.com/serverless/fdk)
 
 ## Events API
 
