@@ -38,7 +38,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 		return nil, err
 	}
 
-	f.Log.Info("function registered", zap.String("functionId", string(fn.ID)), zap.String("type", string(fn.Provider.Type)))
+	f.Log.Info("Function registered", zap.String("functionId", string(fn.ID)), zap.String("type", string(fn.Provider.Type)))
 
 	return fn, nil
 }
@@ -64,7 +64,7 @@ func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
 		return nil, err
 	}
 
-	f.Log.Info("function updated", zap.String("functionId", string(fn.ID)))
+	f.Log.Info("Function updated", zap.String("functionId", string(fn.ID)))
 
 	return fn, nil
 }
@@ -115,7 +115,7 @@ func (f *Functions) DeleteFunction(id FunctionID) error {
 		return &ErrorNotFound{id}
 	}
 
-	f.Log.Info("function deleted", zap.String("functionId", string(id)))
+	f.Log.Info("Function deleted", zap.String("functionId", string(id)))
 
 	return nil
 }
