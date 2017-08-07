@@ -59,6 +59,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 		}
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
