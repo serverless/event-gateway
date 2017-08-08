@@ -1,4 +1,13 @@
 
+0.5.1 / 2017-08-08
+==================
+
+  * update FDK examples
+  * update examples; add FDK examples; add like to FDK. Closes #224. Closes #223. Closes #205 (#236)
+  * minor logging & httpapi fixes. Closes #230. Closes #228. (#235)
+  * return 204 (No Content) for successful subscription delete. Closes #233 (#234)
+  * update log level for functions and pubsub packages
+
 0.5.0 / 2017-08-04
 ==================
 
