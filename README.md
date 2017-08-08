@@ -145,7 +145,7 @@ curl --request POST \
 const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
 eventGateway.invoke({
   functionId: "createUser",
-  data: JSON.stringify({ name: "Max" }),
+  data: { name: "Max" }
 })
 ```
 
@@ -200,7 +200,7 @@ curl --request POST \
 const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
 eventGateway.emit({
   event: "userCreated",
-  data: JSON.stringify({ name: "Max" }),
+  data: { name: "Max" }
 })
 ```
 
