@@ -19,13 +19,13 @@ type Functions struct {
 
 // RegisterFunction registers function in configuration.
 func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
+	if err := f.validateFunction(fn); err != nil {
+		return nil, err
+	}
+
 	_, err := f.DB.Get(string(fn.ID))
 	if err == nil {
 		return nil, &ErrorAlreadyRegistered{fn.ID}
-	}
-
-	if err = f.validateFunction(fn); err != nil {
-		return nil, err
 	}
 
 	byt, err := json.Marshal(fn)
@@ -122,6 +122,7 @@ func (f *Functions) DeleteFunction(id FunctionID) error {
 
 func (f *Functions) validateFunction(fn *Function) error {
 	validate := validator.New()
+	validate.RegisterValidation("functionid", functionIDValidator)
 	err := validate.Struct(fn)
 	if err != nil {
 		return &ErrorValidation{err.Error()}

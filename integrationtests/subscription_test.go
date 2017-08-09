@@ -57,7 +57,7 @@ func TestSubscription(t *testing.T) {
 		}))
 	defer testSubscriberServer.Close()
 
-	subscriberFnID := functions.FunctionID("smiley subscriber")
+	subscriberFnID := functions.FunctionID("smileysubscriber")
 	post(testAPIServer.URL+"/v1/functions",
 		functions.Function{
 			ID: subscriberFnID,

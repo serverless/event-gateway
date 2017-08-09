@@ -6,7 +6,10 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"time"
+
+	validator "gopkg.in/go-playground/validator.v9"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -24,7 +27,7 @@ type FunctionID string
 
 // Function represents a deployed on one of the supported providers.
 type Function struct {
-	ID       FunctionID `json:"functionId" validate:"required"`
+	ID       FunctionID `json:"functionId" validate:"required,functionid"`
 	Provider *Provider  `json:"provider" validate:"required"`
 }
 
@@ -137,4 +140,9 @@ func (f *Function) callHTTP(payload []byte) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+// functionIDValidator validates if field contains allowed characters for function ID
+func functionIDValidator(fl validator.FieldLevel) bool {
+	return regexp.MustCompile(`^[a-zA-Z0-9\.\-_]+$`).MatchString(fl.Field().String())
 }
