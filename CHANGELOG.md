@@ -1,4 +1,12 @@
 
+0.5.2 / 2017-08-09
+==================
+
+  * add log for successful function invocation. Closes #254
+  * allow dots, dash, underscore in event and function name. Closes #250 (#253)
+  * fix sending header twice. Closes #249 (#252)
+  * cleanup router logging
+
 0.5.1 / 2017-08-08
 ==================
 
