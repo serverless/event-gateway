@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rs/cors"
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/targetcache"
@@ -18,7 +19,7 @@ func StartEventsAPI(config httpapi.Config) {
 	router.StartWorkers()
 	ev := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      router,
+		Handler:      cors.Default().Handler(router),
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
