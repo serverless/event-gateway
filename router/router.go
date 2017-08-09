@@ -180,10 +180,14 @@ func (router *Router) handleEvent(eventName string, w http.ResponseWriter, r *ht
 
 		res, err := router.callFunction(functionID, customevent)
 		if err != nil {
-			router.log.Warn(`Handling sync "invoke" event failed.`, zap.String("functionId", string(functionID)), zap.Error(err))
+			router.log.Warn("Function invocation failed.", zap.String("functionId", string(functionID)),
+				zap.String("event", string(customevent)), zap.Error(err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		router.log.Debug("Function invoked.", zap.String("functionId", string(functionID)),
+			zap.String("event", string(customevent)), zap.String("response", string(res)))
 
 		_, err = w.Write(res)
 		if err != nil {
@@ -292,14 +296,20 @@ func (router *Router) processEvent(e event) {
 	for _, topicID := range e.topics {
 		subscribers := router.targetCache.SubscribersOfTopic(topicID)
 		for _, subscriber := range subscribers {
-			router.log.Debug("Calling function.", zap.String("functionId", string(subscriber)), zap.String("event", string(topicID)))
-			_, err := router.callFunction(subscriber, e.payload)
+			res, err := router.callFunction(subscriber, e.payload)
 			if err != nil {
 				router.log.Warn(
-					"Calling function failed.",
+					"Function invocation failed.",
 					zap.String("functionId", string(subscriber)),
-					zap.String("event", string(topicID)),
+					zap.String("event", string(e.payload)),
 					zap.Error(err),
+				)
+			} else {
+				router.log.Debug(
+					"Function invoked.",
+					zap.String("functionId", string(subscriber)),
+					zap.String("event", string(e.payload)),
+					zap.String("response", string(res)),
 				)
 			}
 		}
