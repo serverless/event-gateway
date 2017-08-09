@@ -43,7 +43,7 @@ func TestSubscriptionHTTP(t *testing.T) {
 
 	post(testAPIServer.URL+"/v1/functions",
 		functions.Function{
-			ID: functions.FunctionID("super smiley function"),
+			ID: functions.FunctionID("supersmileyfunction"),
 			Provider: &functions.Provider{
 				Type: functions.HTTPEndpoint,
 				URL:  testTargetServer.URL,
@@ -51,7 +51,7 @@ func TestSubscriptionHTTP(t *testing.T) {
 		})
 
 	post(testAPIServer.URL+"/v1/subscriptions", pubsub.Subscription{
-		FunctionID: functions.FunctionID("super smiley function"),
+		FunctionID: functions.FunctionID("supersmileyfunction"),
 		Event:      "http",
 		Method:     "POST",
 		Path:       "/smilez",

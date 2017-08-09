@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"regexp"
 
 	"github.com/serverless/event-gateway/functions"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -18,7 +19,7 @@ const SubscriptionHTTP = "http"
 // Subscription maps from Topic to Function
 type Subscription struct {
 	ID         SubscriptionID       `json:"subscriptionId"`
-	Event      TopicID              `json:"event" validate:"required,alphanum"`
+	Event      TopicID              `json:"event" validate:"required,eventname"`
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
 	Method     string               `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
 	Path       string               `json:"path,omitempty" validate:"omitempty,urlpath"`
@@ -70,4 +71,9 @@ func (e ErrorFunctionNotFound) Error() string {
 // urlPathValidator validates if field contains URL path
 func urlPathValidator(fl validator.FieldLevel) bool {
 	return path.IsAbs(fl.Field().String())
+}
+
+// eventNameValidator validates if field contains event name
+func eventNameValidator(fl validator.FieldLevel) bool {
+	return regexp.MustCompile(`^[a-zA-Z0-9\.\-_]+$`).MatchString(fl.Field().String())
 }

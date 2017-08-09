@@ -27,7 +27,6 @@ func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 	}
 
 	s.ID = newSubscriptionID(s)
-
 	_, err = ps.SubscriptionsDB.Get(string(s.ID))
 	if err == nil {
 		return nil, &ErrorSubscriptionAlreadyExists{
@@ -123,7 +122,7 @@ func (ps PubSub) GetAllSubscriptions() ([]*Subscription, error) {
 func (ps PubSub) getSubscription(id SubscriptionID) (*Subscription, error) {
 	rawsub, err := ps.SubscriptionsDB.Get(string(id))
 	if err != nil {
-		return nil, err
+		return nil, &ErrorSubscriptionNotFound{id}
 	}
 
 	sub := &Subscription{}
@@ -205,6 +204,7 @@ func (ps PubSub) deleteEndpoint(method, path string) error {
 func (ps PubSub) validateSubscription(s *Subscription) error {
 	validate := validator.New()
 	validate.RegisterValidation("urlpath", urlPathValidator)
+	validate.RegisterValidation("eventname", eventNameValidator)
 	err := validate.Struct(s)
 	if err != nil {
 		return &ErrorSubscriptionValidation{err.Error()}
