@@ -29,8 +29,9 @@ func init() {
 func main() {
 	showVersion := flag.Bool("version", false, "Show version.")
 	logLevel := zap.LevelFlag("log-level", zap.InfoLevel, `The level of logging to show after the event gateway has started. The available log levels are "debug", "info", "warn", and "err".`)
+	logFormat := flag.String("log-format", "", `The format of logs. The available formats are "text", "json".)`)
 	dbHosts := flag.String("db-hosts", "127.0.0.1:2379", "Comma-separated list of database hosts to connect to.")
-	developmentMode := flag.Bool("dev", false, "Run embedded etcd for testing.")
+	developmentMode := flag.Bool("dev", false, `Run in development mode with embedded etcd and "console" log format.`)
 	embedPeerAddr := flag.String("embed-peer-addr", "http://127.0.0.1:2380", "Address for testing embedded etcd to receive peer connections.")
 	embedCliAddr := flag.String("embed-cli-addr", "http://127.0.0.1:2379", "Address for testing embedded etcd to receive client connections.")
 	embedDataDir := flag.String("embed-data-dir", "default.etcd", "Path for testing embedded etcd to store its state.")
@@ -50,16 +51,7 @@ func main() {
 	prometheus.MustRegister(metrics.RequestDuration)
 	prometheus.MustRegister(metrics.DroppedPubSubEvents)
 
-	logCfg := zap.NewProductionConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
-	if *developmentMode {
-		logCfg = zap.NewDevelopmentConfig()
-		logCfg.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
-		logCfg.DisableCaller = true
-		logCfg.DisableStacktrace = true
-		logCfg.Level = zap.NewAtomicLevelAt(*logLevel)
-	}
-	log, err := logCfg.Build()
+	log, err := loggerConfiguration(*developmentMode, *logLevel, *logFormat).Build()
 	if err != nil {
 		panic(err)
 	}
@@ -105,4 +97,49 @@ func main() {
 	})
 
 	shutdownGuard.Wait()
+}
+
+const (
+	consoleEncoding = "console"
+	jsonEncoding    = "json"
+)
+
+func loggerConfiguration(dev bool, level zapcore.Level, format string) zap.Config {
+	cfg := zap.Config{
+		Level:            zap.NewAtomicLevelAt(level),
+		Development:      false,
+		Sampling:         &zap.SamplingConfig{Initial: 100, Thereafter: 100},
+		Encoding:         "json",
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+
+	if dev {
+		cfg.Sampling = nil
+		cfg.Encoding = consoleEncoding
+	}
+
+	if format != "" {
+		if format == "text" {
+			cfg.Encoding = consoleEncoding
+		} else if format == jsonEncoding {
+			cfg.Encoding = jsonEncoding
+		} else {
+			cfg.Encoding = ""
+		}
+	}
+
+	if cfg.Encoding == jsonEncoding {
+		cfg.EncoderConfig = zap.NewProductionEncoderConfig()
+	}
+
+	if cfg.Encoding == consoleEncoding {
+		cfg.EncoderConfig = zap.NewDevelopmentEncoderConfig()
+		cfg.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
+	}
+
+	cfg.DisableCaller = true
+	cfg.DisableStacktrace = true
+
+	return cfg
 }
