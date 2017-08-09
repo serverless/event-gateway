@@ -145,7 +145,7 @@ const (
 
 func (router *Router) handleHTTPEvent(w http.ResponseWriter, r *http.Request) {
 	endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
-	router.log.Debug("Serving HTTP request.", zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
+	router.log.Debug("Event received.", zap.String("event", "http"), zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
 
 	httpevent, err := transformHTTP(r)
 	if err != nil {
@@ -155,7 +155,7 @@ func (router *Router) handleHTTPEvent(w http.ResponseWriter, r *http.Request) {
 
 	res, err := router.callEndpoint(endpointID, httpevent)
 	if err != nil {
-		router.log.Warn("Serving HTTP request failed.", zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
+		router.log.Warn(`Handling sync "http" event failed.`, zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -176,12 +176,11 @@ func (router *Router) handleEvent(eventName string, w http.ResponseWriter, r *ht
 
 	if eventName == eventInvoke {
 		functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
-		router.log.Debug("Received sync invocation event.",
-			zap.String("functionId", string(functionID)), zap.String("event", string(customevent)))
+		router.log.Debug("Event received.", zap.String("event", "invoke"), zap.String("functionId", string(functionID)))
 
 		res, err := router.callFunction(functionID, customevent)
 		if err != nil {
-			router.log.Warn("Sync invocation failed.", zap.String("functionId", string(functionID)), zap.Error(err))
+			router.log.Warn(`Handling sync "invoke" event failed.`, zap.String("functionId", string(functionID)), zap.Error(err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -219,7 +218,7 @@ func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte)
 func (router *Router) callFunction(backingFunctionID functions.FunctionID, payload []byte) ([]byte, error) {
 	backingFunction := router.targetCache.Function(backingFunctionID)
 	if backingFunction == nil {
-		resErr := errors.New("unable to look up subscribed function")
+		resErr := errors.New("unable to look up registered function")
 		return []byte{}, resErr
 	}
 

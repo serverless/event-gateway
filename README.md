@@ -398,7 +398,7 @@ Response:
 - `event` - `string` - event name
 - `functionId` - ID of function
 - `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
-- `path` - `string` - optionally, in case of `http` event, path that accepts requests
+- `path` - `string` - optionally, in case of `http` event, path that accepts requests, starts with `/`
 
 #### Delete subscription
 
