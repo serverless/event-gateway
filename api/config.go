@@ -17,49 +17,47 @@ import (
 )
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
-func StartConfigAPI(config httpapi.Config) {
-	apiRouter := httprouter.New()
+func StartConfigAPI(config httpapi.Config) httpapi.Server {
+	router := httprouter.New()
 
-	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", config.KV)
-	fns := &functions.Functions{
-		DB:  fnsDB,
+	functionsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", config.KV)
+	functionService := &functions.Functions{
+		DB:  functionsDB,
 		Log: config.Log,
 	}
-	fnsapi := &functions.HTTPAPI{Functions: fns}
-	fnsapi.RegisterRoutes(apiRouter)
+	functionsAPI := &functions.HTTPAPI{Functions: functionService}
+	functionsAPI.RegisterRoutes(router)
 
-	ps := &pubsub.PubSub{
+	pubsubService := &pubsub.PubSub{
 		TopicsDB:        db.NewPrefixedStore("/serverless-event-gateway/topics", config.KV),
 		SubscriptionsDB: db.NewPrefixedStore("/serverless-event-gateway/subscriptions", config.KV),
 		EndpointsDB:     db.NewPrefixedStore("/serverless-event-gateway/endpoints", config.KV),
-		FunctionsDB:     fnsDB,
+		FunctionsDB:     functionsDB,
 		Log:             config.Log,
 	}
-	psapi := &pubsub.HTTPAPI{PubSub: ps}
-	psapi.RegisterRoutes(apiRouter)
+	pubsubAPI := &pubsub.HTTPAPI{PubSub: pubsubService}
+	pubsubAPI.RegisterRoutes(router)
 
-	apiRouter.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
-	apiRouter.Handler("GET", "/metrics", prometheus.Handler())
+	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
+	router.Handler("GET", "/metrics", prometheus.Handler())
 
-	apiHandler := metrics.HTTPLogger{
-		Handler:         apiRouter,
-		RequestDuration: metrics.RequestDuration,
-	}
-	ev := &http.Server{
+	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      cors.Default().Handler(apiHandler),
+		Handler:      cors.Default().Handler(metrics.HTTPLogger{Handler: router, RequestDuration: metrics.RequestDuration}),
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
 
-	h := httpapi.Handler{
+	server := httpapi.Server{
 		Config:      config,
-		HTTPHandler: ev,
+		HTTPHandler: handler,
 	}
 
 	go func() {
 		config.ShutdownGuard.Add(1)
-		h.Listen()
+		server.Listen()
 		config.ShutdownGuard.Done()
 	}()
+
+	return server
 }
