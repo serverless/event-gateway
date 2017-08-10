@@ -26,7 +26,12 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 
 	s := &Subscription{}
 	dec := json.NewDecoder(r.Body)
-	dec.Decode(s)
+	err := dec.Decode(s)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		encoder.Encode(httpapi.NewErrorMalformedJSON(err))
+		return
+	}
 
 	output, err := h.PubSub.CreateSubscription(s)
 	if err != nil {
@@ -41,9 +46,10 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 		}
 
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
-	} else {
-		encoder.Encode(output)
+		return
 	}
+
+	encoder.Encode(output)
 }
 
 func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
