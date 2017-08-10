@@ -63,7 +63,12 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 
 	fn := &Function{}
 	dec := json.NewDecoder(r.Body)
-	dec.Decode(fn)
+	err := dec.Decode(fn)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		encoder.Encode(httpapi.NewErrorMalformedJSON(err))
+		return
+	}
 
 	output, err := h.Functions.RegisterFunction(fn)
 	if err != nil {
@@ -76,9 +81,10 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 		}
 
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
-	} else {
-		encoder.Encode(output)
+		return
 	}
+
+	encoder.Encode(output)
 }
 
 func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -87,7 +93,12 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 
 	fn := &Function{}
 	dec := json.NewDecoder(r.Body)
-	dec.Decode(fn)
+	err := dec.Decode(fn)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		encoder.Encode(httpapi.NewErrorMalformedJSON(err))
+		return
+	}
 
 	fn.ID = FunctionID(params.ByName("id"))
 	output, err := h.Functions.UpdateFunction(fn)
@@ -101,9 +112,10 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		}
 
 		encoder.Encode(&httpapi.Error{Error: err.Error()})
-	} else {
-		encoder.Encode(output)
+		return
 	}
+
+	encoder.Encode(output)
 }
 
 func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
