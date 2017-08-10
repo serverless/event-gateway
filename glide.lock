@@ -1,8 +1,8 @@
-hash: f905eb2acba380e30a72dc1874572a0f678e8471332dfb85e09aa1805a34f417
-updated: 2017-07-31T16:40:04.594855076+02:00
+hash: 99c77a96a5126e3216ace094e59ad217f1dac132939f0bc508ecbf508c97d36f
+updated: 2017-08-09T21:53:45.825211474+02:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 5e436e55ac5eddc739f26a2a209b3f4248ee8e0e
+  version: d05c000e0b41647375a4093373eb1301e02c8a4e
   subpackages:
   - aws
   - aws/awserr
@@ -40,7 +40,7 @@ imports:
 - name: github.com/cockroachdb/cmux
   version: 112f0506e7743d64a6eb8fedbcff13d9979bbf92
 - name: github.com/coreos/etcd
-  version: c31bec0f29facff13f7c3e3d948e55dd6689ed42
+  version: d0d1a87aa96ae14914751d42264262cb69eda170
   subpackages:
   - alarm
   - auth
@@ -54,6 +54,7 @@ imports:
   - error
   - etcdserver
   - etcdserver/api
+  - etcdserver/api/etcdhttp
   - etcdserver/api/v2http
   - etcdserver/api/v2http/httptypes
   - etcdserver/api/v3client
@@ -190,6 +191,8 @@ imports:
   version: a1dba9ce8baed984a2495b658c82687f8157b98f
   subpackages:
   - xfs
+- name: github.com/rs/cors
+  version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/stretchr/testify
@@ -255,7 +258,7 @@ imports:
   - tap
   - transport
 - name: gopkg.in/go-playground/validator.v9
-  version: 0f6f568263a1ab5105b57f66f446d2625e4f545c
+  version: d529ee1b0f30352444f507cc6cdac96bfd12decc
 - name: gopkg.in/yaml.v2
   version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports: []

@@ -7,6 +7,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/cors"
 
 	"github.com/serverless/event-gateway/db"
 	"github.com/serverless/event-gateway/functions"
@@ -46,7 +47,7 @@ func StartConfigAPI(config httpapi.Config) {
 	}
 	ev := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      apiHandler,
+		Handler:      cors.Default().Handler(apiHandler),
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}

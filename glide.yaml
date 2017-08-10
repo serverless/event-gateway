@@ -37,3 +37,5 @@ import:
   - gomock
 - package: github.com/satori/go.uuid
   version: ^v1.1.0
+- package: github.com/rs/cors
+  version: ^1.2.0
