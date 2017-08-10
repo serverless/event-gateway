@@ -144,18 +144,18 @@ const (
 )
 
 func (router *Router) handleHTTPEvent(w http.ResponseWriter, r *http.Request) {
-	endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
-	router.log.Debug("Event received.", zap.String("event", "http"), zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
-
 	httpevent, err := transformHTTP(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	router.log.Debug("Event received.", zap.String("event", string(httpevent)), zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
+
+	endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 	res, err := router.callEndpoint(endpointID, httpevent)
 	if err != nil {
-		router.log.Warn(`Handling sync "http" event failed.`, zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
+		router.log.Warn(`Handling "http" event failed.`, zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -174,10 +174,10 @@ func (router *Router) handleEvent(eventName string, w http.ResponseWriter, r *ht
 		return
 	}
 
+	router.log.Debug("Event received.", zap.String("event", string(customevent)))
+
 	if eventName == eventInvoke {
 		functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
-		router.log.Debug("Event received.", zap.String("event", "invoke"), zap.String("functionId", string(functionID)))
-
 		res, err := router.callFunction(functionID, customevent)
 		if err != nil {
 			router.log.Warn("Function invocation failed.", zap.String("functionId", string(functionID)),
@@ -195,8 +195,6 @@ func (router *Router) handleEvent(eventName string, w http.ResponseWriter, r *ht
 			return
 		}
 	} else {
-		router.log.Debug("Event received.", zap.String("event", string(customevent)))
-
 		router.processEvent(event{
 			topics:  []pubsub.TopicID{pubsub.TopicID(eventName)},
 			payload: customevent,
@@ -211,7 +209,7 @@ func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte)
 	// Figure out what function we're targeting.
 	backingFunction := router.targetCache.BackingFunction(endpointID)
 	if backingFunction == nil {
-		retErr := errors.New("for endpoint ID:" + string(endpointID) + ", could not find backing function")
+		retErr := errors.New("unable to look up backing function")
 		return []byte{}, retErr
 	}
 
