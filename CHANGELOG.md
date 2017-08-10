@@ -1,4 +1,12 @@
 
+0.5.4 / 2017-08-10
+==================
+
+  * return HTTP error when JSON payload is malformed. Closes #241 (#261)
+  * add logging about address on which APIs are listening. Closes #246 (#260)
+  * remove redundant logs. Log HTTP event payload. (#259)
+  * output version to stdout
+
 0.5.3 / 2017-08-10
 ==================
 
