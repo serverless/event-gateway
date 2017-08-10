@@ -14,7 +14,7 @@ import (
 type Schema struct {
 	Event      string      `json:"event"`
 	ID         string      `json:"id"`
-	ReceivedAt uint        `json:"receivedAt"`
+	ReceivedAt uint64      `json:"receivedAt"`
 	Data       interface{} `json:"data"`
 	DataType   string      `json:"dataType"`
 }
@@ -45,7 +45,7 @@ func transform(event string, r *http.Request) ([]byte, error) {
 	instance := &Schema{
 		Event:      event,
 		ID:         uuid.NewV4().String(),
-		ReceivedAt: uint(time.Now().UnixNano() / int64(time.Millisecond)),
+		ReceivedAt: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
 		DataType:   mime,
 		Data:       payload,
 	}
