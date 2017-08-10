@@ -62,7 +62,6 @@ func main() {
 
 	if *developmentMode {
 		db.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
-		log.Info("Running in development mode with embedded etcd.")
 	}
 
 	dbHostStrings := strings.Split(*dbHosts, ",")
@@ -77,8 +76,16 @@ func main() {
 		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
-	// start API handler
-	api.StartConfigAPI(httpapi.Config{
+	eventServer := api.StartEventsAPI(httpapi.Config{
+		KV:            kv,
+		Log:           log,
+		TLSCrt:        eventsTLSCrt,
+		TLSKey:        eventsTLSKey,
+		Port:          *eventsPort,
+		ShutdownGuard: shutdownGuard,
+	})
+
+	configServer := api.StartConfigAPI(httpapi.Config{
 		KV:            kv,
 		Log:           log,
 		TLSCrt:        configTLSCrt,
@@ -87,15 +94,18 @@ func main() {
 		ShutdownGuard: shutdownGuard,
 	})
 
-	// start Event Gateway handler
-	api.StartEventsAPI(httpapi.Config{
-		KV:            kv,
-		Log:           log,
-		TLSCrt:        eventsTLSCrt,
-		TLSKey:        eventsTLSKey,
-		Port:          *eventsPort,
-		ShutdownGuard: shutdownGuard,
-	})
+	if *developmentMode {
+		eventProto := "http"
+		if eventServer.HTTPHandler.TLSConfig != nil {
+			eventProto = "https"
+		}
+		configProto := "http"
+		if configServer.HTTPHandler.TLSConfig != nil {
+			configProto = "https"
+		}
+
+		log.Info(fmt.Sprintf("Running in development mode with embedded etcd. Event API listening on %s://localhost:%d. Config API listening on %s://localhost:%d.", eventProto, *eventsPort, configProto, *configPort))
+	}
 
 	shutdownGuard.Wait()
 }

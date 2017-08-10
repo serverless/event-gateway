@@ -8,29 +8,29 @@ import (
 	"go.uber.org/zap"
 )
 
-// Handler is a context-aware http server.
-type Handler struct {
+// Server is a context-aware http server.
+type Server struct {
 	Config
 	HTTPHandler *http.Server
 }
 
 // Listen sets up a graceful shutdown mechanism and runs the http.Server.
-func (h Handler) Listen() {
+func (s Server) Listen() {
 	go func() {
-		<-h.Config.ShutdownGuard.ShuttingDown
-		h.HTTPHandler.Shutdown(context.Background())
+		<-s.Config.ShutdownGuard.ShuttingDown
+		s.HTTPHandler.Shutdown(context.Background())
 	}()
 
 	var err error
-	if *h.Config.TLSCrt != "" && *h.Config.TLSKey != "" {
-		h.HTTPHandler.TLSConfig = tlsConf
-		h.HTTPHandler.TLSNextProto = map[string]func(*http.Server, *tls.Conn, http.Handler){}
+	if *s.Config.TLSCrt != "" && *s.Config.TLSKey != "" {
+		s.HTTPHandler.TLSConfig = tlsConf
+		s.HTTPHandler.TLSNextProto = map[string]func(*http.Server, *tls.Conn, http.Handler){}
 
-		err = h.HTTPHandler.ListenAndServeTLS(*h.Config.TLSCrt, *h.Config.TLSKey)
+		err = s.HTTPHandler.ListenAndServeTLS(*s.Config.TLSCrt, *s.Config.TLSKey)
 	} else {
-		err = h.HTTPHandler.ListenAndServe()
+		err = s.HTTPHandler.ListenAndServe()
 	}
-	h.Config.Log.Error("http server failed", zap.Error(err))
+	s.Config.Log.Error("HTTP server failed.", zap.Error(err))
 
-	h.Config.ShutdownGuard.InitiateShutdown()
+	s.Config.ShutdownGuard.InitiateShutdown()
 }
