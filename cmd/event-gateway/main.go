@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -44,7 +45,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		println(version)
+		fmt.Printf("Event Gateway version: %s\n", version)
 		os.Exit(0)
 	}
 
