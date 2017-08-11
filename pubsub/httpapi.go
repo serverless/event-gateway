@@ -29,7 +29,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 	err := dec.Decode(s)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		encoder.Encode(httpapi.NewErrorMalformedJSON(err))
+		encoder.Encode(httpapi.NewErrMalformedJSON(err))
 		return
 	}
 

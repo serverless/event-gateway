@@ -66,7 +66,7 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 	err := dec.Decode(fn)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		encoder.Encode(httpapi.NewErrorMalformedJSON(err))
+		encoder.Encode(httpapi.NewErrMalformedJSON(err))
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 	err := dec.Decode(fn)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		encoder.Encode(httpapi.NewErrorMalformedJSON(err))
+		encoder.Encode(httpapi.NewErrMalformedJSON(err))
 		return
 	}
 

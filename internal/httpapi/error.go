@@ -7,10 +7,10 @@ type Error struct {
 	Error string `json:"error"`
 }
 
-// ErrorMalformedJSON occuring when it's impossible to decode JSON payload.
-type ErrorMalformedJSON Error
+// ErrMalformedJSON occuring when it's impossible to decode JSON payload.
+type ErrMalformedJSON Error
 
-// NewErrorMalformedJSON creates ErrorMalformedJSON.
-func NewErrorMalformedJSON(err error) *ErrorMalformedJSON {
-	return &ErrorMalformedJSON{fmt.Sprintf("Malformed JSON payload: %s.", err.Error())}
+// NewErrMalformedJSON creates ErrMalformedJSON.
+func NewErrMalformedJSON(err error) *ErrMalformedJSON {
+	return &ErrMalformedJSON{fmt.Sprintf("Malformed JSON payload: %s.", err.Error())}
 }
