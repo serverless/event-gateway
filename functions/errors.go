@@ -24,9 +24,27 @@ func (e ErrAlreadyRegistered) Error() string {
 
 // ErrValidation occurs when function payload doesn't validate.
 type ErrValidation struct {
-	original string
+	message string
 }
 
 func (e ErrValidation) Error() string {
-	return fmt.Sprintf("Function doesn't validate. Validation error: %q", e.original)
+	return fmt.Sprintf("Function doesn't validate. Validation error: %q", e.message)
+}
+
+// ErrFunctionCallFailed occurs when function call failed because of provider error.
+type ErrFunctionCallFailed struct {
+	original error
+}
+
+func (e ErrFunctionCallFailed) Error() string {
+	return fmt.Sprintf("Function call failed. Error: %q", e.original)
+}
+
+// ErrFunctionCallFailedProviderError occurs when function call failed because of provider error.
+type ErrFunctionCallFailedProviderError struct {
+	original error
+}
+
+func (e ErrFunctionCallFailedProviderError) Error() string {
+	return fmt.Sprintf("Function call failed because of provider error. Error: %q", e.original)
 }

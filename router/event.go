@@ -10,8 +10,8 @@ import (
 	"github.com/serverless/event-gateway/pubsub"
 )
 
-// Schema is a default event schema. All data that passes through the Event Gateway is formatted as an Event, based on this schema.
-type Schema struct {
+// Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on this schema.
+type Event struct {
 	Event      string      `json:"event"`
 	ID         string      `json:"id"`
 	ReceivedAt uint64      `json:"receivedAt"`
@@ -19,8 +19,19 @@ type Schema struct {
 	DataType   string      `json:"dataType"`
 }
 
-// HTTPSchema is a event schema used for sending events to HTTP subscriptions.
-type HTTPSchema struct {
+// NewEvent return new instance of Event.
+func NewEvent(name, mime string, payload interface{}) *Event {
+	return &Event{
+		Event:      name,
+		ID:         uuid.NewV4().String(),
+		ReceivedAt: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
+		DataType:   mime,
+		Data:       payload,
+	}
+}
+
+// HTTPEvent is a event schema used for sending events to HTTP subscriptions.
+type HTTPEvent struct {
 	Headers map[string][]string `json:"headers"`
 	Query   map[string][]string `json:"query"`
 	Body    interface{}         `json:"body"`
@@ -31,7 +42,7 @@ const (
 	mimeOctetStrem = "application/octet-stream"
 )
 
-func fromRequest(r *http.Request) (*Schema, error) {
+func fromRequest(r *http.Request) (*Event, error) {
 	name := r.Header.Get("event")
 	if name == "" {
 		name = eventHTTP
@@ -47,13 +58,7 @@ func fromRequest(r *http.Request) (*Schema, error) {
 		return nil, err
 	}
 
-	event := &Schema{
-		Event:      name,
-		ID:         uuid.NewV4().String(),
-		ReceivedAt: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
-		DataType:   mime,
-		Data:       body,
-	}
+	event := NewEvent(name, mime, body)
 
 	if mime == mimeJSON && len(body) > 0 {
 		err := json.Unmarshal(body, &event.Data)
@@ -63,7 +68,7 @@ func fromRequest(r *http.Request) (*Schema, error) {
 	}
 
 	if event.Event == eventHTTP {
-		event.Data = &HTTPSchema{
+		event.Data = &HTTPEvent{
 			Headers: r.Header,
 			Query:   r.URL.Query(),
 			Body:    event.Data,

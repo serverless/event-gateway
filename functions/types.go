@@ -3,6 +3,7 @@ package functions
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
@@ -124,6 +126,16 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 		FunctionName: &f.Provider.ARN,
 		Payload:      payload,
 	})
+	if err != nil {
+		if awserr, ok := err.(awserr.Error); ok {
+			switch awserr.Code() {
+			case lambda.ErrCodeServiceException:
+				return nil, &ErrFunctionCallFailedProviderError{awserr}
+			default:
+				return nil, &ErrFunctionCallFailed{awserr}
+			}
+		}
+	}
 
 	return invokeOutput.Payload, err
 }
@@ -135,10 +147,13 @@ func (f *Function) callHTTP(payload []byte) ([]byte, error) {
 
 	resp, err := client.Post(f.Provider.URL, "application/json", bytes.NewReader(payload))
 	if err != nil {
-		return []byte{}, err
+		return nil, &ErrFunctionCallFailed{err}
 	}
-	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusInternalServerError {
+		return nil, &ErrFunctionCallFailedProviderError{fmt.Errorf("HTTP status code: %d", http.StatusInternalServerError)}
+	}
 
+	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
 }
 
