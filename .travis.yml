@@ -15,6 +15,7 @@ script:
 - gometalinter --install --force
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --skip=mock ./...
 - go test -race $(glide novendor)
+- go test -tags=integration -race $(glide novendor)
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 notifications:
