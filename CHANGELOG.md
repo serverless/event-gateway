@@ -1,4 +1,11 @@
 
+0.5.7 / 2017-08-11
+==================
+
+  * fix HTTP event structure
+  * standarize error names
+  * rename ErrorMalformedJSON to ErrMalformedJSON
+
 0.5.6 / 2017-08-11
 ==================
 
