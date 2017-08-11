@@ -10,10 +10,10 @@ import (
 	"github.com/rs/cors"
 
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/pubsub"
-	"github.com/serverless/event-gateway/util/httpapi"
 )
 
 // StartConfigAPI creates a new configuration API server and listens for requests.

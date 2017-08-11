@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/serverless/event-gateway/util/httpapi"
+	"github.com/serverless/event-gateway/internal/httpapi"
 )
 
 // HTTPAPI for function discovery

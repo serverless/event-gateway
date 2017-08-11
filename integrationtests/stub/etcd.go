@@ -11,7 +11,7 @@ import (
 	"github.com/docker/libkv/store/etcd"
 
 	"github.com/serverless/event-gateway/internal/kv"
-	"github.com/serverless/event-gateway/util"
+	"github.com/serverless/event-gateway/internal/sync"
 )
 
 func init() {
@@ -19,8 +19,8 @@ func init() {
 }
 
 // TestEtcd returns etcd store for testing.
-func TestEtcd() (store.Store, *util.ShutdownGuard) {
-	shutdownGuard := util.NewShutdownGuard()
+func TestEtcd() (store.Store, *sync.ShutdownGuard) {
+	shutdownGuard := sync.NewShutdownGuard()
 
 	wd, err := os.Getwd()
 	if err != nil {

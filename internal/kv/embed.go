@@ -6,13 +6,12 @@ import (
 
 	"github.com/coreos/etcd/embed"
 	"github.com/coreos/pkg/capnslog"
-
-	"github.com/serverless/event-gateway/util"
+	"github.com/serverless/event-gateway/internal/sync"
 )
 
 // EmbedEtcd starts an embedded etcd instance. It can be shut down by closing the shutdown chan.
 // It returns a chan that is closed upon startup, and a chan that is closed once shutdown is complete.
-func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGuard) {
+func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *sync.ShutdownGuard) {
 	cfg := embed.NewConfig()
 
 	// set advertise urls

@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 
 	"github.com/docker/libkv/store"
-	"github.com/serverless/event-gateway/util"
+	"github.com/serverless/event-gateway/internal/sync"
 	"go.uber.org/zap"
 )
 
@@ -15,7 +15,7 @@ type Config struct {
 	TLSCrt        *string
 	TLSKey        *string
 	Port          uint
-	ShutdownGuard *util.ShutdownGuard
+	ShutdownGuard *sync.ShutdownGuard
 }
 
 var tlsConf = &tls.Config{

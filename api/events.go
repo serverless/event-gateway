@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/rs/cors"
+	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/targetcache"
-	"github.com/serverless/event-gateway/util/httpapi"
 )
 
 // StartEventsAPI creates a new gateway endpoint and listens for requests.
