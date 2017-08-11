@@ -28,7 +28,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 
 	fn, err := h.Functions.GetFunction(FunctionID(params.ByName("id")))
 	if err != nil {
-		if _, ok := err.(*ErrorNotFound); ok {
+		if _, ok := err.(*ErrNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -72,9 +72,9 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 
 	output, err := h.Functions.RegisterFunction(fn)
 	if err != nil {
-		if _, ok := err.(*ErrorValidation); ok {
+		if _, ok := err.(*ErrValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*ErrorAlreadyRegistered); ok {
+		} else if _, ok := err.(*ErrAlreadyRegistered); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -103,9 +103,9 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 	fn.ID = FunctionID(params.ByName("id"))
 	output, err := h.Functions.UpdateFunction(fn)
 	if err != nil {
-		if _, ok := err.(*ErrorValidation); ok {
+		if _, ok := err.(*ErrValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*ErrorNotFound); ok {
+		} else if _, ok := err.(*ErrNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -124,7 +124,7 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 
 	err := h.Functions.DeleteFunction(FunctionID(params.ByName("id")))
 	if err != nil {
-		if _, ok := err.(*ErrorNotFound); ok {
+		if _, ok := err.(*ErrNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)

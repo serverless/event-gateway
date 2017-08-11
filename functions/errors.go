@@ -4,29 +4,29 @@ import (
 	"fmt"
 )
 
-// ErrorNotFound occurs when function couldn't been found in the discovery.
-type ErrorNotFound struct {
+// ErrNotFound occurs when function couldn't been found in the discovery.
+type ErrNotFound struct {
 	ID FunctionID
 }
 
-func (e ErrorNotFound) Error() string {
+func (e ErrNotFound) Error() string {
 	return fmt.Sprintf("Function %q not found.", string(e.ID))
 }
 
-// ErrorAlreadyRegistered occurs when function with specified name is already registered..
-type ErrorAlreadyRegistered struct {
+// ErrAlreadyRegistered occurs when function with specified name is already registered..
+type ErrAlreadyRegistered struct {
 	ID FunctionID
 }
 
-func (e ErrorAlreadyRegistered) Error() string {
+func (e ErrAlreadyRegistered) Error() string {
 	return fmt.Sprintf("Function %q already registered.", string(e.ID))
 }
 
-// ErrorValidation occurs when function payload doesn't validate.
-type ErrorValidation struct {
+// ErrValidation occurs when function payload doesn't validate.
+type ErrValidation struct {
 	original string
 }
 
-func (e ErrorValidation) Error() string {
+func (e ErrValidation) Error() string {
 	return fmt.Sprintf("Function doesn't validate. Validation error: %q", e.original)
 }

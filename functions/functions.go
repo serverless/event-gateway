@@ -25,7 +25,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 
 	_, err := f.DB.Get(string(fn.ID))
 	if err == nil {
-		return nil, &ErrorAlreadyRegistered{fn.ID}
+		return nil, &ErrAlreadyRegistered{fn.ID}
 	}
 
 	byt, err := json.Marshal(fn)
@@ -47,7 +47,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
 	_, err := f.DB.Get(string(fn.ID))
 	if err != nil {
-		return nil, &ErrorNotFound{fn.ID}
+		return nil, &ErrNotFound{fn.ID}
 	}
 
 	if err = f.validateFunction(fn); err != nil {
@@ -73,7 +73,7 @@ func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
 func (f *Functions) GetFunction(id FunctionID) (*Function, error) {
 	kv, err := f.DB.Get(string(id))
 	if err != nil {
-		return nil, &ErrorNotFound{id}
+		return nil, &ErrNotFound{id}
 	}
 
 	fn := Function{}
@@ -112,7 +112,7 @@ func (f *Functions) GetAllFunctions() ([]*Function, error) {
 func (f *Functions) DeleteFunction(id FunctionID) error {
 	err := f.DB.Delete(string(id))
 	if err != nil {
-		return &ErrorNotFound{id}
+		return &ErrNotFound{id}
 	}
 
 	f.Log.Debug("Function deleted.", zap.String("functionId", string(id)))
@@ -125,17 +125,17 @@ func (f *Functions) validateFunction(fn *Function) error {
 	validate.RegisterValidation("functionid", functionIDValidator)
 	err := validate.Struct(fn)
 	if err != nil {
-		return &ErrorValidation{err.Error()}
+		return &ErrValidation{err.Error()}
 	}
 
 	if fn.Provider.Type == AWSLambda {
 		if fn.Provider.ARN == "" || fn.Provider.Region == "" {
-			return &ErrorValidation{"Missing required fields for AWS Lambda function."}
+			return &ErrValidation{"Missing required fields for AWS Lambda function."}
 		}
 	}
 
 	if fn.Provider.Type == HTTPEndpoint && fn.Provider.URL == "" {
-		return &ErrorValidation{"Missing required fields for HTTP endpoint."}
+		return &ErrValidation{"Missing required fields for HTTP endpoint."}
 	}
 
 	if fn.Provider.Type == Weighted {
@@ -147,7 +147,7 @@ func (f *Functions) validateFunction(fn *Function) error {
 
 func (f *Functions) validateWeighted(fn *Function) error {
 	if len(fn.Provider.Weighted) == 0 {
-		return &ErrorValidation{"Missing required fields for weighted function."}
+		return &ErrValidation{"Missing required fields for weighted function."}
 	}
 
 	weightTotal := uint(0)
@@ -156,7 +156,7 @@ func (f *Functions) validateWeighted(fn *Function) error {
 	}
 
 	if weightTotal < 1 {
-		return &ErrorValidation{"Function weights sum to zero."}
+		return &ErrValidation{"Function weights sum to zero."}
 	}
 
 	return nil

@@ -35,11 +35,11 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 
 	output, err := h.PubSub.CreateSubscription(s)
 	if err != nil {
-		if _, ok := err.(*ErrorSubscriptionAlreadyExists); ok {
+		if _, ok := err.(*ErrSubscriptionAlreadyExists); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*ErrorFunctionNotFound); ok {
+		} else if _, ok := err.(*ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*ErrorSubscriptionValidation); ok {
+		} else if _, ok := err.(*ErrSubscriptionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -58,7 +58,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 
 	err := h.PubSub.DeleteSubscription(SubscriptionID(params.ByName("subscriptionID")))
 	if err != nil {
-		if _, ok := err.(*ErrorSubscriptionNotFound); ok {
+		if _, ok := err.(*ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)

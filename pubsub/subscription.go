@@ -32,39 +32,39 @@ func newSubscriptionID(s *Subscription) SubscriptionID {
 	return SubscriptionID(string(s.Event) + "-" + s.Method + "-" + url.PathEscape(s.Path))
 }
 
-// ErrorSubscriptionAlreadyExists occurs when subscription with the same ID already exists.
-type ErrorSubscriptionAlreadyExists struct {
+// ErrSubscriptionAlreadyExists occurs when subscription with the same ID already exists.
+type ErrSubscriptionAlreadyExists struct {
 	ID SubscriptionID
 }
 
-func (e ErrorSubscriptionAlreadyExists) Error() string {
+func (e ErrSubscriptionAlreadyExists) Error() string {
 	return fmt.Sprintf("Subscription %q already exits.", e.ID)
 }
 
-// ErrorSubscriptionValidation occurs when subscription payload doesn't validate.
-type ErrorSubscriptionValidation struct {
+// ErrSubscriptionValidation occurs when subscription payload doesn't validate.
+type ErrSubscriptionValidation struct {
 	original string
 }
 
-func (e ErrorSubscriptionValidation) Error() string {
+func (e ErrSubscriptionValidation) Error() string {
 	return fmt.Sprintf("Subscription doesn't validate. Validation error: %q", e.original)
 }
 
-// ErrorSubscriptionNotFound occurs when subscription cannot be found.
-type ErrorSubscriptionNotFound struct {
+// ErrSubscriptionNotFound occurs when subscription cannot be found.
+type ErrSubscriptionNotFound struct {
 	ID SubscriptionID
 }
 
-func (e ErrorSubscriptionNotFound) Error() string {
+func (e ErrSubscriptionNotFound) Error() string {
 	return fmt.Sprintf("Subscription %q not found.", e.ID)
 }
 
-// ErrorFunctionNotFound occurs when subscription cannot be created because backing function doesn't exist.
-type ErrorFunctionNotFound struct {
+// ErrFunctionNotFound occurs when subscription cannot be created because backing function doesn't exist.
+type ErrFunctionNotFound struct {
 	functionID string
 }
 
-func (e ErrorFunctionNotFound) Error() string {
+func (e ErrFunctionNotFound) Error() string {
 	return fmt.Sprintf("Function %q not found.", e.functionID)
 }
 

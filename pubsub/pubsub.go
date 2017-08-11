@@ -29,7 +29,7 @@ func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 	s.ID = newSubscriptionID(s)
 	_, err = ps.SubscriptionsDB.Get(string(s.ID))
 	if err == nil {
-		return nil, &ErrorSubscriptionAlreadyExists{
+		return nil, &ErrSubscriptionAlreadyExists{
 			ID: s.ID,
 		}
 	}
@@ -51,7 +51,7 @@ func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 		return nil, err
 	}
 	if !exists {
-		return nil, &ErrorFunctionNotFound{string(s.FunctionID)}
+		return nil, &ErrFunctionNotFound{string(s.FunctionID)}
 	}
 
 	buf, err := json.Marshal(s)
@@ -78,7 +78,7 @@ func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
 
 	err = ps.SubscriptionsDB.Delete(string(sub.ID))
 	if err != nil {
-		return &ErrorSubscriptionNotFound{sub.ID}
+		return &ErrSubscriptionNotFound{sub.ID}
 	}
 
 	if sub.Event == SubscriptionHTTP {
@@ -122,7 +122,7 @@ func (ps PubSub) GetAllSubscriptions() ([]*Subscription, error) {
 func (ps PubSub) getSubscription(id SubscriptionID) (*Subscription, error) {
 	rawsub, err := ps.SubscriptionsDB.Get(string(id))
 	if err != nil {
-		return nil, &ErrorSubscriptionNotFound{id}
+		return nil, &ErrSubscriptionNotFound{id}
 	}
 
 	sub := &Subscription{}
@@ -207,12 +207,12 @@ func (ps PubSub) validateSubscription(s *Subscription) error {
 	validate.RegisterValidation("eventname", eventNameValidator)
 	err := validate.Struct(s)
 	if err != nil {
-		return &ErrorSubscriptionValidation{err.Error()}
+		return &ErrSubscriptionValidation{err.Error()}
 	}
 
 	if s.Event == SubscriptionHTTP {
 		if s.Method == "" || s.Path == "" {
-			return &ErrorSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
+			return &ErrSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
 		}
 	}
 
