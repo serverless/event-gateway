@@ -15,10 +15,10 @@ import (
 
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/integrationtests/stub"
+	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/pubsub"
 	"github.com/serverless/event-gateway/router"
-	"github.com/serverless/event-gateway/targetcache"
 )
 
 func TestSubscriptionHTTP(t *testing.T) {
@@ -101,7 +101,7 @@ func get(url string) string {
 }
 
 func newTestRouterServer(kv store.Store, log *zap.Logger) (*router.Router, *httptest.Server) {
-	targetCache := targetcache.New("/serverless-event-gateway", kv, log, true)
+	targetCache := cache.NewTarget("/serverless-event-gateway", kv, log, true)
 	router := router.New(targetCache, metrics.DroppedPubSubEvents, log)
 
 	return router, httptest.NewServer(router)

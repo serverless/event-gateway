@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/rs/cors"
+	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/router"
-	"github.com/serverless/event-gateway/targetcache"
 )
 
 // StartEventsAPI creates a new gateway endpoint and listens for requests.
 func StartEventsAPI(config httpapi.Config) httpapi.Server {
-	targetCache := targetcache.New("/serverless-event-gateway", config.KV, config.Log)
+	targetCache := cache.NewTarget("/serverless-event-gateway", config.KV, config.Log)
 	router := router.New(targetCache, metrics.DroppedPubSubEvents, config.Log)
 	router.StartWorkers()
 

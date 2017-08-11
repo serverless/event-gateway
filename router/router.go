@@ -11,14 +11,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/pubsub"
-	"github.com/serverless/event-gateway/targetcache"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
 type Router struct {
 	sync.Mutex
-	targetCache          targetcache.TargetCache
+	targetCache          cache.Targeter
 	dropMetric           prometheus.Counter
 	log                  *zap.Logger
 	NWorkers             uint
@@ -30,7 +30,7 @@ type Router struct {
 }
 
 // New instantiates a new Router
-func New(targetCache targetcache.TargetCache, dropMetric prometheus.Counter, log *zap.Logger) *Router {
+func New(targetCache cache.Targeter, dropMetric prometheus.Counter, log *zap.Logger) *Router {
 	return &Router{
 		targetCache: targetCache,
 		dropMetric:  dropMetric,

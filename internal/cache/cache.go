@@ -1,4 +1,4 @@
-package targetcache
+package cache
 
 import (
 	"bytes"
@@ -11,35 +11,35 @@ import (
 	"github.com/serverless/event-gateway/pubsub"
 )
 
-// Cache is a simplification of the db.Reactive interface, which doesn't care about
+// cacher is a simplification of the db.Reactive interface, which doesn't care about
 // the distinction between Created and Modified, reducing them to Set.
-type Cache interface {
+type cacher interface {
 	Set(string, []byte)
 	Del(string, []byte)
 }
 
-type cacheMaintainer struct {
-	cache Cache
+type maintainer struct {
+	cache cacher
 }
 
-func newCacheMaintainer(cache Cache) *cacheMaintainer {
-	return &cacheMaintainer{
+func newCacheMaintainer(cache cacher) *maintainer {
+	return &maintainer{
 		cache: cache,
 	}
 }
 
 // Created is called when a new endpoint is detected in the config.
-func (c *cacheMaintainer) Created(key string, value []byte) {
+func (c *maintainer) Created(key string, value []byte) {
 	c.cache.Set(key, value)
 }
 
 // Modified is called when an existing endpoint is modified in the config.
-func (c *cacheMaintainer) Modified(key string, newValue []byte) {
+func (c *maintainer) Modified(key string, newValue []byte) {
 	c.cache.Set(key, newValue)
 }
 
 // Deleted is called when a endpoint is deleted in the config.
-func (c *cacheMaintainer) Deleted(key string, lastKnownValue []byte) {
+func (c *maintainer) Deleted(key string, lastKnownValue []byte) {
 	c.cache.Del(key, lastKnownValue)
 }
 
