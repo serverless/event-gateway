@@ -23,7 +23,7 @@ type Schema struct {
 type HTTPSchema struct {
 	Headers map[string][]string `json:"headers"`
 	Query   map[string][]string `json:"query"`
-	Data    interface{}         `json:"data"`
+	Body    interface{}         `json:"body"`
 }
 
 const (
@@ -69,11 +69,11 @@ func transformHTTP(r *http.Request) ([]byte, error) {
 	instance := &HTTPSchema{
 		Headers: r.Header,
 		Query:   r.URL.Query(),
-		Data:    payload,
+		Body:    payload,
 	}
 
 	if r.Header.Get("content-type") == mimeJSON && len(payload) > 0 {
-		err := json.Unmarshal(payload, &instance.Data)
+		err := json.Unmarshal(payload, &instance.Body)
 		if err != nil {
 			return nil, err
 		}
