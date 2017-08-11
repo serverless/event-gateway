@@ -1,4 +1,4 @@
-package db
+package kv
 
 import (
 	"math"
@@ -11,18 +11,9 @@ import (
 	"github.com/docker/libkv/store"
 )
 
-// Reactive is a type that can react to state changes on keys in a directory.
-type Reactive interface {
-	Created(key string, value []byte)
-	Modified(key string, newValue []byte)
-	Deleted(key string, lastKnownValue []byte)
-}
-
-// PathWatcher provides a means of watching for changes to
-// interesting configuration in the backing database. It also
-// maintains a cache of updates observed by a Reactive
-// instance.
-type PathWatcher struct {
+// Watcher provides a means of watching for changes to interesting configuration in the backing database. It also
+// maintains a cache of updates observed by a Reactive instance.
+type Watcher struct {
 	path string
 	kv   store.Store
 	log  *zap.Logger
@@ -42,8 +33,8 @@ type PathWatcher struct {
 	ReconciliationJitter int
 }
 
-// NewPathWatcher instantiates a new PathWatcher.
-func NewPathWatcher(path string, kv store.Store, log *zap.Logger) *PathWatcher {
+// NewWatcher instantiates a new Watcher.
+func NewWatcher(path string, kv store.Store, log *zap.Logger) *Watcher {
 	if path == "/" {
 		panic("Root (\"/\") used for watch path. Please namespace all usage to avoid performance issues.")
 	} else if !strings.HasPrefix(path, "/") {
@@ -53,7 +44,7 @@ func NewPathWatcher(path string, kv store.Store, log *zap.Logger) *PathWatcher {
 	if !strings.HasSuffix(path, "/") {
 		path = path + "/"
 	}
-	return &PathWatcher{
+	return &Watcher{
 		path:                    path,
 		kv:                      kv,
 		log:                     log,
@@ -66,7 +57,7 @@ func NewPathWatcher(path string, kv store.Store, log *zap.Logger) *PathWatcher {
 // React will watch for events on the PathWatcher's root directory,
 // and call the Created/Modified/Deleted functions on a provided
 // Reactive when changes are detected.
-func (rfs *PathWatcher) React(reactor Reactive, shutdown chan struct{}) {
+func (rfs *Watcher) React(reactor reactive, shutdown chan struct{}) {
 	events := make(chan event)
 	go rfs.watchRoot(events, shutdown)
 
@@ -110,11 +101,11 @@ type cachedValue struct {
 	LastIndex uint64
 }
 
-func (rfs *PathWatcher) resetBackoff() {
+func (rfs *Watcher) resetBackoff() {
 	rfs.backoffFactor = 1
 }
 
-func (rfs *PathWatcher) backoff() {
+func (rfs *Watcher) backoff() {
 	rfs.log.Info("Backing-off after a failure",
 		zap.String("event", "backoff"),
 		zap.Int("seconds", rfs.backoffFactor))
@@ -122,7 +113,7 @@ func (rfs *PathWatcher) backoff() {
 	rfs.backoffFactor = int(math.Min(float64(rfs.backoffFactor<<1), 8))
 }
 
-func (rfs *PathWatcher) reconciliationTimeout() <-chan time.Time {
+func (rfs *Watcher) reconciliationTimeout() <-chan time.Time {
 	// use a minimum jitter of 1
 	maxJitter := int(math.Max(float64(rfs.ReconciliationJitter), 1))
 	jitter := rand.Intn(maxJitter)
@@ -130,7 +121,7 @@ func (rfs *PathWatcher) reconciliationTimeout() <-chan time.Time {
 	return time.After(delay)
 }
 
-func (rfs *PathWatcher) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
+func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
 	// NB when extending libkv usage for DB's other than etcd, the watch behavior
 	// will need to be carefully considered, as the code below will likely need
 	// to be changed depending on which backend database is used.
@@ -168,7 +159,7 @@ func (rfs *PathWatcher) watchRoot(outgoingEvents chan event, shutdown chan struc
 
 		if !exists {
 			// must set IsDir to true since backend may be etcd
-			err := rfs.kv.Put(rfs.path, []byte{}, &store.WriteOptions{IsDir: true})
+			err = rfs.kv.Put(rfs.path, []byte{}, &store.WriteOptions{IsDir: true})
 			if err != nil {
 				if strings.HasPrefix(err.Error(), "102: Not a file") {
 					rfs.log.Debug("Another node (probably) created the root directory first.")
@@ -204,7 +195,7 @@ func (rfs *PathWatcher) watchRoot(outgoingEvents chan event, shutdown chan struc
 	}
 }
 
-func (rfs *PathWatcher) processEvents(cache *map[string]cachedValue, incomingEvents <-chan []*store.KVPair,
+func (rfs *Watcher) processEvents(cache *map[string]cachedValue, incomingEvents <-chan []*store.KVPair,
 	outgoingEvents chan event, shutdown chan struct{}) bool {
 
 	for {
@@ -234,7 +225,7 @@ func (rfs *PathWatcher) processEvents(cache *map[string]cachedValue, incomingEve
 	}
 }
 
-func (rfs *PathWatcher) diffCache(kvs []*store.KVPair, outgoingevents chan event,
+func (rfs *Watcher) diffCache(kvs []*store.KVPair, outgoingevents chan event,
 	cache map[string]cachedValue) map[string]cachedValue {
 
 	nextCache := map[string]cachedValue{}
@@ -283,4 +274,11 @@ func (rfs *PathWatcher) diffCache(kvs []*store.KVPair, outgoingevents chan event
 	}
 
 	return nextCache
+}
+
+// Reactive is a type that can react to state changes on keys in a directory.
+type reactive interface {
+	Created(key string, value []byte)
+	Modified(key string, newValue []byte)
+	Deleted(key string, lastKnownValue []byte)
 }

@@ -1,4 +1,4 @@
-package db
+package kv
 
 import (
 	"net/url"
@@ -13,7 +13,6 @@ import (
 // EmbedEtcd starts an embedded etcd instance. It can be shut down by closing the shutdown chan.
 // It returns a chan that is closed upon startup, and a chan that is closed once shutdown is complete.
 func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGuard) {
-
 	cfg := embed.NewConfig()
 
 	// set advertise urls
@@ -74,7 +73,7 @@ func EmbedEtcd(dataDir, peerAddr, cliAddr string, shutdownGuard *util.ShutdownGu
 			e.Server.Stop()
 			shutdownGuard.ShutdownAndDone()
 			shutdownGuard.Wait()
-			panic("Etcd failed to start: " + err.Error())
+			panic("etcd failed to start: " + err.Error())
 		}
 	}()
 }

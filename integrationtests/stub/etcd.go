@@ -10,7 +10,7 @@ import (
 	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/etcd"
 
-	"github.com/serverless/event-gateway/db"
+	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/util"
 )
 
@@ -38,7 +38,7 @@ func TestEtcd() (store.Store, *util.ShutdownGuard) {
 	cliKvAddr := kvAddr(cliPort)
 	cliAddr := "http://" + cliKvAddr
 
-	db.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownGuard)
+	kv.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownGuard)
 
 	cli, err := libkv.NewStore(
 		store.ETCD,

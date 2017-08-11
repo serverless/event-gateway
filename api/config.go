@@ -9,8 +9,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 
-	"github.com/serverless/event-gateway/db"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/metrics"
 	"github.com/serverless/event-gateway/pubsub"
 	"github.com/serverless/event-gateway/util/httpapi"
@@ -20,7 +20,7 @@ import (
 func StartConfigAPI(config httpapi.Config) httpapi.Server {
 	router := httprouter.New()
 
-	functionsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", config.KV)
+	functionsDB := kv.NewPrefixedStore("/serverless-event-gateway/functions", config.KV)
 	functionService := &functions.Functions{
 		DB:  functionsDB,
 		Log: config.Log,
@@ -29,9 +29,9 @@ func StartConfigAPI(config httpapi.Config) httpapi.Server {
 	functionsAPI.RegisterRoutes(router)
 
 	pubsubService := &pubsub.PubSub{
-		TopicsDB:        db.NewPrefixedStore("/serverless-event-gateway/topics", config.KV),
-		SubscriptionsDB: db.NewPrefixedStore("/serverless-event-gateway/subscriptions", config.KV),
-		EndpointsDB:     db.NewPrefixedStore("/serverless-event-gateway/endpoints", config.KV),
+		TopicsDB:        kv.NewPrefixedStore("/serverless-event-gateway/topics", config.KV),
+		SubscriptionsDB: kv.NewPrefixedStore("/serverless-event-gateway/subscriptions", config.KV),
+		EndpointsDB:     kv.NewPrefixedStore("/serverless-event-gateway/endpoints", config.KV),
 		FunctionsDB:     functionsDB,
 		Log:             config.Log,
 	}

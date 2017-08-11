@@ -6,8 +6,8 @@ import (
 	"github.com/docker/libkv/store"
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/db"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/pubsub"
 )
 
@@ -74,19 +74,19 @@ func (tc *LibKVTargetCache) Shutdown() {
 }
 
 // New instantiates a new LibKVTargetCache, rooted at a particular location.
-func New(path string, kv store.Store, log *zap.Logger, debug ...bool) *LibKVTargetCache {
+func New(path string, kvstore store.Store, log *zap.Logger, debug ...bool) *LibKVTargetCache {
 	// make sure we have a trailing slash for trimming future updates
 	if !strings.HasSuffix(path, "/") {
 		path = path + "/"
 	}
 
 	// path watchers
-	functionPathWatcher := db.NewPathWatcher(path+"functions", kv, log)
-	endpointPathWatcher := db.NewPathWatcher(path+"endpoints", kv, log)
-	subscriptionPathWatcher := db.NewPathWatcher(path+"subscriptions", kv, log)
+	functionPathWatcher := kv.NewWatcher(path+"functions", kvstore, log)
+	endpointPathWatcher := kv.NewWatcher(path+"endpoints", kvstore, log)
+	subscriptionPathWatcher := kv.NewWatcher(path+"subscriptions", kvstore, log)
 
 	if len(debug) == 1 && debug[0] {
-		debugReconciliation := func(w ...*db.PathWatcher) {
+		debugReconciliation := func(w ...*kv.Watcher) {
 			for _, w := range w {
 				w.ReconciliationJitter = 0
 				w.ReconciliationBaseDelay = 3

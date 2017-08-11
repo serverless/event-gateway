@@ -7,16 +7,16 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/db"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/pubsub"
 )
 
 // ConfigAPIServer creates test Configuration API server.
-func ConfigAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
+func ConfigAPIServer(kvstore store.Store, log *zap.Logger) *httptest.Server {
 	apiRouter := httprouter.New()
 
-	fnsDB := db.NewPrefixedStore("/serverless-event-gateway/functions", kv)
+	fnsDB := kv.NewPrefixedStore("/serverless-event-gateway/functions", kvstore)
 	fns := &functions.Functions{
 		DB:  fnsDB,
 		Log: log,
@@ -25,9 +25,9 @@ func ConfigAPIServer(kv store.Store, log *zap.Logger) *httptest.Server {
 	fnsapi.RegisterRoutes(apiRouter)
 
 	ps := &pubsub.PubSub{
-		TopicsDB:        db.NewPrefixedStore("/serverless-event-gateway/topics", kv),
-		SubscriptionsDB: db.NewPrefixedStore("/serverless-event-gateway/subscriptions", kv),
-		EndpointsDB:     db.NewPrefixedStore("/serverless-event-gateway/endpoints", kv),
+		TopicsDB:        kv.NewPrefixedStore("/serverless-event-gateway/topics", kvstore),
+		SubscriptionsDB: kv.NewPrefixedStore("/serverless-event-gateway/subscriptions", kvstore),
+		EndpointsDB:     kv.NewPrefixedStore("/serverless-event-gateway/endpoints", kvstore),
 		FunctionsDB:     fnsDB,
 		Log:             log,
 	}

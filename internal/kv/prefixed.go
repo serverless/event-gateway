@@ -1,4 +1,4 @@
-package db
+package kv
 
 import (
 	"strings"
@@ -6,13 +6,13 @@ import (
 	"github.com/docker/libkv/store"
 )
 
-// PrefixedStore namespaces a libkv Store instance
+// PrefixedStore namespaces a libkv Store instance.
 type PrefixedStore struct {
 	root string
 	kv   store.Store
 }
 
-// NewPrefixedStore creates a new namespaced libkv Store
+// NewPrefixedStore creates a new namespaced libkv Store.
 func NewPrefixedStore(root string, kv store.Store) *PrefixedStore {
 	if !strings.HasSuffix(root, "/") {
 		root = root + "/"
