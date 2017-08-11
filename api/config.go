@@ -12,7 +12,7 @@ import (
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/kv"
-	"github.com/serverless/event-gateway/metrics"
+	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/pubsub"
 )
 

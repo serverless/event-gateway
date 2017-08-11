@@ -17,8 +17,8 @@ import (
 	"github.com/serverless/event-gateway/api"
 	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/kv"
+	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
-	"github.com/serverless/event-gateway/metrics"
 )
 
 var version = "dev"

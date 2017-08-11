@@ -15,7 +15,7 @@ import (
 
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/integrationtests/stub"
-	"github.com/serverless/event-gateway/metrics"
+	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/pubsub"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/targetcache"

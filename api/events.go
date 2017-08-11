@@ -7,7 +7,7 @@ import (
 
 	"github.com/rs/cors"
 	"github.com/serverless/event-gateway/internal/httpapi"
-	"github.com/serverless/event-gateway/metrics"
+	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/targetcache"
 )
