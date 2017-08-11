@@ -1,4 +1,18 @@
 
+0.5.5 / 2017-08-11
+==================
+
+  * return 404 if backing function not found for invoking or http req. Closes #265 (#268)
+  * fix HTTP schema field. Rename it to body. Closes #266 (#267)
+  * fix comment
+  * refactor integration test. Move them to router package.
+  * refactor targetcache package. Move it to internal package.
+  * refactor metrics package. Move it to internal package.
+  * refactor util package. Move it to internal package.
+  * refactor db package. Move it to internal package.
+  * cleanup docs folder
+  * remove outdated usecases doc
+
 0.5.4 / 2017-08-10
 ==================
 
