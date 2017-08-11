@@ -55,7 +55,7 @@ func TestIntegrationSubscription(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			reqBuf, _ := ioutil.ReadAll(r.Body)
 
-			var event Schema
+			var event Event
 			err := json.Unmarshal(reqBuf, &event)
 			if err != nil {
 				panic(err)

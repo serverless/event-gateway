@@ -150,6 +150,8 @@ const (
 
 	// headerFunctionID is a header name for specifing function id for sync invocation.
 	headerFunctionID = "function-id"
+
+	internalFunctionProviderError = "gateway.warn.functionProviderError"
 )
 
 var (
@@ -157,7 +159,7 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleHTTPEvent(event *Schema, w http.ResponseWriter, r *http.Request) {
+func (router *Router) handleHTTPEvent(event *Event, w http.ResponseWriter, r *http.Request) {
 	payload, err := json.Marshal(event)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -186,7 +188,7 @@ func (router *Router) handleHTTPEvent(event *Schema, w http.ResponseWriter, r *h
 	}
 }
 
-func (router *Router) handleEvent(instance *Schema, w http.ResponseWriter, r *http.Request) {
+func (router *Router) handleEvent(instance *Event, w http.ResponseWriter, r *http.Request) {
 	payload, err := json.Marshal(instance)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -261,13 +263,23 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, paylo
 		return []byte{}, errUnableToLookUpRegisteredFunction
 	}
 
-	result, err := f.Call(payload)
-	if err != nil {
-		resErr := errors.New("unable to reach backing function: " + err.Error())
-		return []byte{}, resErr
+	resp, err := f.Call(payload)
+
+	if _, ok := err.(*functions.ErrFunctionCallFailedProviderError); ok {
+		internal := NewEvent(internalFunctionProviderError, mimeJSON, struct {
+			FunctionID string `json:"functionId"`
+		}{string(backingFunctionID)})
+		payload, err = json.Marshal(internal)
+		if err == nil {
+			router.log.Debug("Event received.", zap.String("event", string(payload)))
+			router.processEvent(event{
+				topics:  []pubsub.TopicID{pubsub.TopicID(internal.Event)},
+				payload: payload,
+			})
+		}
 	}
 
-	return result, nil
+	return resp, err
 }
 
 // loop is the main loop for a pub/sub worker goroutine
@@ -308,9 +320,7 @@ func (router *Router) loop() {
 	}
 }
 
-// processEvent sends event to a set of topics,
-// and for each of the functions that get called
-// as part of those topics.
+// processEvent sends event to a set of topics, and for each of the functions that get called as part of those topics.
 func (router *Router) processEvent(e event) {
 	for _, topicID := range e.topics {
 		subscribers := router.targetCache.SubscribersOfTopic(topicID)
@@ -349,14 +359,12 @@ func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload 
 		payload: payload,
 	}:
 	default:
-		// We could not submit any work, this is NOT good but
-		// we will sacrifice consistency for availability for now.
+		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
 		router.dropMetric.Inc()
 	}
 }
 
-// isDraining returns true if this Router is being drained of items
-// in its work queue before shutting down.
+// isDraining returns true if this Router is being drained of items in its work queue before shutting down.
 func (router *Router) isDraining() bool {
 	select {
 	case <-router.drain:
