@@ -71,7 +71,7 @@ func (tc *Target) Shutdown() {
 	close(tc.shutdown)
 }
 
-// New instantiates a new Target, rooted at a particular location.
+// NewTarget instantiates a new Target, rooted at a particular location.
 func NewTarget(path string, kvstore store.Store, log *zap.Logger, debug ...bool) *Target {
 	// make sure we have a trailing slash for trimming future updates
 	if !strings.HasSuffix(path, "/") {
