@@ -1,6 +1,7 @@
 package router
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -48,11 +49,16 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventName := r.Header.Get("event")
-	if eventName == "" {
-		router.handleHTTPEvent(w, r)
+	event, err := fromRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if event.Event == eventHTTP {
+		router.handleHTTPEvent(event, w, r)
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		router.handleEvent(eventName, w, r)
+		router.handleEvent(event, w, r)
 	}
 }
 
@@ -139,6 +145,9 @@ const (
 	// eventInvoke is a special type of event for sync function invocation.
 	eventInvoke = "invoke"
 
+	// eventHTTP is a special type of event for sync http subscriptions.
+	eventHTTP = "http"
+
 	// headerFunctionID is a header name for specifing function id for sync invocation.
 	headerFunctionID = "function-id"
 )
@@ -148,17 +157,17 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleHTTPEvent(w http.ResponseWriter, r *http.Request) {
-	httpevent, err := transformHTTP(r)
+func (router *Router) handleHTTPEvent(event *Schema, w http.ResponseWriter, r *http.Request) {
+	payload, err := json.Marshal(event)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	router.log.Debug("Event received.", zap.String("event", string(httpevent)), zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
+	router.log.Debug("Event received.", zap.String("event", string(payload)), zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
 
 	endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
-	res, err := router.callEndpoint(endpointID, httpevent)
+	res, err := router.callEndpoint(endpointID, payload)
 	if err != nil {
 		router.log.Warn(`Handling "http" event failed.`, zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
 		if err == errUnableToLookUpBackingFunction {
@@ -177,21 +186,21 @@ func (router *Router) handleHTTPEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (router *Router) handleEvent(eventName string, w http.ResponseWriter, r *http.Request) {
-	customevent, err := transform(eventName, r)
+func (router *Router) handleEvent(instance *Schema, w http.ResponseWriter, r *http.Request) {
+	payload, err := json.Marshal(instance)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	router.log.Debug("Event received.", zap.String("event", string(customevent)))
+	router.log.Debug("Event received.", zap.String("event", string(payload)))
 
-	if eventName == eventInvoke {
+	if instance.Event == eventInvoke {
 		functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
-		res, err := router.callFunction(functionID, customevent)
+		res, err := router.callFunction(functionID, payload)
 		if err != nil {
 			router.log.Warn("Function invocation failed.", zap.String("functionId", string(functionID)),
-				zap.String("event", string(customevent)), zap.Error(err))
+				zap.String("event", string(payload)), zap.Error(err))
 
 			if err == errUnableToLookUpRegisteredFunction {
 				http.Error(w, err.Error(), http.StatusNotFound)
@@ -202,7 +211,7 @@ func (router *Router) handleEvent(eventName string, w http.ResponseWriter, r *ht
 		}
 
 		router.log.Debug("Function invoked.", zap.String("functionId", string(functionID)),
-			zap.String("event", string(customevent)), zap.String("response", string(res)))
+			zap.String("event", string(payload)), zap.String("response", string(res)))
 
 		_, err = w.Write(res)
 		if err != nil {
@@ -211,8 +220,8 @@ func (router *Router) handleEvent(eventName string, w http.ResponseWriter, r *ht
 		}
 	} else {
 		router.processEvent(event{
-			topics:  []pubsub.TopicID{pubsub.TopicID(eventName)},
-			payload: customevent,
+			topics:  []pubsub.TopicID{pubsub.TopicID(instance.Event)},
+			payload: payload,
 		})
 
 		w.WriteHeader(http.StatusAccepted)

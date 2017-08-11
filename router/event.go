@@ -31,55 +31,46 @@ const (
 	mimeOctetStrem = "application/octet-stream"
 )
 
-func transform(event string, r *http.Request) ([]byte, error) {
+func fromRequest(r *http.Request) (*Schema, error) {
+	name := r.Header.Get("event")
+	if name == "" {
+		name = eventHTTP
+	}
+
 	mime := r.Header.Get("content-type")
 	if mime == "" {
 		mime = mimeOctetStrem
 	}
 
-	payload, err := ioutil.ReadAll(r.Body)
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	instance := &Schema{
-		Event:      event,
+	event := &Schema{
+		Event:      name,
 		ID:         uuid.NewV4().String(),
 		ReceivedAt: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
 		DataType:   mime,
-		Data:       payload,
+		Data:       body,
 	}
 
-	if mime == mimeJSON && len(payload) > 0 {
-		err := json.Unmarshal(payload, &instance.Data)
+	if mime == mimeJSON && len(body) > 0 {
+		err := json.Unmarshal(body, &event.Data)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return json.Marshal(instance)
-}
-
-func transformHTTP(r *http.Request) ([]byte, error) {
-	payload, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	instance := &HTTPSchema{
-		Headers: r.Header,
-		Query:   r.URL.Query(),
-		Body:    payload,
-	}
-
-	if r.Header.Get("content-type") == mimeJSON && len(payload) > 0 {
-		err := json.Unmarshal(payload, &instance.Body)
-		if err != nil {
-			return nil, err
+	if event.Event == eventHTTP {
+		event.Data = &HTTPSchema{
+			Headers: r.Header,
+			Query:   r.URL.Query(),
+			Body:    event.Data,
 		}
 	}
 
-	return json.Marshal(instance)
+	return event, nil
 }
 
 type event struct {

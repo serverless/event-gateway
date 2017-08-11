@@ -288,13 +288,15 @@ Creating HTTP subscription requires `method` and `path` properties. Those proper
 
 Request: arbitrary payload, subscribed function receives an event in above schema. `data` field has following fields:
 
-```json
+```
 {
+  ...
   "data": {
     "headers": <request headers>,
     "query": <request query params>,
     "body": <request payload>
   }
+  ...
 }
 ```
 
