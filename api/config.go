@@ -43,7 +43,7 @@ func StartConfigAPI(config httpapi.Config) httpapi.Server {
 
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      cors.Default().Handler(metrics.HTTPLogger{Handler: router, RequestDuration: metrics.RequestDuration}),
+		Handler:      cors.AllowAll().Handler(metrics.HTTPLogger{Handler: router, RequestDuration: metrics.RequestDuration}),
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}

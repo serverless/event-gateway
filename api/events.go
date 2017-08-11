@@ -20,7 +20,7 @@ func StartEventsAPI(config httpapi.Config) httpapi.Server {
 
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      cors.Default().Handler(router),
+		Handler:      cors.AllowAll().Handler(router),
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
