@@ -67,8 +67,8 @@ type Provider struct {
 	URL string `json:"url,omitempty" validate:"omitempty,url"`
 
 	// Emulator function
-	EmulatorURL        string `json:"emulatorUrl,omitempty"`
-	APIVersion         string `json:"apiVersion,omitempty"`
+	EmulatorURL string `json:"emulatorUrl,omitempty"`
+	APIVersion  string `json:"apiVersion,omitempty"`
 }
 
 // Call tries to send a payload to a target function
@@ -169,21 +169,20 @@ func (f *Function) callHTTP(payload []byte) ([]byte, error) {
 }
 
 func (f *Function) callEmulator(payload []byte) ([]byte, error) {
+	type emulatorInvokeSchema struct {
+		FunctionID string `json:"functionId"`
+		Payload    []byte `json:"payload"`
+	}
+
 	client := http.Client{
 		Timeout: time.Second * 5,
 	}
 
-	type EmulatorPayload struct {
-		FunctionID  string          `json:"functionId"`
-		Payload     interface{}     `json:"payload"`
+	var invokePayload []byte
+	err := json.Unmarshal(payload, &invokePayload)
+	if err != nil {
+		return nil, err
 	}
-
-	var i interface{}
-	err := json.Unmarshal(payload, &i)
-
-	emulatorPayload := EmulatorPayload{FunctionID: string(f.ID), Payload: i}
-	buffer := new(bytes.Buffer)
-	json.NewEncoder(buffer).Encode(emulatorPayload)
 
 	emulatorURL, err := url.Parse(f.Provider.EmulatorURL)
 	if err != nil {
@@ -194,10 +193,15 @@ func (f *Function) callEmulator(payload []byte) ([]byte, error) {
 	case "v0":
 		emulatorURL.Path = path.Join(f.Provider.APIVersion, "emulator/api/function/invoke")
 	default:
-		return []byte{}, fmt.Errorf("Invalid Emulator API version %q for Function %q", f.Provider.APIVersion, f.ID)
+		return nil, fmt.Errorf("Invalid Emulator API version %q for Function %q", f.Provider.APIVersion, f.ID)
 	}
 
-	resp, err := client.Post(emulatorURL.String(), "application/json", buffer)
+	emulatorPayload, err := json.Marshal(emulatorInvokeSchema{FunctionID: string(f.ID), Payload: invokePayload})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Post(emulatorURL.String(), "application/json", bytes.NewReader(emulatorPayload))
 	if err != nil {
 		return nil, &ErrFunctionCallFailed{err}
 	}
