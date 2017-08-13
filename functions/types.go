@@ -2,11 +2,14 @@ package functions
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
+	"path"
 	"regexp"
 	"time"
 
@@ -43,11 +46,13 @@ const (
 	Weighted ProviderType = "weighted"
 	// HTTPEndpoint represents function defined as HTTP endpoint.
 	HTTPEndpoint ProviderType = "http"
+	// Emulator represents a function registered with the local emulator.
+	Emulator ProviderType = "emulator"
 )
 
 // Provider provides provider specific info about a function
 type Provider struct {
-	Type ProviderType `json:"type" validate:"required,eq=awslambda|eq=http|eq=weighted"`
+	Type ProviderType `json:"type" validate:"required,eq=awslambda|eq=http|eq=weighted|eq=emulator"`
 
 	// AWS Lambda function
 	ARN                string `json:"arn,omitempty"`
@@ -60,6 +65,10 @@ type Provider struct {
 
 	// HTTP function
 	URL string `json:"url,omitempty" validate:"omitempty,url"`
+
+	// Emulator function
+	EmulatorURL string `json:"emulatorUrl,omitempty"`
+	APIVersion  string `json:"apiVersion,omitempty"`
 }
 
 // Call tries to send a payload to a target function
@@ -67,6 +76,8 @@ func (f *Function) Call(payload []byte) ([]byte, error) {
 	switch f.Provider.Type {
 	case AWSLambda:
 		return f.callAWSLambda(payload)
+	case Emulator:
+		return f.callEmulator(payload)
 	case HTTPEndpoint:
 		return f.callHTTP(payload)
 	}
@@ -146,6 +157,51 @@ func (f *Function) callHTTP(payload []byte) ([]byte, error) {
 	}
 
 	resp, err := client.Post(f.Provider.URL, "application/json", bytes.NewReader(payload))
+	if err != nil {
+		return nil, &ErrFunctionCallFailed{err}
+	}
+	if resp.StatusCode == http.StatusInternalServerError {
+		return nil, &ErrFunctionCallFailedProviderError{fmt.Errorf("HTTP status code: %d", http.StatusInternalServerError)}
+	}
+
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
+}
+
+func (f *Function) callEmulator(payload []byte) ([]byte, error) {
+	type emulatorInvokeSchema struct {
+		FunctionID string `json:"functionId"`
+		Payload    []byte `json:"payload"`
+	}
+
+	client := http.Client{
+		Timeout: time.Second * 5,
+	}
+
+	var invokePayload []byte
+	err := json.Unmarshal(payload, &invokePayload)
+	if err != nil {
+		return nil, err
+	}
+
+	emulatorURL, err := url.Parse(f.Provider.EmulatorURL)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid Emulator URL %q for Function %q", f.Provider.EmulatorURL, f.ID)
+	}
+
+	switch f.Provider.APIVersion {
+	case "v0":
+		emulatorURL.Path = path.Join(f.Provider.APIVersion, "emulator/api/function/invoke")
+	default:
+		return nil, fmt.Errorf("Invalid Emulator API version %q for Function %q", f.Provider.APIVersion, f.ID)
+	}
+
+	emulatorPayload, err := json.Marshal(emulatorInvokeSchema{FunctionID: string(f.ID), Payload: invokePayload})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Post(emulatorURL.String(), "application/json", bytes.NewReader(emulatorPayload))
 	if err != nil {
 		return nil, &ErrFunctionCallFailed{err}
 	}
