@@ -171,14 +171,14 @@ func (f *Function) callHTTP(payload []byte) ([]byte, error) {
 func (f *Function) callEmulator(payload []byte) ([]byte, error) {
 	type emulatorInvokeSchema struct {
 		FunctionID string `json:"functionId"`
-		Payload    []byte `json:"payload"`
+		Payload    interface{} `json:"payload"`
 	}
 
 	client := http.Client{
 		Timeout: time.Second * 5,
 	}
 
-	var invokePayload []byte
+	var invokePayload interface{}
 	err := json.Unmarshal(payload, &invokePayload)
 	if err != nil {
 		return nil, err
