@@ -135,11 +135,7 @@ func (f *Functions) validateFunction(fn *Function) error {
 	}
 
 	if fn.Provider.Type == Emulator {
-		if fn.Provider.EmulatorURL == "" {
-			return &ErrValidation{"Missing required field emulatorURL for Emulator function."}
-		} else if fn.Provider.APIVersion == "" {
-			return &ErrValidation{"Missing required field apiVersion for Emulator function."}
-		}
+		return f.validateEmualtor(fn)
 	}
 
 	if fn.Provider.Type == HTTPEndpoint && fn.Provider.URL == "" {
@@ -150,6 +146,15 @@ func (f *Functions) validateFunction(fn *Function) error {
 		return f.validateWeighted(fn)
 	}
 
+	return nil
+}
+
+func (f *Functions) validateEmulator(fn *Function) error {
+	if fn.Provider.EmulatorURL == "" {
+		return &ErrValidation{"Missing required field emulatorURL for Emulator function."}
+	} else if fn.Provider.APIVersion == "" {
+		return &ErrValidation{"Missing required field apiVersion for Emulator function."}
+	}
 	return nil
 }
 
