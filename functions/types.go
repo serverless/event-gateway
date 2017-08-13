@@ -68,7 +68,7 @@ type Provider struct {
 
 	// Emulator function
 	EmulatorURL        string `json:"emulatorUrl,omitempty"`
-	ApiVersion         string `json:"apiVersion,omitempty"`
+	APIVersion         string `json:"apiVersion,omitempty"`
 }
 
 // Call tries to send a payload to a target function
@@ -174,30 +174,30 @@ func (f *Function) callEmulator(payload []byte) ([]byte, error) {
 	}
 
 	type EmulatorPayload struct {
-	    FunctionId  string          `json:"functionId"`
-	    Payload     interface{}     `json:"payload"`
+		FunctionID  string          `json:"functionId"`
+		Payload     interface{}     `json:"payload"`
 	}
 
 	var i interface{}
-    err := json.Unmarshal(payload, &i)
+	err := json.Unmarshal(payload, &i)
 
-    emulatorPayload := EmulatorPayload{FunctionId: string(f.ID), Payload: i}
-    buffer := new(bytes.Buffer)
-    json.NewEncoder(buffer).Encode(emulatorPayload)
+	emulatorPayload := EmulatorPayload{FunctionID: string(f.ID), Payload: i}
+	buffer := new(bytes.Buffer)
+	json.NewEncoder(buffer).Encode(emulatorPayload)
 
-	emulatorUrl, err := url.Parse(f.Provider.EmulatorURL)
+	emulatorURL, err := url.Parse(f.Provider.EmulatorURL)
 	if err != nil {
-	    return nil, fmt.Errorf("Invalid Emulator URL %q for Function %q", f.Provider.EmulatorURL, f.ID)
+		return nil, fmt.Errorf("Invalid Emulator URL %q for Function %q", f.Provider.EmulatorURL, f.ID)
 	}
 
-	switch f.Provider.ApiVersion {
-    case "v0":
-        emulatorUrl.Path = path.Join(f.Provider.ApiVersion, "emulator/api/function/invoke")
+	switch f.Provider.APIVersion {
+	case "v0":
+		emulatorURL.Path = path.Join(f.Provider.APIVersion, "emulator/api/function/invoke")
 	default:
-        return []byte{}, fmt.Errorf("Invalid Emulator API version %q for Function %q", f.Provider.ApiVersion, f.ID)
-    }
+		return []byte{}, fmt.Errorf("Invalid Emulator API version %q for Function %q", f.Provider.APIVersion, f.ID)
+	}
 
-	resp, err := client.Post(emulatorUrl.String(), "application/json", buffer)
+	resp, err := client.Post(emulatorURL.String(), "application/json", buffer)
 	if err != nil {
 		return nil, &ErrFunctionCallFailed{err}
 	}
