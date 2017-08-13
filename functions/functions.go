@@ -135,7 +135,7 @@ func (f *Functions) validateFunction(fn *Function) error {
 	}
 
 	if fn.Provider.Type == Emulator {
-		return f.validateEmualtor(fn)
+		return f.validateEmulator(fn)
 	}
 
 	if fn.Provider.Type == HTTPEndpoint && fn.Provider.URL == "" {
