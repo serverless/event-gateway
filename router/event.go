@@ -35,6 +35,8 @@ type HTTPEvent struct {
 	Headers map[string][]string `json:"headers"`
 	Query   map[string][]string `json:"query"`
 	Body    interface{}         `json:"body"`
+	Path    string              `json:"path"`
+	Method  string              `json:"method"`
 }
 
 const (
@@ -72,6 +74,8 @@ func fromRequest(r *http.Request) (*Event, error) {
 			Headers: r.Header,
 			Query:   r.URL.Query(),
 			Body:    event.Data,
+			Path:    r.URL.Path,
+			Method:  r.Method,
 		}
 	}
 
