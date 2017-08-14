@@ -66,7 +66,6 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 
 	ps.Log.Debug("Subscription created.", zap.String("event", string(s.Event)), zap.String("functionId", string(s.FunctionID)))
 	return s, nil
-
 }
 
 // DeleteSubscription deletes subscription.
@@ -82,12 +81,15 @@ func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 	}
 
 	if sub.Event == SubscriptionHTTP {
-		return ps.deleteEndpoint(sub.Method, sub.Path)
-	}
-
-	ps.deleteEmptyTopic(sub.Event)
-	if err != nil {
-		return err
+		err = ps.deleteEndpoint(sub.Method, sub.Path)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = ps.deleteEmptyTopic(sub.Event)
+		if err != nil {
+			return err
+		}
 	}
 
 	ps.Log.Debug("Subscription deleted.", zap.String("event", string(sub.Event)), zap.String("functionId", string(sub.FunctionID)))
@@ -146,6 +148,7 @@ func (ps Subscriptions) ensureTopic(id TopicID) error {
 	if err != nil {
 		return err
 	}
+
 	err = ps.TopicsDB.Put(string(id), buf, nil)
 	if err != nil {
 		return err
@@ -183,7 +186,6 @@ func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, 
 	if err != nil {
 		return err
 	}
-
 	err = ps.EndpointsDB.Put(string(e.ID), buf, nil)
 	if err != nil {
 		return err
