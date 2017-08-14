@@ -83,6 +83,6 @@ func fromRequest(r *http.Request) (*Event, error) {
 }
 
 type event struct {
-	topics  []subscriptions.TopicID
+	topic   subscriptions.TopicID
 	payload []byte
 }
