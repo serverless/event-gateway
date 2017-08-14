@@ -26,6 +26,7 @@ import (
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
 	"github.com/serverless/event-gateway/subscriptions"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
@@ -33,16 +34,14 @@ func TestMain(t *testing.T) {
 	etcd.Register()
 }
 
-func TestIntegrationSubscription(t *testing.T) {
+func TestIntegration_Subscription(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
-
 	kv, shutdownGuard := newTestEtcd()
 
 	testAPIServer := newConfigAPIServer(kv, log)
 	defer testAPIServer.Close()
-
 	router, testRouterServer := newTestRouterServer(kv, log)
 	defer testRouterServer.Close()
 	router.StartWorkers()
@@ -100,23 +99,19 @@ func TestIntegrationSubscription(t *testing.T) {
 	shutdownGuard.ShutdownAndWait()
 }
 
-func TestIntegrationHTTPSubscription(t *testing.T) {
+func TestIntegration_HTTPSubscription(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
-
 	kv, shutdownGuard := newTestEtcd()
 
 	testAPIServer := newConfigAPIServer(kv, log)
 	defer testAPIServer.Close()
-
 	router, testRouterServer := newTestRouterServer(kv, log)
 	defer testRouterServer.Close()
 
-	expected := "😸"
-
 	testTargetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, expected)
+		fmt.Fprintf(w, "😸")
 	}))
 	defer testTargetServer.Close()
 
@@ -132,21 +127,67 @@ func TestIntegrationHTTPSubscription(t *testing.T) {
 	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
 		FunctionID: functions.FunctionID("supersmileyfunction"),
 		Event:      "http",
-		Method:     "POST",
+		Method:     "GET",
 		Path:       "/smilez",
 	})
 
 	select {
-	case <-router.WaitForEndpoint(subscriptions.NewEndpointID("POST", "/smilez")):
+	case <-router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/smilez")):
 	case <-time.After(10 * time.Second):
 		panic("timed out waiting for endpoint to be configured!")
 	}
 
-	res := get(testRouterServer.URL + "/smilez")
+	_, _, body := get(testRouterServer.URL + "/smilez")
+	assert.Equal(t, "😸", body)
 
-	if res != expected {
-		panic("returned value was not \"" + expected + "\", unexpected value: \"" + res + "\"")
+	router.Drain()
+	shutdownGuard.ShutdownAndWait()
+}
+
+func TestIntegration_HTTPResponse(t *testing.T) {
+	logCfg := zap.NewDevelopmentConfig()
+	logCfg.DisableStacktrace = true
+	log, _ := logCfg.Build()
+
+	kv, shutdownGuard := newTestEtcd()
+
+	testAPIServer := newConfigAPIServer(kv, log)
+	defer testAPIServer.Close()
+
+	router, testRouterServer := newTestRouterServer(kv, log)
+	defer testRouterServer.Close()
+
+	testTargetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"statusCode":201,"headers":{"content-type":"text/html"},"body":"<head></head>"}`)
+	}))
+	defer testTargetServer.Close()
+
+	post(testAPIServer.URL+"/v1/functions",
+		functions.Function{
+			ID: functions.FunctionID("httpresponse"),
+			Provider: &functions.Provider{
+				Type: functions.HTTPEndpoint,
+				URL:  testTargetServer.URL,
+			},
+		})
+
+	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
+		FunctionID: functions.FunctionID("httpresponse"),
+		Event:      "http",
+		Method:     "GET",
+		Path:       "/httpresponse",
+	})
+
+	select {
+	case <-router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/httpresponse")):
+	case <-time.After(10 * time.Second):
+		panic("timed out waiting for endpoint to be configured!")
 	}
+
+	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
+	assert.Equal(t, statusCode, 201)
+	assert.Equal(t, headers.Get("content-type"), "text/html")
+	assert.Equal(t, body, "<head></head>")
 
 	router.Drain()
 	shutdownGuard.ShutdownAndWait()
@@ -174,9 +215,9 @@ func emit(url, topic string, body []byte) {
 	defer resp.Body.Close()
 }
 
-func post(url string, thing interface{}) ([]byte, error) {
+func post(url string, payload interface{}) ([]byte, error) {
 	reqBytes := &bytes.Buffer{}
-	json.NewEncoder(reqBytes).Encode(thing)
+	json.NewEncoder(reqBytes).Encode(payload)
 
 	resp, err := http.Post(url, "application/json", reqBytes)
 	if err != nil {
@@ -187,8 +228,8 @@ func post(url string, thing interface{}) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func get(url string) string {
-	res, err := http.Post(url, "application/json", nil)
+func get(url string) (int, http.Header, string) {
+	res, err := http.Get(url)
 	if err != nil {
 		panic(err)
 	}
@@ -198,7 +239,7 @@ func get(url string) string {
 		panic(err)
 	}
 
-	return string(body)
+	return res.StatusCode, res.Header, string(body)
 }
 
 func newTestRouterServer(kvstore store.Store, log *zap.Logger) (*Router, *httptest.Server) {
