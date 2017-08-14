@@ -171,7 +171,6 @@ func (router *Router) handleHTTPEvent(event *Event, w http.ResponseWriter, r *ht
 	endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 	res, err := router.callEndpoint(endpointID, payload)
 	if err != nil {
-		router.log.Warn(`Handling "http" event failed.`, zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method), zap.Error(err))
 		if err == errUnableToLookUpBackingFunction {
 			http.Error(w, err.Error(), http.StatusNotFound)
 		} else {
@@ -199,11 +198,8 @@ func (router *Router) handleEvent(instance *Event, w http.ResponseWriter, r *htt
 
 	if instance.Event == eventInvoke {
 		functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
-		res, err := router.callFunction(functionID, payload)
+		resp, err := router.callFunction(functionID, payload)
 		if err != nil {
-			router.log.Warn("Function invocation failed.", zap.String("functionId", string(functionID)),
-				zap.String("event", string(payload)), zap.Error(err))
-
 			if err == errUnableToLookUpRegisteredFunction {
 				http.Error(w, err.Error(), http.StatusNotFound)
 			} else {
@@ -212,10 +208,7 @@ func (router *Router) handleEvent(instance *Event, w http.ResponseWriter, r *htt
 			return
 		}
 
-		router.log.Debug("Function invoked.", zap.String("functionId", string(functionID)),
-			zap.String("event", string(payload)), zap.String("response", string(res)))
-
-		_, err = w.Write(res)
+		_, err = w.Write(resp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -238,7 +231,18 @@ func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte)
 		return []byte{}, errUnableToLookUpBackingFunction
 	}
 
-	return router.callFunction(*backingFunction, payload)
+	router.log.Debug("Function triggered.", zap.String("functionId", string(*backingFunction)), zap.String("event", string(payload)))
+
+	resp, err := router.callFunction(*backingFunction, payload)
+	if err != nil {
+		router.log.Warn("Function invocation failed.", zap.String("functionId", string(*backingFunction)),
+			zap.String("event", string(payload)), zap.Error(err))
+	} else {
+		router.log.Debug("Function finished.", zap.String("functionId", string(*backingFunction)),
+			zap.String("event", string(payload)), zap.String("response", string(resp)))
+	}
+
+	return resp, err
 }
 
 // callFunction looks up a function and calls it.
@@ -263,20 +267,29 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, paylo
 		return []byte{}, errUnableToLookUpRegisteredFunction
 	}
 
-	resp, err := f.Call(payload)
+	router.log.Debug("Function triggered.", zap.String("functionId", string(f.ID)), zap.String("event", string(payload)))
 
-	if _, ok := err.(*functions.ErrFunctionCallFailedProviderError); ok {
-		internal := NewEvent(internalFunctionProviderError, mimeJSON, struct {
-			FunctionID string `json:"functionId"`
-		}{string(backingFunctionID)})
-		payload, err = json.Marshal(internal)
-		if err == nil {
-			router.log.Debug("Event received.", zap.String("event", string(payload)))
-			router.processEvent(event{
-				topics:  []pubsub.TopicID{pubsub.TopicID(internal.Event)},
-				payload: payload,
-			})
+	resp, err := f.Call(payload)
+	if err != nil {
+		router.log.Warn("Function invocation failed.", zap.String("functionId", string(f.ID)),
+			zap.String("event", string(payload)), zap.Error(err))
+
+		if _, ok := err.(*functions.ErrFunctionCallFailedProviderError); ok {
+			internal := NewEvent(internalFunctionProviderError, mimeJSON, struct {
+				FunctionID string `json:"functionId"`
+			}{string(backingFunctionID)})
+			payload, err = json.Marshal(internal)
+			if err == nil {
+				router.log.Debug("Event received.", zap.String("event", string(payload)))
+				router.processEvent(event{
+					topics:  []pubsub.TopicID{pubsub.TopicID(internal.Event)},
+					payload: payload,
+				})
+			}
 		}
+	} else {
+		router.log.Debug("Function finished.", zap.String("functionId", string(f.ID)),
+			zap.String("event", string(payload)), zap.String("response", string(resp)))
 	}
 
 	return resp, err
@@ -325,6 +338,8 @@ func (router *Router) processEvent(e event) {
 	for _, topicID := range e.topics {
 		subscribers := router.targetCache.SubscribersOfTopic(topicID)
 		for _, subscriber := range subscribers {
+			router.log.Debug("Function triggered.", zap.String("functionId", string(subscriber)), zap.String("event", string(e.payload)))
+
 			res, err := router.callFunction(subscriber, e.payload)
 			if err != nil {
 				router.log.Warn(
@@ -335,7 +350,7 @@ func (router *Router) processEvent(e event) {
 				)
 			} else {
 				router.log.Debug(
-					"Function invoked.",
+					"Function finished.",
 					zap.String("functionId", string(subscriber)),
 					zap.String("event", string(e.payload)),
 					zap.String("response", string(res)),
