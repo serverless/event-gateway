@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/satori/go.uuid"
-	"github.com/serverless/event-gateway/pubsub"
+	"github.com/serverless/event-gateway/subscriptions"
 )
 
 // Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on this schema.
@@ -83,6 +83,6 @@ func fromRequest(r *http.Request) (*Event, error) {
 }
 
 type event struct {
-	topics  []pubsub.TopicID
+	topics  []subscriptions.TopicID
 	payload []byte
 }

@@ -8,14 +8,14 @@ import (
 
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/kv"
-	"github.com/serverless/event-gateway/pubsub"
+	"github.com/serverless/event-gateway/subscriptions"
 )
 
 // Targeter is an interface for retrieving cached configuration for driving performance-sensitive routing decisions.
 type Targeter interface {
-	BackingFunction(endpoint pubsub.EndpointID) *functions.FunctionID
+	BackingFunction(endpoint subscriptions.EndpointID) *functions.FunctionID
 	Function(functionID functions.FunctionID) *functions.Function
-	SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID
+	SubscribersOfTopic(topic subscriptions.TopicID) []functions.FunctionID
 }
 
 // Target is an implementation of Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
@@ -30,7 +30,7 @@ type Target struct {
 
 // BackingFunction returns functions and their weights, along with the group ID if this was a Group function target, so
 // we can submit events to topics that are fed by both.
-func (tc *Target) BackingFunction(endpointID pubsub.EndpointID) *functions.FunctionID {
+func (tc *Target) BackingFunction(endpointID subscriptions.EndpointID) *functions.FunctionID {
 	// try to get the endpoint from our cache
 	tc.endpointCache.RLock()
 	defer tc.endpointCache.RUnlock()
@@ -49,7 +49,7 @@ func (tc *Target) Function(functionID functions.FunctionID) *functions.Function 
 }
 
 // SubscribersOfTopic is used for determining which functions to forward messages in a topic to.
-func (tc *Target) SubscribersOfTopic(topic pubsub.TopicID) []functions.FunctionID {
+func (tc *Target) SubscribersOfTopic(topic subscriptions.TopicID) []functions.FunctionID {
 	tc.subscriptionCache.RLock()
 	fnSet, exists := tc.subscriptionCache.topicToFns[topic]
 	tc.subscriptionCache.RUnlock()

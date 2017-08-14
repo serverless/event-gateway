@@ -1,4 +1,4 @@
-package pubsub
+package subscriptions
 
 import (
 	"encoding/json"
@@ -8,9 +8,9 @@ import (
 	"github.com/serverless/event-gateway/internal/httpapi"
 )
 
-// HTTPAPI for pubsub sub-service
+// HTTPAPI for subscriptions sub-service
 type HTTPAPI struct {
-	PubSub *PubSub
+	Subscriptions *Subscriptions
 }
 
 // RegisterRoutes register HTTP API routes
@@ -33,7 +33,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	output, err := h.PubSub.CreateSubscription(s)
+	output, err := h.Subscriptions.CreateSubscription(s)
 	if err != nil {
 		if _, ok := err.(*ErrSubscriptionAlreadyExists); ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -56,7 +56,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.PubSub.DeleteSubscription(SubscriptionID(params.ByName("subscriptionID")))
+	err := h.Subscriptions.DeleteSubscription(SubscriptionID(params.ByName("subscriptionID")))
 	if err != nil {
 		if _, ok := err.(*ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -73,7 +73,7 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	subs, err := h.PubSub.GetAllSubscriptions()
+	subs, err := h.Subscriptions.GetAllSubscriptions()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&httpapi.Error{Error: err.Error()})

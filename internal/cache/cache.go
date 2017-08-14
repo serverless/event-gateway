@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/pubsub"
+	"github.com/serverless/event-gateway/subscriptions"
 )
 
 // cacher is a simplification of the db.Reactive interface, which doesn't care about
@@ -78,52 +78,52 @@ func (c *functionCache) Del(k string, v []byte) {
 type endpointCache struct {
 	sync.RWMutex
 	// cache maps from EndpointID to Endpoint
-	cache map[pubsub.EndpointID]*pubsub.Endpoint
+	cache map[subscriptions.EndpointID]*subscriptions.Endpoint
 	log   *zap.Logger
 }
 
 func newEndpointCache(log *zap.Logger) *endpointCache {
 	return &endpointCache{
-		cache: map[pubsub.EndpointID]*pubsub.Endpoint{},
+		cache: map[subscriptions.EndpointID]*subscriptions.Endpoint{},
 		log:   log,
 	}
 }
 
 func (c *endpointCache) Set(k string, v []byte) {
-	e := &pubsub.Endpoint{}
+	e := &subscriptions.Endpoint{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
 	if err != nil {
 		c.log.Error("Could not deserialize Endpoint state!", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
 	} else {
 		c.Lock()
 		defer c.Unlock()
-		c.cache[pubsub.EndpointID(k)] = e
+		c.cache[subscriptions.EndpointID(k)] = e
 	}
 }
 
 func (c *endpointCache) Del(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
-	delete(c.cache, pubsub.EndpointID(k))
+	delete(c.cache, subscriptions.EndpointID(k))
 }
 
 type subscriptionCache struct {
 	sync.RWMutex
 	// topicToSub maps from a TopicID to a set of subscribing FunctionID's
-	topicToFns map[pubsub.TopicID]map[functions.FunctionID]struct{}
+	topicToFns map[subscriptions.TopicID]map[functions.FunctionID]struct{}
 	log        *zap.Logger
 }
 
 func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	return &subscriptionCache{
 		// topicToFns is a map from TopicID to a set of FunctionID's
-		topicToFns: map[pubsub.TopicID]map[functions.FunctionID]struct{}{},
+		topicToFns: map[subscriptions.TopicID]map[functions.FunctionID]struct{}{},
 		log:        log,
 	}
 }
 
 func (c *subscriptionCache) Set(k string, v []byte) {
-	s := pubsub.Subscription{}
+	s := subscriptions.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&s)
 	if err != nil {
 		c.log.Error("Could not deserialize Subscription state!", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
@@ -148,7 +148,7 @@ func (c *subscriptionCache) Del(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 
-	oldSub := pubsub.Subscription{}
+	oldSub := subscriptions.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&oldSub)
 	if err != nil {
 		c.log.Error("Could not deserialize Subscription state during deletion!", zap.Error(err), zap.String("key", k))

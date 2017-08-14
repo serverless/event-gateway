@@ -25,7 +25,7 @@ import (
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
-	"github.com/serverless/event-gateway/pubsub"
+	"github.com/serverless/event-gateway/subscriptions"
 	"go.uber.org/zap"
 )
 
@@ -83,12 +83,12 @@ func TestIntegrationSubscription(t *testing.T) {
 	// set up pub/sub
 	eventName := "smileys"
 
-	post(testAPIServer.URL+"/v1/subscriptions", pubsub.Subscription{
+	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
 		FunctionID: subscriberFnID,
-		Event:      pubsub.TopicID(eventName),
+		Event:      subscriptions.TopicID(eventName),
 	})
 
-	wait10Seconds(router.WaitForSubscriber(pubsub.TopicID(eventName)),
+	wait10Seconds(router.WaitForSubscriber(subscriptions.TopicID(eventName)),
 		"timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventName, []byte(expected))
@@ -129,7 +129,7 @@ func TestIntegrationHTTPSubscription(t *testing.T) {
 			},
 		})
 
-	post(testAPIServer.URL+"/v1/subscriptions", pubsub.Subscription{
+	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
 		FunctionID: functions.FunctionID("supersmileyfunction"),
 		Event:      "http",
 		Method:     "POST",
@@ -137,7 +137,7 @@ func TestIntegrationHTTPSubscription(t *testing.T) {
 	})
 
 	select {
-	case <-router.WaitForEndpoint(pubsub.NewEndpointID("POST", "/smilez")):
+	case <-router.WaitForEndpoint(subscriptions.NewEndpointID("POST", "/smilez")):
 	case <-time.After(10 * time.Second):
 		panic("timed out waiting for endpoint to be configured!")
 	}
@@ -220,15 +220,15 @@ func newConfigAPIServer(kvstore store.Store, log *zap.Logger) *httptest.Server {
 	fnsapi := &functions.HTTPAPI{Functions: fns}
 	fnsapi.RegisterRoutes(apiRouter)
 
-	ps := &pubsub.PubSub{
+	subs := &subscriptions.Subscriptions{
 		TopicsDB:        kv.NewPrefixedStore("/serverless-event-gateway/topics", kvstore),
 		SubscriptionsDB: kv.NewPrefixedStore("/serverless-event-gateway/subscriptions", kvstore),
 		EndpointsDB:     kv.NewPrefixedStore("/serverless-event-gateway/endpoints", kvstore),
 		FunctionsDB:     fnsDB,
 		Log:             log,
 	}
-	psapi := &pubsub.HTTPAPI{PubSub: ps}
-	psapi.RegisterRoutes(apiRouter)
+	subsapi := &subscriptions.HTTPAPI{Subscriptions: subs}
+	subsapi.RegisterRoutes(apiRouter)
 
 	return httptest.NewServer(apiRouter)
 }

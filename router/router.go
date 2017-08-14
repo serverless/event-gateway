@@ -13,7 +13,7 @@ import (
 
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/cache"
-	"github.com/serverless/event-gateway/pubsub"
+	"github.com/serverless/event-gateway/subscriptions"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
@@ -109,7 +109,7 @@ func (router *Router) Drain() {
 
 // WaitForEndpoint returns a chan that is closed when an endpoint is created.
 // Primarily for testing purposes.
-func (router *Router) WaitForEndpoint(endpointID pubsub.EndpointID) <-chan struct{} {
+func (router *Router) WaitForEndpoint(endpointID subscriptions.EndpointID) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
@@ -126,7 +126,7 @@ func (router *Router) WaitForEndpoint(endpointID pubsub.EndpointID) <-chan struc
 
 // WaitForSubscriber returns a chan that is closed when a topic has a subscriber.
 // Primarily for testing purposes.
-func (router *Router) WaitForSubscriber(topic pubsub.TopicID) <-chan struct{} {
+func (router *Router) WaitForSubscriber(topic subscriptions.TopicID) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
@@ -168,7 +168,7 @@ func (router *Router) handleHTTPEvent(event *Event, w http.ResponseWriter, r *ht
 
 	router.log.Debug("Event received.", zap.String("event", string(payload)))
 
-	endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
+	endpointID := subscriptions.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 	res, err := router.callEndpoint(endpointID, payload)
 	if err != nil {
 		if err == errUnableToLookUpBackingFunction {
@@ -215,7 +215,7 @@ func (router *Router) handleEvent(instance *Event, w http.ResponseWriter, r *htt
 		}
 	} else {
 		router.processEvent(event{
-			topics:  []pubsub.TopicID{pubsub.TopicID(instance.Event)},
+			topics:  []subscriptions.TopicID{subscriptions.TopicID(instance.Event)},
 			payload: payload,
 		})
 
@@ -224,7 +224,7 @@ func (router *Router) handleEvent(instance *Event, w http.ResponseWriter, r *htt
 }
 
 // callEndpoint determines which function to call when an endpoint is hit.
-func (router *Router) callEndpoint(endpointID pubsub.EndpointID, payload []byte) ([]byte, error) {
+func (router *Router) callEndpoint(endpointID subscriptions.EndpointID, payload []byte) ([]byte, error) {
 	// Figure out what function we're targeting.
 	backingFunction := router.targetCache.BackingFunction(endpointID)
 	if backingFunction == nil {
@@ -282,7 +282,7 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, paylo
 			if err == nil {
 				router.log.Debug("Event received.", zap.String("event", string(payload)))
 				router.processEvent(event{
-					topics:  []pubsub.TopicID{pubsub.TopicID(internal.Event)},
+					topics:  []subscriptions.TopicID{subscriptions.TopicID(internal.Event)},
 					payload: payload,
 				})
 			}
@@ -360,11 +360,11 @@ func (router *Router) processEvent(e event) {
 	}
 }
 
-func (router *Router) enqueueWork(topicMap map[pubsub.TopicID]struct{}, payload []byte) {
+func (router *Router) enqueueWork(topicMap map[subscriptions.TopicID]struct{}, payload []byte) {
 	if len(topicMap) == 0 {
 		return
 	}
-	topics := []pubsub.TopicID{}
+	topics := []subscriptions.TopicID{}
 	for topic := range topicMap {
 		topics = append(topics, topic)
 	}

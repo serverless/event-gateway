@@ -1,6 +1,6 @@
-package pubsub
+package subscriptions
 
-// TopicID uniquely identifies a pubsub topic
+// TopicID uniquely identifies a pubsub topic.
 type TopicID string
 
 // Topic allows stores events that function can subsribe to.

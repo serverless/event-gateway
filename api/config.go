@@ -13,7 +13,7 @@ import (
 	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/metrics"
-	"github.com/serverless/event-gateway/pubsub"
+	"github.com/serverless/event-gateway/subscriptions"
 )
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
@@ -28,15 +28,15 @@ func StartConfigAPI(config httpapi.Config) httpapi.Server {
 	functionsAPI := &functions.HTTPAPI{Functions: functionService}
 	functionsAPI.RegisterRoutes(router)
 
-	pubsubService := &pubsub.PubSub{
+	subscriptionsService := &subscriptions.Subscriptions{
 		TopicsDB:        kv.NewPrefixedStore("/serverless-event-gateway/topics", config.KV),
 		SubscriptionsDB: kv.NewPrefixedStore("/serverless-event-gateway/subscriptions", config.KV),
 		EndpointsDB:     kv.NewPrefixedStore("/serverless-event-gateway/endpoints", config.KV),
 		FunctionsDB:     functionsDB,
 		Log:             config.Log,
 	}
-	pubsubAPI := &pubsub.HTTPAPI{PubSub: pubsubService}
-	pubsubAPI.RegisterRoutes(router)
+	subscriptionsAPI := &subscriptions.HTTPAPI{Subscriptions: subscriptionsService}
+	subscriptionsAPI.RegisterRoutes(router)
 
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	router.Handler("GET", "/metrics", prometheus.Handler())

@@ -1,4 +1,4 @@
-package pubsub
+package subscriptions
 
 import (
 	"bytes"
@@ -10,8 +10,8 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// PubSub allows functions to subscribe to custom events.
-type PubSub struct {
+// Subscriptions allows functions to subscribe to custom events.
+type Subscriptions struct {
 	TopicsDB        store.Store
 	SubscriptionsDB store.Store
 	FunctionsDB     store.Store
@@ -20,7 +20,7 @@ type PubSub struct {
 }
 
 // CreateSubscription creates subscription.
-func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
+func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, error) {
 	err := ps.validateSubscription(s)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (ps PubSub) CreateSubscription(s *Subscription) (*Subscription, error) {
 }
 
 // DeleteSubscription deletes subscription.
-func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
+func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 	sub, err := ps.getSubscription(id)
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (ps PubSub) DeleteSubscription(id SubscriptionID) error {
 }
 
 // GetAllSubscriptions returns array of all Subscription.
-func (ps PubSub) GetAllSubscriptions() ([]*Subscription, error) {
+func (ps Subscriptions) GetAllSubscriptions() ([]*Subscription, error) {
 	subs := []*Subscription{}
 
 	kvs, err := ps.SubscriptionsDB.List("")
@@ -119,7 +119,7 @@ func (ps PubSub) GetAllSubscriptions() ([]*Subscription, error) {
 }
 
 // getSubscription returns subscription.
-func (ps PubSub) getSubscription(id SubscriptionID) (*Subscription, error) {
+func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error) {
 	rawsub, err := ps.SubscriptionsDB.Get(string(id))
 	if err != nil {
 		return nil, &ErrSubscriptionNotFound{id}
@@ -136,7 +136,7 @@ func (ps PubSub) getSubscription(id SubscriptionID) (*Subscription, error) {
 }
 
 // ensureTopic creates topic if it doesn't exists.
-func (ps PubSub) ensureTopic(id TopicID) error {
+func (ps Subscriptions) ensureTopic(id TopicID) error {
 	_, err := ps.TopicsDB.Get(string(id))
 	if err == nil {
 		return nil
@@ -155,7 +155,7 @@ func (ps PubSub) ensureTopic(id TopicID) error {
 }
 
 // deleteEmptyTopic deletes topic without subscriptions.
-func (ps PubSub) deleteEmptyTopic(id TopicID) error {
+func (ps Subscriptions) deleteEmptyTopic(id TopicID) error {
 	subs, err := ps.GetAllSubscriptions()
 	if err != nil {
 		return err
@@ -171,7 +171,7 @@ func (ps PubSub) deleteEmptyTopic(id TopicID) error {
 }
 
 // createEndpoint creates endpoint.
-func (ps PubSub) createEndpoint(functionID functions.FunctionID, method, path string) error {
+func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, path string) error {
 	e := &Endpoint{
 		ID:         NewEndpointID(method, path),
 		FunctionID: functionID,
@@ -193,7 +193,7 @@ func (ps PubSub) createEndpoint(functionID functions.FunctionID, method, path st
 }
 
 // deleteEndpoint deletes endpoint.
-func (ps PubSub) deleteEndpoint(method, path string) error {
+func (ps Subscriptions) deleteEndpoint(method, path string) error {
 	err := ps.EndpointsDB.Delete(string(NewEndpointID(method, path)))
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func (ps PubSub) deleteEndpoint(method, path string) error {
 	return nil
 }
 
-func (ps PubSub) validateSubscription(s *Subscription) error {
+func (ps Subscriptions) validateSubscription(s *Subscription) error {
 	validate := validator.New()
 	validate.RegisterValidation("urlpath", urlPathValidator)
 	validate.RegisterValidation("eventname", eventNameValidator)
