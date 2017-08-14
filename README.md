@@ -294,7 +294,9 @@ Request: arbitrary payload, subscribed function receives an event in above schem
   "data": {
     "headers": <request headers>,
     "query": <request query params>,
-    "body": <request payload>
+    "body": <request payload>,
+    "path": <request URL path>,
+    "method": <request method>
   }
   ...
 }

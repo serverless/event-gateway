@@ -166,7 +166,7 @@ func (router *Router) handleHTTPEvent(event *Event, w http.ResponseWriter, r *ht
 		return
 	}
 
-	router.log.Debug("Event received.", zap.String("event", string(payload)), zap.String("path", r.URL.EscapedPath()), zap.String("method", r.Method))
+	router.log.Debug("Event received.", zap.String("event", string(payload)))
 
 	endpointID := pubsub.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 	res, err := router.callEndpoint(endpointID, payload)
