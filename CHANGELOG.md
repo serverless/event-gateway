@@ -1,4 +1,11 @@
 
+0.5.12 / 2017-08-14
+===================
+
+  * improve logging. Add missing logs. Better error reporting. Closes #265 (#285)
+  * add tests for subscription package
+  * rename pubsub package to subscriptions
+
 0.5.11 / 2017-08-14
 ===================
 
