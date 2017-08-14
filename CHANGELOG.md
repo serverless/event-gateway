@@ -1,4 +1,10 @@
 
+0.5.11 / 2017-08-14
+===================
+
+  * add path and method as a part of http event. Closes #273 (#284)
+  * fix log messages and add missing logs. Closes #280. Closes #277. (#283)
+
 0.5.10 / 2017-08-13
 ===================
 
