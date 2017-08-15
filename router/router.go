@@ -158,7 +158,7 @@ const (
 	// headerFunctionID is a header name for specifing function id for sync invocation.
 	headerFunctionID = "function-id"
 
-	internalFunctionProviderError = "gateway.warn.functionProviderError"
+	internalFunctionError = "gateway.info.functionError"
 )
 
 var (
@@ -189,7 +189,7 @@ func (router *Router) handleSyncEvent(name string, payload []byte, w http.Respon
 
 	resp, err := router.callFunction(functionID, payload)
 	if err != nil {
-		router.log.Warn("Function invocation failed.",
+		router.log.Info("Function invocation failed.",
 			zap.String("functionId", string(functionID)), zap.String("event", string(payload)), zap.Error(err))
 
 		if err == errUnableToLookUpBackingFunction {
@@ -197,7 +197,7 @@ func (router *Router) handleSyncEvent(name string, payload []byte, w http.Respon
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
-			router.emitFunctionProviderErrorEvent(functionID, payload, err)
+			router.emitFunctionErrorEvent(functionID, payload, err)
 		}
 
 		return
@@ -315,18 +315,10 @@ func (router *Router) processEvent(e event) {
 		resp, err := router.callFunction(subscriber, e.payload)
 
 		if err != nil {
-			router.log.Warn("Function invocation failed.",
+			router.log.Info("Function invocation failed.",
 				zap.String("functionId", string(subscriber)), zap.String("event", string(e.payload)), zap.Error(err))
 
-			if _, ok := err.(*functions.ErrFunctionCallFailedProviderError); ok {
-				internal := NewEvent(internalFunctionProviderError, mimeJSON, struct {
-					FunctionID string `json:"functionId"`
-				}{string(subscriber)})
-				payload, err := json.Marshal(internal)
-				if err == nil {
-					router.enqueueWork(subscriptions.TopicID(internal.Event), payload)
-				}
-			}
+			router.emitFunctionErrorEvent(subscriber, e.payload, err)
 		} else {
 			router.log.Debug("Function finished.",
 				zap.String("functionId", string(subscriber)), zap.String("event", string(e.payload)),
@@ -335,9 +327,9 @@ func (router *Router) processEvent(e event) {
 	}
 }
 
-func (router *Router) emitFunctionProviderErrorEvent(functionID functions.FunctionID, payload []byte, err error) {
-	if _, ok := err.(*functions.ErrFunctionCallFailedProviderError); ok {
-		internal := NewEvent(internalFunctionProviderError, mimeJSON, struct {
+func (router *Router) emitFunctionErrorEvent(functionID functions.FunctionID, payload []byte, err error) {
+	if _, ok := err.(*functions.ErrFunctionError); ok {
+		internal := NewEvent(internalFunctionError, mimeJSON, struct {
 			FunctionID string `json:"functionId"`
 		}{string(functionID)})
 		payload, err = json.Marshal(internal)
