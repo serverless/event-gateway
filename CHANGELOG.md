@@ -1,4 +1,11 @@
 
+0.5.13 / 2017-08-15
+===================
+
+  * change internal function error name (#287)
+  * add support for HTTP response object. Closes #245 (#286)
+  * run tests before lint on TravisCI
+
 0.5.12 / 2017-08-14
 ===================
 
