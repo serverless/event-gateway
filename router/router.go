@@ -207,6 +207,25 @@ func (router *Router) handleSyncEvent(name string, payload []byte, w http.Respon
 		zap.String("functionId", string(functionID)), zap.String("event", string(payload)),
 		zap.String("response", string(resp)))
 
+	if name == eventHTTP {
+		httpResponse := &HTTPResponse{StatusCode: http.StatusOK}
+		err = json.Unmarshal(resp, httpResponse)
+		if err != nil {
+			httperr := NewErrHTTPResponseObjectMalformed()
+			http.Error(w, httperr.Error(), httperr.StatusCode)
+
+			router.log.Info(httperr.Error(), zap.String("response", string(resp)))
+
+			return
+		}
+
+		for key, value := range httpResponse.Headers {
+			w.Header().Set(key, value)
+		}
+		w.WriteHeader(httpResponse.StatusCode)
+		resp = []byte(httpResponse.Body)
+	}
+
 	_, err = w.Write(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

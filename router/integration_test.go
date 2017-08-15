@@ -34,7 +34,7 @@ func TestMain(t *testing.T) {
 	etcd.Register()
 }
 
-func TestIntegration_Subscription(t *testing.T) {
+func TestIntegration_AsyncSubscription(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
@@ -99,25 +99,27 @@ func TestIntegration_Subscription(t *testing.T) {
 	shutdownGuard.ShutdownAndWait()
 }
 
-func TestIntegration_HTTPSubscription(t *testing.T) {
+func TestIntegration_HTTPResponse(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
+
 	kv, shutdownGuard := newTestEtcd()
 
 	testAPIServer := newConfigAPIServer(kv, log)
 	defer testAPIServer.Close()
+
 	router, testRouterServer := newTestRouterServer(kv, log)
 	defer testRouterServer.Close()
 
 	testTargetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "😸")
+		fmt.Fprintf(w, `{"statusCode":201,"headers":{"content-type":"text/html"},"body":"<head></head>"}`)
 	}))
 	defer testTargetServer.Close()
 
 	post(testAPIServer.URL+"/v1/functions",
 		functions.Function{
-			ID: functions.FunctionID("supersmileyfunction"),
+			ID: functions.FunctionID("httpresponse"),
 			Provider: &functions.Provider{
 				Type: functions.HTTPEndpoint,
 				URL:  testTargetServer.URL,
@@ -125,20 +127,22 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 		})
 
 	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
-		FunctionID: functions.FunctionID("supersmileyfunction"),
+		FunctionID: functions.FunctionID("httpresponse"),
 		Event:      "http",
 		Method:     "GET",
-		Path:       "/smilez",
+		Path:       "/httpresponse",
 	})
 
 	select {
-	case <-router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/smilez")):
+	case <-router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/httpresponse")):
 	case <-time.After(10 * time.Second):
 		panic("timed out waiting for endpoint to be configured!")
 	}
 
-	_, _, body := get(testRouterServer.URL + "/smilez")
-	assert.Equal(t, "😸", body)
+	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
+	assert.Equal(t, statusCode, 201)
+	assert.Equal(t, headers.Get("content-type"), "text/html")
+	assert.Equal(t, body, "<head></head>")
 
 	router.Drain()
 	shutdownGuard.ShutdownAndWait()

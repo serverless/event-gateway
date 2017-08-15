@@ -307,6 +307,16 @@ arbitrary payload, subscribed function receives an event in above schema. `data`
 Status code:
 - `200 OK` with payload with function response
 
+#### Respond to an HTTP Event
+
+To respond to an HTTP event a function needs to return object with following fields:
+
+- `statusCode` - `int` - response status code, default: 200
+- `headers` - `object` - response headers
+- `body` - `string` - response body
+
+Currently, the event gateway supports only string responses.
+
 ### Invoking a Registered Function - Sync Function Invocation
 
 **Endpoint**
