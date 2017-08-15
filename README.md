@@ -253,7 +253,7 @@ All data that passes through the Event Gateway is formatted as an Event, based o
 - `event` - `string` - the event name
 - `id` - `string` - the event's instance universally unique ID (provided by the event gateway)
 - `receivedAt` - `number` - the time (milliseconds) when the Event was received by the Event Gateway (provided by the event gateway)
-- `data` - type depends on `encoding` - the event payload
+- `data` - type depends on `dataType` - the event payload
 - `dataType` - `string` - the mime type of `data` payload
 
 Example:
@@ -268,25 +268,25 @@ Example:
 }
 ```
 
-### Event Data Types
+#### Event Data Type
 
-The MIME type of the data block can be specified using the Content-Type header. This allows the event gateway to understand how to deserialize the data block if it needs to. If not specified `application/octet-stream` type is assumed and no deserialization happens. In case of `application/json` encoding the event gateway passes deserialized JSON payload to target functions.
+The MIME type of the data block can be specified using the `Content-Type` header (by default it's `application/octet-stream`). This allows the event gateway to understand how to deserialize the data block if it needs to. In case of `application/json` type the event gateway passes JSON payload to the target functions. In any other case the data block is Base64 encoded.
 
 ### Emit a Custom Event (Async Function Invocation)
 
-`POST /` with `Event` header set to event name. Optionally `Content-Type: <MIME type>` header can be set to specify payload encoding.
+`POST /` with `Event` header set to an event name. Optionally `Content-Type: <MIME type>` header can be set to specify payload encoding.
 
 Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
 
 Response: `202 Accepted` in case of success
 
-### Emit a HTTP Event
+### Emit an HTTP Event
 
-Creating HTTP subscription requires `method` and `path` properties. Those properties are used to emit HTTP event.
+Creating HTTP subscription requires `method` and `path` properties. Those properties are used to listen for HTTP events.
 
 `<method> /<path>`
 
-Request: arbitrary payload, subscribed function receives an event in above schema. `data` field has following fields:
+Request: arbitrary payload, subscribed function receives an event in above schema. `data` field has the following fields:
 
 ```
 {
@@ -303,6 +303,16 @@ Request: arbitrary payload, subscribed function receives an event in above schem
 ```
 
 Response: function response
+
+### Respond to an HTTP Event
+
+To respond to an HTTP event a function needs to return object with following fields:
+
+- `statusCode` - `int` - response status code, default: 200
+- `headers` - `object` - response headers
+- `body` - `string` - response body
+
+Currently, the event gateway supports only string responses.
 
 ### Invoking a Registered Function (Sync Function Invocation)
 
