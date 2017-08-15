@@ -141,11 +141,15 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 		if awserr, ok := err.(awserr.Error); ok {
 			switch awserr.Code() {
 			case lambda.ErrCodeServiceException:
-				return nil, &ErrFunctionCallFailedProviderError{awserr}
+				return nil, &ErrFunctionProviderError{awserr}
 			default:
 				return nil, &ErrFunctionCallFailed{awserr}
 			}
 		}
+	}
+
+	if invokeOutput.FunctionError != nil {
+		return nil, &ErrFunctionError{errors.New(*invokeOutput.FunctionError)}
 	}
 
 	return invokeOutput.Payload, err
@@ -161,7 +165,7 @@ func (f *Function) callHTTP(payload []byte) ([]byte, error) {
 		return nil, &ErrFunctionCallFailed{err}
 	}
 	if resp.StatusCode == http.StatusInternalServerError {
-		return nil, &ErrFunctionCallFailedProviderError{fmt.Errorf("HTTP status code: %d", http.StatusInternalServerError)}
+		return nil, &ErrFunctionError{fmt.Errorf("HTTP status code: %d", http.StatusInternalServerError)}
 	}
 
 	defer resp.Body.Close()
@@ -170,7 +174,7 @@ func (f *Function) callHTTP(payload []byte) ([]byte, error) {
 
 func (f *Function) callEmulator(payload []byte) ([]byte, error) {
 	type emulatorInvokeSchema struct {
-		FunctionID string `json:"functionId"`
+		FunctionID string      `json:"functionId"`
 		Payload    interface{} `json:"payload"`
 	}
 
@@ -206,7 +210,7 @@ func (f *Function) callEmulator(payload []byte) ([]byte, error) {
 		return nil, &ErrFunctionCallFailed{err}
 	}
 	if resp.StatusCode == http.StatusInternalServerError {
-		return nil, &ErrFunctionCallFailedProviderError{fmt.Errorf("HTTP status code: %d", http.StatusInternalServerError)}
+		return nil, &ErrFunctionError{fmt.Errorf("HTTP status code: %d", http.StatusInternalServerError)}
 	}
 
 	defer resp.Body.Close()

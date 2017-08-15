@@ -40,11 +40,20 @@ func (e ErrFunctionCallFailed) Error() string {
 	return fmt.Sprintf("Function call failed. Error: %q", e.original)
 }
 
-// ErrFunctionCallFailedProviderError occurs when function call failed because of provider error.
-type ErrFunctionCallFailedProviderError struct {
+// ErrFunctionProviderError occurs when function call failed because of provider error.
+type ErrFunctionProviderError struct {
 	original error
 }
 
-func (e ErrFunctionCallFailedProviderError) Error() string {
+func (e ErrFunctionProviderError) Error() string {
 	return fmt.Sprintf("Function call failed because of provider error. Error: %q", e.original)
+}
+
+// ErrFunctionError occurs when function call failed because of function error.
+type ErrFunctionError struct {
+	original error
+}
+
+func (e ErrFunctionError) Error() string {
+	return fmt.Sprintf("Function call failed because of runtime error. Error: %q", e.original)
 }
