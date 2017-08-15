@@ -195,7 +195,7 @@ func (f *Function) callEmulator(payload []byte) ([]byte, error) {
 
 	switch f.Provider.APIVersion {
 	case "v0":
-		emulatorURL.Path = path.Join(f.Provider.APIVersion, "emulator/api/function/invoke")
+		emulatorURL.Path = path.Join(f.Provider.APIVersion, "emulator/api/functions/invoke")
 	default:
 		return nil, fmt.Errorf("Invalid Emulator API version %q for Function %q", f.Provider.APIVersion, f.ID)
 	}
