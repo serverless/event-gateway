@@ -144,55 +144,6 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	shutdownGuard.ShutdownAndWait()
 }
 
-func TestIntegration_HTTPResponse(t *testing.T) {
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.DisableStacktrace = true
-	log, _ := logCfg.Build()
-
-	kv, shutdownGuard := newTestEtcd()
-
-	testAPIServer := newConfigAPIServer(kv, log)
-	defer testAPIServer.Close()
-
-	router, testRouterServer := newTestRouterServer(kv, log)
-	defer testRouterServer.Close()
-
-	testTargetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, `{"statusCode":201,"headers":{"content-type":"text/html"},"body":"<head></head>"}`)
-	}))
-	defer testTargetServer.Close()
-
-	post(testAPIServer.URL+"/v1/functions",
-		functions.Function{
-			ID: functions.FunctionID("httpresponse"),
-			Provider: &functions.Provider{
-				Type: functions.HTTPEndpoint,
-				URL:  testTargetServer.URL,
-			},
-		})
-
-	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
-		FunctionID: functions.FunctionID("httpresponse"),
-		Event:      "http",
-		Method:     "GET",
-		Path:       "/httpresponse",
-	})
-
-	select {
-	case <-router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/httpresponse")):
-	case <-time.After(10 * time.Second):
-		panic("timed out waiting for endpoint to be configured!")
-	}
-
-	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
-	assert.Equal(t, statusCode, 201)
-	assert.Equal(t, headers.Get("content-type"), "text/html")
-	assert.Equal(t, body, "<head></head>")
-
-	router.Drain()
-	shutdownGuard.ShutdownAndWait()
-}
-
 func wait10Seconds(ch <-chan struct{}, errMsg string) {
 	select {
 	case <-ch:
