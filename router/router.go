@@ -55,10 +55,17 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	payload, err := json.Marshal(event)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	if event.Event == eventHTTP || event.Event == eventInvoke {
-		router.handleSyncEvent(event, w, r)
+		router.handleSyncEvent(event.Event, payload, w, r)
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		router.handleAsyncEvent(event, w, r)
+		router.enqueueWork(subscriptions.TopicID(event.Event), payload)
+		w.WriteHeader(http.StatusAccepted)
 	}
 }
 
@@ -159,20 +166,15 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleSyncEvent(event *Event, w http.ResponseWriter, r *http.Request) {
-	payload, err := json.Marshal(event)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+func (router *Router) handleSyncEvent(name string, payload []byte, w http.ResponseWriter, r *http.Request) {
 	router.log.Debug("Event received.", zap.String("event", string(payload)))
 
 	var resp []byte
 	var functionID functions.FunctionID
-	if event.Event == eventInvoke {
+
+	if name == eventInvoke {
 		functionID = functions.FunctionID(r.Header.Get(headerFunctionID))
-	} else if event.Event == eventHTTP {
+	} else if name == eventHTTP {
 		endpointID := subscriptions.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		backingFunction := router.targetCache.BackingFunction(endpointID)
 		if backingFunction == nil {
@@ -183,10 +185,9 @@ func (router *Router) handleSyncEvent(event *Event, w http.ResponseWriter, r *ht
 		functionID = *backingFunction
 	}
 
-	router.log.Debug("Function triggered.",
-		zap.String("functionId", string(functionID)), zap.String("event", string(payload)))
+	router.log.Debug("Function triggered.", zap.String("functionId", string(functionID)), zap.String("event", string(payload)))
 
-	resp, err = router.callFunction(functionID, payload)
+	resp, err := router.callFunction(functionID, payload)
 	if err != nil {
 		router.log.Warn("Function invocation failed.",
 			zap.String("functionId", string(functionID)), zap.String("event", string(payload)), zap.Error(err))
@@ -195,16 +196,8 @@ func (router *Router) handleSyncEvent(event *Event, w http.ResponseWriter, r *ht
 			http.Error(w, err.Error(), http.StatusNotFound)
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
 
-		if _, ok := err.(*functions.ErrFunctionCallFailedProviderError); ok {
-			internal := NewEvent(internalFunctionProviderError, mimeJSON, struct {
-				FunctionID string `json:"functionId"`
-			}{string(functionID)})
-			payload, err = json.Marshal(internal)
-			if err == nil {
-				router.enqueueWork(subscriptions.TopicID(internal.Event), payload)
-			}
+			router.emitFunctionProviderErrorEvent(functionID, payload, err)
 		}
 
 		return
@@ -214,7 +207,7 @@ func (router *Router) handleSyncEvent(event *Event, w http.ResponseWriter, r *ht
 		zap.String("functionId", string(functionID)), zap.String("event", string(payload)),
 		zap.String("response", string(resp)))
 
-	if event.Event == eventHTTP {
+	if name == eventHTTP {
 		httpResponse := &HTTPResponse{StatusCode: http.StatusOK}
 		err = json.Unmarshal(resp, httpResponse)
 		if err == nil {
@@ -235,15 +228,18 @@ func (router *Router) handleSyncEvent(event *Event, w http.ResponseWriter, r *ht
 	}
 }
 
-func (router *Router) handleAsyncEvent(instance *Event, w http.ResponseWriter, r *http.Request) {
-	payload, err := json.Marshal(instance)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+func (router *Router) enqueueWork(topic subscriptions.TopicID, payload []byte) {
+	router.log.Debug("Event received.", zap.String("event", string(payload)))
 
-	router.enqueueWork(subscriptions.TopicID(instance.Event), payload)
-	w.WriteHeader(http.StatusAccepted)
+	select {
+	case router.work <- event{
+		topic:   topic,
+		payload: payload,
+	}:
+	default:
+		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
+		router.dropMetric.Inc()
+	}
 }
 
 // callFunction looks up a function and calls it.
@@ -339,17 +335,15 @@ func (router *Router) processEvent(e event) {
 	}
 }
 
-func (router *Router) enqueueWork(topic subscriptions.TopicID, payload []byte) {
-	router.log.Debug("Event received.", zap.String("event", string(payload)))
-
-	select {
-	case router.work <- event{
-		topic:   topic,
-		payload: payload,
-	}:
-	default:
-		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
-		router.dropMetric.Inc()
+func (router *Router) emitFunctionProviderErrorEvent(functionID functions.FunctionID, payload []byte, err error) {
+	if _, ok := err.(*functions.ErrFunctionCallFailedProviderError); ok {
+		internal := NewEvent(internalFunctionProviderError, mimeJSON, struct {
+			FunctionID string `json:"functionId"`
+		}{string(functionID)})
+		payload, err = json.Marshal(internal)
+		if err == nil {
+			router.enqueueWork(subscriptions.TopicID(internal.Event), payload)
+		}
 	}
 }
 
