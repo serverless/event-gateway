@@ -11,10 +11,10 @@ before_install:
 install:
 - glide install
 script:
+- go test -tags=integration -race $(glide novendor)
 - go get -u github.com/alecthomas/gometalinter
 - gometalinter --install --force
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --skip=mock ./...
-- go test -tags=integration -race $(glide novendor)
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 notifications:
