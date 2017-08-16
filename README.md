@@ -386,8 +386,8 @@ JSON object:
     - `type` - `string` - required, provider type: `awslambda`
     - `arn` - `string` - required, AWS ARN identifier
     - `region` - `string` - required, region name
-    - `awsAccessKeyID` - `string` - optional, AWS API key ID
-    - `awsSecretAccessKey` - `string` - optional, AWS API key
+    - `awsAccessKeyID` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
+    - `awsSecretAccessKey` - `string` - optional, AWS API key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
   - for HTTP function:
     - `type` - `string` - required, provider type: `http`
     - `url` - `string` - required, the URL of an http or https remote endpoint
