@@ -5,28 +5,49 @@
 
 [Website](http://www.serverless.com) • [Newsletter](http://eepurl.com/b8dv4P) • [Gitter](https://gitter.im/serverless/serverless) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless)
 
-The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience, intended for use with Functions-as-a-Service on AWS, Azure, Google & IBM. It's dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute). The Event Gateway is a layer-7 proxy and realtime dataflow engine.
+The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute).
+
+The Event Gateway is a layer-7 proxy and realtime dataflow engine, intended for use with Functions-as-a-Service on AWS, Azure, Google & IBM.
+
+## Contents
+
+1. [Installation](#installation)
+1. [Quick Start](#quick-start)
+1. [Philosophy](#philosophy)
+1. [Motivation](#motivation)
+1. [Features](#features)
+   1. [Function Discovery](#function-discovery)
+   1. [Subscriptions](#subscriptions)
+1. [Events API](#events-api)
+1. [Configuration API](#configuration-api)
+1. [Client Libraries](#client-libraries)
+1. [Comparison](#comparison)
+1. [Architecture](#architecture)
+1. [Background](#background)
+
+## Installation
+
+On macOS or Linux run the following:
+
+```
+curl -sfL https://raw.githubusercontent.com/serverless/event-gateway/master/install.sh | sh
+```
+
+On Windows download [binary](https://github.com/serverless/event-gateway/releases), then add to PATH.
 
 ## Quick Start
 
 ### Running Locally
 
-Download a binary file from the latest [release page](https://github.com/serverless/event-gateway/releases) and run `event-gateway` in `dev` mode:
+Run `event-gateway` in `dev` mode:
 
 ```
 event-gateway -dev
 ```
 
-Alternatively, run in Docker container:
-
-```
-git clone git@github.com:serverless/event-gateway.git
-cd event-gateway
-docker build -t event-gateway .
-docker run -p 4000:4000 -p 4001:4001 event-gateway -dev
-```
-
 ### Register a Function
+
+Register an AWS Lambda function in the Function Discovery.
 
 ```
 curl --request POST \
@@ -37,6 +58,8 @@ curl --request POST \
 
 ### Subscribe to an Event
 
+Once the function is register you can subscribe it to you custom event.
+
 ```
 curl --request POST \
   --url http://127.0.0.1:4001/v1/subscriptions \
@@ -46,6 +69,8 @@ curl --request POST \
 
 ### Emit an Event
 
+An event can be emitted using [Events API](#events-api).
+
 ```
 curl --request POST \
   --url http://127.0.0.1:4000/ \
@@ -54,20 +79,7 @@ curl --request POST \
   --data '{"foo": "bar"}'
 ```
 
-## Contents
-
-1. [Philosophy](#philosophy)
-1. [Motivation](#motivation)
-1. [Features](#features)
-   1. [Function Discovery](#function-discovery)
-   1. [Subscriptions](#subscriptions)
-1. [Client Libraries](#client-libraries)
-1. [Events API](#events-api)
-1. [Configuration API](#configuration-api)
-1. [Architecture](#architecture)
-1. [What The Event Gateway is NOT](#what-the-event-gateway-is-not)
-1. [Background](#background)
-1. [Comparison](#comparison)
+After emitting the event subscribed function is called asynchronously.
 
 ## Philosophy
 
@@ -88,10 +100,11 @@ curl --request POST \
 
 ### Function Discovery
 
-Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the following function types:
+Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the
+following function types:
 
-- FaaS functions (AWS Lambda, Google Cloud Functions)
-- HTTP endpoints with an HTTP method specified (e.g. GET http://example.com/function)
+- FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
+- HTTP endpoints (e.g. GET http://example.com/function)
 
 #### Example: Register An AWS Lambda Function
 
@@ -190,7 +203,7 @@ eventGateway.subscribe({
 curl --request POST \
   --url http://localhost:4000/ \
   --header 'content-type: application/json' \
-  --header 'event: usercreated' \
+  --header 'event: user.created' \
   --data '{ "name": "Max" }'
 ```
 
@@ -199,15 +212,15 @@ curl --request POST \
 ```javascript
 const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
 eventGateway.emit({
-  event: "userCreated",
+  event: "user.created",
   data: { name: "Max" }
 })
 ```
 
 #### Sync subscriptions via HTTP event
 
-Custom event subscriptions are async. There is a special `http` event type for creating sync subscriptions. `http` event is
-a HTTP request received on specified path and for specified HTTP method.
+Custom event subscriptions are asynchronous. There is a special `http` event type for creating synchronous subscriptions.
+`http` event is a HTTP request received on specified path and for specified HTTP method.
 
 #### Example: Subscribe to an "http" Event
 
@@ -237,16 +250,12 @@ eventGateway.subscribe({
 })
 ```
 
-## Client Libraries
-
-- [FDK for Node.js](https://github.com/serverless/fdk)
-
 ## Events API
 
-The Event Gateway exposes an API for emitting events. By default Events API runs on `:4000` port. Events API can be used for
-emitting both custom and HTTP events.
+The Event Gateway exposes an API for emitting events. Events API can be used for emitting custom event, HTTP events and
+for invoking function. By default Events API runs on `:4000` port.
 
-### How We Define Events
+### Event Definition
 
 All data that passes through the Event Gateway is formatted as an Event, based on our default Event schema:
 
@@ -260,7 +269,7 @@ Example:
 
 ```json
 {
-  "event": "myapp.subscription.created",
+  "event": "myapp.user.created",
   "id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
   "receivedAt": 1500897327098,
   "data": {"foo": "bar"},
@@ -268,13 +277,23 @@ Example:
 }
 ```
 
+When an event occurs, all subscribers are called with the event in above schema as its argument.
+
 #### Event Data Type
 
-The MIME type of the data block can be specified using the `Content-Type` header (by default it's `application/octet-stream`). This allows the event gateway to understand how to deserialize the data block if it needs to. In case of `application/json` type the event gateway passes JSON payload to the target functions. In any other case the data block is Base64 encoded.
+The MIME type of the data block can be specified using the `Content-Type` header (by default it's
+`application/octet-stream`). This allows the event gateway to understand how to deserialize the data block if it needs
+to. In case of `application/json` type the event gateway passes JSON payload to the target functions. In any other case
+the data block is base64 encoded.
 
 ### Emit a Custom Event (Async Function Invocation)
 
-`POST /` with `Event` header set to an event name. Optionally `Content-Type: <MIME type>` header can be set to specify payload encoding.
+`POST /`
+
+Request headers:
+
+- `Event` - `string` - required, event name
+- `Content-Type`  - `MIME type string` - payload type
 
 Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
 
@@ -306,7 +325,12 @@ Response: function response
 
 ### Invoking a Registered Function (Sync Function Invocation)
 
-`POST /` with `Event` header set to `invoke` and `Function-ID` set to function ID.
+`POST /`
+
+Request headers:
+
+- `Event` - `string` - `"invoke"`
+- `Function-ID` - `string` - ID of a function to call
 
 Request: arbitrary payload, invoked function receives an event in above schema, where request payload is passed as `data` field
 
@@ -427,6 +451,25 @@ Dummy endpoint (always returning 200 status code) for checking if the event gate
 
 `GET /v1/status`
 
+## Client Libraries
+
+- [FDK for Node.js](https://github.com/serverless/fdk)
+
+## Comparison
+
+### What The Event Gateway is NOT
+
+- it's not a replacement for message queues (no message ordering, currently weak durability guarantees only)
+- it's not a replacement for streaming platforms (no processing capability and consumers group)
+- it's not a replacement for existing service discovery solutions from the microservices world
+
+
+### Event Gateway vs FaaS Providers
+
+The Event Gateway is NOT a FaaS platform. It integrates with existing FaaS providers (AWS Lambda, Google Cloud Functions,
+Azure Functions, OpenWhisk Actions). The Event Gateway enables building large serverless architectures in a unified way
+across different providers.
+
 
 ## Architecture
 
@@ -469,19 +512,14 @@ GCloud us-c│ntral1───┐        │        │ λ ├┐      │       
 └────────────────────┘                                         └────────────────────┘
 ```
 
-The Event Gateway instances use a strongly consistent, subscribable DB (initially etcd, with support for Consul, Zookeeper, and Dynamo planned) to store and broadcast configuration. The instances locally cache configuration used to drive low-latency event routing.
-
-## What The Event Gateway is NOT
-
-- it's not a replacement for message queues (no message ordering, currently weak durability guarantees only)
-- it's not a replacement for streaming platforms (no processing capability and consumers group)
-- it's not a replacement for existing service discovery solutions from the microservices world
+The Event Gateway instances use a strongly consistent, subscribable DB (initially etcd, with support for Consul,
+Zookeeper, and Dynamo planned) to store and broadcast configuration. The instances locally cache configuration used to
+drive low-latency event routing.
 
 ## Background
 
-### SOA challenges
-
-SOA came along with a new set of challenges. In monolithic architectures, it was simple to call a built-in library or rarely-changing external service. In SOA it involves much more network communication which [is not reliable](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing). The main problems to solve include:
+SOA came along with a new set of challenges. In monolithic architectures, it was simple to call a built-in library or
+rarely-changing external service. In SOA it involves much more network communication which [is not reliable](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing). The main problems to solve include:
 
 1. Where is the service deployed? How many instances are there? Which instance is the closest to me? (service discovery)
 2. Requests to the service should be balanced between all service instances (load balancing)
@@ -499,7 +537,7 @@ The following systems are solutions those problems:
 
 The main goal of those tools is to manage the inconveniences of network communication.
 
-### Microservices challenges & FaaS
+### Microservices Challenges & FaaS
 
 The greatest benefit of serverless/FaaS is that it solves almost all of above problems:
 
@@ -512,36 +550,16 @@ The greatest benefit of serverless/FaaS is that it solves almost all of above pr
 
 Tools like Envoy/Linkerd solve different domain of technical problems that doesn't occur in serverless space. They have a lot of features that are unnecessary in the context of serverless computing.
 
-### Service discovery in FaaS = Function discovery
+### Service Discovery in FaaS = Function Discovery
 
 Service discovery problems may be relevant to serverless architectures, especially when we have a multi-cloud setup or we want to call a serverless function from a legacy system (microservices, etc...). There is a need for some proxy that will know where the function is actually deployed and have  retry logic built-in. Mapping from function name to serverless function calling metadata is a different problem from tracking the availability of a changing number of service instances. That's why there is a room for new tools that solves **function discovery** problem rather than the service discovery problem. Those problems are fundamentally different.
 
-## Comparison
-
-### Event Gateway vs FaaS providers
-
-The Event Gateway is NOT a FaaS platform. It integrates with existing FaaS providers (AWS Lambda, Google Cloud Functions, OpenWhisk Actions). The Event Gateway enables building large serverless architectures in a unified way across different providers.
-
-### Gateway vs OpenWhisk
-
-Apache OpenWhisk is an integrated serverless platform. OpenWhisk is built around three concepts:
-
-- actions
-- triggers
-- rules
-
-OpenWhisk, as mentioned above, is a FaaS platform. Triggers & Rules enable building event-driven systems. Those two concepts are similar to the Event Gateway's Pub/Sub system. However, there are few differences:
-
-- OpenWhisk Rules don't integrate with other FaaS providers
-- OpenWhisk doesn't provide a fine-grained access control system
-- OpenWhisk doesn't enable exporting events outside OpenWhisk
-
 ## Community
 
-* [Email Updates](http://eepurl.com/b8dv4P)
-* [Serverless Forum](http://forum.serverless.com)
-* [Gitter Chatroom](https://gitter.im/serverless/serverless)
-* [Serverless Meetups](http://www.meetup.com/serverless/)
-* [Facebook](https://www.facebook.com/serverless)
-* [Twitter](https://twitter.com/goserverless)
-* [Contact Us](mailto:hello@serverless.com)
+- [Email Updates](http://eepurl.com/b8dv4P)
+- [Serverless Forum](http://forum.serverless.com)
+- [Gitter Chatroom](https://gitter.im/serverless/serverless)
+- [Serverless Meetups](http://www.meetup.com/serverless/)
+- [Facebook](https://www.facebook.com/serverless)
+- [Twitter](https://twitter.com/goserverless)
+- [Contact Us](mailto:hello@serverless.com)
