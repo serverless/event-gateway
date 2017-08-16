@@ -348,17 +348,17 @@ payload with function response
 
 ## Configuration API
 
-The Event Gateway exposes a RESTful configuration API. By default Configuration API runs on `:4001` port.
+The Event Gateway exposes a RESTful JSON configuration API. By default Configuration API runs on `:4001` port.
 
 ### Function discovery
 
 #### Register function
 
+**Endpoint**
+
 `POST <Configuration API URL>/v1/functions`
 
 **Request**
-
-JSON object with the following fields:
 
 - `functionId` - `string` - required, function name
 - `provider` - `object` - required, provider specific information about a function, depends on type:
@@ -374,12 +374,12 @@ JSON object with the following fields:
 
 **Response**
 
-JSON object with the following fields:
-
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
 #### Update function
+
+**Endpoint**
 
 `PUT <Configuration API URL>/v1/functions/<function id>`
 
@@ -399,8 +399,6 @@ JSON object with the following fields:
 
 **Response**
 
-JSON object with the following fields:
-
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
@@ -408,15 +406,17 @@ JSON object with the following fields:
 
 Delete all types of functions. This operation fails if the function is currently in-use by a subscription.
 
+**Endpoint**
+
 `DELETE <Configuration API URL>/v1/functions/<function id>`
 
 #### Get functions
 
+**Endpoint**
+
 `GET <Configuration API URL>/v1/functions`
 
 **Response**
-
-JSON object with the following fields:
 
 - `functions` - `array` of `object` - functions:
   - `functionId` - `string` - function name
@@ -425,6 +425,8 @@ JSON object with the following fields:
 ### Subscriptions
 
 #### Create subscription
+
+**Endpoint**
 
 `POST <Configuration API URL>/v1/subscriptions`
 
@@ -437,8 +439,6 @@ JSON object with the following fields:
 
 **Response**
 
-JSON object with the following fields:
-
 - `subscriptionId` - `string` - subscription ID, which is event name + function ID, e.g. `newusers-userProcessGroup`
 - `event` - `string` - event name
 - `functionId` - ID of function
@@ -447,15 +447,17 @@ JSON object with the following fields:
 
 #### Delete subscription
 
+**Endpoint**
+
 `DELETE <Configuration API URL>/v1/subscriptions/<subscription id>`
 
 #### Get subscriptions
 
+**Endpoint**
+
 `GET <Configuration API URL>/v1/subscriptions`
 
 **Response**
-
-JSON object with the following fields:
 
 - `subscriptions` - `array` of `object` - subscriptions
   - `subscriptionId` - `string` - subscription ID
@@ -466,7 +468,9 @@ JSON object with the following fields:
 
 ### Status
 
-Dummy endpoint (always returning 200 status code) for checking if the event gateway instance is running.
+Dummy endpoint (always returning `200 OK` status code) for checking if the event gateway instance is running.
+
+**Endpoint**
 
 `GET <Configuration API URL>/v1/status`
 
