@@ -414,7 +414,6 @@ JSON object:
 
 JSON object:
 
-- `functionId` - `string` - required, function name
 - `provider` - `object` - required, provider specific information about a function, depends on type:
   - for AWS Lambda:
     - `type` - `string` - required, provider type: `awslambda`
