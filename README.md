@@ -599,7 +599,7 @@ across different providers.
 ### Backing DB
 
 The Event Gateway instances use a strongly consistent, subscribable DB (initially [etcd](https://coreos.com/etcd),
-with support for Consul, Zookeeper, and Dynamo planned) to store and broadcast configuration. The instances locally
+with support for Consul, and Zookeeper planned) to store and broadcast configuration. The instances locally
 cache configuration used to drive low-latency event routing. The instance local cache is built asynchronously based on
 events from backing DB.
 
