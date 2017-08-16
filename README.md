@@ -31,6 +31,8 @@ Azure, Google & IBM.
 1. [Client Libraries](#client-libraries)
 1. [Comparison](#comparison)
 1. [Architecture](#architecture)
+   1. [System Overview](#system-overview)
+   1. [Backing DB](#backing-db)
 1. [Background](#background)
 
 ## Installation
@@ -560,48 +562,83 @@ across different providers.
 
 ## Architecture
 
+### System Overview
+
 ```
-                              AWS us-east-1 (main ─┐
-                              region)              │
-                              │   ┌─────────────┐  │
-                              │   │             │  │
-           ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ▶│    etcd     │◀ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
-                              │   │             │  │                      │
-           │                  │   └─────────────┘  │
-                              │          ▲         │                      │
-           │                  │          │         │
-                              │          ▼         │                      │
-           │                  │  ┌──────────────┐  │
-                              │  │              │  │                      │
-           │                  │  │   Gateway    │  │
-                              │  │   instance   │  │                      │
-           │                  │  │              │  │
-                              │  └──────────────┘  │                      │
-           │                  │          ▲         │
-                              │          │         │                      │
-           │                  │          ▼         │
-                              │        ┌───┐       │                      │
-GCloud us-c│ntral1───┐        │        │ λ ├┐      │           Azure West US────────┐
-│          ▼         │        │        └┬──┘│      │           │          ▼         │
-│  ┌──────────────┐  │        │         └───┘      │           │  ┌──────────────┐  │
-│  │              │  │        └────────────────────┘           │  │              │  │
-│  │   Gateway    │  │                                         │  │   Gateway    │  │
-│  │   instance   │  │                                         │  │   instance   │  │
-│  │              │  │                                         │  │              │  │
-│  └──────────────┘  │                                         │  └──────────────┘  │
-│          ▲         │                                         │          ▲         │
-│          │         │                                         │          │         │
-│          ▼         │                                         │          ▼         │
-│        ┌───┐       │                                         │        ┌───┐       │
-│        │ λ ├┐      │                                         │        │ λ ├┐      │
-│        └┬──┘│      │                                         │        └┬──┘│      │
-│         └───┘      │                                         │         └───┘      │
-└────────────────────┘                                         └────────────────────┘
+                              ┌──────────────┐                               
+                              │              │                               
+                              │    Client    │                               
+                              │              │                               
+                              └──────────────┘                               
+                                      ▲                                      
+                                      │                                      
+                                    Event                                    
+                                      │                                      
+                                      ▼                                      
+        ┌───────────────────────────────────────────────────────────┐        
+        │                                                           │        
+        │                   Event Gateway Cluster                   │        
+        │                                                           │        
+        └───────────────────────────────────────────────────────────┘        
+                                      ▲                                      
+                                      │                                      
+                                      │                                      
+        ┌─────────────────────────────┼─────────────────────────────┐        
+        │                             │                             │        
+        │                             │                             │        
+        ▼                             ▼                             ▼        
+┌───────────────┐             ┌───────────────┐             ┌───────────────┐
+│  AWS Lambda   │             │ Google Cloud  │             │Azure Function │
+│   Function    │             │   Function    │             │               │
+│               │             │               │             │    Region:    │
+│    Region:    │             │    Region:    │             │    West US    │
+│   us-east-1   │             │  us-central1  │             │               │
+└───────────────┘             └───────────────┘             └───────────────┘
 ```
 
-The Event Gateway instances use a strongly consistent, subscribable DB (initially etcd, with support for Consul,
-Zookeeper, and Dynamo planned) to store and broadcast configuration. The instances locally cache configuration used to
-drive low-latency event routing.
+### Backing DB
+
+The Event Gateway instances use a strongly consistent, subscribable DB (initially [etcd](https://coreos.com/etcd),
+with support for Consul, Zookeeper, and Dynamo planned) to store and broadcast configuration. The instances locally
+cache configuration used to drive low-latency event routing. The instance local cache is built asynchronously based on
+events from backing DB.
+
+The Event Gateway is a stateless service. There is no communication between the instances. All configuration data is
+shared using backing DB.
+
+```
+┌───────────────────────────Event Gateway Cluster────────────────────────────┐
+│                                                                            │
+│                           Cloud Region 1───────┐                           │
+│                           │                    │                           │
+│                           │   ┌─────────────┐  │                           │
+│                           │   │             │  │                           │
+│              ─ ─ ─ ─ ─ ─ ─│─ ▶│etcd cluster │◀ ┼ ─ ─ ─ ─ ─ ─ ─             │
+│             │             │   │             │  │              │            │
+│                           │   └─────────────┘  │                           │
+│             │             │          ▲         │              │            │
+│                           │                    │                           │
+│  Cloud Regio│ 2───────┐   │          │         │   Cloud Regio│ 3───────┐  │
+│  │                    │   │                    │   │                    │  │
+│  │          ▼         │   │          ▼         │   │          ▼         │  │
+│  │  ┌───────────────┐ │   │  ┌──────────────┐  │   │  ┌──────────────┐  │  │
+│  │  │               │ │   │  │              │  │   │  │              │  │  │
+│  │  │ Event Gateway │ │   │  │Event Gateway │  │   │  │Event Gateway │  │  │
+│  │  │   instance    │◀┼───┼┐ │   instance   │◀─┼───┼┐ │   instance   │  │  │
+│  │  │               │ │   ││ │              │  │   ││ │              │  │  │
+│  │  └───────────────┘ │   ││ └──────────────┘  │   ││ └──────────────┘  │  │
+│  │          ▲         │   ││         ▲         │   ││         ▲         │  │
+│  │          │         │   ││         │         │   ││         │         │  │
+│  │          │         │   ││         │         │   ││         │         │  │
+│  │          ▼         │   ││         ▼         │   ││         ▼         │  │
+│  │        ┌───┐       │   ││       ┌───┐       │   ││       ┌───┐       │  │
+│  │        │ λ ├┐      │   │└──────▶│ λ ├┐      │   │└──────▶│ λ ├┐      │  │
+│  │        └┬──┘│      │   │        └┬──┘│      │   │        └┬──┘│      │  │
+│  │         └───┘      │   │         └───┘      │   │         └───┘      │  │
+│  └────────────────────┘   └────────────────────┘   └────────────────────┘  │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Background
 
