@@ -397,6 +397,8 @@ JSON object:
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
+------
+
 #### Update Function
 
 **Endpoint**
@@ -430,6 +432,8 @@ JSON object:
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
+------
+
 #### Delete Function
 
 Delete all types of functions. This operation fails if the function is currently in-use by a subscription.
@@ -443,6 +447,8 @@ Delete all types of functions. This operation fails if the function is currently
 Status code:
 - `204 No Content` on success
 - `404 Not Found` if function doesn't exists
+
+------
 
 #### Get Functions
 
@@ -488,6 +494,8 @@ JSON object:
 - `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
 - `path` - `string` - optionally, in case of `http` event, path that accepts requests, starts with `/`
 
+------
+
 #### Delete Subscription
 
 **Endpoint**
@@ -499,6 +507,8 @@ JSON object:
 Status code:
 - `204 No Content` on success
 - `404 Not Found` if function doesn't exists
+
+------
 
 #### Get Subscriptions
 
