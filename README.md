@@ -47,6 +47,8 @@ On Windows download [binary](https://github.com/serverless/event-gateway/release
 
 ## Quick Start
 
+_Check out [`event-gateway-examples` repo](https://github.com/serverless/event-gateway-examples) for more examples._
+
 ### Running Locally
 
 Run `event-gateway` in `dev` mode:
