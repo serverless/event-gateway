@@ -21,7 +21,7 @@ The Event Gateway is a layer-7 proxy and realtime dataflow engine, intended for 
 1. [Events API](#events-api)
 1. [Configuration API](#configuration-api)
 1. [Client Libraries](#client-libraries)
-1. [FAQ](#faq)
+1. [Comparison](#comparison)
 1. [Architecture](#architecture)
 1. [Background](#background)
 
@@ -455,19 +455,21 @@ Dummy endpoint (always returning 200 status code) for checking if the event gate
 
 - [FDK for Node.js](https://github.com/serverless/fdk)
 
-## FAQ
-
-### Event Gateway vs FaaS Providers
-
-The Event Gateway is NOT a FaaS platform. It integrates with existing FaaS providers (AWS Lambda, Google Cloud Functions,
-OpenWhisk Actions). The Event Gateway enables building large serverless architectures in a unified way across different
-providers.
+## Comparison
 
 ### What The Event Gateway is NOT
 
 - it's not a replacement for message queues (no message ordering, currently weak durability guarantees only)
 - it's not a replacement for streaming platforms (no processing capability and consumers group)
 - it's not a replacement for existing service discovery solutions from the microservices world
+
+
+### Event Gateway vs FaaS Providers
+
+The Event Gateway is NOT a FaaS platform. It integrates with existing FaaS providers (AWS Lambda, Google Cloud Functions,
+Azure Functions, OpenWhisk Actions). The Event Gateway enables building large serverless architectures in a unified way
+across different providers.
+
 
 ## Architecture
 
