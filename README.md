@@ -1,8 +1,5 @@
 ![The Event Gateway](docs/assets/title.png)
 
-[![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
-[![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway)
-
 [Website](http://www.serverless.com) • [Newsletter](http://eepurl.com/b8dv4P) • [Gitter](https://gitter.im/serverless/serverless) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless)
 
 The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's
