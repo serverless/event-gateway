@@ -147,7 +147,6 @@ eventGateway.registerFunction({
 ```http
 curl --request POST \
   --url http://localhost:4000/ \
-  --header ': ' \
   --header 'content-type: application/json' \
   --header 'event: invoke' \
   --header 'function-id: createUser' \
