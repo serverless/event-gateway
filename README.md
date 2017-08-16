@@ -290,6 +290,8 @@ the data block is base64 encoded.
 
 ### Emit a Custom Event
 
+**Endpoint**
+
 `POST <Events API URL>/`
 
 **Request Headers**
@@ -303,15 +305,20 @@ arbitrary payload, subscribed function receives an event in above schema, where 
 
 **Response**
 
-`202 Accepted` in case of success
+Status code:
+- `202 Accepted`
 
 ### Emit an HTTP Event
 
 Creating HTTP subscription requires `method` and `path` properties. Those properties are used to listen for HTTP events.
 
+**Endpoint**
+
 `<method> <Events API URL>/<path>`
 
-Request: arbitrary payload, subscribed function receives an event in above schema. `data` field has the following fields:
+**Request**
+
+arbitrary payload, subscribed function receives an event in above schema. `data` field has the following fields:
 
 ```
 {
@@ -327,9 +334,14 @@ Request: arbitrary payload, subscribed function receives an event in above schem
 }
 ```
 
-Response: function response
+**Response**
+
+Status code:
+- `200 OK` with payload with function response
 
 ### Invoking a Registered Function - Sync Function Invocation
+
+**Endpoint**
 
 `POST <Events API URL>/`
 
@@ -344,15 +356,16 @@ arbitrary payload, invoked function receives an event in above schema, where req
 
 **Response**
 
-payload with function response
+Status code:
+- `200 OK` with payload with function response
 
 ## Configuration API
 
 The Event Gateway exposes a RESTful JSON configuration API. By default Configuration API runs on `:4001` port.
 
-### Function discovery
+### Function Discovery
 
-#### Register function
+#### Register Function
 
 **Endpoint**
 
@@ -360,6 +373,8 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 
 **Request**
 
+JSON object:
+
 - `functionId` - `string` - required, function name
 - `provider` - `object` - required, provider specific information about a function, depends on type:
   - for AWS Lambda:
@@ -374,10 +389,15 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 
 **Response**
 
+Status code:
+- `200 OK` on success
+- `400 Bad Request` on validation error
+
+JSON object:
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
-#### Update function
+#### Update Function
 
 **Endpoint**
 
@@ -385,6 +405,8 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 
 **Request**
 
+JSON object:
+
 - `functionId` - `string` - required, function name
 - `provider` - `object` - required, provider specific information about a function, depends on type:
   - for AWS Lambda:
@@ -399,10 +421,16 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 
 **Response**
 
+Status code:
+- `200 OK` on success
+- `400 Bad Request` on validation error
+- `404 Not Found` if function doesn't exists
+
+JSON object:
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
-#### Delete function
+#### Delete Function
 
 Delete all types of functions. This operation fails if the function is currently in-use by a subscription.
 
@@ -410,7 +438,13 @@ Delete all types of functions. This operation fails if the function is currently
 
 `DELETE <Configuration API URL>/v1/functions/<function id>`
 
-#### Get functions
+**Response**
+
+Status code:
+- `204 No Content` on success
+- `404 Not Found` if function doesn't exists
+
+#### Get Functions
 
 **Endpoint**
 
@@ -418,13 +452,17 @@ Delete all types of functions. This operation fails if the function is currently
 
 **Response**
 
+Status code:
+- `200 OK` on success
+
+JSON object:
 - `functions` - `array` of `object` - functions:
   - `functionId` - `string` - function name
   - `provider` - `object` - provider specific information about a function
 
 ### Subscriptions
 
-#### Create subscription
+#### Create Subscription
 
 **Endpoint**
 
@@ -439,19 +477,30 @@ Delete all types of functions. This operation fails if the function is currently
 
 **Response**
 
-- `subscriptionId` - `string` - subscription ID, which is event name + function ID, e.g. `newusers-userProcessGroup`
+Status code:
+- `200 OK` on success
+- `400 Bad Request` on validation error
+
+JSON object:
+- `subscriptionId` - `string` - subscription ID
 - `event` - `string` - event name
 - `functionId` - ID of function
 - `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
 - `path` - `string` - optionally, in case of `http` event, path that accepts requests, starts with `/`
 
-#### Delete subscription
+#### Delete Subscription
 
 **Endpoint**
 
 `DELETE <Configuration API URL>/v1/subscriptions/<subscription id>`
 
-#### Get subscriptions
+**Response**
+
+Status code:
+- `204 No Content` on success
+- `404 Not Found` if function doesn't exists
+
+#### Get Subscriptions
 
 **Endpoint**
 
@@ -459,6 +508,10 @@ Delete all types of functions. This operation fails if the function is currently
 
 **Response**
 
+Status code:
+- `200 OK` on success
+
+JSON object:
 - `subscriptions` - `array` of `object` - subscriptions
   - `subscriptionId` - `string` - subscription ID
   - `event` - `string` - event name
