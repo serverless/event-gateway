@@ -1,22 +1,27 @@
 ![The Event Gateway](docs/assets/title.png)
 
-[Website](http://www.serverless.com) • [Newsletter](http://eepurl.com/b8dv4P) • [Gitter](https://gitter.im/serverless/serverless) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless)
-
 The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's
-dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute).
+dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute). Everything it cares about is an event! Even calling a function. It makes it easy to share events across different systems, teams and organizations!
 
-- Everything we care about is an event! (even calling a function)
-- Make it easy to share events across different systems, teams and organizations!
+Features:
+- **Platform agnostic** - All your cloud services are now compatible with one another: share cross-cloud functions and events with AWS Lambda, Microsoft Azure, IBM OpenWhisk and Google Cloud Platform.
+- **Send events from any cloud** - Data streams in your application become events. Centralize events from any cloud provider to get a bird’s eye view of all the data flowing through your cloud.
+- **React to cross-cloud events** - You aren’t locked in to events and functions being on the same provider: Any event, on any cloud, can trigger any function. Set events and functions up like dominoes and watch them fall.
+- **Expose events to your team** - Share events and functions to other parts of the application. Your teammates can find them and utilize them in their own services.
+- **Extendable through middleware** - Perform data transforms, authorizations, serializations, and other custom computes straight from the Event Gateway.
 
-The Event Gateway is a Layer 7 proxy and realtime dataflow engine, intended for use with Functions-as-a-Service on AWS,
+The Event Gateway is a L7 proxy and realtime dataflow engine, intended for use with Functions-as-a-Service on AWS,
 Azure, Google & IBM.
+
+[![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway) • [Website](http://www.serverless.com) • [Newsletter](http://eepurl.com/b8dv4P) • [Gitter](https://gitter.im/serverless/serverless) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless)
+
 
 ## Contents
 
 1. [Installation](#installation)
 1. [Quick Start](#quick-start)
 1. [Motivation](#motivation)
-1. [Features](#features)
+1. [Components](#components)
    1. [Function Discovery](#function-discovery)
    1. [Subscriptions](#subscriptions)
 1. [Events API](#events-api)
@@ -34,7 +39,7 @@ On macOS or Linux run the following:
 curl -sfL https://raw.githubusercontent.com/serverless/event-gateway/master/install.sh | sh
 ```
 
-On Windows download [binary](https://github.com/serverless/event-gateway/releases), then add to PATH.
+On Windows download [binary](https://github.com/serverless/event-gateway/releases).
 
 ## Quick Start
 
@@ -77,7 +82,7 @@ curl --request POST \
   --url http://127.0.0.1:4000/ \
   --header 'content-type: application/json' \
   --header 'event: pageVisited' \
-  --data '{"foo": "bar"}'
+  --data '{"userId": "123"}'
 ```
 
 After emitting the event subscribed function is called asynchronously.
@@ -92,15 +97,16 @@ After emitting the event subscribed function is called asynchronously.
 - Using new functions is risky without the ability to incrementally deploy them.
 - The AWS API Gateway is frequently cited as a performance and cost-prohibitive factor for using AWS Lambda.
 
-## Features
+## Components
 
 ### Function Discovery
 
-Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the
-following function types:
+Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the following function types:
 
 - FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
 - HTTP endpoints (e.g. GET http://example.com/function)
+
+Function Discovery stores information about functions allowing the Eveng Gateway to call them as a reaction to received event.
 
 #### Example: Register An AWS Lambda Function
 
@@ -282,24 +288,28 @@ The MIME type of the data block can be specified using the `Content-Type` header
 to. In case of `application/json` type the event gateway passes JSON payload to the target functions. In any other case
 the data block is base64 encoded.
 
-### Emit a Custom Event (Async Function Invocation)
+### Emit a Custom Event
 
-`POST /`
+`POST <Events API URL>/`
 
-Request headers:
+**Request Headers**
 
 - `Event` - `string` - required, event name
 - `Content-Type`  - `MIME type string` - payload type
 
-Request: arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
+**Request**
 
-Response: `202 Accepted` in case of success
+arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
+
+**Response**
+
+`202 Accepted` in case of success
 
 ### Emit an HTTP Event
 
 Creating HTTP subscription requires `method` and `path` properties. Those properties are used to listen for HTTP events.
 
-`<method> /<path>`
+`<method> <Events API URL>/<path>`
 
 Request: arbitrary payload, subscribed function receives an event in above schema. `data` field has the following fields:
 
@@ -319,18 +329,22 @@ Request: arbitrary payload, subscribed function receives an event in above schem
 
 Response: function response
 
-### Invoking a Registered Function (Sync Function Invocation)
+### Invoking a Registered Function - Sync Function Invocation
 
-`POST /`
+`POST <Events API URL>/`
 
-Request headers:
+**Request Headers**
 
 - `Event` - `string` - `"invoke"`
 - `Function-ID` - `string` - ID of a function to call
 
-Request: arbitrary payload, invoked function receives an event in above schema, where request payload is passed as `data` field
+**Request**
 
-Response: function response
+arbitrary payload, invoked function receives an event in above schema, where request payload is passed as `data` field
+
+**Response**
+
+payload with function response
 
 ## Configuration API
 
@@ -340,9 +354,11 @@ The Event Gateway exposes a RESTful configuration API. By default Configuration 
 
 #### Register function
 
-`POST /v1/functions`
+`POST <Configuration API URL>/v1/functions`
 
-Request:
+**Request**
+
+JSON object with the following fields:
 
 - `functionId` - `string` - required, function name
 - `provider` - `object` - required, provider specific information about a function, depends on type:
@@ -356,16 +372,18 @@ Request:
     - `type` - `string` - required, provider type: `http`
     - `url` - `string` - required, the URL of an http or https remote endpoint
 
-Response:
+**Response**
+
+JSON object with the following fields:
 
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
 #### Update function
 
-`PUT /v1/functions/<function id>`
+`PUT <Configuration API URL>/v1/functions/<function id>`
 
-Request:
+**Request**
 
 - `functionId` - `string` - required, function name
 - `provider` - `object` - required, provider specific information about a function, depends on type:
@@ -379,25 +397,26 @@ Request:
     - `type` - `string` - required, provider type: `http`
     - `url` - `string` - required, the URL of an http or https remote endpoint
 
-Response:
+**Response**
+
+JSON object with the following fields:
 
 - `functionId` - `string` - function name
 - `provider` - `object` - provider specific information about a function
 
 #### Delete function
 
-`DELETE /v1/functions/<function id>`
+Delete all types of functions. This operation fails if the function is currently in-use by a subscription.
 
-Notes:
-
-- used to delete all types of functions
-- fails if the function ID is currently in-use by a subscription
+`DELETE <Configuration API URL>/v1/functions/<function id>`
 
 #### Get functions
 
-`GET /v1/functions`
+`GET <Configuration API URL>/v1/functions`
 
-Response:
+**Response**
+
+JSON object with the following fields:
 
 - `functions` - `array` of `object` - functions:
   - `functionId` - `string` - function name
@@ -407,16 +426,18 @@ Response:
 
 #### Create subscription
 
-`POST /v1/subscriptions`
+`POST <Configuration API URL>/v1/subscriptions`
 
-Request:
+**Request**
 
 - `event` - `string` - event name
 - `functionId` - `string` - ID of function to receive events
 - `method` - `string` - optionally, in case of `http` event, uppercase HTTP method that accepts requests
 - `path` - `string` - optionally, in case of `http` event, path that accepts requests, it starts with "/"
 
-Response:
+**Response**
+
+JSON object with the following fields:
 
 - `subscriptionId` - `string` - subscription ID, which is event name + function ID, e.g. `newusers-userProcessGroup`
 - `event` - `string` - event name
@@ -426,13 +447,15 @@ Response:
 
 #### Delete subscription
 
-`DELETE /v1/subscriptions/<subscription id>`
+`DELETE <Configuration API URL>/v1/subscriptions/<subscription id>`
 
 #### Get subscriptions
 
-`GET /v1/subscriptions`
+`GET <Configuration API URL>/v1/subscriptions`
 
-Response:
+**Response**
+
+JSON object with the following fields:
 
 - `subscriptions` - `array` of `object` - subscriptions
   - `subscriptionId` - `string` - subscription ID
@@ -445,7 +468,7 @@ Response:
 
 Dummy endpoint (always returning 200 status code) for checking if the event gateway instance is running.
 
-`GET /v1/status`
+`GET <Configuration API URL>/v1/status`
 
 ## Client Libraries
 
