@@ -33,7 +33,6 @@ Azure, Google & IBM.
 1. [Architecture](#architecture)
    1. [System Overview](#system-overview)
    1. [Clustering](#clustering)
-   1. [Production Deployment](#production-deployment)
 1. [Background](#background)
 
 ## Installation
@@ -649,16 +648,6 @@ directly.
 │                                                                                                                │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-### Production Deployment
-
-#### Single-region Deployments
-
-
-
-#### Multi-region Deployments
-
-
 
 ## Background
 
