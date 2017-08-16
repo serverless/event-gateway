@@ -1,19 +1,23 @@
-# The Event Gateway
+![The Event Gateway](docs/assets/title.png)
 
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
 [![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway)
 
 [Website](http://www.serverless.com) • [Newsletter](http://eepurl.com/b8dv4P) • [Gitter](https://gitter.im/serverless/serverless) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless)
 
-The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute).
+The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's
+dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute).
 
-The Event Gateway is a layer-7 proxy and realtime dataflow engine, intended for use with Functions-as-a-Service on AWS, Azure, Google & IBM.
+- Everything we care about is an event! (even calling a function)
+- Make it easy to share events across different systems, teams and organizations!
+
+The Event Gateway is a Layer 7 proxy and realtime dataflow engine, intended for use with Functions-as-a-Service on AWS,
+Azure, Google & IBM.
 
 ## Contents
 
 1. [Installation](#installation)
 1. [Quick Start](#quick-start)
-1. [Philosophy](#philosophy)
 1. [Motivation](#motivation)
 1. [Features](#features)
    1. [Function Discovery](#function-discovery)
@@ -80,11 +84,6 @@ curl --request POST \
 ```
 
 After emitting the event subscribed function is called asynchronously.
-
-## Philosophy
-
-- Everything we care about is an event! (even calling a function)
-- Make it easy to share events across different systems, teams and organizations!
 
 ## Motivation
 
