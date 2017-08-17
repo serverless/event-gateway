@@ -3,6 +3,7 @@ package subscriptions
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 
 	"github.com/docker/libkv/store"
 	"github.com/serverless/event-gateway/functions"
@@ -204,6 +205,11 @@ func (ps Subscriptions) deleteEndpoint(method, path string) error {
 }
 
 func (ps Subscriptions) validateSubscription(s *Subscription) error {
+	if s.Event == SubscriptionHTTP {
+		s.Path = ensurePrefix(s.Path, "/")
+		s.Method = strings.ToUpper(s.Method)
+	}
+
 	validate := validator.New()
 	validate.RegisterValidation("urlpath", urlPathValidator)
 	validate.RegisterValidation("eventname", eventNameValidator)
@@ -219,4 +225,12 @@ func (ps Subscriptions) validateSubscription(s *Subscription) error {
 	}
 
 	return nil
+}
+
+// ensurePrefix ensures s starts with prefix.
+func ensurePrefix(s, prefix string) string {
+	if strings.HasPrefix(s, prefix) {
+		return s
+	}
+	return prefix + s
 }

@@ -30,6 +30,24 @@ func TestCreateSubscription_HTTPOK(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestCreateSubscription_HTTPNormalizeMethodPath(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().Get("http-GET-%2F").Return(nil, errors.New("KV sub not found"))
+	subscriptionsDB.EXPECT().Put("http-GET-%2F", []byte(`{"subscriptionId":"http-GET-%2F","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
+	endpointsDB := mock.NewMockStore(ctrl)
+	endpointsDB.EXPECT().Put("GET-%2F", []byte(`{"endpointId":"GET-%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
+	functionsDB := mock.NewMockStore(ctrl)
+	functionsDB.EXPECT().Exists("func").Return(true, nil)
+	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
+
+	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "get", Path: ""})
+
+	assert.Nil(t, err)
+}
+
 func TestCreateSubscription_HTTPValidationError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
