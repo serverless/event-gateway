@@ -1,7 +1,9 @@
 ![The Event Gateway](docs/assets/cover.png)
 
 The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's
-dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute). Everything it cares about is an event! Even calling a function. It makes it easy to share events across different systems, teams and organizations!
+dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute).
+Everything it cares about is an event! Even calling a function. It makes it easy to share events across different
+systems, teams and organizations!
 
 Features:
 - **Platform agnostic** - All your cloud services are now compatible with one another: share cross-cloud functions and events with AWS Lambda, Microsoft Azure, IBM OpenWhisk and Google Cloud Platform.
@@ -37,11 +39,14 @@ Azure, Google & IBM.
 
 ## Quick Start
 
-The easiest way to get started with the event-gateway is using the [Serverless framework](https://serverless.com). The framework is setup to automatically download and install the event-gateway during development of a serverless service.
+The easiest way to get started with the Event Gateway is using the [Serverless framework](https://serverless.com). The
+framework is setup to automatically download and install the Event Gateway during development of a serverless service.
 
-_Check out [`event-gateway-example` repo](https://github.com/serverless/event-gateway-example) for a walkthrough of using the event-gateway in local development._
+_Check out [`event-gateway-example` repo](https://github.com/serverless/event-gateway-example) for a walkthrough of
+using the Event Gateway in local development._
 
-If you want to install and develop with the event-gateway without the framework, [instructions can be found here](./docs/developing.md).
+If you want to install and develop with the Event Gateway without the framework,
+[instructions can be found here](./docs/developing.md).
 
 ## Motivation
 
@@ -57,12 +62,14 @@ If you want to install and develop with the event-gateway without the framework,
 
 ### Function Discovery
 
-Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the following function types:
+Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the
+following function types:
 
 - FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
 - HTTP endpoints (e.g. GET http://example.com/function)
 
-Function Discovery stores information about functions allowing the Eveng Gateway to call them as a reaction to received event.
+Function Discovery stores information about functions allowing the Eveng Gateway to call them as a reaction to received
+event.
 
 #### Example: Register An AWS Lambda Function
 
