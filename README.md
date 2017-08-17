@@ -5,6 +5,8 @@ dataflow for event-driven, serverless architectures. It routes Events (data) to 
 Everything it cares about is an event! Even calling a function. It makes it easy to share events across different
 systems, teams and organizations!
 
+Use the Event Gateway right now, by running the **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** locally, with the *[Serverless Framework](https://github.com/serverless/serverless)*.
+
 Features:
 - **Platform agnostic** - All your cloud services are now compatible with one another: share cross-cloud functions and events with AWS Lambda, Microsoft Azure, IBM OpenWhisk and Google Cloud Platform.
 - **Send events from any cloud** - Data streams in your application become events. Centralize events from any cloud provider to get a bird’s eye view of all the data flowing through your cloud.
