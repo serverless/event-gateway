@@ -1,4 +1,17 @@
 
+0.5.15 / 2017-08-17
+===================
+
+  * allow path without trailing / and normalize method. Closes #272 (#296)
+  * Update README.md
+  * add webbhook to function types
+  * typo in README
+  * remove unused asset
+  * update quickstart section (#294)
+  * README improvements (#293)
+  * fix installation script
+  * readme improvements (#292)
+
 0.5.14 / 2017-08-15
 ===================
 
