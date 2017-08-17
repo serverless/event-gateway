@@ -42,8 +42,8 @@ Azure, Google & IBM.
 The easiest way to get started with the Event Gateway is using the [Serverless framework](https://serverless.com). The
 framework is setup to automatically download and install the Event Gateway during development of a serverless service.
 
-_Check out [`event-gateway-example` repo](https://github.com/serverless/event-gateway-example) for a walkthrough of
-using the Event Gateway in local development._
+Check out **[event-gateway example app](https://github.com/serverless/event-gateway-example)** for a walkthrough of
+using the Event Gateway locally. 
 
 If you want to install and develop with the Event Gateway without the framework,
 [instructions can be found here](./docs/developing.md).
