@@ -1,4 +1,4 @@
-![The Event Gateway](docs/assets/event_gateway_repo.png)
+![The Event Gateway](docs/assets/cover.png)
 
 The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's
 dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute). Everything it cares about is an event! Even calling a function. It makes it easy to share events across different systems, teams and organizations!
