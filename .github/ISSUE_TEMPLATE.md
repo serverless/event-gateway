@@ -6,9 +6,7 @@
 5. Please follow the template, otherwise we'll have to ask you to update it
 -->
 
-# This is a [Bug Report/Feature Proposal]
-
-## Description
+## This is a [Bug Report/Feature Proposal]
 
 For bug reports, please answer following questions:
 * What went wrong?
