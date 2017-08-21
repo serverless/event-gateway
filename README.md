@@ -41,13 +41,13 @@ Azure, Google & IBM.
 
 ## Quick Start
 
-The easiest way to get started with the Event Gateway is using the [Serverless framework](https://serverless.com). The
+The easiest way to get started with the Event Gateway is using the [Serverless Framework](https://serverless.com). The
 framework is setup to automatically download and install the Event Gateway during development of a serverless service.
 
-Check out **[event-gateway example app](https://github.com/serverless/event-gateway-example)** for a walkthrough of
-using the Event Gateway locally. 
+Check out **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** for a walkthrough of
+using the Event Gateway locally.
 
-If you want to install and develop with the Event Gateway without the framework,
+If you want to install and develop with the Event Gateway without the Serverless Framework,
 [instructions can be found here](./docs/developing.md).
 
 ## Motivation
@@ -580,7 +580,7 @@ directly.
 │                                            │                    │                                              │
 │                                            │   ┌─────────────┐  │                                              │
 │                                            │   │             │  │                                              │
-│                   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ │etcd cluster │ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                    │
+│                   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ▶│etcd cluster │◀ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                    │
 │                                            │   │             │  │                          │                   │
 │                   │                        │   └─────────────┘  │                                              │
 │                                            │          ▲         │                          │                   │
@@ -591,7 +591,7 @@ directly.
 │        │  ┌───────────────┐ │              │  ┌──────────────┐  │               │  ┌──────────────┐  │         │
 │        │  │               │ │              │  │              │  │               │  │              │  │         │
 │        │  │ Event Gateway │ │              │  │Event Gateway │  │               │  │Event Gateway │  │         │
-│        │  │   instance    │┼──────────┐   │  │   instance   │─┼──────────┐    │  │   instance   │  │         │
+│        │  │   instance    │◀┼──────────┐   │  │   instance   │◀─┼──────────┐    │  │   instance   │  │         │
 │        │  │               │ │          │   │  │              │  │          │    │  │              │  │         │
 │        │  └───────────────┘ │          │   │  └──────────────┘  │          │    │  └──────────────┘  │         │
 │        │          ▲         │          │   │          ▲         │          │    │          ▲         │         │
@@ -599,7 +599,7 @@ directly.
 │        │          │         │          │   │          │         │          │    │          │         │         │
 │        │          ▼         │          │   │          ▼         │          │    │          ▼         │         │
 │        │        ┌───┐       │          │   │        ┌───┐       │          │    │        ┌───┐       │         │
-│        │        │ λ ├┐      │          └───┼───────│ λ ├┐      │          └────┼───────│ λ ├┐      │         │
+│        │        │ λ ├┐      │          └───┼───────▶│ λ ├┐      │          └────┼───────▶│ λ ├┐      │         │
 │        │        └┬──┘│      │              │        └┬──┘│      │               │        └┬──┘│      │         │
 │        │         └───┘      │              │         └───┘      │               │         └───┘      │         │
 │        └────────────────────┘              └────────────────────┘               └────────────────────┘         │

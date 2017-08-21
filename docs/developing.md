@@ -10,6 +10,13 @@ curl -sfL https://raw.githubusercontent.com/serverless/event-gateway/master/inst
 
 On Windows download [binary](https://github.com/serverless/event-gateway/releases).
 
+Alternatively, build a Docker image:
+
+```
+git clone git@github.com:serverless/event-gateway.git
+cd event-gateway
+docker build -t event-gateway .
+```
 
 ## Running Locally
 
@@ -17,6 +24,12 @@ Run `event-gateway` in `dev` mode:
 
 ```
 event-gateway -dev
+```
+
+or
+
+```
+docker run -p 4000:4000 -p 4001:4001 event-gateway -dev
 ```
 
 ### Register a Function
