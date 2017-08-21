@@ -70,7 +70,7 @@ following function types:
 - FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
 - HTTP endpoints/Webhook (e.g. POST http://example.com/function)
 
-Function Discovery stores information about functions allowing the Eveng Gateway to call them as a reaction to received
+Function Discovery stores information about functions allowing the Event Gateway to call them as a reaction to received
 event.
 
 #### Example: Register An AWS Lambda Function
@@ -580,7 +580,7 @@ directly.
 │                                            │                    │                                              │
 │                                            │   ┌─────────────┐  │                                              │
 │                                            │   │             │  │                                              │
-│                   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ▶│etcd cluster │◀ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                    │
+│                   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ │etcd cluster │ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                    │
 │                                            │   │             │  │                          │                   │
 │                   │                        │   └─────────────┘  │                                              │
 │                                            │          ▲         │                          │                   │
@@ -591,7 +591,7 @@ directly.
 │        │  ┌───────────────┐ │              │  ┌──────────────┐  │               │  ┌──────────────┐  │         │
 │        │  │               │ │              │  │              │  │               │  │              │  │         │
 │        │  │ Event Gateway │ │              │  │Event Gateway │  │               │  │Event Gateway │  │         │
-│        │  │   instance    │◀┼──────────┐   │  │   instance   │◀─┼──────────┐    │  │   instance   │  │         │
+│        │  │   instance    │┼──────────┐   │  │   instance   │─┼──────────┐    │  │   instance   │  │         │
 │        │  │               │ │          │   │  │              │  │          │    │  │              │  │         │
 │        │  └───────────────┘ │          │   │  └──────────────┘  │          │    │  └──────────────┘  │         │
 │        │          ▲         │          │   │          ▲         │          │    │          ▲         │         │
@@ -599,7 +599,7 @@ directly.
 │        │          │         │          │   │          │         │          │    │          │         │         │
 │        │          ▼         │          │   │          ▼         │          │    │          ▼         │         │
 │        │        ┌───┐       │          │   │        ┌───┐       │          │    │        ┌───┐       │         │
-│        │        │ λ ├┐      │          └───┼───────▶│ λ ├┐      │          └────┼───────▶│ λ ├┐      │         │
+│        │        │ λ ├┐      │          └───┼───────│ λ ├┐      │          └────┼───────│ λ ├┐      │         │
 │        │        └┬──┘│      │              │        └┬──┘│      │               │        └┬──┘│      │         │
 │        │         └───┘      │              │         └───┘      │               │         └───┘      │         │
 │        └────────────────────┘              └────────────────────┘               └────────────────────┘         │
