@@ -17,6 +17,9 @@ Features:
 The Event Gateway is a L7 proxy and realtime dataflow engine, intended for use with Functions-as-a-Service on AWS,
 Azure, Google & IBM.
 
+*The project is under heavy development. The APIs will continue to [change](#versioning) until we release a 1.0.0 version. It's not
+yet ready for production applications.*
+
 [![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway)
 [![Slack Channel](https://serverless-contrib.azurewebsites.net/badge.svg)](https://serverless-contrib.azurewebsites.net)
 
@@ -33,6 +36,7 @@ Azure, Google & IBM.
 1. [Events API](#events-api)
 1. [Configuration API](#configuration-api)
 1. [Client Libraries](#client-libraries)
+1. [Versioning](#versioning)
 1. [Comparison](#comparison)
 1. [Architecture](#architecture)
    1. [System Overview](#system-overview)
@@ -504,6 +508,12 @@ Dummy endpoint (always returning `200 OK` status code) for checking if the event
 ## Client Libraries
 
 - [FDK for Node.js](https://github.com/serverless/fdk)
+
+## Versioning
+
+This project uses [Semantic Versioning 2.0.0](http://semver.org/spec/v2.0.0.html). We are in initial development phase
+right now (v0.X.Y). The public APIs should not be considered stable. Every breaking change will be listed in the
+[release changelog](https://github.com/serverless/event-gateway/releases).
 
 ## Comparison
 
