@@ -46,7 +46,7 @@ yet ready for production applications.*
 
 ## Quick Start
 
-The easiest way to get started with the Event Gateway is using the [Serverless Framework](https://serverless.com). The
+The easiest way to get started with the Event Gateway is using the [Serverless Framework](https://github.com/serverless/serverless). The
 framework is setup to automatically download and install the Event Gateway during development of a serverless service.
 
 Check out **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** for a walkthrough of
