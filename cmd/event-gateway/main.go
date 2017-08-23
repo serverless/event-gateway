@@ -146,7 +146,6 @@ func loggerConfiguration(dev bool, level zapcore.Level, format string) zap.Confi
 
 	if cfg.Encoding == consoleEncoding {
 		cfg.EncoderConfig = zap.NewDevelopmentEncoderConfig()
-		cfg.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
 	}
 
 	cfg.DisableCaller = true
