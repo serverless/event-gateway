@@ -26,11 +26,32 @@ Run `event-gateway` in `dev` mode:
 event-gateway -dev
 ```
 
-or
+## Running in Docker
 
 ```
 docker run -p 4000:4000 -p 4001:4001 event-gateway -dev
 ```
+
+**Pass in your AWS credentials**
+
+Mounts the `~/.aws` folder from the host to the `/home/.aws` folder inside the container. Event Gateway can then read the credentials from within the container.
+```
+docker run -p 4000:4000 -p 4001:4001 -e "HOME=/home" -v ~/.aws:/home/.aws event-gateway -dev
+```
+
+**Preserve state of etcd**
+
+While testing if you restart the container running Event Gateway and want to preserve the data in etcd, you can specify a data dir with the `-embed-data-dir "/home/data"` flag specifying a destination folder. Then you can mount the folder `~/.event-gateway/data` from your host into the container at `/home/data`. Event Gateway will read the data from there.
+
+```
+docker run -p 4000:4000 -p 4001:4001 -v ~/.event-gateway/data:/home/data event-gateway -embed-data-dir "/home/data" -dev
+```
+
+## Operations
+
+* [Register a Function](#register-a-function)
+* [Subscribe to an Event](#subscribe-to-an-event)
+* [Emit an Event](#emit-an-event)
 
 ### Register a Function
 
