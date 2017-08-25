@@ -21,9 +21,8 @@ Azure, Google & IBM.
 yet ready for production applications.*
 
 [![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway)
-[![Slack Channel](https://serverless-contrib.azurewebsites.net/badge.svg)](https://serverless-contrib.azurewebsites.net)
 
- [Website](http://www.serverless.com) • [Slack](https://serverless-contrib.azurewebsites.net) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://www.meetup.com/pro/serverless/) • [Twitter](https://twitter.com/goserverless)
+ [Website](http://www.serverless.com) • [Slack](https://serverless-contrib-eg.azurewebsites.net) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://www.meetup.com/pro/serverless/) • [Twitter](https://twitter.com/goserverless)
 
 
 ## Contents
