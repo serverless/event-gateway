@@ -58,6 +58,8 @@ func newFunctionCache(log *zap.Logger) *functionCache {
 }
 
 func (c *functionCache) Set(k string, v []byte) {
+	c.log.Debug("Function local cache received value update.", zap.String("key", k), zap.String("value", string(v)))
+
 	f := &functions.Function{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(f)
 	if err != nil {
@@ -90,6 +92,8 @@ func newEndpointCache(log *zap.Logger) *endpointCache {
 }
 
 func (c *endpointCache) Set(k string, v []byte) {
+	c.log.Debug("Endpoint local cache received value update.", zap.String("key", k), zap.String("value", string(v)))
+
 	e := &subscriptions.Endpoint{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
 	if err != nil {
@@ -123,6 +127,8 @@ func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 }
 
 func (c *subscriptionCache) Set(k string, v []byte) {
+	c.log.Debug("Subscription local cache received value update.", zap.String("key", k), zap.String("value", string(v)))
+
 	s := subscriptions.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&s)
 	if err != nil {
