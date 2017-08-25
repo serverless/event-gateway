@@ -4,14 +4,11 @@ go:
 cache:
   directories:
   - vendor
-before_install:
-- sudo add-apt-repository ppa:masterminds/glide -y
-- sudo apt-get update -q
-- sudo apt-get install glide -y
 install:
-- glide install
+- go get -u github.com/golang/dep/cmd/dep
+- dep ensure
 script:
-- go test -tags=integration -race $(glide novendor)
+- go test -tags=integration -race $(go list ./... | grep -v /vendor/)
 - go get -u github.com/alecthomas/gometalinter
 - gometalinter --install --force
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --skip=mock ./...
