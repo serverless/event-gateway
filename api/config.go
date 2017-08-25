@@ -53,8 +53,8 @@ func StartConfigAPI(config httpapi.Config) httpapi.Server {
 		HTTPHandler: handler,
 	}
 
+	config.ShutdownGuard.Add(1)
 	go func() {
-		config.ShutdownGuard.Add(1)
 		server.Listen()
 		config.ShutdownGuard.Done()
 	}()
