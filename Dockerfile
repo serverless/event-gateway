@@ -1,12 +1,11 @@
-FROM golang:1.8-alpine as builder
-
-RUN apk add --update curl git
-RUN curl https://glide.sh/get | sh
+FROM golang:1.9-alpine as builder
+RUN apk add --update git
 
 WORKDIR /go/src/github.com/serverless/event-gateway
 COPY . .
 
-RUN glide install
+RUN go get -u github.com/golang/dep/cmd/dep
+RUN dep ensure
 RUN go build -o event-gateway cmd/event-gateway/main.go
 
 FROM alpine:3.6
