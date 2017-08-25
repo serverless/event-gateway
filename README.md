@@ -22,7 +22,7 @@ yet ready for production applications.*
 
 [![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway)
 
- [Website](http://www.serverless.com) • [Slack](https://serverless-contrib-eg.azurewebsites.net) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://www.meetup.com/pro/serverless/) • [Twitter](https://twitter.com/goserverless)
+ [Website](http://www.serverless.com) • [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/MjI5NzY1ODM2MTc3LTE1MDM0NDIyOTUtMDgxNTcxMTcxNg) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://www.meetup.com/pro/serverless/) • [Twitter](https://twitter.com/goserverless)
 
 
 ## Contents
@@ -667,7 +667,7 @@ Service discovery problems may be relevant to serverless architectures, especial
 
 ## Community
 
-- [Slack](https://serverless-contrib.azurewebsites.net)
+- [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/MjI5NzY1ODM2MTc3LTE1MDM0NDIyOTUtMDgxNTcxMTcxNg)
 - [Newsletter](http://eepurl.com/b8dv4P)
 - [Forum](http://forum.serverless.com)
 - [Meetups](https://www.meetup.com/pro/serverless/)
