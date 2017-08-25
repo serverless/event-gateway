@@ -133,11 +133,8 @@ func TestIntegration_HTTPResponse(t *testing.T) {
 		Path:       "/httpresponse",
 	})
 
-	select {
-	case <-router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/httpresponse")):
-	case <-time.After(10 * time.Second):
-		panic("timed out waiting for endpoint to be configured!")
-	}
+	wait10Seconds(router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/httpresponse")),
+		"timed out waiting for endpoint to be configured!")
 
 	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
 	assert.Equal(t, statusCode, 201)
