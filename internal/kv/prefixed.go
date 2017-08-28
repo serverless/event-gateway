@@ -3,7 +3,7 @@ package kv
 import (
 	"strings"
 
-	"github.com/docker/libkv/store"
+	"github.com/serverless/libkv/store"
 )
 
 // PrefixedStore namespaces a libkv Store instance.
@@ -67,6 +67,11 @@ func (rfs *PrefixedStore) List(directory string) ([]*store.KVPair, error) {
 
 	unprefixed := []*store.KVPair{}
 	for _, kv := range prefixed {
+		// Is directory
+		if kv.Value == nil {
+			continue
+		}
+
 		unprefixed = append(unprefixed, &store.KVPair{
 			Key:       strings.TrimPrefix(kv.Key, rfs.root),
 			Value:     kv.Value,

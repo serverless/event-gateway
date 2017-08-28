@@ -61,12 +61,6 @@
   version = "v3.0.0"
 
 [[projects]]
-  name = "github.com/docker/libkv"
-  packages = [".","store","store/etcd"]
-  revision = "aabc039ad04deb721e234f99cd1b4aa28ac71a40"
-  version = "v0.2.1"
-
-[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -192,6 +186,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/serverless/libkv"
+  packages = [".","store","store/etcd/v3"]
+  revision = "dfe3e325e431be97c562b0e45a69d76fe982ea3c"
+
+[[projects]]
   name = "github.com/stretchr/testify"
   packages = ["assert"]
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
@@ -266,6 +266,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d166ce14aabeb64de184c844263e601ea247894a72840afb20e85f9f8b7f1629"
+  inputs-digest = "20e4a55db41a69a449aa2de156e25d0075096699977a2bd715302870619c62ee"
   solver-name = "gps-cdcl"
   solver-version = 1

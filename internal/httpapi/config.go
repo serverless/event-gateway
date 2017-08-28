@@ -3,8 +3,8 @@ package httpapi
 import (
 	"crypto/tls"
 
-	"github.com/docker/libkv/store"
 	"github.com/serverless/event-gateway/internal/sync"
+	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 )
 

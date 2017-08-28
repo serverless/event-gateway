@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -138,9 +139,12 @@ func (router *Router) WaitForSubscriber(topic subscriptions.TopicID) <-chan stru
 	go func() {
 		for {
 			res := router.targetCache.SubscribersOfTopic(topic)
+			fmt.Println(fmt.Sprintf("------------ %+v", 44))
 			if len(res) > 0 {
+				fmt.Println(fmt.Sprintf("------------ %+v", 55))
 				break
 			}
+			fmt.Println(fmt.Sprintf("------------ %+v", 77))
 			time.Sleep(50 * time.Millisecond)
 		}
 		close(updatedChan)

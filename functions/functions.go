@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/docker/libkv/store"
+	"github.com/serverless/libkv/store"
 )
 
 // Functions implements Registry.

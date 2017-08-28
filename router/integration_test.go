@@ -16,9 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/libkv"
-	"github.com/docker/libkv/store"
-	"github.com/docker/libkv/store/etcd"
 	"github.com/julienschmidt/httprouter"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/cache"
@@ -26,6 +23,9 @@ import (
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
 	"github.com/serverless/event-gateway/subscriptions"
+	"github.com/serverless/libkv"
+	"github.com/serverless/libkv/store"
+	etcd "github.com/serverless/libkv/store/etcd/v3"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
@@ -87,12 +87,12 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		Event:      subscriptions.TopicID(eventName),
 	})
 
-	wait10Seconds(router.WaitForSubscriber(subscriptions.TopicID(eventName)),
+	wait(router.WaitForSubscriber(subscriptions.TopicID(eventName)),
 		"timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventName, []byte(expected))
 
-	wait10Seconds(smileyReceived,
+	wait(smileyReceived,
 		"timed out waiting to receive pub/sub event in subscriber!")
 
 	router.Drain()
@@ -133,7 +133,7 @@ func TestIntegration_HTTPResponse(t *testing.T) {
 		Path:       "/httpresponse",
 	})
 
-	wait10Seconds(router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/httpresponse")),
+	wait(router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/httpresponse")),
 		"timed out waiting for endpoint to be configured!")
 
 	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
@@ -145,10 +145,10 @@ func TestIntegration_HTTPResponse(t *testing.T) {
 	shutdownGuard.ShutdownAndWait()
 }
 
-func wait10Seconds(ch <-chan struct{}, errMsg string) {
+func wait(ch <-chan struct{}, errMsg string) {
 	select {
 	case <-ch:
-	case <-time.After(10 * time.Second):
+	case <-time.After(3 * time.Second):
 		panic(errMsg)
 	}
 }
@@ -249,7 +249,7 @@ func newTestEtcd() (store.Store, *sync.ShutdownGuard) {
 	kv.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownGuard)
 
 	cli, err := libkv.NewStore(
-		store.ETCD,
+		store.ETCDV3,
 		[]string{cliKvAddr},
 		&store.Config{
 			ConnectionTimeout: 10 * time.Second,

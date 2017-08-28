@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/docker/libkv/store"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 	validator "gopkg.in/go-playground/validator.v9"
 )

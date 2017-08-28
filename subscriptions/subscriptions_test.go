@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/docker/libkv/store"
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/subscriptions/mock"
+	"github.com/serverless/libkv/store"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )

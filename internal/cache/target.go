@@ -3,7 +3,7 @@ package cache
 import (
 	"strings"
 
-	"github.com/docker/libkv/store"
+	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/functions"

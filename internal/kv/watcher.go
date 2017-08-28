@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/docker/libkv/store"
+	"github.com/serverless/libkv/store"
 )
 
 // Watcher provides a means of watching for changes to interesting configuration in the backing database. It also
@@ -122,10 +122,6 @@ func (rfs *Watcher) reconciliationTimeout() <-chan time.Time {
 }
 
 func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
-	// NB when extending libkv usage for DB's other than etcd, the watch behavior
-	// will need to be carefully considered, as the code below will likely need
-	// to be changed depending on which backend database is used.
-
 	// This is the main loop for detecting changes.
 	// 1. try to populate the watching root if it does not exist
 	// 2. create a libkv watch chan for children of this root
@@ -158,8 +154,7 @@ func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{})
 		}
 
 		if !exists {
-			// must set IsDir to true since backend may be etcd
-			err = rfs.kv.Put(rfs.path, []byte{}, &store.WriteOptions{IsDir: true})
+			err = rfs.kv.Put(rfs.path, []byte(nil), nil)
 			if err != nil {
 				if strings.HasPrefix(err.Error(), "102: Not a file") {
 					rfs.log.Debug("Another node (probably) created the root directory first.")
@@ -231,6 +226,11 @@ func (rfs *Watcher) diffCache(kvs []*store.KVPair, outgoingevents chan event,
 	nextCache := map[string]cachedValue{}
 
 	for _, kv := range kvs {
+		// Is directory
+		if kv.Value == nil {
+			continue
+		}
+
 		// populate next cache
 		nextCache[kv.Key] = cachedValue{
 			Value:     kv.Value,
