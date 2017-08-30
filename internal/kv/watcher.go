@@ -1,9 +1,7 @@
 package kv
 
 import (
-	"math"
 	"strings"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -85,18 +83,6 @@ type cachedValue struct {
 	LastIndex uint64
 }
 
-func (rfs *Watcher) resetBackoff() {
-	rfs.backoffFactor = 1
-}
-
-func (rfs *Watcher) backoff() {
-	rfs.log.Info("Backing-off after a failure",
-		zap.String("event", "backoff"),
-		zap.Int("seconds", rfs.backoffFactor))
-	time.Sleep(time.Duration(rfs.backoffFactor) * time.Second)
-	rfs.backoffFactor = int(math.Min(float64(rfs.backoffFactor<<1), 8))
-}
-
 func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
 	for {
 		// return if shutdown
@@ -113,7 +99,6 @@ func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{})
 				zap.String("event", "db"),
 				zap.String("key", rfs.path),
 				zap.Error(err))
-			rfs.backoff()
 			continue
 		}
 
@@ -127,7 +112,6 @@ func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{})
 						zap.String("event", "db"),
 						zap.String("key", rfs.path),
 						zap.Error(err))
-					rfs.backoff()
 					continue
 				}
 			}
@@ -140,7 +124,6 @@ func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{})
 				zap.String("event", "db"),
 				zap.String("key", rfs.path),
 				zap.Error(err))
-			rfs.backoff()
 			continue
 		}
 
@@ -191,16 +174,11 @@ func (rfs *Watcher) processEvents(incoming <-chan []*store.KVPair, outgoing chan
 						}
 					}
 				}
-
-				// if we got here, all is well, so reset exponential backoff
-				rfs.resetBackoff()
 			} else {
 				// directory nuked or connection to server failed
 				rfs.log.Error("Either lost connection to db, or the watch path was deleted.",
 					zap.String("event", "db"),
 					zap.String("key", rfs.path))
-
-				rfs.backoff()
 				return false
 			}
 		case <-shutdown:
