@@ -189,7 +189,7 @@
   branch = "master"
   name = "github.com/serverless/libkv"
   packages = [".","store","store/etcd/v3"]
-  revision = "dfe3e325e431be97c562b0e45a69d76fe982ea3c"
+  revision = "d7a6b80b96d1d021104ee096879a3e11c1146c33"
 
 [[projects]]
   name = "github.com/stretchr/testify"
