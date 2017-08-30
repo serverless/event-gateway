@@ -68,7 +68,7 @@ func (rfs *PrefixedStore) List(directory string) ([]*store.KVPair, error) {
 	unprefixed := []*store.KVPair{}
 	for _, kv := range prefixed {
 		// Is directory
-		if kv.Value == nil {
+		if kv.Value == rfs.root {
 			continue
 		}
 

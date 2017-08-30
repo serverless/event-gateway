@@ -227,7 +227,7 @@ func (rfs *Watcher) diffCache(kvs []*store.KVPair, outgoingevents chan event,
 
 	for _, kv := range kvs {
 		// Is directory
-		if kv.Value == nil {
+		if kv.Key == rfs.path {
 			continue
 		}
 
