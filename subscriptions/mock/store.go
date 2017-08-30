@@ -4,8 +4,8 @@
 package mock
 
 import (
-	store "github.com/docker/libkv/store"
 	gomock "github.com/golang/mock/gomock"
+	store "github.com/serverless/libkv/store"
 )
 
 // Mock of Store interface

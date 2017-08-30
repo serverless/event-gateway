@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/libkv"
-	"github.com/docker/libkv/store"
-	"github.com/docker/libkv/store/etcd"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/serverless/libkv"
+	"github.com/serverless/libkv/store"
+	etcd "github.com/serverless/libkv/store/etcd/v3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -66,7 +66,7 @@ func main() {
 
 	dbHostStrings := strings.Split(*dbHosts, ",")
 	kv, err := libkv.NewStore(
-		store.ETCD,
+		store.ETCDV3,
 		dbHostStrings,
 		&store.Config{
 			ConnectionTimeout: 10 * time.Second,

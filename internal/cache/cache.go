@@ -11,38 +11,6 @@ import (
 	"github.com/serverless/event-gateway/subscriptions"
 )
 
-// cacher is a simplification of the db.Reactive interface, which doesn't care about
-// the distinction between Created and Modified, reducing them to Set.
-type cacher interface {
-	Set(string, []byte)
-	Del(string, []byte)
-}
-
-type maintainer struct {
-	cache cacher
-}
-
-func newCacheMaintainer(cache cacher) *maintainer {
-	return &maintainer{
-		cache: cache,
-	}
-}
-
-// Created is called when a new endpoint is detected in the config.
-func (c *maintainer) Created(key string, value []byte) {
-	c.cache.Set(key, value)
-}
-
-// Modified is called when an existing endpoint is modified in the config.
-func (c *maintainer) Modified(key string, newValue []byte) {
-	c.cache.Set(key, newValue)
-}
-
-// Deleted is called when a endpoint is deleted in the config.
-func (c *maintainer) Deleted(key string, lastKnownValue []byte) {
-	c.cache.Del(key, lastKnownValue)
-}
-
 type functionCache struct {
 	sync.RWMutex
 	// cache maps from FunctionID to Function
@@ -57,7 +25,7 @@ func newFunctionCache(log *zap.Logger) *functionCache {
 	}
 }
 
-func (c *functionCache) Set(k string, v []byte) {
+func (c *functionCache) Modified(k string, v []byte) {
 	c.log.Debug("Function local cache received value update.", zap.String("key", k), zap.String("value", string(v)))
 
 	f := &functions.Function{}
@@ -71,7 +39,7 @@ func (c *functionCache) Set(k string, v []byte) {
 	}
 }
 
-func (c *functionCache) Del(k string, v []byte) {
+func (c *functionCache) Deleted(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 	delete(c.cache, functions.FunctionID(k))
@@ -91,7 +59,7 @@ func newEndpointCache(log *zap.Logger) *endpointCache {
 	}
 }
 
-func (c *endpointCache) Set(k string, v []byte) {
+func (c *endpointCache) Modified(k string, v []byte) {
 	c.log.Debug("Endpoint local cache received value update.", zap.String("key", k), zap.String("value", string(v)))
 
 	e := &subscriptions.Endpoint{}
@@ -105,7 +73,7 @@ func (c *endpointCache) Set(k string, v []byte) {
 	}
 }
 
-func (c *endpointCache) Del(k string, v []byte) {
+func (c *endpointCache) Deleted(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 	delete(c.cache, subscriptions.EndpointID(k))
@@ -126,7 +94,7 @@ func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	}
 }
 
-func (c *subscriptionCache) Set(k string, v []byte) {
+func (c *subscriptionCache) Modified(k string, v []byte) {
 	c.log.Debug("Subscription local cache received value update.", zap.String("key", k), zap.String("value", string(v)))
 
 	s := subscriptions.Subscription{}
@@ -150,7 +118,7 @@ func (c *subscriptionCache) Set(k string, v []byte) {
 	}
 }
 
-func (c *subscriptionCache) Del(k string, v []byte) {
+func (c *subscriptionCache) Deleted(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 
