@@ -72,7 +72,7 @@ func (tc *Target) Shutdown() {
 }
 
 // NewTarget instantiates a new Target, rooted at a particular location.
-func NewTarget(path string, kvstore store.Store, log *zap.Logger, debug ...bool) *Target {
+func NewTarget(path string, kvstore store.Store, log *zap.Logger) *Target {
 	// make sure we have a trailing slash for trimming future updates
 	if !strings.HasSuffix(path, "/") {
 		path = path + "/"
@@ -81,16 +81,6 @@ func NewTarget(path string, kvstore store.Store, log *zap.Logger, debug ...bool)
 	functionPathWatcher := kv.NewWatcher(path+"functions", kvstore, log)
 	endpointPathWatcher := kv.NewWatcher(path+"endpoints", kvstore, log)
 	subscriptionPathWatcher := kv.NewWatcher(path+"subscriptions", kvstore, log)
-
-	if len(debug) == 1 && debug[0] {
-		debugReconciliation := func(w ...*kv.Watcher) {
-			for _, w := range w {
-				w.ReconciliationJitter = 0
-				w.ReconciliationBaseDelay = 3
-			}
-		}
-		debugReconciliation(functionPathWatcher, endpointPathWatcher, subscriptionPathWatcher)
-	}
 
 	// updates dynamic routing information for endpoints when config changes are detected.
 	endpointCache := newEndpointCache(log)
@@ -101,9 +91,9 @@ func NewTarget(path string, kvstore store.Store, log *zap.Logger, debug ...bool)
 
 	// start reacting to changes
 	shutdown := make(chan struct{})
-	functionPathWatcher.React(newCacheMaintainer(functionCache), shutdown)
-	endpointPathWatcher.React(newCacheMaintainer(endpointCache), shutdown)
-	subscriptionPathWatcher.React(newCacheMaintainer(subscriptionCache), shutdown)
+	functionPathWatcher.React(functionCache, shutdown)
+	endpointPathWatcher.React(endpointCache, shutdown)
+	subscriptionPathWatcher.React(subscriptionCache, shutdown)
 
 	return &Target{
 		log:               log,
