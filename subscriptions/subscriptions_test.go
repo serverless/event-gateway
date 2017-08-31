@@ -324,7 +324,7 @@ func TestDeleteSubscription_NotDeleteTopicWithSubOK(t *testing.T) {
 	defer ctrl.Finish()
 
 	kv := &store.KVPair{Value: []byte(`{"subscriptionId":"s1","event":"test","functionId":"f1"}`)}
-	kvs := []*store.KVPair{&store.KVPair{Value: []byte(`{"subscriptionId":"s2","event":"test","functionId":"f2"}`)}}
+	kvs := []*store.KVPair{{Value: []byte(`{"subscriptionId":"s2","event":"test","functionId":"f2"}`)}}
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("s1").Return(kv, nil)
 	subscriptionsDB.EXPECT().List("").Return(kvs, nil)
@@ -342,8 +342,8 @@ func TestGetAllSubscriptions_OK(t *testing.T) {
 	defer ctrl.Finish()
 
 	kvs := []*store.KVPair{
-		&store.KVPair{Value: []byte(`{"subscriptionId":"s1","event":"test","functionId":"f1"}`)},
-		&store.KVPair{Value: []byte(`{"subscriptionId":"s2","event":"test","functionId":"f2"}`)},
+		{Value: []byte(`{"subscriptionId":"s1","event":"test","functionId":"f1"}`)},
+		{Value: []byte(`{"subscriptionId":"s2","event":"test","functionId":"f2"}`)},
 	}
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().List("").Return(kvs, nil)
@@ -352,8 +352,8 @@ func TestGetAllSubscriptions_OK(t *testing.T) {
 	list, _ := subs.GetAllSubscriptions()
 
 	assert.Equal(t, []*Subscription{
-		&Subscription{ID: SubscriptionID("s1"), Event: "test", FunctionID: functions.FunctionID("f1")},
-		&Subscription{ID: SubscriptionID("s2"), Event: "test", FunctionID: functions.FunctionID("f2")},
+		{ID: SubscriptionID("s1"), Event: "test", FunctionID: functions.FunctionID("f1")},
+		{ID: SubscriptionID("s2"), Event: "test", FunctionID: functions.FunctionID("f2")},
 	}, list)
 }
 

@@ -7,7 +7,7 @@ type Error struct {
 	Error string `json:"error"`
 }
 
-// ErrMalformedJSON occuring when it's impossible to decode JSON payload.
+// ErrMalformedJSON occurring when it's impossible to decode JSON payload.
 type ErrMalformedJSON Error
 
 // NewErrMalformedJSON creates ErrMalformedJSON.

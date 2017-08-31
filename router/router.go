@@ -155,7 +155,7 @@ const (
 	// eventHTTP is a special type of event for sync http subscriptions.
 	eventHTTP = "http"
 
-	// headerFunctionID is a header name for specifing function id for sync invocation.
+	// headerFunctionID is a header name for specifying function id for sync invocation.
 	headerFunctionID = "function-id"
 
 	internalFunctionError = "gateway.info.functionError"
