@@ -8,10 +8,11 @@ install:
 - go get -u github.com/golang/dep/cmd/dep
 - dep ensure
 script:
-- go test -tags=integration -race ./...
 - go get -u github.com/alecthomas/gometalinter
 - gometalinter --install --force
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --skip=mock ./...
+- go get github.com/mattn/goveralls
+- goveralls -race -service=travis-ci
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 notifications:
