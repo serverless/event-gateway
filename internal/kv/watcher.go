@@ -105,15 +105,11 @@ func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{})
 		if !exists {
 			err = rfs.kv.Put(rfs.path, []byte(nil), nil)
 			if err != nil {
-				if strings.HasPrefix(err.Error(), "102: Not a file") {
-					rfs.log.Debug("Another node (probably) created the root directory first.")
-				} else {
-					rfs.log.Error("Could not initialize watcher root.",
-						zap.String("event", "db"),
-						zap.String("key", rfs.path),
-						zap.Error(err))
-					continue
-				}
+				rfs.log.Error("Could not initialize watcher root.",
+					zap.String("event", "db"),
+					zap.String("key", rfs.path),
+					zap.Error(err))
+				continue
 			}
 		}
 
