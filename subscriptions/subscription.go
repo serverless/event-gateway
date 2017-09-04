@@ -28,9 +28,9 @@ type Subscription struct {
 
 func newSubscriptionID(s *Subscription) SubscriptionID {
 	if s.Method == "" && s.Path == "" {
-		return SubscriptionID(string(s.Event) + "-" + string(s.FunctionID))
+		return SubscriptionID(string(s.Event) + "," + string(s.FunctionID))
 	}
-	return SubscriptionID(string(s.Event) + "-" + s.Method + "-" + url.PathEscape(s.Path))
+	return SubscriptionID(string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
 }
 
 // ErrSubscriptionAlreadyExists occurs when subscription with the same ID already exists.

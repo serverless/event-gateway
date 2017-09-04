@@ -3,6 +3,7 @@ package subscriptions
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/serverless/event-gateway/internal/httpapi"
@@ -16,7 +17,7 @@ type HTTPAPI struct {
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.POST("/v1/subscriptions", h.createSubscription)
-	router.DELETE("/v1/subscriptions/:subscriptionID", h.deleteSubscription)
+	router.DELETE("/v1/subscriptions/*subscriptionID", h.deleteSubscription)
 	router.GET("/v1/subscriptions", h.getSubscriptions)
 }
 
@@ -56,7 +57,11 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.Subscriptions.DeleteSubscription(SubscriptionID(params.ByName("subscriptionID")))
+	// httprouter weirdness: params are based on Request.URL.Path, not Request.URL.RawPath
+	segments := strings.Split(r.URL.RawPath, "/")
+	sid := segments[len(segments)-1]
+
+	err := h.Subscriptions.DeleteSubscription(SubscriptionID(sid))
 	if err != nil {
 		if _, ok := err.(*ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)

@@ -19,5 +19,5 @@ type Endpoint struct {
 
 // NewEndpointID returns Endpoint ID.
 func NewEndpointID(method, path string) EndpointID {
-	return EndpointID(method + "-" + url.PathEscape(path))
+	return EndpointID(method + "," + url.PathEscape(path))
 }
