@@ -29,7 +29,6 @@ func StartConfigAPI(config httpapi.Config) httpapi.Server {
 	functionsAPI.RegisterRoutes(router)
 
 	subscriptionsService := &subscriptions.Subscriptions{
-		TopicsDB:        kv.NewPrefixedStore("/serverless-event-gateway/topics", config.KV),
 		SubscriptionsDB: kv.NewPrefixedStore("/serverless-event-gateway/subscriptions", config.KV),
 		EndpointsDB:     kv.NewPrefixedStore("/serverless-event-gateway/endpoints", config.KV),
 		FunctionsDB:     functionsDB,

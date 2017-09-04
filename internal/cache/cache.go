@@ -7,13 +7,13 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/subscriptions"
 )
 
 type functionCache struct {
 	sync.RWMutex
-	// cache maps from FunctionID to Function
 	cache map[functions.FunctionID]*functions.Function
 	log   *zap.Logger
 }
@@ -81,16 +81,14 @@ func (c *endpointCache) Deleted(k string, v []byte) {
 
 type subscriptionCache struct {
 	sync.RWMutex
-	// topicToSub maps from a TopicID to a set of subscribing FunctionID's
-	topicToFns map[subscriptions.TopicID]map[functions.FunctionID]struct{}
-	log        *zap.Logger
+	eventToFunctions map[event.Type]map[functions.FunctionID]struct{}
+	log              *zap.Logger
 }
 
 func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	return &subscriptionCache{
-		// topicToFns is a map from TopicID to a set of FunctionID's
-		topicToFns: map[subscriptions.TopicID]map[functions.FunctionID]struct{}{},
-		log:        log,
+		eventToFunctions: map[event.Type]map[functions.FunctionID]struct{}{},
+		log:              log,
 	}
 }
 
@@ -107,14 +105,13 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 
-	// set FunctionID as destination in topicToSub
-	fnSet, exists := c.topicToFns[s.Event]
+	fnSet, exists := c.eventToFunctions[s.Event]
 	if exists {
 		fnSet[s.FunctionID] = struct{}{}
 	} else {
 		fnSet := map[functions.FunctionID]struct{}{}
 		fnSet[s.FunctionID] = struct{}{}
-		c.topicToFns[s.Event] = fnSet
+		c.eventToFunctions[s.Event] = fnSet
 	}
 }
 
@@ -129,12 +126,12 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 		return
 	}
 
-	fnSet, exists := c.topicToFns[oldSub.Event]
+	fnSet, exists := c.eventToFunctions[oldSub.Event]
 	if exists {
 		delete(fnSet, oldSub.FunctionID)
 
 		if len(fnSet) == 0 {
-			delete(c.topicToFns, oldSub.Event)
+			delete(c.eventToFunctions, oldSub.Event)
 		}
 	}
 }

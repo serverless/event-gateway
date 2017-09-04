@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/kv"
@@ -52,7 +53,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			reqBuf, _ := ioutil.ReadAll(r.Body)
 
-			var event Event
+			var event eventpkg.Event
 			err := json.Unmarshal(reqBuf, &event)
 			if err != nil {
 				panic(err)
@@ -78,17 +79,17 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		})
 
 	// set up pub/sub
-	eventName := "smileys"
+	eventType := "smileys"
 
 	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
 		FunctionID: subscriberFnID,
-		Event:      subscriptions.TopicID(eventName),
+		Event:      eventpkg.Type(eventType),
 	})
 
-	wait(router.WaitForSubscriber(subscriptions.TopicID(eventName)),
+	wait(router.WaitForSubscriber(eventpkg.Type(eventType)),
 		"timed out waiting for subscriber to be configured!")
 
-	emit(testRouterServer.URL, eventName, []byte(expected))
+	emit(testRouterServer.URL, eventType, []byte(expected))
 
 	wait(smileyReceived,
 		"timed out waiting to receive pub/sub event in subscriber!")
@@ -151,13 +152,13 @@ func wait(ch <-chan struct{}, errMsg string) {
 	}
 }
 
-func emit(url, topic string, body []byte) {
+func emit(url, eventType string, body []byte) {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
 		panic(err)
 	}
 
-	req.Header.Add("event", topic)
+	req.Header.Add("event", eventType)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		panic(err)
@@ -212,7 +213,6 @@ func newConfigAPIServer(kvstore store.Store, log *zap.Logger) *httptest.Server {
 	fnsapi.RegisterRoutes(apiRouter)
 
 	subs := &subscriptions.Subscriptions{
-		TopicsDB:        kv.NewPrefixedStore("/serverless-event-gateway/topics", kvstore),
 		SubscriptionsDB: kv.NewPrefixedStore("/serverless-event-gateway/subscriptions", kvstore),
 		EndpointsDB:     kv.NewPrefixedStore("/serverless-event-gateway/endpoints", kvstore),
 		FunctionsDB:     fnsDB,

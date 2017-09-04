@@ -11,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/subscriptions"
@@ -61,10 +62,10 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if event.Event == eventHTTP || event.Event == eventInvoke {
-		router.handleSyncEvent(event.Event, payload, w, r)
+	if event.Type == eventpkg.TypeHTTP || event.Type == eventpkg.TypeInvoke {
+		router.handleSyncEvent(event.Type, payload, w, r)
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		router.enqueueWork(subscriptions.TopicID(event.Event), payload)
+		router.enqueueWork(event.Type, payload)
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
@@ -131,13 +132,13 @@ func (router *Router) WaitForEndpoint(endpointID subscriptions.EndpointID) <-cha
 	return updatedChan
 }
 
-// WaitForSubscriber returns a chan that is closed when a topic has a subscriber.
+// WaitForSubscriber returns a chan that is closed when an event has a subscriber.
 // Primarily for testing purposes.
-func (router *Router) WaitForSubscriber(topic subscriptions.TopicID) <-chan struct{} {
+func (router *Router) WaitForSubscriber(eventType eventpkg.Type) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			res := router.targetCache.SubscribersOfTopic(topic)
+			res := router.targetCache.SubscribersOfEvent(eventType)
 			if len(res) > 0 {
 				break
 			}
@@ -149,12 +150,6 @@ func (router *Router) WaitForSubscriber(topic subscriptions.TopicID) <-chan stru
 }
 
 const (
-	// eventInvoke is a special type of event for sync function invocation.
-	eventInvoke = "invoke"
-
-	// eventHTTP is a special type of event for sync http subscriptions.
-	eventHTTP = "http"
-
 	// headerFunctionID is a header name for specifying function id for sync invocation.
 	headerFunctionID = "function-id"
 
@@ -166,15 +161,15 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleSyncEvent(name string, payload []byte, w http.ResponseWriter, r *http.Request) {
+func (router *Router) handleSyncEvent(eventType eventpkg.Type, payload []byte, w http.ResponseWriter, r *http.Request) {
 	router.log.Debug("Event received.", zap.String("event", string(payload)))
 
 	var resp []byte
 	var functionID functions.FunctionID
 
-	if name == eventInvoke {
+	if eventType == eventpkg.TypeInvoke {
 		functionID = functions.FunctionID(r.Header.Get(headerFunctionID))
-	} else if name == eventHTTP {
+	} else if eventType == eventpkg.TypeHTTP {
 		endpointID := subscriptions.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		backingFunction := router.targetCache.BackingFunction(endpointID)
 		if backingFunction == nil {
@@ -207,7 +202,7 @@ func (router *Router) handleSyncEvent(name string, payload []byte, w http.Respon
 		zap.String("functionId", string(functionID)), zap.String("event", string(payload)),
 		zap.String("response", string(resp)))
 
-	if name == eventHTTP {
+	if eventType == eventpkg.TypeHTTP {
 		httpResponse := &HTTPResponse{StatusCode: http.StatusOK}
 		err = json.Unmarshal(resp, httpResponse)
 		if err != nil {
@@ -233,13 +228,13 @@ func (router *Router) handleSyncEvent(name string, payload []byte, w http.Respon
 	}
 }
 
-func (router *Router) enqueueWork(topic subscriptions.TopicID, payload []byte) {
+func (router *Router) enqueueWork(eventType eventpkg.Type, payload []byte) {
 	router.log.Debug("Event received.", zap.String("event", string(payload)))
 
 	select {
 	case router.work <- event{
-		topic:   topic,
-		payload: payload,
+		eventType: eventType,
+		payload:   payload,
 	}:
 	default:
 		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
@@ -310,9 +305,9 @@ func (router *Router) loop() {
 	}
 }
 
-// processEvent sends event to a set of topics, and for each of the functions that get called as part of those topics.
+// processEvent call all functions subscribed for an event
 func (router *Router) processEvent(e event) {
-	subscribers := router.targetCache.SubscribersOfTopic(e.topic)
+	subscribers := router.targetCache.SubscribersOfEvent(e.eventType)
 	for _, subscriber := range subscribers {
 		router.log.Debug("Function triggered.",
 			zap.String("functionId", string(subscriber)), zap.String("event", string(e.payload)))
@@ -334,12 +329,12 @@ func (router *Router) processEvent(e event) {
 
 func (router *Router) emitFunctionErrorEvent(functionID functions.FunctionID, payload []byte, err error) {
 	if _, ok := err.(*functions.ErrFunctionError); ok {
-		internal := NewEvent(internalFunctionError, mimeJSON, struct {
+		internal := eventpkg.NewEvent(internalFunctionError, mimeJSON, struct {
 			FunctionID string `json:"functionId"`
 		}{string(functionID)})
 		payload, err = json.Marshal(internal)
 		if err == nil {
-			router.enqueueWork(subscriptions.TopicID(internal.Event), payload)
+			router.enqueueWork(internal.Type, payload)
 		}
 	}
 }
