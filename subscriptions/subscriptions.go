@@ -13,7 +13,6 @@ import (
 
 // Subscriptions allows functions to subscribe to custom events.
 type Subscriptions struct {
-	TopicsDB        store.Store
 	SubscriptionsDB store.Store
 	FunctionsDB     store.Store
 	EndpointsDB     store.Store
@@ -37,11 +36,6 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 
 	if s.Event == SubscriptionHTTP {
 		err = ps.createEndpoint(s.FunctionID, s.Method, s.Path)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		err = ps.ensureTopic(s.Event)
 		if err != nil {
 			return nil, err
 		}
@@ -83,11 +77,6 @@ func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 
 	if sub.Event == SubscriptionHTTP {
 		err = ps.deleteEndpoint(sub.Method, sub.Path)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = ps.deleteEmptyTopic(sub.Event)
 		if err != nil {
 			return err
 		}
@@ -138,42 +127,6 @@ func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error
 	return sub, err
 }
 
-// ensureTopic creates topic if it doesn't exists.
-func (ps Subscriptions) ensureTopic(id TopicID) error {
-	_, err := ps.TopicsDB.Get(string(id))
-	if err == nil {
-		return nil
-	}
-
-	buf, err := json.Marshal(&Topic{ID: id})
-	if err != nil {
-		return err
-	}
-
-	err = ps.TopicsDB.Put(string(id), buf, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// deleteEmptyTopic deletes topic without subscriptions.
-func (ps Subscriptions) deleteEmptyTopic(id TopicID) error {
-	subs, err := ps.GetAllSubscriptions()
-	if err != nil {
-		return err
-	}
-
-	for _, sub := range subs {
-		if sub.Event == id {
-			return nil
-		}
-	}
-
-	return ps.TopicsDB.Delete(string(id))
-}
-
 // createEndpoint creates endpoint.
 func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, path string) error {
 	e := &Endpoint{
@@ -212,7 +165,7 @@ func (ps Subscriptions) validateSubscription(s *Subscription) error {
 
 	validate := validator.New()
 	validate.RegisterValidation("urlpath", urlPathValidator)
-	validate.RegisterValidation("eventname", eventNameValidator)
+	validate.RegisterValidation("eventtype", eventTypeValidator)
 	err := validate.Struct(s)
 	if err != nil {
 		return &ErrSubscriptionValidation{err.Error()}

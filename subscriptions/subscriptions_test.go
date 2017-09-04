@@ -66,51 +66,13 @@ func TestCreateSubscription_OK(t *testing.T) {
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("test-func").Return(nil, errors.New("KV sub not found"))
 	subscriptionsDB.EXPECT().Put("test-func", []byte(`{"subscriptionId":"test-func","event":"test","functionId":"func"}`), nil).Return(nil)
-	topicsDB := mock.NewMockStore(ctrl)
-	topicsDB.EXPECT().Get("test").Return(nil, nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(true, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, TopicsDB: topicsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
+	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "test", FunctionID: "func"})
 
 	assert.Nil(t, err)
-}
-
-func TestCreateSubscription_CreateTopicIfNotExists(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("test-func").Return(nil, errors.New("KV sub not found"))
-	subscriptionsDB.EXPECT().Put("test-func", []byte(`{"subscriptionId":"test-func","event":"test","functionId":"func"}`), nil).Return(nil)
-	topicsDB := mock.NewMockStore(ctrl)
-	topicsDB.EXPECT().Get("test").Return(nil, errors.New("KV topic not found"))
-	topicsDB.EXPECT().Put("test", []byte(`{"topicId":"test"}`), nil).Return(nil)
-	functionsDB := mock.NewMockStore(ctrl)
-	functionsDB.EXPECT().Exists("func").Return(true, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, TopicsDB: topicsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
-
-	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "test", FunctionID: "func"})
-
-	assert.Nil(t, err)
-}
-
-func TestCreateSubscription_CreateTopicError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("test-func").Return(nil, errors.New("KV sub not found"))
-	topicsDB := mock.NewMockStore(ctrl)
-	topicsDB.EXPECT().Get("test").Return(nil, errors.New("KV topic not found"))
-	topicsDB.EXPECT().Put("test", []byte(`{"topicId":"test"}`), nil).Return(errors.New("KV Put err"))
-	functionsDB := mock.NewMockStore(ctrl)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, TopicsDB: topicsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
-
-	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "test", FunctionID: "func"})
-
-	assert.EqualError(t, err, "KV Put err")
 }
 
 func TestCreateSubscription_ValidationError(t *testing.T) {
@@ -211,11 +173,8 @@ func TestDeleteSubscription_OK(t *testing.T) {
 	kv := &store.KVPair{Value: []byte(`{"subscriptionId":"testid","event":"test","functionId":"f1"}`)}
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("testid").Return(kv, nil)
-	subscriptionsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
 	subscriptionsDB.EXPECT().Delete("testid").Return(nil)
-	topicsDB := mock.NewMockStore(ctrl)
-	topicsDB.EXPECT().Delete("test").Return(nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, TopicsDB: topicsDB, Log: zap.NewNop()}
+	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
 
 	err := subs.DeleteSubscription(SubscriptionID("testid"))
 
@@ -258,10 +217,9 @@ func TestDeleteSubscription_DeleteEndpointOK(t *testing.T) {
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("testid").Return(kv, nil)
 	subscriptionsDB.EXPECT().Delete("testid").Return(nil)
-	topicsDB := mock.NewMockStore(ctrl)
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().Delete("GET-%2F").Return(nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, TopicsDB: topicsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
+	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
 
 	err := subs.DeleteSubscription(SubscriptionID("testid"))
 
@@ -283,58 +241,6 @@ func TestDeleteSubscription_DeleteEndpointError(t *testing.T) {
 	err := subs.DeleteSubscription(SubscriptionID("testid"))
 
 	assert.EqualError(t, err, "KV Delete err")
-}
-
-func TestDeleteSubscription_DeleteTopicError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	kv := &store.KVPair{Value: []byte(`{"subscriptionId":"testid","event":"test","functionId":"f1"}`)}
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("testid").Return(kv, nil)
-	subscriptionsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
-	subscriptionsDB.EXPECT().Delete("testid").Return(nil)
-	topicsDB := mock.NewMockStore(ctrl)
-	topicsDB.EXPECT().Delete("test").Return(errors.New("KV Delete err"))
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, TopicsDB: topicsDB, Log: zap.NewNop()}
-
-	err := subs.DeleteSubscription(SubscriptionID("testid"))
-
-	assert.EqualError(t, err, "KV Delete err")
-}
-
-func TestDeleteSubscription_DeleteTopicListError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	kv := &store.KVPair{Value: []byte(`{"subscriptionId":"testid","event":"test","functionId":"f1"}`)}
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("testid").Return(kv, nil)
-	subscriptionsDB.EXPECT().List("").Return(nil, errors.New("KV List error"))
-	subscriptionsDB.EXPECT().Delete("testid").Return(nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
-
-	err := subs.DeleteSubscription(SubscriptionID("testid"))
-
-	assert.EqualError(t, err, "KV List error")
-}
-
-func TestDeleteSubscription_NotDeleteTopicWithSubOK(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	kv := &store.KVPair{Value: []byte(`{"subscriptionId":"s1","event":"test","functionId":"f1"}`)}
-	kvs := []*store.KVPair{{Value: []byte(`{"subscriptionId":"s2","event":"test","functionId":"f2"}`)}}
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("s1").Return(kv, nil)
-	subscriptionsDB.EXPECT().List("").Return(kvs, nil)
-	subscriptionsDB.EXPECT().Delete("s1").Return(nil)
-	topicsDB := mock.NewMockStore(ctrl)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, TopicsDB: topicsDB, Log: zap.NewNop()}
-
-	err := subs.DeleteSubscription(SubscriptionID("s1"))
-
-	assert.Nil(t, err)
 }
 
 func TestGetAllSubscriptions_OK(t *testing.T) {

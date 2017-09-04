@@ -6,6 +6,7 @@ import (
 	"path"
 	"regexp"
 
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	validator "gopkg.in/go-playground/validator.v9"
 )
@@ -13,13 +14,13 @@ import (
 // SubscriptionID uniquely identifies a subscription
 type SubscriptionID string
 
-// SubscriptionHTTP represents sync HTTP subscription
+// SubscriptionHTTP is a special type of subscription. It represents sync HTTP subscription.
 const SubscriptionHTTP = "http"
 
-// Subscription maps from Topic to Function
+// Subscription maps from Event type to Function
 type Subscription struct {
 	ID         SubscriptionID       `json:"subscriptionId"`
-	Event      TopicID              `json:"event" validate:"required,eventname"`
+	Event      event.Type           `json:"event" validate:"required,eventtype"`
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
 	Method     string               `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
 	Path       string               `json:"path,omitempty" validate:"omitempty,urlpath"`
@@ -73,7 +74,7 @@ func urlPathValidator(fl validator.FieldLevel) bool {
 	return path.IsAbs(fl.Field().String())
 }
 
-// eventNameValidator validates if field contains event name
-func eventNameValidator(fl validator.FieldLevel) bool {
+// eventTypeValidator validates if field contains event name
+func eventTypeValidator(fl validator.FieldLevel) bool {
 	return regexp.MustCompile(`^[a-zA-Z0-9\.\-_]+$`).MatchString(fl.Field().String())
 }

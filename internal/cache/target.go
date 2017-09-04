@@ -6,6 +6,7 @@ import (
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/subscriptions"
@@ -15,7 +16,7 @@ import (
 type Targeter interface {
 	BackingFunction(endpoint subscriptions.EndpointID) *functions.FunctionID
 	Function(functionID functions.FunctionID) *functions.Function
-	SubscribersOfTopic(topic subscriptions.TopicID) []functions.FunctionID
+	SubscribersOfEvent(eventType event.Type) []functions.FunctionID
 }
 
 // Target is an implementation of Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
@@ -28,8 +29,7 @@ type Target struct {
 	subscriptionCache *subscriptionCache
 }
 
-// BackingFunction returns functions and their weights, along with the group ID if this was a Group function target, so
-// we can submit events to topics that are fed by both.
+// BackingFunction returns functions and their weights, along with the group ID if this was a Group function target
 func (tc *Target) BackingFunction(endpointID subscriptions.EndpointID) *functions.FunctionID {
 	// try to get the endpoint from our cache
 	tc.endpointCache.RLock()
@@ -48,10 +48,10 @@ func (tc *Target) Function(functionID functions.FunctionID) *functions.Function 
 	return tc.functionCache.cache[functionID]
 }
 
-// SubscribersOfTopic is used for determining which functions to forward messages in a topic to.
-func (tc *Target) SubscribersOfTopic(topic subscriptions.TopicID) []functions.FunctionID {
+// SubscribersOfEvent is used for determining which functions to forward messages to.
+func (tc *Target) SubscribersOfEvent(eventType event.Type) []functions.FunctionID {
 	tc.subscriptionCache.RLock()
-	fnSet, exists := tc.subscriptionCache.topicToFns[topic]
+	fnSet, exists := tc.subscriptionCache.eventToFunctions[eventType]
 	tc.subscriptionCache.RUnlock()
 
 	if !exists {
@@ -86,7 +86,7 @@ func NewTarget(path string, kvstore store.Store, log *zap.Logger) *Target {
 	endpointCache := newEndpointCache(log)
 	// serves lookups for function info
 	functionCache := newFunctionCache(log)
-	// serves lookups for which functions are subscribed to a topic
+	// serves lookups for which functions are subscribed to an event
 	subscriptionCache := newSubscriptionCache(log)
 
 	// start reacting to changes
