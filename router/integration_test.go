@@ -132,8 +132,7 @@ func TestIntegration_HTTPResponse(t *testing.T) {
 		Path:       "/httpresponse",
 	})
 
-	wait(router.WaitForEndpoint(subscriptions.NewEndpointID("GET", "/httpresponse")),
-		"timed out waiting for endpoint to be configured!")
+	wait(router.WaitForEndpoint("GET", "/httpresponse"), "timed out waiting for endpoint to be configured!")
 
 	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
 	assert.Equal(t, statusCode, 201)

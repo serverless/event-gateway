@@ -69,6 +69,16 @@ func (e ErrFunctionNotFound) Error() string {
 	return fmt.Sprintf("Function %q not found.", e.functionID)
 }
 
+// ErrPathConfict occurs when HTTP subscription path conflicts with existing path.
+type ErrPathConfict struct {
+	existing string
+	new      string
+}
+
+func (e ErrPathConfict) Error() string {
+	return fmt.Sprintf("Subscription path %q conflicts with existing subscription path %q.", e.new, e.existing)
+}
+
 // urlPathValidator validates if field contains URL path
 func urlPathValidator(fl validator.FieldLevel) bool {
 	return path.IsAbs(fl.Field().String())

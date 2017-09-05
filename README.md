@@ -295,7 +295,8 @@ arbitrary payload, subscribed function receives an event in above schema. `data`
     "query": <request query params>,
     "body": <request payload>,
     "path": <request URL path>,
-    "method": <request method>
+    "method": <request method>,
+    "params": <request URL parameters>
   }
   ...
 }
@@ -305,6 +306,17 @@ arbitrary payload, subscribed function receives an event in above schema. `data`
 
 Status code:
 - `200 OK` with payload with function response
+
+#### Path parameters
+
+The Event Gateway allows creating HTTP subscription with parameterized paths. Every path segment prefixed with `:` is
+treated as a parameter, e.g. `/users/:id`.
+
+The Event Gateway prevents from creating subscriptions in following conflicting situations:
+- registering static path when there is parameterized path registered already (`/users/:id` vs. `/users/foo`)
+- registering parameterized path with different parameter name (`/users/:id` vs. `/users/:name`)
+
+Key and value of matched parameters are passed to a function in an HTTP Event under `params` field.
 
 #### Respond to an HTTP Event
 

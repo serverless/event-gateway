@@ -42,6 +42,8 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*ErrSubscriptionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*ErrPathConfict); ok {
+			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

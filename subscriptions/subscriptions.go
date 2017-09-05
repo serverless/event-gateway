@@ -129,11 +129,23 @@ func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error
 
 // createEndpoint creates endpoint.
 func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, path string) error {
-	e := &Endpoint{
-		ID:         NewEndpointID(method, path),
-		FunctionID: functionID,
-		Method:     method,
-		Path:       path,
+	e := NewEndpoint(functionID, method, path)
+
+	kvs, err := ps.EndpointsDB.List("")
+	if err != nil {
+		return err
+	}
+
+	for _, kv := range kvs {
+		sub := &Subscription{}
+		err = json.NewDecoder(bytes.NewReader(kv.Value)).Decode(sub)
+		if err != nil {
+			return err
+		}
+
+		if sub.Method == method && isPathInConflict(sub.Path, path) {
+			return &ErrPathConfict{sub.Path, path}
+		}
 	}
 
 	buf, err := json.Marshal(e)
@@ -186,4 +198,40 @@ func ensurePrefix(s, prefix string) string {
 		return s
 	}
 	return prefix + s
+}
+
+func toSegments(route string) []string {
+	segments := strings.Split(route, "/")
+	// remove first "" element
+	_, segments = segments[0], segments[1:]
+
+	return segments
+}
+
+func isPathInConflict(existing, new string) bool {
+	existingSegments := toSegments(existing)
+	newSegments := toSegments(new)
+
+	for i, newSegment := range newSegments {
+		// no segment at this stage, no issue
+		if len(existingSegments) < i+1 {
+			return false
+		}
+
+		existing := existingSegments[i]
+
+		// both segments are param but different
+		if strings.HasPrefix(existing, ":") && strings.HasPrefix(newSegment, ":") {
+			if newSegment != existing {
+				return true
+			}
+		}
+
+		// on of segments is param and another is not (XOR)
+		if strings.HasPrefix(existing, ":") != strings.HasPrefix(newSegment, ":") {
+			return true
+		}
+	}
+
+	return false
 }

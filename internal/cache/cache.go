@@ -9,6 +9,7 @@ import (
 
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/subscriptions"
 )
 
@@ -47,14 +48,14 @@ func (c *functionCache) Deleted(k string, v []byte) {
 
 type endpointCache struct {
 	sync.RWMutex
-	// cache maps from EndpointID to Endpoint
-	cache map[subscriptions.EndpointID]*subscriptions.Endpoint
+	// paths maps HTTP method to internal/pathtree.Tree struct which is used for resolving HTTP requests paths
+	paths map[string]*pathtree.Node
 	log   *zap.Logger
 }
 
 func newEndpointCache(log *zap.Logger) *endpointCache {
 	return &endpointCache{
-		cache: map[subscriptions.EndpointID]*subscriptions.Endpoint{},
+		paths: map[string]*pathtree.Node{},
 		log:   log,
 	}
 }
@@ -69,14 +70,32 @@ func (c *endpointCache) Modified(k string, v []byte) {
 	} else {
 		c.Lock()
 		defer c.Unlock()
-		c.cache[subscriptions.EndpointID(k)] = e
+
+		root := c.paths[e.Method]
+		if root == nil {
+			root = pathtree.NewNode()
+			c.paths[e.Method] = root
+		}
+		root.AddRoute(e.Path, e.FunctionID)
 	}
 }
 
 func (c *endpointCache) Deleted(k string, v []byte) {
-	c.Lock()
-	defer c.Unlock()
-	delete(c.cache, subscriptions.EndpointID(k))
+	e := &subscriptions.Endpoint{}
+	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
+
+	if err != nil {
+		c.log.Error("Could not deserialize Endpoint state!", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
+	} else {
+		c.Lock()
+		defer c.Unlock()
+
+		root := c.paths[e.Method]
+		if root == nil {
+			return
+		}
+		root.DeleteRoute(e.Path)
+	}
 }
 
 type subscriptionCache struct {

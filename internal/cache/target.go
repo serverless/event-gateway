@@ -9,12 +9,12 @@ import (
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/kv"
-	"github.com/serverless/event-gateway/subscriptions"
+	"github.com/serverless/event-gateway/internal/pathtree"
 )
 
 // Targeter is an interface for retrieving cached configuration for driving performance-sensitive routing decisions.
 type Targeter interface {
-	BackingFunction(endpoint subscriptions.EndpointID) *functions.FunctionID
+	HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params)
 	Function(functionID functions.FunctionID) *functions.Function
 	SubscribersOfEvent(eventType event.Type) []functions.FunctionID
 }
@@ -29,16 +29,17 @@ type Target struct {
 	subscriptionCache *subscriptionCache
 }
 
-// BackingFunction returns functions and their weights, along with the group ID if this was a Group function target
-func (tc *Target) BackingFunction(endpointID subscriptions.EndpointID) *functions.FunctionID {
-	// try to get the endpoint from our cache
+// HTTPBackingFunction returns function ID for handling HTTP sync endpoint. It also returns matched URL parameters in
+// case of HTTP subscription containing parameters in path.
+func (tc *Target) HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params) {
 	tc.endpointCache.RLock()
 	defer tc.endpointCache.RUnlock()
-	endpoint := tc.endpointCache.cache[endpointID]
-	if endpoint == nil {
-		return nil
+
+	root := tc.endpointCache.paths[method]
+	if root == nil {
+		return nil, nil
 	}
-	return &endpoint.FunctionID
+	return root.Resolve(path)
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
