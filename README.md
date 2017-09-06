@@ -255,6 +255,28 @@ The MIME type of the data block can be specified using the `Content-Type` header
 to. In case of `application/json` type the event gateway passes JSON payload to the target functions. In any other case
 the data block is base64 encoded.
 
+#### HTTP Event
+
+`http` event is a built-in type of event occurring for HTTP requests on paths defined in HTTP subscriptions. The
+`data` field of an `http` event has the following structure:
+
+- `path` - `string` - request path
+- `method` - `string` - request method
+- `headers` - `object` - request headers
+- `query` - `object` - query parameters
+- `body` - depends on `Content-Type` header - request payload
+
+#### Invoke Event
+
+`invoke` is a built-in type of event allowing to call functions synchronously.
+
+#### System Events
+
+The Event Gateway emits system events allowing to react on internal events. Currently, only one internal event is
+emitted. `gateway.info.functionError` happens when function invocation failed.
+
+If you are looking for more system events, please comment [the corresponding issue](https://github.com/serverless/event-gateway/issues/215).
+
 ### Emit a Custom Event
 
 **Endpoint**
@@ -268,7 +290,7 @@ the data block is base64 encoded.
 
 **Request**
 
-arbitrary payload, subscribed function receives an event in above schema, where request payload is passed as `data` field
+arbitrary payload, subscribed function receives an event in Event schema
 
 **Response**
 
@@ -285,21 +307,7 @@ Creating HTTP subscription requires `method` and `path` properties. Those proper
 
 **Request**
 
-arbitrary payload, subscribed function receives an event in above schema. `data` field has the following fields:
-
-```
-{
-  ...
-  "data": {
-    "headers": <request headers>,
-    "query": <request query params>,
-    "body": <request payload>,
-    "path": <request URL path>,
-    "method": <request method>
-  }
-  ...
-}
-```
+arbitrary payload, subscribed function receives an event in [HTTP Event](#http-event) schema.
 
 **Response**
 
