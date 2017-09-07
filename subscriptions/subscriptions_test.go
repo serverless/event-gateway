@@ -295,9 +295,14 @@ func TestGetAllSubscriptions_ListError(t *testing.T) {
 
 func TestIsPathInConflict(t *testing.T) {
 	assert.False(t, isPathInConflict("/a", "/a"))
+	assert.False(t, isPathInConflict("/a", "/b/c"))
+
 	assert.True(t, isPathInConflict("/:a", "/a"))
 	assert.True(t, isPathInConflict("/:a", "/:b"))
 	assert.True(t, isPathInConflict("/a/:b", "/a/:c"))
 	assert.True(t, isPathInConflict("/a/b/c/d", "/:b"))
-	assert.False(t, isPathInConflict("/a", "/b/c"))
+
+	assert.True(t, isPathInConflict("/*a", "/b/c"))
+	assert.True(t, isPathInConflict("/a", "/*b"))
+	assert.True(t, isPathInConflict("/*a", "/*b"))
 }

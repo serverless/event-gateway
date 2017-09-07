@@ -14,6 +14,7 @@ type Node struct {
 	functionID  *functions.FunctionID
 	parameter   string
 	isParameter bool
+	isWildcard  bool
 }
 
 // NewNode creates new Node.
@@ -57,6 +58,16 @@ func (n *Node) AddRoute(route string, functionID functions.FunctionID) {
 		if strings.HasPrefix(segment, ":") {
 			currentNode.isParameter = true
 			currentNode.parameter = strings.TrimPrefix(segment, ":")
+		}
+
+		if strings.HasPrefix(segment, "*") {
+			if len(segments) > i+1 {
+				panic("wildcard parameter must be the last parameter")
+			}
+
+			currentNode.isParameter = true
+			currentNode.isWildcard = true
+			currentNode.parameter = strings.TrimPrefix(segment, "*")
 		}
 
 		if i == len(segments)-1 {
@@ -122,6 +133,12 @@ func (n *Node) Resolve(path string) (*functions.FunctionID, Params) {
 
 		if currentNode.isParameter {
 			params[currentNode.parameter] = segment
+		}
+
+		if currentNode.isWildcard {
+			// add missing parts
+			params[currentNode.parameter] = strings.Join(segments[i:], "/")
+			return currentNode.functionID, params
 		}
 
 		if i == len(segments)-1 {

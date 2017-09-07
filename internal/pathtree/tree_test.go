@@ -116,6 +116,43 @@ func TestResolve_StaticParamConflictDiffLevels(t *testing.T) {
 	assert.Panics(t, func() { tree.AddRoute("/baz", functions.FunctionID("testid2")) })
 }
 
+func TestResolve_Wildcard(t *testing.T) {
+	tree := NewNode()
+	tree.AddRoute("/*foo", functions.FunctionID("testid1"))
+
+	functionID, params := tree.Resolve("/foo/bar/baz")
+	assert.Equal(t, functions.FunctionID("testid1"), *functionID)
+	assert.EqualValues(t, Params{"foo": "foo/bar/baz"}, params)
+}
+
+func TestResolve_WildcardNotLast(t *testing.T) {
+	tree := NewNode()
+
+	assert.Panics(t, func() { tree.AddRoute("/*foo/bar", functions.FunctionID("testid1")) })
+}
+
+func TestResolve_WildcardConflict(t *testing.T) {
+	tree := NewNode()
+	tree.AddRoute("/*foo", functions.FunctionID("testid1"))
+
+	assert.Panics(t, func() { tree.AddRoute("/*bar", functions.FunctionID("testid2")) })
+}
+
+func TestResolve_WildcardParamConflict(t *testing.T) {
+	tree := NewNode()
+	tree.AddRoute("/*foo", functions.FunctionID("testid1"))
+
+	assert.Panics(t, func() { tree.AddRoute("/bar", functions.FunctionID("testid2")) })
+	assert.Panics(t, func() { tree.AddRoute("/:baz", functions.FunctionID("testid2")) })
+}
+
+func TestResolve_ParamWildcardConflict(t *testing.T) {
+	tree := NewNode()
+	tree.AddRoute("/:foo", functions.FunctionID("testid1"))
+
+	assert.Panics(t, func() { tree.AddRoute("/*bar", functions.FunctionID("testid2")) })
+}
+
 func TestDeleteRoute_Root(t *testing.T) {
 	tree := NewNode()
 	tree.AddRoute("/", functions.FunctionID("testid"))
