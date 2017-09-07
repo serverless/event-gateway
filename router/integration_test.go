@@ -77,6 +77,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 				URL:  testSubscriberServer.URL,
 			},
 		})
+	wait(router.WaitForFunction(subscriberFnID), "timed out waiting for function to be configured!")
 
 	// set up pub/sub
 	eventType := "smileys"
@@ -85,14 +86,10 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		FunctionID: subscriberFnID,
 		Event:      eventpkg.Type(eventType),
 	})
-
-	wait(router.WaitForSubscriber(eventpkg.Type(eventType)),
-		"timed out waiting for subscriber to be configured!")
+	wait(router.WaitForSubscriber(eventpkg.Type(eventType)), "timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
-
-	wait(smileyReceived,
-		"timed out waiting to receive pub/sub event in subscriber!")
+	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")
 
 	router.Drain()
 	shutdownGuard.ShutdownAndWait()
@@ -116,14 +113,16 @@ func TestIntegration_HTTPResponse(t *testing.T) {
 	}))
 	defer testTargetServer.Close()
 
+	functionID := functions.FunctionID("httpresponse")
 	post(testAPIServer.URL+"/v1/functions",
 		functions.Function{
-			ID: functions.FunctionID("httpresponse"),
+			ID: functionID,
 			Provider: &functions.Provider{
 				Type: functions.HTTPEndpoint,
 				URL:  testTargetServer.URL,
 			},
 		})
+	wait(router.WaitForFunction(functionID), "timed out waiting for function to be configured!")
 
 	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
 		FunctionID: functions.FunctionID("httpresponse"),
@@ -131,7 +130,6 @@ func TestIntegration_HTTPResponse(t *testing.T) {
 		Method:     "GET",
 		Path:       "/httpresponse",
 	})
-
 	wait(router.WaitForEndpoint("GET", "/httpresponse"), "timed out waiting for endpoint to be configured!")
 
 	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")

@@ -114,6 +114,23 @@ func (router *Router) Drain() {
 	router.Unlock()
 }
 
+// WaitForFunction returns a chan that is closed when a function is created.
+// Primarily for testing purposes.
+func (router *Router) WaitForFunction(id functions.FunctionID) <-chan struct{} {
+	updatedChan := make(chan struct{})
+	go func() {
+		for {
+			res := router.targetCache.Function(id)
+			if res != nil {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		close(updatedChan)
+	}()
+	return updatedChan
+}
+
 // WaitForEndpoint returns a chan that is closed when an endpoint is created.
 // Primarily for testing purposes.
 func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
