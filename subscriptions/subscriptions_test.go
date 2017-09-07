@@ -4,12 +4,13 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/subscriptions/mock"
+	"github.com/serverless/event-gateway/functions/mock"
 	"github.com/serverless/libkv/store"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestCreateSubscription_HTTPOK(t *testing.T) {
@@ -294,15 +295,17 @@ func TestGetAllSubscriptions_ListError(t *testing.T) {
 }
 
 func TestIsPathInConflict(t *testing.T) {
-	assert.False(t, isPathInConflict("/a", "/a"))
-	assert.False(t, isPathInConflict("/a", "/b/c"))
+	assert.False(t, isPathInConflict("/foo", "/foo"))
+	assert.False(t, isPathInConflict("/foo", "/bar/baz"))
 
-	assert.True(t, isPathInConflict("/:a", "/a"))
-	assert.True(t, isPathInConflict("/:a", "/:b"))
-	assert.True(t, isPathInConflict("/a/:b", "/a/:c"))
+	assert.True(t, isPathInConflict("/:foo", "/bar"))
+	assert.True(t, isPathInConflict("/:foo", "/:bar"))
+	assert.True(t, isPathInConflict("/:foo/:bar", "/baz"))
 	assert.True(t, isPathInConflict("/a/b/c/d", "/:b"))
+	assert.False(t, isPathInConflict("/:a", "/:a/b"))
 
-	assert.True(t, isPathInConflict("/*a", "/b/c"))
-	assert.True(t, isPathInConflict("/a", "/*b"))
-	assert.True(t, isPathInConflict("/*a", "/*b"))
+	assert.True(t, isPathInConflict("/*foo", "/*bar"))
+	assert.True(t, isPathInConflict("/*foo", "/bar"))
+	assert.True(t, isPathInConflict("/*foo", "/:bar"))
+	assert.True(t, isPathInConflict("/:foo", "/*bar"))
 }

@@ -219,28 +219,29 @@ func isPathInConflict(existing, new string) bool {
 		}
 
 		existing := existingSegments[i]
+		existingIsParam := strings.HasPrefix(existing, ":")
+		existingIsWildcard := strings.HasPrefix(existing, "*")
+		newIsParam := strings.HasPrefix(newSegment, ":")
+		newIsWildcard := strings.HasPrefix(newSegment, "*")
 
-		// both segments are param but different
-		if strings.HasPrefix(existing, ":") && strings.HasPrefix(newSegment, ":") {
-			if newSegment != existing {
-				return true
+		// both segments static
+		if !existingIsParam && !existingIsWildcard && !newIsParam && !newIsWildcard {
+			// static are the same and it's the end of the path
+			if existing == newSegment && len(existingSegments) == i+1 {
+				return false
 			}
+
+			continue
 		}
 
-		// both segments are param but different
-		if strings.HasPrefix(existing, "*") && strings.HasPrefix(newSegment, "*") {
-			if newSegment != existing {
-				return true
-			}
+		if existingIsWildcard {
+			return true
 		}
 
-		// on of segments is param and another is not (XOR)
-		isExistingParam := strings.HasPrefix(existing, ":") || strings.HasPrefix(existing, "*")
-		isNewParam := strings.HasPrefix(newSegment, ":") || strings.HasPrefix(newSegment, "*")
-		if isExistingParam != isNewParam {
+		if existingIsParam && newIsParam && existing != newSegment {
 			return true
 		}
 	}
 
-	return false
+	return true
 }

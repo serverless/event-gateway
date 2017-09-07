@@ -143,7 +143,7 @@ func TestResolve_WildcardParamConflict(t *testing.T) {
 	tree.AddRoute("/*foo", functions.FunctionID("testid1"))
 
 	assert.Panics(t, func() { tree.AddRoute("/bar", functions.FunctionID("testid2")) })
-	assert.Panics(t, func() { tree.AddRoute("/:baz", functions.FunctionID("testid2")) })
+	assert.Panics(t, func() { tree.AddRoute("/:bar", functions.FunctionID("testid2")) })
 }
 
 func TestResolve_ParamWildcardConflict(t *testing.T) {
