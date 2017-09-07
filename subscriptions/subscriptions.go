@@ -234,13 +234,16 @@ func isPathInConflict(existing, new string) bool {
 
 			continue
 		}
-
 		if existingIsWildcard {
 			return true
 		}
 
 		// different parameters
 		if existingIsParam && newIsParam && existing != newSegment {
+			return true
+		}
+
+		if existingIsParam && !newIsParam {
 			return true
 		}
 	}

@@ -298,11 +298,14 @@ func TestIsPathInConflict(t *testing.T) {
 	assert.False(t, isPathInConflict("/foo", "/foo"))
 	assert.False(t, isPathInConflict("/foo", "/bar/baz"))
 
+	assert.True(t, isPathInConflict("/foo", "/:bar"))
 	assert.True(t, isPathInConflict("/:foo", "/bar"))
 	assert.True(t, isPathInConflict("/:foo", "/:bar"))
 	assert.True(t, isPathInConflict("/:foo/:bar", "/baz"))
 	assert.True(t, isPathInConflict("/a/b/c/d", "/:b"))
 	assert.False(t, isPathInConflict("/:a", "/:a/b"))
+	assert.True(t, isPathInConflict("/foo/:bar", "/foo/bar/baz"))
+	assert.True(t, isPathInConflict("/:foo/bar/baz", "/foo/:bar"))
 
 	assert.True(t, isPathInConflict("/*foo", "/*bar"))
 	assert.True(t, isPathInConflict("/*foo", "/bar"))
