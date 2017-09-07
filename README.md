@@ -326,6 +326,12 @@ The Event Gateway prevents from creating subscriptions in following conflicting 
 
 Key and value of matched parameters are passed to a function in an HTTP Event under `params` field.
 
+##### Wildcard parameters
+
+Special type of path parameter is wildcard parameter. It's a path segment prefixed with `*`. Wildcard parameter can only
+be specified at the end of the path and will match every character till the end of the path. For examples
+parameter `/users/*userpath` for request path `/users/group1/user1` will match `group1/user1` as a `userpath` parameter.
+
 #### Respond to an HTTP Event
 
 To respond to an HTTP event a function needs to return object with following fields:
