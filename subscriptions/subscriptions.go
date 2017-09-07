@@ -208,6 +208,7 @@ func toSegments(route string) []string {
 	return segments
 }
 
+// nolint: gocyclo
 func isPathInConflict(existing, new string) bool {
 	existingSegments := toSegments(existing)
 	newSegments := toSegments(new)
@@ -238,6 +239,7 @@ func isPathInConflict(existing, new string) bool {
 			return true
 		}
 
+		// different parameters
 		if existingIsParam && newIsParam && existing != newSegment {
 			return true
 		}
