@@ -129,6 +129,7 @@ func (n *Node) DeleteRoute(route string) error {
 }
 
 // Resolve takes request URL path and traverse the tree trying find corresponding route.
+// nolint: gocyclo
 func (n *Node) Resolve(path string) (*functions.FunctionID, Params) {
 	if path == "/" {
 		if n.functionID != nil {
