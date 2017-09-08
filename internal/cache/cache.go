@@ -32,7 +32,7 @@ func (c *functionCache) Modified(k string, v []byte) {
 	f := &functions.Function{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(f)
 	if err != nil {
-		c.log.Error("Could not deserialize Function state!", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
+		c.log.Error("Could not deserialize Function state.", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
 	} else {
 		c.Lock()
 		defer c.Unlock()
@@ -66,7 +66,7 @@ func (c *endpointCache) Modified(k string, v []byte) {
 	e := &subscriptions.Endpoint{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
 	if err != nil {
-		c.log.Error("Could not deserialize Endpoint state!", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
+		c.log.Error("Could not deserialize Endpoint state.", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
 	} else {
 		c.Lock()
 		defer c.Unlock()
@@ -76,7 +76,10 @@ func (c *endpointCache) Modified(k string, v []byte) {
 			root = pathtree.NewNode()
 			c.paths[e.Method] = root
 		}
-		root.AddRoute(e.Path, e.FunctionID)
+		err := root.AddRoute(e.Path, e.FunctionID)
+		if err != nil {
+			c.log.Error("Could not add path to the tree.", zap.Error(err), zap.String("path", e.Path), zap.String("method", e.Method))
+		}
 	}
 }
 
@@ -85,7 +88,7 @@ func (c *endpointCache) Deleted(k string, v []byte) {
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(e)
 
 	if err != nil {
-		c.log.Error("Could not deserialize Endpoint state!", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
+		c.log.Error("Could not deserialize Endpoint state.", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
 	} else {
 		c.Lock()
 		defer c.Unlock()
@@ -94,7 +97,10 @@ func (c *endpointCache) Deleted(k string, v []byte) {
 		if root == nil {
 			return
 		}
-		root.DeleteRoute(e.Path)
+		err := root.DeleteRoute(e.Path)
+		if err != nil {
+			c.log.Error("Could not delete path from the tree.", zap.Error(err), zap.String("path", e.Path), zap.String("method", e.Method))
+		}
 	}
 }
 
@@ -117,7 +123,7 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 	s := subscriptions.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&s)
 	if err != nil {
-		c.log.Error("Could not deserialize Subscription state!", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
+		c.log.Error("Could not deserialize Subscription state.", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
 		return
 	}
 
@@ -141,7 +147,7 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 	oldSub := subscriptions.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&oldSub)
 	if err != nil {
-		c.log.Error("Could not deserialize Subscription state during deletion!", zap.Error(err), zap.String("key", k))
+		c.log.Error("Could not deserialize Subscription state during deletion.", zap.Error(err), zap.String("key", k))
 		return
 	}
 

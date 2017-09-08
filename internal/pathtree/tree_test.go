@@ -44,6 +44,15 @@ func TestResolve_Static(t *testing.T) {
 	assert.Equal(t, functions.FunctionID("testid4"), *functionID)
 }
 
+func TestResolve_StaticConflict(t *testing.T) {
+	tree := NewNode()
+	tree.AddRoute("/a", functions.FunctionID("testid1"))
+
+	err := tree.AddRoute("/a", functions.FunctionID("testid2"))
+
+	assert.EqualError(t, err, "route /a conflicts with existing route")
+}
+
 func TestResolve_NoPath(t *testing.T) {
 	tree := NewNode()
 	tree.AddRoute("/a/b/c/d", functions.FunctionID("testid1"))
@@ -99,21 +108,27 @@ func TestResolve_ParamConflict(t *testing.T) {
 	tree := NewNode()
 	tree.AddRoute("/:foo", functions.FunctionID("testid1"))
 
-	assert.Panics(t, func() { tree.AddRoute("/:bar", functions.FunctionID("testid2")) })
+	err := tree.AddRoute("/:bar", functions.FunctionID("testid2"))
+
+	assert.EqualError(t, err, `parameter with different name ("foo") already defined: for route: /:bar`)
+}
+
+func TestResolve_ParamStaticConflict(t *testing.T) {
+	tree := NewNode()
+	tree.AddRoute("/:foo", functions.FunctionID("testid1"))
+
+	err := tree.AddRoute("/bar", functions.FunctionID("testid2"))
+
+	assert.EqualError(t, err, `parameter with different name ("foo") already defined: for route: /bar`)
 }
 
 func TestResolve_StaticParamConflict(t *testing.T) {
 	tree := NewNode()
-	tree.AddRoute("/:foo", functions.FunctionID("testid1"))
+	tree.AddRoute("/foo/:bar", functions.FunctionID("testid1"))
 
-	assert.Panics(t, func() { tree.AddRoute("/bar", functions.FunctionID("testid2")) })
-}
+	err := tree.AddRoute("/:bar", functions.FunctionID("testid2"))
 
-func TestResolve_StaticParamConflictDiffLevels(t *testing.T) {
-	tree := NewNode()
-	tree.AddRoute("/:foo/:bar", functions.FunctionID("testid1"))
-
-	assert.Panics(t, func() { tree.AddRoute("/baz", functions.FunctionID("testid2")) })
+	assert.EqualError(t, err, "static route already defined for route: /:bar")
 }
 
 func TestResolve_Wildcard(t *testing.T) {
@@ -128,29 +143,37 @@ func TestResolve_Wildcard(t *testing.T) {
 func TestResolve_WildcardNotLast(t *testing.T) {
 	tree := NewNode()
 
-	assert.Panics(t, func() { tree.AddRoute("/*foo/bar", functions.FunctionID("testid1")) })
+	err := tree.AddRoute("/*foo/bar", functions.FunctionID("testid1"))
+
+	assert.EqualError(t, err, "wildcard must be the last parameter")
 }
 
 func TestResolve_WildcardConflict(t *testing.T) {
 	tree := NewNode()
 	tree.AddRoute("/*foo", functions.FunctionID("testid1"))
 
-	assert.Panics(t, func() { tree.AddRoute("/*bar", functions.FunctionID("testid2")) })
+	err := tree.AddRoute("/*bar", functions.FunctionID("testid2"))
+
+	assert.EqualError(t, err, `wildcard with different name ("foo") already defined: for route: /*bar`)
 }
 
 func TestResolve_WildcardParamConflict(t *testing.T) {
 	tree := NewNode()
 	tree.AddRoute("/*foo", functions.FunctionID("testid1"))
 
-	assert.Panics(t, func() { tree.AddRoute("/bar", functions.FunctionID("testid2")) })
-	assert.Panics(t, func() { tree.AddRoute("/:bar", functions.FunctionID("testid2")) })
+	err := tree.AddRoute("/bar", functions.FunctionID("testid2"))
+	assert.EqualError(t, err, `wildcard with different name ("foo") already defined: for route: /bar`)
+
+	err = tree.AddRoute("/:bar", functions.FunctionID("testid2"))
+	assert.EqualError(t, err, `wildcard with different name ("foo") already defined: for route: /:bar`)
 }
 
 func TestResolve_ParamWildcardConflict(t *testing.T) {
 	tree := NewNode()
 	tree.AddRoute("/:foo", functions.FunctionID("testid1"))
 
-	assert.Panics(t, func() { tree.AddRoute("/*bar", functions.FunctionID("testid2")) })
+	err := tree.AddRoute("/*bar", functions.FunctionID("testid2"))
+	assert.EqualError(t, err, `wildcard with different name ("foo") already defined: for route: /*bar`)
 }
 
 func TestDeleteRoute_Root(t *testing.T) {
@@ -201,7 +224,8 @@ func TestDeleteRoute_ParamWithChild(t *testing.T) {
 func TestDeleteRoute_NonExisting(t *testing.T) {
 	tree := NewNode()
 
-	assert.Panics(t, func() { tree.DeleteRoute("/a") })
+	err := tree.DeleteRoute("/a")
+	assert.EqualError(t, err, "unable to delete node non existing node")
 }
 
 func TestDeleteRoute_DeleteParamAddStatic(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -136,6 +137,8 @@ func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, 
 		return err
 	}
 
+	tree := pathtree.NewNode()
+
 	for _, kv := range kvs {
 		sub := &Subscription{}
 		err = json.NewDecoder(bytes.NewReader(kv.Value)).Decode(sub)
@@ -143,9 +146,13 @@ func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, 
 			return err
 		}
 
-		if sub.Method == method && isPathInConflict(sub.Path, path) {
-			return &ErrPathConfict{sub.Path, path}
-		}
+		// add existing paths to check
+		tree.AddRoute(sub.Path, functions.FunctionID(""))
+	}
+
+	err = tree.AddRoute(path, functions.FunctionID(""))
+	if err != nil {
+		return &ErrPathConfict{err.Error()}
 	}
 
 	buf, err := json.Marshal(e)
