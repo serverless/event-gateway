@@ -96,7 +96,7 @@ func TestCreateSubscription_EndpointPathConflictError(t *testing.T) {
 
 	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/:id"})
 
-	assert.Equal(t, err, &ErrPathConfict{"route /:id has a conflicting segment with existing route"})
+	assert.Equal(t, err, &ErrPathConfict{`parameter with different name ("name") already defined: for route: /:id`})
 }
 
 func TestCreateSubscription_EndpointPutError(t *testing.T) {
