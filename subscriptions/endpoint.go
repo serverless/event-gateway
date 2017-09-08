@@ -17,6 +17,16 @@ type Endpoint struct {
 	Path       string               `json:"path"`
 }
 
+// NewEndpoint creates an Endpoint.
+func NewEndpoint(functionID functions.FunctionID, method, path string) *Endpoint {
+	return &Endpoint{
+		ID:         NewEndpointID(method, path),
+		FunctionID: functionID,
+		Method:     method,
+		Path:       path,
+	}
+}
+
 // NewEndpointID returns Endpoint ID.
 func NewEndpointID(method, path string) EndpointID {
 	return EndpointID(method + "," + url.PathEscape(path))

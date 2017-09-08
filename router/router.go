@@ -14,7 +14,6 @@ import (
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/cache"
-	"github.com/serverless/event-gateway/subscriptions"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
@@ -63,7 +62,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if event.Type == eventpkg.TypeHTTP || event.Type == eventpkg.TypeInvoke {
-		router.handleSyncEvent(event.Type, payload, w, r)
+		router.handleSyncEvent(event, payload, w, r)
 	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
 		router.enqueueWork(event.Type, payload)
 		w.WriteHeader(http.StatusAccepted)
@@ -115,13 +114,30 @@ func (router *Router) Drain() {
 	router.Unlock()
 }
 
-// WaitForEndpoint returns a chan that is closed when an endpoint is created.
+// WaitForFunction returns a chan that is closed when a function is created.
 // Primarily for testing purposes.
-func (router *Router) WaitForEndpoint(endpointID subscriptions.EndpointID) <-chan struct{} {
+func (router *Router) WaitForFunction(id functions.FunctionID) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			res := router.targetCache.BackingFunction(endpointID)
+			res := router.targetCache.Function(id)
+			if res != nil {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		close(updatedChan)
+	}()
+	return updatedChan
+}
+
+// WaitForEndpoint returns a chan that is closed when an endpoint is created.
+// Primarily for testing purposes.
+func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
+	updatedChan := make(chan struct{})
+	go func() {
+		for {
+			res, _ := router.targetCache.HTTPBackingFunction(method, path)
 			if res != nil {
 				break
 			}
@@ -157,26 +173,35 @@ const (
 )
 
 var (
-	errUnableToLookUpBackingFunction    = errors.New("unable to look up backing function")
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleSyncEvent(eventType eventpkg.Type, payload []byte, w http.ResponseWriter, r *http.Request) {
+func (router *Router) handleSyncEvent(event *eventpkg.Event, payload []byte, w http.ResponseWriter, r *http.Request) {
 	router.log.Debug("Event received.", zap.String("event", string(payload)))
 
 	var resp []byte
 	var functionID functions.FunctionID
 
-	if eventType == eventpkg.TypeInvoke {
+	if event.Type == eventpkg.TypeInvoke {
 		functionID = functions.FunctionID(r.Header.Get(headerFunctionID))
-	} else if eventType == eventpkg.TypeHTTP {
-		endpointID := subscriptions.NewEndpointID(strings.ToUpper(r.Method), r.URL.EscapedPath())
-		backingFunction := router.targetCache.BackingFunction(endpointID)
+	} else if event.Type == eventpkg.TypeHTTP {
+		backingFunction, params := router.targetCache.HTTPBackingFunction(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		if backingFunction == nil {
 			router.log.Debug("Function not found for HTTP event.", zap.String("event", string(payload)))
 			http.Error(w, "Resource not found", http.StatusNotFound)
 			return
 		}
+
+		httpdata := event.Data.(*eventpkg.HTTPEvent)
+		httpdata.Params = params
+		event.Data = httpdata
+		var err error
+		payload, err = json.Marshal(event)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		functionID = *backingFunction
 	}
 
@@ -187,14 +212,8 @@ func (router *Router) handleSyncEvent(eventType eventpkg.Type, payload []byte, w
 		router.log.Info("Function invocation failed.",
 			zap.String("functionId", string(functionID)), zap.String("event", string(payload)), zap.Error(err))
 
-		if err == errUnableToLookUpBackingFunction {
-			http.Error(w, err.Error(), http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-
-			router.emitFunctionErrorEvent(functionID, payload, err)
-		}
-
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		router.emitFunctionErrorEvent(functionID, payload, err)
 		return
 	}
 
@@ -202,7 +221,7 @@ func (router *Router) handleSyncEvent(eventType eventpkg.Type, payload []byte, w
 		zap.String("functionId", string(functionID)), zap.String("event", string(payload)),
 		zap.String("response", string(resp)))
 
-	if eventType == eventpkg.TypeHTTP {
+	if event.Type == eventpkg.TypeHTTP {
 		httpResponse := &HTTPResponse{StatusCode: http.StatusOK}
 		err = json.Unmarshal(resp, httpResponse)
 		if err != nil {

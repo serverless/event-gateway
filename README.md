@@ -264,6 +264,7 @@ the data block is base64 encoded.
 - `method` - `string` - request method
 - `headers` - `object` - request headers
 - `query` - `object` - query parameters
+- `params` - `object` - matched path parameters
 - `body` - depends on `Content-Type` header - request payload
 
 #### Invoke Event
@@ -313,6 +314,23 @@ arbitrary payload, subscribed function receives an event in [HTTP Event](#http-e
 
 Status code:
 - `200 OK` with payload with function response
+
+#### Path parameters
+
+The Event Gateway allows creating HTTP subscription with parameterized paths. Every path segment prefixed with `:` is
+treated as a parameter, e.g. `/users/:id`.
+
+The Event Gateway prevents from creating subscriptions in following conflicting situations:
+- registering static path when there is parameterized path registered already (`/users/:id` vs. `/users/foo`)
+- registering parameterized path with different parameter name (`/users/:id` vs. `/users/:name`)
+
+Key and value of matched parameters are passed to a function in an HTTP Event under `params` field.
+
+##### Wildcard parameters
+
+Special type of path parameter is wildcard parameter. It's a path segment prefixed with `*`. Wildcard parameter can only
+be specified at the end of the path and will match every character till the end of the path. For examples
+parameter `/users/*userpath` for request path `/users/group1/user1` will match `group1/user1` as a `userpath` parameter.
 
 #### Respond to an HTTP Event
 

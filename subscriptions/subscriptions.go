@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -129,11 +130,29 @@ func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error
 
 // createEndpoint creates endpoint.
 func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, path string) error {
-	e := &Endpoint{
-		ID:         NewEndpointID(method, path),
-		FunctionID: functionID,
-		Method:     method,
-		Path:       path,
+	e := NewEndpoint(functionID, method, path)
+
+	kvs, err := ps.EndpointsDB.List("")
+	if err != nil {
+		return err
+	}
+
+	tree := pathtree.NewNode()
+
+	for _, kv := range kvs {
+		sub := &Subscription{}
+		err = json.NewDecoder(bytes.NewReader(kv.Value)).Decode(sub)
+		if err != nil {
+			return err
+		}
+
+		// add existing paths to check
+		tree.AddRoute(sub.Path, functions.FunctionID(""))
+	}
+
+	err = tree.AddRoute(path, functions.FunctionID(""))
+	if err != nil {
+		return &ErrPathConfict{err.Error()}
 	}
 
 	buf, err := json.Marshal(e)
@@ -186,4 +205,55 @@ func ensurePrefix(s, prefix string) string {
 		return s
 	}
 	return prefix + s
+}
+
+func toSegments(route string) []string {
+	segments := strings.Split(route, "/")
+	// remove first "" element
+	_, segments = segments[0], segments[1:]
+
+	return segments
+}
+
+// nolint: gocyclo
+func isPathInConflict(existing, new string) bool {
+	existingSegments := toSegments(existing)
+	newSegments := toSegments(new)
+
+	for i, newSegment := range newSegments {
+		// no segment at this stage, no issue
+		if len(existingSegments) < i+1 {
+			return false
+		}
+
+		existing := existingSegments[i]
+		existingIsParam := strings.HasPrefix(existing, ":")
+		existingIsWildcard := strings.HasPrefix(existing, "*")
+		newIsParam := strings.HasPrefix(newSegment, ":")
+		newIsWildcard := strings.HasPrefix(newSegment, "*")
+
+		// both segments static
+		if !existingIsParam && !existingIsWildcard && !newIsParam && !newIsWildcard {
+			// static are the same and it's the end of the path
+			if existing == newSegment && len(existingSegments) == i+1 {
+				return false
+			}
+
+			continue
+		}
+		if existingIsWildcard {
+			return true
+		}
+
+		// different parameters
+		if existingIsParam && newIsParam && existing != newSegment {
+			return true
+		}
+
+		if existingIsParam && !newIsParam {
+			return true
+		}
+	}
+
+	return true
 }

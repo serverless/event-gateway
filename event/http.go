@@ -7,4 +7,5 @@ type HTTPEvent struct {
 	Body    interface{}         `json:"body"`
 	Path    string              `json:"path"`
 	Method  string              `json:"method"`
+	Params  map[string]string   `json:"params"`
 }

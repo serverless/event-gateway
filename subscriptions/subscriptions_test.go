@@ -4,12 +4,13 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/subscriptions/mock"
+	"github.com/serverless/event-gateway/functions/mock"
 	"github.com/serverless/libkv/store"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestCreateSubscription_HTTPOK(t *testing.T) {
@@ -21,29 +22,12 @@ func TestCreateSubscription_HTTPOK(t *testing.T) {
 	subscriptionsDB.EXPECT().Put("http,GET,%2F", []byte(`{"subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
+	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(true, nil)
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
-
-	assert.Nil(t, err)
-}
-
-func TestCreateSubscription_HTTPNormalizeMethodPath(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
-	subscriptionsDB.EXPECT().Put("http,GET,%2F", []byte(`{"subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
-	endpointsDB := mock.NewMockStore(ctrl)
-	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
-	functionsDB := mock.NewMockStore(ctrl)
-	functionsDB.EXPECT().Exists("func").Return(true, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
-
-	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "get", Path: ""})
 
 	assert.Nil(t, err)
 }
@@ -99,6 +83,22 @@ func TestCreateSubscription_AlreadyExistsError(t *testing.T) {
 	assert.Equal(t, err, &ErrSubscriptionAlreadyExists{ID: "test,func"})
 }
 
+func TestCreateSubscription_EndpointPathConflictError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	kv := &store.KVPair{Value: []byte(`{"endpointId":"GET,%2F:name","functionId":"func","method":"GET","path":"/:name"}`)}
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().Get("http,GET,%2F:id").Return(nil, errors.New("KV sub not found"))
+	endpointsDB := mock.NewMockStore(ctrl)
+	endpointsDB.EXPECT().List("").Return([]*store.KVPair{kv}, nil)
+	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
+
+	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/:id"})
+
+	assert.Equal(t, err, &ErrPathConfict{`parameter with different name ("name") already defined: for route: /:id`})
+}
+
 func TestCreateSubscription_EndpointPutError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -106,12 +106,28 @@ func TestCreateSubscription_EndpointPutError(t *testing.T) {
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
 	endpointsDB := mock.NewMockStore(ctrl)
+	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(errors.New("KV Put err"))
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
 
 	assert.EqualError(t, err, "KV Put err")
+}
+
+func TestCreateSubscription_EndpointListError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
+	endpointsDB := mock.NewMockStore(ctrl)
+	endpointsDB.EXPECT().List("").Return(nil, errors.New("KV List err"))
+	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
+
+	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
+
+	assert.EqualError(t, err, "KV List err")
 }
 
 func TestCreateSubscription_FunctionExistsKVError(t *testing.T) {
@@ -121,6 +137,7 @@ func TestCreateSubscription_FunctionExistsKVError(t *testing.T) {
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
 	endpointsDB := mock.NewMockStore(ctrl)
+	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(false, errors.New("KV Exists err"))
@@ -138,6 +155,7 @@ func TestCreateSubscription_FunctionExistsError(t *testing.T) {
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
 	endpointsDB := mock.NewMockStore(ctrl)
+	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(false, nil)
@@ -156,6 +174,7 @@ func TestCreateSubscription_PutError(t *testing.T) {
 	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
 	subscriptionsDB.EXPECT().Put("http,GET,%2F", []byte(`{"subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(errors.New("KV Put err"))
 	endpointsDB := mock.NewMockStore(ctrl)
+	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(true, nil)
@@ -273,4 +292,23 @@ func TestGetAllSubscriptions_ListError(t *testing.T) {
 
 	_, err := subs.GetAllSubscriptions()
 	assert.EqualError(t, err, "KV error")
+}
+
+func TestIsPathInConflict(t *testing.T) {
+	assert.False(t, isPathInConflict("/foo", "/foo"))
+	assert.False(t, isPathInConflict("/foo", "/bar/baz"))
+
+	assert.True(t, isPathInConflict("/foo", "/:bar"))
+	assert.True(t, isPathInConflict("/:foo", "/bar"))
+	assert.True(t, isPathInConflict("/:foo", "/:bar"))
+	assert.True(t, isPathInConflict("/:foo/:bar", "/baz"))
+	assert.True(t, isPathInConflict("/a/b/c/d", "/:b"))
+	assert.False(t, isPathInConflict("/:a", "/:a/b"))
+	assert.True(t, isPathInConflict("/foo/:bar", "/foo/bar/baz"))
+	assert.True(t, isPathInConflict("/:foo/bar/baz", "/foo/:bar"))
+
+	assert.True(t, isPathInConflict("/*foo", "/*bar"))
+	assert.True(t, isPathInConflict("/*foo", "/bar"))
+	assert.True(t, isPathInConflict("/*foo", "/:bar"))
+	assert.True(t, isPathInConflict("/:foo", "/*bar"))
 }
