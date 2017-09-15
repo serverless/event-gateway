@@ -613,8 +613,8 @@ a group of instances sharing the same database. A cluster can be created in one 
 across multiple cloud provider or even in both cloud and on-premise data centers.
 
 The Event Gateway is a stateless service and there is no direct communication between different instances. All
-configuration data is shared using backing DB. If the instance from region A needs to call a function from region B the
-invocation is not routed through the instance in region 2. The instance from region A invokes the function from region 2
+configuration data is shared using backing DB. If the instance from region 1 needs to call a function from region 2 the
+invocation is not routed through the instance in region 2. The instance from region 1 invokes the function from region 2
 directly.
 
 ```
