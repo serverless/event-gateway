@@ -20,6 +20,7 @@ const SubscriptionHTTP = "http"
 type Subscription struct {
 	ID         SubscriptionID       `json:"subscriptionId"`
 	Event      event.Type           `json:"event" validate:"required,eventtype"`
+	Space      string               `json:"space"`
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
 	Method     string               `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
 	Path       string               `json:"path,omitempty" validate:"omitempty,urlpath"`

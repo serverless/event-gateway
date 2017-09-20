@@ -86,7 +86,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		FunctionID: subscriberFnID,
 		Event:      eventpkg.Type(eventType),
 	})
-	wait(router.WaitForSubscriber(eventpkg.Type(eventType)), "timed out waiting for subscriber to be configured!")
+	wait(router.WaitForSubscriber("", eventpkg.Type(eventType)), "timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
 	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")

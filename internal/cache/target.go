@@ -16,7 +16,7 @@ import (
 type Targeter interface {
 	HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params)
 	Function(functionID functions.FunctionID) *functions.Function
-	SubscribersOfEvent(eventType event.Type) []functions.FunctionID
+	SubscribersOfEvent(space string, eventType event.Type) []functions.FunctionID
 }
 
 // Target is an implementation of Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
@@ -50,21 +50,11 @@ func (tc *Target) Function(functionID functions.FunctionID) *functions.Function 
 }
 
 // SubscribersOfEvent is used for determining which functions to forward messages to.
-func (tc *Target) SubscribersOfEvent(eventType event.Type) []functions.FunctionID {
+func (tc *Target) SubscribersOfEvent(space string, eventType event.Type) []functions.FunctionID {
 	tc.subscriptionCache.RLock()
-	fnSet, exists := tc.subscriptionCache.eventToFunctions[eventType]
-	tc.subscriptionCache.RUnlock()
+	defer tc.subscriptionCache.RUnlock()
 
-	if !exists {
-		return []functions.FunctionID{}
-	}
-
-	res := []functions.FunctionID{}
-	for fid := range fnSet {
-		res = append(res, fid)
-	}
-
-	return res
+	return tc.subscriptionCache.eventToFunctions[space][eventType]
 }
 
 // Shutdown causes all state watchers to clean up their state.
