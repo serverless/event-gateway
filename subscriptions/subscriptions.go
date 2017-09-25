@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	istrings "github.com/serverless/event-gateway/internal/strings"
@@ -36,8 +37,8 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 		}
 	}
 
-	if s.Event == SubscriptionHTTP {
-		err = ps.createEndpoint(s.FunctionID, s.Space, s.Method, s.Path)
+	if s.Event == event.TypeHTTP {
+		err = ps.createEndpoint(s.Method, s.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -77,8 +78,8 @@ func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 		return &ErrSubscriptionNotFound{sub.ID}
 	}
 
-	if sub.Event == SubscriptionHTTP {
-		err = ps.deleteEndpoint(sub.Space, sub.Method, sub.Path)
+	if sub.Event == event.TypeHTTP {
+		err = ps.deleteEndpoint(sub.Method, sub.Path)
 		if err != nil {
 			return err
 		}
@@ -130,8 +131,8 @@ func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error
 }
 
 // createEndpoint creates endpoint.
-func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, space, method, path string) error {
-	e := NewEndpoint(functionID, space, method, path)
+func (ps Subscriptions) createEndpoint(method, path string) error {
+	e := NewEndpoint(method, path)
 
 	kvs, err := ps.EndpointsDB.List("")
 	if err != nil {
@@ -169,8 +170,8 @@ func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, space, m
 }
 
 // deleteEndpoint deletes endpoint.
-func (ps Subscriptions) deleteEndpoint(space, method, path string) error {
-	err := ps.EndpointsDB.Delete(string(NewEndpointID(space, method, path)))
+func (ps Subscriptions) deleteEndpoint(method, path string) error {
+	err := ps.EndpointsDB.Delete(string(NewEndpointID(method, path)))
 	if err != nil {
 		return err
 	}
@@ -178,8 +179,8 @@ func (ps Subscriptions) deleteEndpoint(space, method, path string) error {
 }
 
 func (ps Subscriptions) validateSubscription(s *Subscription) error {
-	if s.Event == SubscriptionHTTP {
-		s.Path = istrings.EnsurePrefix(s.Path, "/")
+	s.Path = istrings.EnsurePrefix(s.Path, "/")
+	if s.Event == event.TypeHTTP {
 		s.Method = strings.ToUpper(s.Method)
 	}
 
@@ -191,10 +192,8 @@ func (ps Subscriptions) validateSubscription(s *Subscription) error {
 		return &ErrSubscriptionValidation{err.Error()}
 	}
 
-	if s.Event == SubscriptionHTTP {
-		if s.Method == "" || s.Path == "" {
-			return &ErrSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
-		}
+	if s.Event == event.TypeHTTP && s.Method == "" {
+		return &ErrSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
 	}
 
 	return nil

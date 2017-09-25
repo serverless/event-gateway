@@ -21,7 +21,7 @@ func TestCreateSubscription_HTTPOK(t *testing.T) {
 	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
 	subscriptionsDB.EXPECT().Put("http,GET,%2F", []byte(`{"subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
 	endpointsDB := mock.NewMockStore(ctrl)
-	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
+	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
 	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(true, nil)
@@ -49,7 +49,7 @@ func TestCreateSubscription_OK(t *testing.T) {
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("test,func").Return(nil, errors.New("KV sub not found"))
-	subscriptionsDB.EXPECT().Put("test,func", []byte(`{"subscriptionId":"test,func","event":"test","functionId":"func"}`), nil).Return(nil)
+	subscriptionsDB.EXPECT().Put("test,func", []byte(`{"subscriptionId":"test,func","event":"test","functionId":"func","path":"/"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(true, nil)
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
@@ -107,7 +107,7 @@ func TestCreateSubscription_EndpointPutError(t *testing.T) {
 	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
-	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(errors.New("KV Put err"))
+	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(errors.New("KV Put err"))
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
@@ -138,7 +138,7 @@ func TestCreateSubscription_FunctionExistsKVError(t *testing.T) {
 	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
-	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
+	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(false, errors.New("KV Exists err"))
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
@@ -156,7 +156,7 @@ func TestCreateSubscription_FunctionExistsError(t *testing.T) {
 	subscriptionsDB.EXPECT().Get("http,GET,%2F").Return(nil, errors.New("KV sub not found"))
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
-	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
+	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(false, nil)
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
@@ -175,7 +175,7 @@ func TestCreateSubscription_PutError(t *testing.T) {
 	subscriptionsDB.EXPECT().Put("http,GET,%2F", []byte(`{"subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(errors.New("KV Put err"))
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().List("").Return([]*store.KVPair{}, nil)
-	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
+	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(true, nil)
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}

@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/internal/pathtree"
 )
 
 type functionCache struct {
@@ -42,11 +41,4 @@ func (c *functionCache) Deleted(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 	delete(c.cache, functions.FunctionID(k))
-}
-
-type endpointCache struct {
-	sync.RWMutex
-	// paths maps HTTP method to internal/pathtree.Tree struct which is used for resolving HTTP requests paths
-	paths map[string]*pathtree.Node
-	log   *zap.Logger
 }

@@ -13,24 +13,20 @@ import (
 // SubscriptionID uniquely identifies a subscription
 type SubscriptionID string
 
-// SubscriptionHTTP is a special type of subscription. It represents sync HTTP subscription.
-const SubscriptionHTTP = "http"
-
 // Subscription maps from Event type to Function
 type Subscription struct {
 	ID         SubscriptionID       `json:"subscriptionId"`
 	Event      event.Type           `json:"event" validate:"required,eventtype"`
-	Space      string               `json:"space" validate:"omitempty,alphanum"`
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
 	Method     string               `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
 	Path       string               `json:"path,omitempty" validate:"omitempty,urlpath"`
 }
 
 func newSubscriptionID(s *Subscription) SubscriptionID {
-	if s.Method == "" && s.Path == "" {
-		return SubscriptionID(string(s.Event) + "," + string(s.FunctionID) + "," + s.Space)
+	if s.Event == event.TypeHTTP {
+		return SubscriptionID(string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
 	}
-	return SubscriptionID(s.Space + "," + string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
+	return SubscriptionID(string(s.Event) + "," + string(s.FunctionID))
 }
 
 // urlPathValidator validates if field contains URL path

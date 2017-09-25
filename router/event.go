@@ -59,7 +59,7 @@ func fromRequest(r *http.Request) (*eventpkg.Event, error) {
 }
 
 type event struct {
-	space     string
+	path      string
 	eventType eventpkg.Type
 	payload   []byte
 }

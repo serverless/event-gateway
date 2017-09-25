@@ -7,6 +7,7 @@ import (
 
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/subscriptions"
 	"go.uber.org/zap"
 )
@@ -14,12 +15,15 @@ import (
 type subscriptionCache struct {
 	sync.RWMutex
 	eventToFunctions map[string]map[event.Type][]functions.FunctionID
-	log              *zap.Logger
+	// endpoints maps HTTP method to internal/pathtree. Tree struct which is used for resolving HTTP requests paths.
+	endpoints map[string]*pathtree.Node
+	log       *zap.Logger
 }
 
 func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	return &subscriptionCache{
 		eventToFunctions: map[string]map[event.Type][]functions.FunctionID{},
+		endpoints:        map[string]*pathtree.Node{},
 		log:              log,
 	}
 }
@@ -36,14 +40,26 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.makeSpace(s.Space)
-	ids, exists := c.eventToFunctions[s.Space][s.Event]
+	c.makePath(s.Path)
+	ids, exists := c.eventToFunctions[s.Path][s.Event]
 	if exists {
 		ids = append(ids, s.FunctionID)
 	} else {
 		ids = []functions.FunctionID{s.FunctionID}
 	}
-	c.eventToFunctions[s.Space][s.Event] = ids
+	c.eventToFunctions[s.Path][s.Event] = ids
+
+	if s.Event == event.TypeHTTP {
+		root := c.endpoints[s.Method]
+		if root == nil {
+			root = pathtree.NewNode()
+			c.endpoints[s.Method] = root
+		}
+		err := root.AddRoute(s.Path, s.FunctionID)
+		if err != nil {
+			c.log.Error("Could not add path to the tree.", zap.Error(err), zap.String("path", s.Path), zap.String("method", s.Method))
+		}
+	}
 }
 
 func (c *subscriptionCache) Deleted(k string, v []byte) {
@@ -57,7 +73,7 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 		return
 	}
 
-	ids, exists := c.eventToFunctions[oldSub.Space][oldSub.Event]
+	ids, exists := c.eventToFunctions[oldSub.Path][oldSub.Event]
 	if exists {
 		for i, id := range ids {
 			if id == oldSub.FunctionID {
@@ -65,17 +81,28 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 				break
 			}
 		}
-		c.eventToFunctions[oldSub.Space][oldSub.Event] = ids
+		c.eventToFunctions[oldSub.Path][oldSub.Event] = ids
 
 		if len(ids) == 0 {
-			delete(c.eventToFunctions[oldSub.Space], oldSub.Event)
+			delete(c.eventToFunctions[oldSub.Path], oldSub.Event)
+		}
+	}
+
+	if oldSub.Event == event.TypeHTTP {
+		root := c.endpoints[oldSub.Method]
+		if root == nil {
+			return
+		}
+		err := root.DeleteRoute(oldSub.Path)
+		if err != nil {
+			c.log.Error("Could not delete path from the tree.", zap.Error(err), zap.String("path", oldSub.Path), zap.String("method", oldSub.Method))
 		}
 	}
 }
 
-func (c *subscriptionCache) makeSpace(space string) {
-	_, exists := c.eventToFunctions[space]
+func (c *subscriptionCache) makePath(path string) {
+	_, exists := c.eventToFunctions[path]
 	if !exists {
-		c.eventToFunctions[space] = map[event.Type][]functions.FunctionID{}
+		c.eventToFunctions[path] = map[event.Type][]functions.FunctionID{}
 	}
 }
