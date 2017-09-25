@@ -135,7 +135,8 @@ func (ps Subscriptions) createEndpoint(method, path string) error {
 	e := NewEndpoint(method, path)
 
 	kvs, err := ps.EndpointsDB.List("")
-	if err != nil {
+	// We need to check for not found key as there is no Endpoint cached that creates the directory.
+	if err != nil && err.Error() != "Key not found in store" {
 		return err
 	}
 
