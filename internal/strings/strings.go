@@ -9,11 +9,3 @@ func EnsurePrefix(s, prefix string) string {
 	}
 	return prefix + s
 }
-
-// EnsureSuffix ensures s ends with suffix.
-func EnsureSuffix(s, suffix string) string {
-	if strings.HasSuffix(s, suffix) {
-		return s
-	}
-	return s + suffix
-}

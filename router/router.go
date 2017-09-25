@@ -354,8 +354,7 @@ func (router *Router) emitFunctionErrorEvent(functionID functions.FunctionID, pa
 		}{string(functionID)})
 		payload, err = json.Marshal(internal)
 		if err == nil {
-			// TODO what should be the space of internal events
-			router.enqueueWork("", internal.Type, payload)
+			router.enqueueWork("/", internal.Type, payload)
 		}
 	}
 }
