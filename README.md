@@ -224,6 +224,10 @@ eventGateway.subscribe({
 The Event Gateway exposes an API for emitting events. Events API can be used for emitting custom event, HTTP events and
 for invoking function. By default Events API runs on `:4000` port.
 
+### Event Spaces
+
+Event Spaces provide a way to logically separate events. It can be useful TODO
+
 ### Event Definition
 
 All data that passes through the Event Gateway is formatted as an Event, based on our default Event schema:

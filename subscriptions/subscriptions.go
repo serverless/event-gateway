@@ -7,6 +7,7 @@ import (
 
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/pathtree"
+	istrings "github.com/serverless/event-gateway/internal/strings"
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -36,7 +37,7 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 	}
 
 	if s.Event == SubscriptionHTTP {
-		err = ps.createEndpoint(s.FunctionID, s.Method, s.Path)
+		err = ps.createEndpoint(s.FunctionID, s.Space, s.Method, s.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +78,7 @@ func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 	}
 
 	if sub.Event == SubscriptionHTTP {
-		err = ps.deleteEndpoint(sub.Method, sub.Path)
+		err = ps.deleteEndpoint(sub.Space, sub.Method, sub.Path)
 		if err != nil {
 			return err
 		}
@@ -129,8 +130,8 @@ func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error
 }
 
 // createEndpoint creates endpoint.
-func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, path string) error {
-	e := NewEndpoint(functionID, method, path)
+func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, space, method, path string) error {
+	e := NewEndpoint(functionID, space, method, path)
 
 	kvs, err := ps.EndpointsDB.List("")
 	if err != nil {
@@ -168,8 +169,8 @@ func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, 
 }
 
 // deleteEndpoint deletes endpoint.
-func (ps Subscriptions) deleteEndpoint(method, path string) error {
-	err := ps.EndpointsDB.Delete(string(NewEndpointID(method, path)))
+func (ps Subscriptions) deleteEndpoint(space, method, path string) error {
+	err := ps.EndpointsDB.Delete(string(NewEndpointID(space, method, path)))
 	if err != nil {
 		return err
 	}
@@ -178,7 +179,7 @@ func (ps Subscriptions) deleteEndpoint(method, path string) error {
 
 func (ps Subscriptions) validateSubscription(s *Subscription) error {
 	if s.Event == SubscriptionHTTP {
-		s.Path = ensurePrefix(s.Path, "/")
+		s.Path = istrings.EnsurePrefix(s.Path, "/")
 		s.Method = strings.ToUpper(s.Method)
 	}
 
@@ -197,14 +198,6 @@ func (ps Subscriptions) validateSubscription(s *Subscription) error {
 	}
 
 	return nil
-}
-
-// ensurePrefix ensures s starts with prefix.
-func ensurePrefix(s, prefix string) string {
-	if strings.HasPrefix(s, prefix) {
-		return s
-	}
-	return prefix + s
 }
 
 func toSegments(route string) []string {
