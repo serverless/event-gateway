@@ -140,6 +140,9 @@ teams, eliminates effort spent redeploying functions, and allows you to easily s
 HTTP services, even different cloud providers. Functions may be registered as subscribers to a custom event.
 When an event occurs, all subscribers are called asynchronously with the event as its argument.
 
+Creating a subscription requires providing ID of registered function, an event type and a path (which is `/` by default). The
+path property indicated URL path which Events API is listening on.
+
 #### Example: Subscribe to an Event
 
 ##### curl example
@@ -150,7 +153,8 @@ curl --request POST \
   --header 'content-type: application/json' \
   --data '{
     "functionId": "sendEmail",
-    "event": "user.created"
+    "event": "user.created",
+    "path": "/myteam"
   }'
 ```
 
@@ -160,9 +164,12 @@ curl --request POST \
 const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
 eventGateway.subscribe({
   event: "user.created",
-  functionId: "sendEmail"
+  functionId: "sendEmail",
+  path: "/myteam"
 })
 ```
+
+`sendEmail` function will be invoked for every `user.created` event to `<Events API>/myteam` endpoint.
 
 #### Example: Emit an Event
 
@@ -188,8 +195,9 @@ eventGateway.emit({
 
 #### Sync subscriptions via HTTP event
 
-Custom event subscriptions are asynchronous. There is a special `http` event type for creating synchronous subscriptions.
-`http` event is a HTTP request received on specified path and for specified HTTP method.
+Custom event subscriptions are asynchronous. There is a special `http` event type for creating synchronous
+subscriptions. `http` event is an HTTP request received to specified path and for specified HTTP method. There can be
+only one `http` subscription for the same `method` and `path` pair.
 
 #### Example: Subscribe to an "http" Event
 
@@ -218,6 +226,8 @@ eventGateway.subscribe({
   path: '/users'
 })
 ```
+
+`listUsers` function will be invoked for every HTTP GET request to `<Events API>/users` endpoint.
 
 ## Events API
 
@@ -280,9 +290,11 @@ If you are looking for more system events, please comment [the corresponding iss
 
 ### Emit a Custom Event
 
+Creating a subscription requires `path` property (by default it's "/"). `path` indicates path under which you can push.
+
 **Endpoint**
 
-`POST <Events API URL>/`
+`POST <Events API URL>/<Subscription Path>`
 
 **Request Headers**
 
