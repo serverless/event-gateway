@@ -141,7 +141,7 @@ HTTP services, even different cloud providers. Functions may be registered as su
 When an event occurs, all subscribers are called asynchronously with the event as its argument.
 
 Creating a subscription requires providing ID of registered function, an event type and a path (which is `/` by default). The
-path property indicated URL path which Events API is listening on.
+path property indicated URL path which Events API will be listening on.
 
 #### Example: Subscribe to an Event
 
