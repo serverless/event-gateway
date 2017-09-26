@@ -40,7 +40,7 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.makePath(s.Path)
+	c.createPath(s.Path)
 	ids, exists := c.eventToFunctions[s.Path][s.Event]
 	if exists {
 		ids = append(ids, s.FunctionID)
@@ -100,7 +100,7 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 	}
 }
 
-func (c *subscriptionCache) makePath(path string) {
+func (c *subscriptionCache) createPath(path string) {
 	_, exists := c.eventToFunctions[path]
 	if !exists {
 		c.eventToFunctions[path] = map[event.Type][]functions.FunctionID{}

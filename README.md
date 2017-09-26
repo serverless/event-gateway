@@ -140,7 +140,7 @@ teams, eliminates effort spent redeploying functions, and allows you to easily s
 HTTP services, even different cloud providers. Functions may be registered as subscribers to a custom event.
 When an event occurs, all subscribers are called asynchronously with the event as its argument.
 
-Creating a subscription requires providing ID of registered function, an event type and a path (which is `/` by default). The
+Creating a subscription requires providing ID of registered function, an event type and a path (`/` by default). The
 path property indicated URL path which Events API will be listening on.
 
 #### Example: Subscribe to an Event
