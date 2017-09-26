@@ -18,6 +18,7 @@ import (
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/cache"
+	"github.com/serverless/event-gateway/internal/embedded"
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
@@ -263,7 +264,7 @@ func newTestEtcd() (store.Store, *sync.ShutdownGuard) {
 	cliKvAddr := kvAddr(cliPort)
 	cliAddr := "http://" + cliKvAddr
 
-	kv.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownGuard)
+	embedded.EmbedEtcd(dataDir, peerAddr, cliAddr, shutdownGuard)
 
 	cli, err := libkv.NewStore(
 		store.ETCDV3,

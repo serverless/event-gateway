@@ -1,4 +1,4 @@
-package kv
+package embedded
 
 import (
 	"net/url"

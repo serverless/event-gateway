@@ -15,8 +15,8 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/internal/embedded"
 	"github.com/serverless/event-gateway/internal/httpapi"
-	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
 )
@@ -61,7 +61,7 @@ func main() {
 	shutdownGuard := sync.NewShutdownGuard()
 
 	if *developmentMode {
-		kv.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
+		embedded.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
 	}
 
 	dbHostStrings := strings.Split(*dbHosts, ",")

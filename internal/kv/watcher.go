@@ -42,13 +42,13 @@ func NewWatcher(path string, kv store.Store, log *zap.Logger) *Watcher {
 // React will watch for events on the PathWatcher's root directory,
 // and call the Created/Modified/Deleted functions on a provided
 // Reactive when changes are detected.
-func (rfs *Watcher) React(reactor Reactor, shutdown chan struct{}) {
+func (w *Watcher) React(reactor Reactor, shutdown chan struct{}) {
 	events := make(chan event)
-	go rfs.watchRoot(events, shutdown)
+	go w.watchRoot(events, shutdown)
 
 	go func() {
 		for event := range events {
-			key := strings.TrimPrefix(event.key, rfs.path)
+			key := strings.TrimPrefix(event.key, w.path)
 			switch event.eventType {
 			case modifiedNode:
 				reactor.Modified(key, event.value)
@@ -83,7 +83,7 @@ type cachedValue struct {
 	LastIndex uint64
 }
 
-func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
+func (w *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
 	for {
 		// return if shutdown
 		select {
@@ -93,32 +93,32 @@ func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{})
 		}
 
 		// populate directory if it doesn't exist
-		exists, err := rfs.kv.Exists(rfs.path)
+		exists, err := w.kv.Exists(w.path)
 		if err != nil {
-			rfs.log.Error("Could not access database.",
+			w.log.Error("Could not access database.",
 				zap.String("event", "db"),
-				zap.String("key", rfs.path),
+				zap.String("key", w.path),
 				zap.Error(err))
 			continue
 		}
 
 		if !exists {
-			err = rfs.kv.Put(rfs.path, []byte(nil), nil)
+			err = w.kv.Put(w.path, []byte(nil), nil)
 			if err != nil {
-				rfs.log.Error("Could not initialize watcher root.",
+				w.log.Error("Could not initialize watcher root.",
 					zap.String("event", "db"),
-					zap.String("key", rfs.path),
+					zap.String("key", w.path),
 					zap.Error(err))
 				continue
 			}
 		}
 
 		// create watch chan for this directory
-		events, err := rfs.kv.WatchTree(rfs.path, shutdown)
+		events, err := w.kv.WatchTree(w.path, shutdown)
 		if err != nil {
-			rfs.log.Error("Could not watch directory.",
+			w.log.Error("Could not watch directory.",
 				zap.String("event", "db"),
-				zap.String("key", rfs.path),
+				zap.String("key", w.path),
 				zap.Error(err))
 			continue
 		}
@@ -126,14 +126,14 @@ func (rfs *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{})
 		// process events from the events chan until the
 		// connection to the server is lost, or the key
 		// is removed.
-		shouldShutdown := rfs.processEvents(events, outgoingEvents, shutdown)
+		shouldShutdown := w.processEvents(events, outgoingEvents, shutdown)
 		if shouldShutdown {
 			return
 		}
 	}
 }
 
-func (rfs *Watcher) processEvents(incoming <-chan []*store.KVPair, outgoing chan event, shutdown chan struct{}) bool {
+func (w *Watcher) processEvents(incoming <-chan []*store.KVPair, outgoing chan event, shutdown chan struct{}) bool {
 	cache := map[string]cachedValue{}
 
 	for {
@@ -142,7 +142,7 @@ func (rfs *Watcher) processEvents(incoming <-chan []*store.KVPair, outgoing chan
 			if ok {
 				for _, kv := range kvs {
 					// Is directory
-					if kv.Key == rfs.path {
+					if kv.Key == w.path {
 						continue
 					}
 
@@ -172,9 +172,9 @@ func (rfs *Watcher) processEvents(incoming <-chan []*store.KVPair, outgoing chan
 				}
 			} else {
 				// directory nuked or connection to server failed
-				rfs.log.Error("Either lost connection to db, or the watch path was deleted.",
+				w.log.Error("Either lost connection to db, or the watch path was deleted.",
 					zap.String("event", "db"),
-					zap.String("key", rfs.path))
+					zap.String("key", w.path))
 				return false
 			}
 		case <-shutdown:
