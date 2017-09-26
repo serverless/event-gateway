@@ -48,8 +48,8 @@ func TestCreateSubscription_OK(t *testing.T) {
 	defer ctrl.Finish()
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("test,func").Return(nil, errors.New("KV sub not found"))
-	subscriptionsDB.EXPECT().Put("test,func", []byte(`{"subscriptionId":"test,func","event":"test","functionId":"func","path":"/"}`), nil).Return(nil)
+	subscriptionsDB.EXPECT().Get("test,func,%2F").Return(nil, errors.New("KV sub not found"))
+	subscriptionsDB.EXPECT().Put("test,func,%2F", []byte(`{"subscriptionId":"test,func,%2F","event":"test","functionId":"func","path":"/"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func").Return(true, nil)
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
@@ -75,12 +75,12 @@ func TestCreateSubscription_AlreadyExistsError(t *testing.T) {
 	defer ctrl.Finish()
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("test,func").Return(&store.KVPair{Value: []byte(`{"subscriptionId":"testid"}`)}, nil)
+	subscriptionsDB.EXPECT().Get("test,func,%2F").Return(&store.KVPair{Value: []byte(`{"subscriptionId":"testid"}`)}, nil)
 	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&Subscription{ID: "testid", Event: "test", FunctionID: "func"})
 
-	assert.Equal(t, err, &ErrSubscriptionAlreadyExists{ID: "test,func"})
+	assert.Equal(t, err, &ErrSubscriptionAlreadyExists{ID: "test,func,%2F"})
 }
 
 func TestCreateSubscription_EndpointPathConflictError(t *testing.T) {

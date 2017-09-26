@@ -26,7 +26,7 @@ func newSubscriptionID(s *Subscription) SubscriptionID {
 	if s.Event == event.TypeHTTP {
 		return SubscriptionID(string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
 	}
-	return SubscriptionID(string(s.Event) + "," + string(s.FunctionID))
+	return SubscriptionID(string(s.Event) + "," + string(s.FunctionID) + "," + url.PathEscape(s.Path))
 }
 
 // urlPathValidator validates if field contains URL path
