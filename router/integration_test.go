@@ -85,8 +85,9 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
 		FunctionID: subscriberFnID,
 		Event:      eventpkg.Type(eventType),
+		Path:       "/",
 	})
-	wait(router.WaitForSubscriber(eventpkg.Type(eventType)), "timed out waiting for subscriber to be configured!")
+	wait(router.WaitForSubscriber("/", eventpkg.Type(eventType)), "timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
 	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")
@@ -95,7 +96,28 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	shutdownGuard.ShutdownAndWait()
 }
 
-func TestIntegration_HTTPResponse(t *testing.T) {
+func TestIntegration_AsyncFunctionNotFound(t *testing.T) {
+	logCfg := zap.NewDevelopmentConfig()
+	logCfg.DisableStacktrace = true
+	log, _ := logCfg.Build()
+
+	kv, shutdownGuard := newTestEtcd()
+
+	testAPIServer := newConfigAPIServer(kv, log)
+	defer testAPIServer.Close()
+
+	router, testRouterServer := newTestRouterServer(kv, log)
+	defer testRouterServer.Close()
+
+	statusCode, _, body := get(testRouterServer.URL)
+	assert.Equal(t, statusCode, 404)
+	assert.Equal(t, body, "Resource not found\n")
+
+	router.Drain()
+	shutdownGuard.ShutdownAndWait()
+}
+
+func TestIntegration_HTTPSubscription(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()

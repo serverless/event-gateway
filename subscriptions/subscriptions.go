@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/pathtree"
+	istrings "github.com/serverless/event-gateway/internal/strings"
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -35,8 +37,8 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 		}
 	}
 
-	if s.Event == SubscriptionHTTP {
-		err = ps.createEndpoint(s.FunctionID, s.Method, s.Path)
+	if s.Event == event.TypeHTTP {
+		err = ps.createEndpoint(s.Method, s.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +78,7 @@ func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 		return &ErrSubscriptionNotFound{sub.ID}
 	}
 
-	if sub.Event == SubscriptionHTTP {
+	if sub.Event == event.TypeHTTP {
 		err = ps.deleteEndpoint(sub.Method, sub.Path)
 		if err != nil {
 			return err
@@ -129,11 +131,12 @@ func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error
 }
 
 // createEndpoint creates endpoint.
-func (ps Subscriptions) createEndpoint(functionID functions.FunctionID, method, path string) error {
-	e := NewEndpoint(functionID, method, path)
+func (ps Subscriptions) createEndpoint(method, path string) error {
+	e := NewEndpoint(method, path)
 
 	kvs, err := ps.EndpointsDB.List("")
-	if err != nil {
+	// We need to check for not found key as there is no Endpoint cached that creates the directory.
+	if err != nil && err.Error() != "Key not found in store" {
 		return err
 	}
 
@@ -177,8 +180,8 @@ func (ps Subscriptions) deleteEndpoint(method, path string) error {
 }
 
 func (ps Subscriptions) validateSubscription(s *Subscription) error {
-	if s.Event == SubscriptionHTTP {
-		s.Path = ensurePrefix(s.Path, "/")
+	s.Path = istrings.EnsurePrefix(s.Path, "/")
+	if s.Event == event.TypeHTTP {
 		s.Method = strings.ToUpper(s.Method)
 	}
 
@@ -190,21 +193,11 @@ func (ps Subscriptions) validateSubscription(s *Subscription) error {
 		return &ErrSubscriptionValidation{err.Error()}
 	}
 
-	if s.Event == SubscriptionHTTP {
-		if s.Method == "" || s.Path == "" {
-			return &ErrSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
-		}
+	if s.Event == event.TypeHTTP && s.Method == "" {
+		return &ErrSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
 	}
 
 	return nil
-}
-
-// ensurePrefix ensures s starts with prefix.
-func ensurePrefix(s, prefix string) string {
-	if strings.HasPrefix(s, prefix) {
-		return s
-	}
-	return prefix + s
 }
 
 func toSegments(route string) []string {

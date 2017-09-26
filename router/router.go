@@ -63,8 +63,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if event.Type == eventpkg.TypeHTTP || event.Type == eventpkg.TypeInvoke {
 		router.handleSyncEvent(event, payload, w, r)
-	} else if r.Method == http.MethodPost && r.URL.Path == "/" {
-		router.enqueueWork(event.Type, payload)
+	} else if r.Method == http.MethodPost {
+		router.enqueueWork(r.URL.Path, event.Type, payload)
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
@@ -150,11 +150,11 @@ func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
 
 // WaitForSubscriber returns a chan that is closed when an event has a subscriber.
 // Primarily for testing purposes.
-func (router *Router) WaitForSubscriber(eventType eventpkg.Type) <-chan struct{} {
+func (router *Router) WaitForSubscriber(path string, eventType eventpkg.Type) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			res := router.targetCache.SubscribersOfEvent(eventType)
+			res := router.targetCache.SubscribersOfEvent(path, eventType)
 			if len(res) > 0 {
 				break
 			}
@@ -247,11 +247,12 @@ func (router *Router) handleSyncEvent(event *eventpkg.Event, payload []byte, w h
 	}
 }
 
-func (router *Router) enqueueWork(eventType eventpkg.Type, payload []byte) {
-	router.log.Debug("Event received.", zap.String("event", string(payload)))
+func (router *Router) enqueueWork(path string, eventType eventpkg.Type, payload []byte) {
+	router.log.Debug("Event received.", zap.String("path", path), zap.String("event", string(payload)))
 
 	select {
 	case router.work <- event{
+		path:      path,
 		eventType: eventType,
 		payload:   payload,
 	}:
@@ -326,21 +327,21 @@ func (router *Router) loop() {
 
 // processEvent call all functions subscribed for an event
 func (router *Router) processEvent(e event) {
-	subscribers := router.targetCache.SubscribersOfEvent(e.eventType)
+	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.eventType)
 	for _, subscriber := range subscribers {
 		router.log.Debug("Function triggered.",
-			zap.String("functionId", string(subscriber)), zap.String("event", string(e.payload)))
+			zap.String("functionId", string(subscriber)), zap.String("path", e.path), zap.String("event", string(e.payload)))
 
 		resp, err := router.callFunction(subscriber, e.payload)
 
 		if err != nil {
 			router.log.Info("Function invocation failed.",
-				zap.String("functionId", string(subscriber)), zap.String("event", string(e.payload)), zap.Error(err))
+				zap.String("functionId", string(subscriber)), zap.String("path", e.path), zap.String("event", string(e.payload)), zap.Error(err))
 
 			router.emitFunctionErrorEvent(subscriber, e.payload, err)
 		} else {
 			router.log.Debug("Function finished.",
-				zap.String("functionId", string(subscriber)), zap.String("event", string(e.payload)),
+				zap.String("functionId", string(subscriber)), zap.String("path", e.path), zap.String("event", string(e.payload)),
 				zap.String("response", string(resp)))
 		}
 	}
@@ -353,7 +354,7 @@ func (router *Router) emitFunctionErrorEvent(functionID functions.FunctionID, pa
 		}{string(functionID)})
 		payload, err = json.Marshal(internal)
 		if err == nil {
-			router.enqueueWork(internal.Type, payload)
+			router.enqueueWork("/", internal.Type, payload)
 		}
 	}
 }

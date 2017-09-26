@@ -2,28 +2,20 @@ package subscriptions
 
 import (
 	"net/url"
-
-	"github.com/serverless/event-gateway/functions"
 )
 
 // EndpointID uniquely identifies an endpoint.
 type EndpointID string
 
-// Endpoint represents single endpoint.
+// Endpoint represents single endpoint. It's used only for preventing from creating conflicting HTTP subscriptions.
 type Endpoint struct {
-	ID         EndpointID           `json:"endpointId"`
-	FunctionID functions.FunctionID `json:"functionId"`
-	Method     string               `json:"method"`
-	Path       string               `json:"path"`
+	ID EndpointID `json:"endpointId"`
 }
 
 // NewEndpoint creates an Endpoint.
-func NewEndpoint(functionID functions.FunctionID, method, path string) *Endpoint {
+func NewEndpoint(method, path string) *Endpoint {
 	return &Endpoint{
-		ID:         NewEndpointID(method, path),
-		FunctionID: functionID,
-		Method:     method,
-		Path:       path,
+		ID: NewEndpointID(method, path),
 	}
 }
 
