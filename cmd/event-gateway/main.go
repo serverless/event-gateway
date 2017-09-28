@@ -19,6 +19,7 @@ import (
 	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
+	"github.com/serverless/event-gateway/plugin"
 )
 
 var version = "dev"
@@ -42,6 +43,7 @@ func main() {
 	eventsPort := flag.Uint("events-port", 4000, "Port to serve events API on.")
 	eventsTLSCrt := flag.String("events-tls-cert", "", "Path to events API TLS certificate file.")
 	eventsTLSKey := flag.String("events-tls-key", "", "Path to events API TLS key file.")
+	pluginPaths := flag.String("plugin", "", "Comma-separated list of paths to plugins to load.")
 	flag.Parse()
 
 	if *showVersion {
@@ -76,6 +78,12 @@ func main() {
 		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
+	pluginManager := plugin.NewManager(strings.Split(*pluginPaths, ","), log)
+	err = pluginManager.Connect()
+	if err != nil {
+		log.Fatal("Loading plugins failed.", zap.Error(err))
+	}
+
 	eventServer := api.StartEventsAPI(httpapi.Config{
 		KV:            kv,
 		Log:           log,
@@ -108,6 +116,7 @@ func main() {
 	}
 
 	shutdownGuard.Wait()
+	pluginManager.Kill()
 }
 
 const (

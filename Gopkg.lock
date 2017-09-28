@@ -117,6 +117,24 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/go-hclog"
+  packages = ["."]
+  revision = "8105cc0a3736cc153a2025f5d0d91b80045fc9ff"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-plugin"
+  packages = ["."]
+  revision = "3e6d191694b5a3a2b99755f31b47fa209e4bcd09"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/yamux"
+  packages = ["."]
+  revision = "d1caa6c97c9fc1cc9e83bbe34d0603f9ff0ce8bd"
+
+[[projects]]
+  branch = "master"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   revision = "bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d"
@@ -138,6 +156,12 @@
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
   revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/go-testing-interface"
+  packages = ["."]
+  revision = "7bf6f6eaf1bed2fd3c6c63114b18cb64facb9de2"
 
 [[projects]]
   branch = "master"
@@ -248,7 +272,7 @@
 
 [[projects]]
   name = "google.golang.org/grpc"
-  packages = [".","codes","credentials","grpclog","internal","keepalive","metadata","naming","peer","stats","tap","transport"]
+  packages = [".","codes","credentials","grpclog","health","health/grpc_health_v1","internal","keepalive","metadata","naming","peer","stats","tap","transport"]
   revision = "8050b9cbc271307e5a716a9d782803d09b0d6f2d"
   version = "v1.2.1"
 
@@ -266,6 +290,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "20e4a55db41a69a449aa2de156e25d0075096699977a2bd715302870619c62ee"
+  inputs-digest = "04eac75ae64d5fdbde36076cfe6d7b8d74207ebf268b7fa1f923fc5947e425a8"
   solver-name = "gps-cdcl"
   solver-version = 1
