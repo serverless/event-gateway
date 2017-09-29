@@ -78,10 +78,13 @@ func main() {
 		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
-	pluginManager := plugin.NewManager(strings.Split(*pluginPaths, ","), log)
-	err = pluginManager.Connect()
-	if err != nil {
-		log.Fatal("Loading plugins failed.", zap.Error(err))
+	var pluginManager *plugin.Manager
+	if *pluginPaths != "" {
+		pluginManager = plugin.NewManager(strings.Split(*pluginPaths, ","), log)
+		err = pluginManager.Connect()
+		if err != nil {
+			log.Fatal("Loading plugins failed.", zap.Error(err))
+		}
 	}
 
 	eventServer := api.StartEventsAPI(httpapi.Config{
@@ -116,7 +119,10 @@ func main() {
 	}
 
 	shutdownGuard.Wait()
-	pluginManager.Kill()
+
+	if pluginManager != nil {
+		pluginManager.Kill()
+	}
 }
 
 const (

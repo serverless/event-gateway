@@ -67,6 +67,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		router.enqueueWork(r.URL.Path, event.Type, payload)
 		w.WriteHeader(http.StatusAccepted)
 	}
+
+	w.WriteHeader(http.StatusNotFound)
 }
 
 // StartWorkers spins up NWorkers goroutines for processing
@@ -91,8 +93,7 @@ func (router *Router) StartWorkers() {
 	}
 }
 
-// Drain causes new requests to return 503, and blocks until
-// the work queue is processed.
+// Drain causes new requests to return 503, and blocks until the work queue is processed.
 func (router *Router) Drain() {
 	// try to close the draining chan
 	router.Lock()
