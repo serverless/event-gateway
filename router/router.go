@@ -58,7 +58,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	router.log.Debug("Event received.", zap.String("path", r.URL.Path), zap.Object("event", event))
-	err = router.emitSystemEventReceived(*event)
+	err = router.emitSystemEventReceived(r.URL.Path, *event)
 	if err != nil {
 		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.", zap.Object("event", event), zap.Error(err))
 		return
@@ -336,8 +336,8 @@ func (router *Router) processEvent(e workEvent) {
 	}
 }
 
-func (router *Router) emitSystemEventReceived(event eventpkg.Event) error {
-	system := eventpkg.NewEvent("gateway.event.received", mimeJSON, eventpkg.SystemEventReceived{Event: event})
+func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event) error {
+	system := eventpkg.NewEvent("gateway.event.received", mimeJSON, eventpkg.SystemEventReceived{Path: path, Event: event})
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
 }

@@ -568,7 +568,7 @@ processing flow starting from receiving event to function invocation end. Those 
 
 ## Plugin System
 
-The Event Gateway is built with extensibility in mind. Built-in plugin system allows to react on system events and
+The Event Gateway is built with extensibility in mind. Built-in plugin system allows reacting on system events and
 manipulate how an event is processed through the Event Gateway.
 
 ## Client Libraries
