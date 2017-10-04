@@ -6,34 +6,31 @@ import (
 	"time"
 
 	"github.com/rs/cors"
-	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/httpapi"
-	"github.com/serverless/event-gateway/internal/metrics"
-	"github.com/serverless/event-gateway/router"
 )
 
-// StartEventsAPI creates a new gateway endpoint and listens for requests.
-func StartEventsAPI(config httpapi.Config) httpapi.Server {
-	targetCache := cache.NewTarget("/serverless-event-gateway", config.KV, config.Log)
-	router := router.New(targetCache, metrics.DroppedPubSubEvents, config.Log)
-	router.StartWorkers()
+type EventsAPIConfig struct {
+	httpapi.Config
+	Router http.Handler
+}
 
+// StartEventsAPI creates a new gateway endpoint and listens for requests.
+func StartEventsAPI(config EventsAPIConfig) httpapi.Server {
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      cors.AllowAll().Handler(router),
+		Handler:      cors.AllowAll().Handler(config.Router),
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
 
 	server := httpapi.Server{
-		Config:      config,
+		Config:      config.Config,
 		HTTPHandler: handler,
 	}
 
 	config.ShutdownGuard.Add(1)
 	go func() {
 		server.Listen()
-		router.Drain()
 		config.ShutdownGuard.Done()
 	}()
 

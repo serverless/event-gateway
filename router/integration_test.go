@@ -22,6 +22,7 @@ import (
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
+	"github.com/serverless/event-gateway/plugin"
 	"github.com/serverless/event-gateway/subscriptions"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
@@ -215,7 +216,7 @@ func get(url string) (int, http.Header, string) {
 
 func newTestRouterServer(kvstore store.Store, log *zap.Logger) (*Router, *httptest.Server) {
 	targetCache := cache.NewTarget("/serverless-event-gateway", kvstore, log)
-	router := New(targetCache, metrics.DroppedPubSubEvents, log)
+	router := New(targetCache, plugin.NewManager([]string{}, log), metrics.DroppedPubSubEvents, log)
 
 	return router, httptest.NewServer(router)
 }

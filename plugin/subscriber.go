@@ -52,7 +52,7 @@ type SubscriberSubscriptionsResponse struct {
 
 // React calls plugin implementation.
 func (s *Subscriber) React(event event.Event) error {
-	args := &SubscriberReactArgs{Event: &event}
+	args := &SubscriberReactArgs{Event: event}
 	var resp SubscriberReactResponse
 	err := s.client.Call("Plugin.React", args, &resp)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *Subscriber) React(event event.Event) error {
 
 // SubscriberReactArgs RPC args
 type SubscriberReactArgs struct {
-	Event *event.Event
+	Event event.Event
 }
 
 // SubscriberReactResponse RPC response
@@ -85,7 +85,7 @@ func (s *SubscriberServer) Subscriptions(_ interface{}, resp *SubscriberSubscrip
 
 // React server implementation.
 func (s *SubscriberServer) React(args *SubscriberReactArgs, resp *SubscriberReactResponse) error {
-	err := s.Reacter.React(*args.Event)
+	err := s.Reacter.React(args.Event)
 
 	*resp = SubscriberReactResponse{Error: goplugin.NewBasicError(err)}
 	return nil

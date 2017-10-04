@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"encoding/gob"
 	"os/exec"
 
 	"go.uber.org/zap"
@@ -9,37 +10,38 @@ import (
 	"github.com/serverless/event-gateway/event"
 )
 
-// Plugin is a generic struct for storing infor about a plugin.
+func init() {
+	gob.Register(map[string]interface{}{})
+	gob.Register(event.SystemEventReceived{})
+}
+
+// Plugin is a generic struct for storing info about a plugin.
 type Plugin struct {
-	Path    string
-	Client  *goplugin.Client
-	Reacter Reacter
+	Path          string
+	Client        *goplugin.Client
+	Reacter       Reacter
+	Subscriptions []Subscription
 }
 
 // Manager handles lifecycle of plugin management.
 type Manager struct {
-	Plugins []Plugin
+	Plugins []*Plugin
 	Log     *zap.Logger
 }
 
 // NewManager creates new Manager.
 func NewManager(paths []string, log *zap.Logger) *Manager {
-	// logger := hclog.New(&hclog.LoggerOptions{
-	// 	Name:   "plugin",
-	// 	Output: os.Stdout,
-	// 	Level:  hclog.Debug,
-	// })
-
-	plugins := []Plugin{}
-
+	plugins := []*Plugin{}
+	logger := Hclog2ZapLogger{log}
 	for _, path := range paths {
 		client := goplugin.NewClient(&goplugin.ClientConfig{
 			HandshakeConfig: handshakeConfig,
 			Plugins:         pluginMap,
 			Cmd:             exec.Command(path),
+			Logger:          logger.Named("PluginManager"),
 		})
 
-		plugins = append(plugins, Plugin{
+		plugins = append(plugins, &Plugin{
 			Client: client,
 			Path:   path,
 		})
@@ -66,8 +68,7 @@ func (m *Manager) Connect() error {
 		}
 
 		plugin.Reacter = raw.(*Subscriber)
-
-		m.Log.Info("Plugin has been loaded.", zap.String("path", plugin.Path))
+		plugin.Subscriptions = plugin.Reacter.Subscriptions()
 	}
 
 	return nil
@@ -81,13 +82,19 @@ func (m *Manager) Kill() {
 }
 
 // React call all plugins' React method. It returns when the first error is returned by a plugin.
-func (m *Manager) React(event event.Event) error {
+func (m *Manager) React(event *event.Event) error {
 	for _, plugin := range m.Plugins {
-		err := plugin.Reacter.React(event)
-		if err != nil {
-			return err
+		for _, subscription := range plugin.Subscriptions {
+			if subscription.EventType == event.Type {
+				err := plugin.Reacter.React(*event)
+				m.Log.Debug("Plugin returned error.", zap.String("plugin", plugin.Path), zap.Error(err), zap.String("subscriptionType", string(subscription.Type)))
+				if err != nil && subscription.Type == Sync {
+					return err
+				}
+			}
 		}
 	}
+
 	return nil
 }
 

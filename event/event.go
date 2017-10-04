@@ -1,7 +1,11 @@
 package event
 
 import (
+	"encoding/json"
+	"strings"
 	"time"
+
+	"go.uber.org/zap/zapcore"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -34,3 +38,20 @@ const TypeInvoke = Type("invoke")
 
 // TypeHTTP is a special type of event for sync http subscriptions.
 const TypeHTTP = Type("http")
+
+// MarshalLogObject is a part of zapcore.ObjectMarshaler interface
+func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("type", string(e.Type))
+	enc.AddString("id", e.ID)
+	enc.AddUint64("receivedAt", e.ReceivedAt)
+	payload, _ := json.Marshal(e.Data)
+	enc.AddString("data", string(payload))
+	enc.AddString("dataType", e.DataType)
+
+	return nil
+}
+
+// IsSystem indicates if system is a system event.
+func (e Event) IsSystem() bool {
+	return strings.HasPrefix(string(e.Type), "gateway.")
+}
