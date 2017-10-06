@@ -12,13 +12,6 @@ import (
 	"github.com/serverless/event-gateway/internal/pathtree"
 )
 
-// Targeter is an interface for retrieving cached configuration for driving performance-sensitive routing decisions.
-type Targeter interface {
-	HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params)
-	Function(functionID functions.FunctionID) *functions.Function
-	SubscribersOfEvent(path string, eventType event.Type) []functions.FunctionID
-}
-
 // Target is an implementation of Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
 // consul.
 type Target struct {

@@ -2,6 +2,7 @@ package router
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -31,9 +32,13 @@ func fromRequest(r *http.Request) (*eventpkg.Event, error) {
 		mime = mimeOctetStrem
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
+	body := []byte{}
+	var err error
+	if r.Body != nil {
+		body, err = ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	event := eventpkg.NewEvent(eventType, mime, body)
@@ -41,7 +46,7 @@ func fromRequest(r *http.Request) (*eventpkg.Event, error) {
 	if mime == mimeJSON && len(body) > 0 {
 		err := json.Unmarshal(body, &event.Data)
 		if err != nil {
-			return nil, err
+			return nil, errors.New("malformed JSON body")
 		}
 	}
 

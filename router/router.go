@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -13,14 +14,13 @@ import (
 
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/plugin"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
 type Router struct {
 	sync.Mutex
-	targetCache    cache.Targeter
+	targetCache    Targeter
 	plugins        *plugin.Manager
 	dropMetric     prometheus.Counter
 	log            *zap.Logger
@@ -32,7 +32,7 @@ type Router struct {
 }
 
 // New instantiates a new Router
-func New(targetCache cache.Targeter, plugins *plugin.Manager, dropMetric prometheus.Counter, log *zap.Logger) *Router {
+func New(targetCache Targeter, plugins *plugin.Manager, dropMetric prometheus.Counter, log *zap.Logger) *Router {
 	return &Router{
 		targetCache:  targetCache,
 		plugins:      plugins,
@@ -53,24 +53,25 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	event, err := fromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	router.log.Debug("Event received.", zap.String("path", r.URL.Path), zap.Object("event", event))
-	err = router.emitSystemEventReceived(r.URL.Path, *event)
+	err = router.emitSystemEventReceived(r.URL.Path, *event, r.Header)
 	if err != nil {
 		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.", zap.Object("event", event), zap.Error(err))
 		return
 	}
 
-	if event.Type == eventpkg.TypeHTTP || event.Type == eventpkg.TypeInvoke {
+	if event.Type == eventpkg.TypeHTTP || (r.Method == http.MethodPost && event.Type == eventpkg.TypeInvoke) {
 		router.handleSyncEvent(event, w, r)
 	} else if r.Method == http.MethodPost && !event.IsSystem() {
 		router.enqueueWork(r.URL.Path, event)
 		w.WriteHeader(http.StatusAccepted)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "custom event emitted with non POST method")
 	}
 }
 
@@ -186,7 +187,7 @@ func (router *Router) handleSyncEvent(event *eventpkg.Event, w http.ResponseWrit
 		backingFunction, params := router.targetCache.HTTPBackingFunction(strings.ToUpper(r.Method), r.URL.EscapedPath())
 		if backingFunction == nil {
 			router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
-			http.Error(w, "Resource not found", http.StatusNotFound)
+			http.Error(w, "resource not found", http.StatusNotFound)
 			return
 		}
 
@@ -246,9 +247,6 @@ func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 
 // callFunction looks up a function and calls it.
 func (router *Router) callFunction(backingFunctionID functions.FunctionID, event eventpkg.Event) ([]byte, error) {
-	// TODO emit system event "gateway.function.invoking" and react plugin
-	router.log.Debug("Function triggered.", zap.String("functionId", string(backingFunctionID)), zap.Object("event", event))
-
 	backingFunction := router.targetCache.Function(backingFunctionID)
 	if backingFunction == nil {
 		return []byte{}, errUnableToLookUpRegisteredFunction
@@ -263,6 +261,13 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, event
 		chosenFunction = chosen
 	}
 
+	router.log.Debug("Invoking function.", zap.String("functionId", string(backingFunctionID)), zap.Object("event", event))
+	err := router.emitSystemFunctionInvoking(backingFunctionID, event)
+	if err != nil {
+		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.", zap.Object("event", event), zap.Error(err))
+		return nil, err
+	}
+
 	// Call the target backing function.
 	f := router.targetCache.Function(chosenFunction)
 	if f == nil {
@@ -274,20 +279,20 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, event
 		return nil, err
 	}
 
-	response, err := f.Call(payload)
+	result, err := f.Call(payload)
 	if err != nil {
 		router.log.Info("Function invocation failed.",
 			zap.String("functionId", string(backingFunctionID)), zap.Object("event", event), zap.Error(err))
 
-		router.emitSystemFunctionInvocationFailed(backingFunctionID, payload, err)
+		router.emitSystemFunctionInvocationFailed(backingFunctionID, event, err)
 	} else {
-		// TODO emit system event "gateway.function.invoked" and react plugin
-		router.log.Debug("Function finished.",
-			zap.String("functionId", string(backingFunctionID)), zap.Object("event", event),
-			zap.String("response", string(response)))
+		router.log.Debug("Function invoked.",
+			zap.String("functionId", string(backingFunctionID)), zap.Object("event", event), zap.ByteString("result", result))
+
+		router.emitSystemFunctionInvoked(backingFunctionID, event, payload)
 	}
 
-	return response, err
+	return result, err
 }
 
 // loop is the main loop for a pub/sub worker goroutine
@@ -336,13 +341,33 @@ func (router *Router) processEvent(e workEvent) {
 	}
 }
 
-func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event) error {
-	system := eventpkg.NewEvent("gateway.event.received", mimeJSON, eventpkg.SystemEventReceived{Path: path, Event: event})
+func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers http.Header) error {
+	system := eventpkg.NewEvent(
+		eventpkg.SystemEventReceivedType,
+		mimeJSON,
+		eventpkg.SystemEventReceived{Path: path, Event: event, Headers: headers},
+	)
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
 }
 
-func (router *Router) emitSystemFunctionInvocationFailed(functionID functions.FunctionID, payload []byte, err error) {
+func (router *Router) emitSystemFunctionInvoking(functionID functions.FunctionID, event eventpkg.Event) error {
+	system := eventpkg.NewEvent(
+		eventpkg.SystemFunctionInvokingType,
+		mimeJSON,
+		eventpkg.SystemFunctionInvoking{FunctionID: functionID, Event: event},
+	)
+	router.enqueueWork("/", system)
+	return router.plugins.React(system)
+}
+
+func (router *Router) emitSystemFunctionInvoked(functionID functions.FunctionID, event eventpkg.Event, result []byte) error {
+	system := eventpkg.NewEvent(eventpkg.SystemFunctionInvokedType, mimeJSON, eventpkg.SystemFunctionInvoked{FunctionID: functionID, Event: event, Result: result})
+	router.enqueueWork("/", system)
+	return router.plugins.React(system)
+}
+
+func (router *Router) emitSystemFunctionInvocationFailed(functionID functions.FunctionID, event eventpkg.Event, err error) {
 	if _, ok := err.(*functions.ErrFunctionError); ok {
 		system := eventpkg.NewEvent("gateway.function.invocationFailed", mimeJSON, struct {
 			FunctionID string `json:"functionId"`

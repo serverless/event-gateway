@@ -9,6 +9,8 @@ import (
 	"github.com/serverless/event-gateway/internal/httpapi"
 )
 
+// EventsAPIConfig stores configuration for Events API. Events API expects cofigured router. That's why new
+// configuration object is needed.
 type EventsAPIConfig struct {
 	httpapi.Config
 	Router http.Handler

@@ -2,9 +2,6 @@ package main
 
 import (
 	"encoding/gob"
-	"errors"
-	"fmt"
-	"log"
 
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/plugin"
@@ -35,7 +32,5 @@ func (s *Simple) Subscriptions() []plugin.Subscription {
 
 // React is called for every event that plugin subscribed to.
 func (s *Simple) React(event event.Event) error {
-	log.Print("123123123")
-
-	return errors.New(fmt.Sprintf("RECEIVED------------ %+v", event))
+	return nil
 }

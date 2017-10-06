@@ -554,17 +554,18 @@ processing flow starting from receiving event to function invocation end. Those 
 - `gateway.event.received` - the event is emitted when an event was received by Events API. Fields:
   - `event` - event payload
   - `path` - Events API path
+  - `headers` - HTTP request header
 - `gateway.function.invoking` - the event emitted before invoking a function. Fields:
   - `event` - event payload
   - `functionId` - registered function ID
 - `gateway.function.invoked` - the event emitted after successful function invocation. Fields:
   - `event` - event payload
   - `functionId` - registered function ID
-  - `response` - function response
+  - `result` - function response
 - `gateway.function.invocationFailed` - the event emitted after failed function invocation. Fields:
-    - `event` - event payload
-    - `functionId` - registered function ID
-    - `error` - invocation error
+  - `event` - event payload
+  - `functionId` - registered function ID
+  - `error` - invocation error
 
 ## Plugin System
 

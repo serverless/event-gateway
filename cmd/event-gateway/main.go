@@ -33,6 +33,7 @@ func init() {
 	prometheus.MustRegister(metrics.DroppedPubSubEvents)
 }
 
+// nolint: gocyclo
 func main() {
 	showVersion := flag.Bool("version", false, "Show version.")
 	logLevel := zap.LevelFlag("log-level", zap.InfoLevel, `The level of logging to show after the event gateway has started. The available log levels are "debug", "info", "warn", and "err".`)

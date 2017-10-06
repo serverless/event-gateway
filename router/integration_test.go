@@ -113,7 +113,7 @@ func TestIntegration_AsyncFunctionNotFound(t *testing.T) {
 
 	statusCode, _, body := get(testRouterServer.URL)
 	assert.Equal(t, statusCode, 404)
-	assert.Equal(t, body, "Resource not found\n")
+	assert.Equal(t, body, "resource not found\n")
 
 	router.Drain()
 	shutdownGuard.ShutdownAndWait()
