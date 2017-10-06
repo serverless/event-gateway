@@ -98,27 +98,6 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	shutdownGuard.ShutdownAndWait()
 }
 
-func TestIntegration_AsyncFunctionNotFound(t *testing.T) {
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.DisableStacktrace = true
-	log, _ := logCfg.Build()
-
-	kv, shutdownGuard := newTestEtcd()
-
-	testAPIServer := newConfigAPIServer(kv, log)
-	defer testAPIServer.Close()
-
-	router, testRouterServer := newTestRouterServer(kv, log)
-	defer testRouterServer.Close()
-
-	statusCode, _, body := get(testRouterServer.URL)
-	assert.Equal(t, statusCode, 404)
-	assert.Equal(t, body, "resource not found\n")
-
-	router.Drain()
-	shutdownGuard.ShutdownAndWait()
-}
-
 func TestIntegration_HTTPSubscription(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
