@@ -15,18 +15,25 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/embedded"
 	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
+	"github.com/serverless/event-gateway/plugin"
+	"github.com/serverless/event-gateway/router"
 )
 
 var version = "dev"
 
 func init() {
 	etcd.Register()
+
+	prometheus.MustRegister(metrics.RequestDuration)
+	prometheus.MustRegister(metrics.DroppedPubSubEvents)
 }
 
+// nolint: gocyclo
 func main() {
 	showVersion := flag.Bool("version", false, "Show version.")
 	logLevel := zap.LevelFlag("log-level", zap.InfoLevel, `The level of logging to show after the event gateway has started. The available log levels are "debug", "info", "warn", and "err".`)
@@ -42,6 +49,8 @@ func main() {
 	eventsPort := flag.Uint("events-port", 4000, "Port to serve events API on.")
 	eventsTLSCrt := flag.String("events-tls-cert", "", "Path to events API TLS certificate file.")
 	eventsTLSKey := flag.String("events-tls-key", "", "Path to events API TLS key file.")
+	plugins := paths{}
+	flag.Var(&plugins, "plugin", "Path to a plugin to load.")
 	flag.Parse()
 
 	if *showVersion {
@@ -49,10 +58,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	prometheus.MustRegister(metrics.RequestDuration)
-	prometheus.MustRegister(metrics.DroppedPubSubEvents)
-
-	log, err := loggerConfiguration(*developmentMode, *logLevel, *logFormat).Build()
+	log, err := logger(*developmentMode, *logLevel, *logFormat).Build()
 	if err != nil {
 		panic(err)
 	}
@@ -64,10 +70,9 @@ func main() {
 		embedded.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
 	}
 
-	dbHostStrings := strings.Split(*dbHosts, ",")
 	kv, err := libkv.NewStore(
 		store.ETCDV3,
-		dbHostStrings,
+		strings.Split(*dbHosts, ","),
 		&store.Config{
 			ConnectionTimeout: 10 * time.Second,
 		},
@@ -76,13 +81,26 @@ func main() {
 		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
-	eventServer := api.StartEventsAPI(httpapi.Config{
-		KV:            kv,
-		Log:           log,
-		TLSCrt:        eventsTLSCrt,
-		TLSKey:        eventsTLSKey,
-		Port:          *eventsPort,
-		ShutdownGuard: shutdownGuard,
+	pluginManager := plugin.NewManager(plugins, log)
+	err = pluginManager.Connect()
+	if err != nil {
+		log.Fatal("Loading plugins failed.", zap.Error(err))
+	}
+
+	targetCache := cache.NewTarget("/serverless-event-gateway", kv, log)
+	router := router.New(targetCache, pluginManager, metrics.DroppedPubSubEvents, log)
+	router.StartWorkers()
+
+	eventServer := api.StartEventsAPI(api.EventsAPIConfig{
+		Config: httpapi.Config{
+			KV:            kv,
+			Log:           log,
+			TLSCrt:        eventsTLSCrt,
+			TLSKey:        eventsTLSKey,
+			Port:          *eventsPort,
+			ShutdownGuard: shutdownGuard,
+		},
+		Router: router,
 	})
 
 	configServer := api.StartConfigAPI(httpapi.Config{
@@ -108,6 +126,11 @@ func main() {
 	}
 
 	shutdownGuard.Wait()
+	router.Drain()
+
+	if pluginManager != nil {
+		pluginManager.Kill()
+	}
 }
 
 const (
@@ -115,7 +138,7 @@ const (
 	jsonEncoding    = "json"
 )
 
-func loggerConfiguration(dev bool, level zapcore.Level, format string) zap.Config {
+func logger(dev bool, level zapcore.Level, format string) zap.Config {
 	cfg := zap.Config{
 		Level:            zap.NewAtomicLevelAt(level),
 		Development:      false,
@@ -152,4 +175,15 @@ func loggerConfiguration(dev bool, level zapcore.Level, format string) zap.Confi
 	cfg.DisableStacktrace = true
 
 	return cfg
+}
+
+type paths []string
+
+func (p *paths) String() string {
+	return strings.Join(*p, ",")
+}
+
+func (p *paths) Set(value string) error {
+	*p = append(*p, value)
+	return nil
 }

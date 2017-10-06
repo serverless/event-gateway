@@ -22,6 +22,7 @@ import (
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
+	"github.com/serverless/event-gateway/plugin"
 	"github.com/serverless/event-gateway/subscriptions"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
@@ -92,27 +93,6 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
 	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")
-
-	router.Drain()
-	shutdownGuard.ShutdownAndWait()
-}
-
-func TestIntegration_AsyncFunctionNotFound(t *testing.T) {
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.DisableStacktrace = true
-	log, _ := logCfg.Build()
-
-	kv, shutdownGuard := newTestEtcd()
-
-	testAPIServer := newConfigAPIServer(kv, log)
-	defer testAPIServer.Close()
-
-	router, testRouterServer := newTestRouterServer(kv, log)
-	defer testRouterServer.Close()
-
-	statusCode, _, body := get(testRouterServer.URL)
-	assert.Equal(t, statusCode, 404)
-	assert.Equal(t, body, "Resource not found\n")
 
 	router.Drain()
 	shutdownGuard.ShutdownAndWait()
@@ -215,7 +195,7 @@ func get(url string) (int, http.Header, string) {
 
 func newTestRouterServer(kvstore store.Store, log *zap.Logger) (*Router, *httptest.Server) {
 	targetCache := cache.NewTarget("/serverless-event-gateway", kvstore, log)
-	router := New(targetCache, metrics.DroppedPubSubEvents, log)
+	router := New(targetCache, plugin.NewManager([]string{}, log), metrics.DroppedPubSubEvents, log)
 
 	return router, httptest.NewServer(router)
 }
