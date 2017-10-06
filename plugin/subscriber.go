@@ -58,8 +58,11 @@ func (s *Subscriber) React(event event.Event) error {
 	if err != nil {
 		return err
 	}
+	if resp.Error != nil {
+		err = resp.Error
+	}
 
-	return resp.Error
+	return err
 }
 
 // SubscriberReactArgs RPC args

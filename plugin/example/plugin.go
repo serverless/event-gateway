@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"log"
 
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/plugin"
@@ -9,8 +10,8 @@ import (
 
 func init() {
 	gob.Register(map[string]interface{}{})
-	gob.Register(event.SystemEventReceived{})
-	gob.Register(event.SystemFunctionInvoking{})
+	gob.Register(event.SystemEventReceivedData{})
+	gob.Register(event.SystemFunctionInvokingData{})
 }
 
 // Simple plugin demonstrating how to build plugins.
@@ -23,14 +24,17 @@ func (s *Simple) Subscriptions() []plugin.Subscription {
 			EventType: event.SystemEventReceivedType,
 			Type:      plugin.Sync,
 		},
-		plugin.Subscription{
-			EventType: event.SystemFunctionInvokingType,
-			Type:      plugin.Sync,
-		},
 	}
 }
 
 // React is called for every event that plugin subscribed to.
-func (s *Simple) React(event event.Event) error {
+func (s *Simple) React(instance event.Event) error {
+	switch instance.Type {
+	case event.SystemEventReceivedType:
+		received := instance.Data.(event.SystemEventReceivedData)
+		log.Printf("received gateway.received.event for event: %q", received.Event.Type)
+		break
+	}
+
 	return nil
 }

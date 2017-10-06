@@ -12,7 +12,9 @@ import (
 
 func init() {
 	gob.Register(map[string]interface{}{})
-	gob.Register(event.SystemEventReceived{})
+	gob.Register(event.SystemEventReceivedData{})
+	gob.Register(event.SystemFunctionInvokingData{})
+	gob.Register(event.SystemFunctionInvokedData{})
 }
 
 // Plugin is a generic struct for storing info about a plugin.
@@ -87,9 +89,14 @@ func (m *Manager) React(event *event.Event) error {
 		for _, subscription := range plugin.Subscriptions {
 			if subscription.EventType == event.Type {
 				err := plugin.Reacter.React(*event)
-				m.Log.Debug("Plugin returned error.", zap.String("plugin", plugin.Path), zap.Error(err), zap.String("subscriptionType", string(subscription.Type)))
-				if err != nil && subscription.Type == Sync {
-					return err
+				if err != nil {
+					m.Log.Debug("Plugin returned error.",
+						zap.String("plugin", plugin.Path),
+						zap.Error(err),
+						zap.String("subscriptionType", string(subscription.Type)))
+					if subscription.Type == Sync {
+						return err
+					}
 				}
 			}
 		}

@@ -60,7 +60,9 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.log.Debug("Event received.", zap.String("path", r.URL.Path), zap.Object("event", event))
 	err = router.emitSystemEventReceived(r.URL.Path, *event, r.Header)
 	if err != nil {
-		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.", zap.Object("event", event), zap.Error(err))
+		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+			zap.Object("event", event),
+			zap.Error(err))
 		return
 	}
 
@@ -264,7 +266,9 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, event
 	router.log.Debug("Invoking function.", zap.String("functionId", string(backingFunctionID)), zap.Object("event", event))
 	err := router.emitSystemFunctionInvoking(backingFunctionID, event)
 	if err != nil {
-		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.", zap.Object("event", event), zap.Error(err))
+		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+			zap.Object("event", event),
+			zap.Error(err))
 		return nil, err
 	}
 
@@ -345,7 +349,7 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 	system := eventpkg.NewEvent(
 		eventpkg.SystemEventReceivedType,
 		mimeJSON,
-		eventpkg.SystemEventReceived{Path: path, Event: event, Headers: headers},
+		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: headers},
 	)
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
@@ -355,14 +359,17 @@ func (router *Router) emitSystemFunctionInvoking(functionID functions.FunctionID
 	system := eventpkg.NewEvent(
 		eventpkg.SystemFunctionInvokingType,
 		mimeJSON,
-		eventpkg.SystemFunctionInvoking{FunctionID: functionID, Event: event},
+		eventpkg.SystemFunctionInvokingData{FunctionID: functionID, Event: event},
 	)
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
 }
 
 func (router *Router) emitSystemFunctionInvoked(functionID functions.FunctionID, event eventpkg.Event, result []byte) error {
-	system := eventpkg.NewEvent(eventpkg.SystemFunctionInvokedType, mimeJSON, eventpkg.SystemFunctionInvoked{FunctionID: functionID, Event: event, Result: result})
+	system := eventpkg.NewEvent(
+		eventpkg.SystemFunctionInvokedType,
+		mimeJSON,
+		eventpkg.SystemFunctionInvokedData{FunctionID: functionID, Event: event, Result: result})
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
 }

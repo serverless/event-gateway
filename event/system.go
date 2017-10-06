@@ -9,8 +9,8 @@ import (
 // SystemEventReceivedType is a system event emmited when the Event Gateway receives an event.
 const SystemEventReceivedType = Type("gateway.event.received")
 
-// SystemEventReceived struct.
-type SystemEventReceived struct {
+// SystemEventReceivedData struct.
+type SystemEventReceivedData struct {
 	Path    string      `json:"path"`
 	Event   Event       `json:"event"`
 	Headers http.Header `json:"header"`
@@ -20,7 +20,7 @@ type SystemEventReceived struct {
 const SystemFunctionInvokingType = Type("gateway.function.invoking")
 
 // SystemFunctionInvoking struct.
-type SystemFunctionInvoking struct {
+type SystemFunctionInvokingData struct {
 	FunctionID functions.FunctionID `json:"functionId"`
 	Event      Event                `json:"event"`
 }
@@ -28,8 +28,8 @@ type SystemFunctionInvoking struct {
 // SystemFunctionInvokedType is a system event emmited after successful function invocation.
 const SystemFunctionInvokedType = Type("gateway.function.invoked")
 
-// SystemFunctionInvoked struct.
-type SystemFunctionInvoked struct {
+// SystemFunctionInvokedData struct.
+type SystemFunctionInvokedData struct {
 	FunctionID functions.FunctionID `json:"functionId"`
 	Event      Event                `json:"event"`
 	Result     []byte               `json:"result"`
@@ -38,8 +38,8 @@ type SystemFunctionInvoked struct {
 // SystemFunctionInvocationFailedType is a system event emmited after successful function invocation.
 const SystemFunctionInvocationFailedType = Type("gateway.function.invocationFailed")
 
-// SystemFunctionInvocationFailed struct.
-type SystemFunctionInvocationFailed struct {
+// SystemFunctionInvocationFailedData struct.
+type SystemFunctionInvocationFailedData struct {
 	FunctionID functions.FunctionID `json:"functionId"`
 	Event      Event                `json:"event"`
 	Error      []byte               `json:"result"`
