@@ -19,7 +19,7 @@ type SystemEventReceivedData struct {
 // SystemFunctionInvokingType is a system event emmited before invoking a function.
 const SystemFunctionInvokingType = Type("gateway.function.invoking")
 
-// SystemFunctionInvoking struct.
+// SystemFunctionInvokingData struct.
 type SystemFunctionInvokingData struct {
 	FunctionID functions.FunctionID `json:"functionId"`
 	Event      Event                `json:"event"`
