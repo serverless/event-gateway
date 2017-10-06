@@ -12,7 +12,7 @@ import (
 	"github.com/serverless/event-gateway/internal/pathtree"
 )
 
-// Target is an implementation of Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
+// Target is an implementation of router.Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
 // consul.
 type Target struct {
 	log               *zap.Logger

@@ -554,7 +554,7 @@ processing flow starting from receiving event to function invocation end. Those 
 - `gateway.event.received` - the event is emitted when an event was received by Events API. Fields:
   - `event` - event payload
   - `path` - Events API path
-  - `headers` - HTTP request header
+  - `headers` - HTTP request headers
 - `gateway.function.invoking` - the event emitted before invoking a function. Fields:
   - `event` - event payload
   - `functionId` - registered function ID

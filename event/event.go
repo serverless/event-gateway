@@ -51,7 +51,7 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// IsSystem indicates if system is a system event.
+// IsSystem indicates if th event is a system event.
 func (e Event) IsSystem() bool {
 	return strings.HasPrefix(string(e.Type), "gateway.")
 }
