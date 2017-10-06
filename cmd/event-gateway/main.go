@@ -49,7 +49,8 @@ func main() {
 	eventsPort := flag.Uint("events-port", 4000, "Port to serve events API on.")
 	eventsTLSCrt := flag.String("events-tls-cert", "", "Path to events API TLS certificate file.")
 	eventsTLSKey := flag.String("events-tls-key", "", "Path to events API TLS key file.")
-	pluginPaths := flag.String("plugin", "", "Comma-separated list of paths to plugins to load.")
+	plugins := paths{}
+	flag.Var(&plugins, "plugin", "Path to a plugin to load.")
 	flag.Parse()
 
 	if *showVersion {
@@ -80,12 +81,7 @@ func main() {
 		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
-	paths := []string{}
-	if *pluginPaths != "" {
-		paths = strings.Split(*pluginPaths, ",")
-	}
-
-	pluginManager := plugin.NewManager(paths, log)
+	pluginManager := plugin.NewManager(plugins, log)
 	err = pluginManager.Connect()
 	if err != nil {
 		log.Fatal("Loading plugins failed.", zap.Error(err))
@@ -179,4 +175,15 @@ func logger(dev bool, level zapcore.Level, format string) zap.Config {
 	cfg.DisableStacktrace = true
 
 	return cfg
+}
+
+type paths []string
+
+func (p *paths) String() string {
+	return strings.Join(*p, ",")
+}
+
+func (p *paths) Set(value string) error {
+	*p = append(*p, value)
+	return nil
 }
