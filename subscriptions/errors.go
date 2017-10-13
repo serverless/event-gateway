@@ -8,7 +8,7 @@ type ErrSubscriptionAlreadyExists struct {
 }
 
 func (e ErrSubscriptionAlreadyExists) Error() string {
-	return fmt.Sprintf("Subscription %q already exits.", e.ID)
+	return fmt.Sprintf("Subscription %q already exists.", e.ID)
 }
 
 // ErrSubscriptionValidation occurs when subscription payload doesn't validate.
