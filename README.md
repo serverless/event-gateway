@@ -515,7 +515,7 @@ JSON object:
 
 Status code:
 - `204 No Content` on success
-- `404 Not Found` if function doesn't exists
+- `404 Not Found` if subscription doesn't exists
 
 ------
 
