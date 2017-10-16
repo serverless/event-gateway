@@ -1,90 +1,37 @@
 # Developing
 
-## Installation
-
-On macOS or Linux run the following:
+## Clone GitHub repo
 
 ```
-curl -sfL https://raw.githubusercontent.com/serverless/event-gateway/master/install.sh | sh
-```
-
-On Windows download [binary](https://github.com/serverless/event-gateway/releases).
-
-Alternatively, build a Docker image:
-
-```
+mkdir -p $GOPATH/src/github.com/serverless
+cd $GOPATH/src/github.com/serverless
 git clone git@github.com:serverless/event-gateway.git
 cd event-gateway
-docker build -t event-gateway .
 ```
 
-## Running Locally
+## Install [`dep`](https://github.com/golang/dep) package manager
 
-Run `event-gateway` in `dev` mode:
+On macOS you can install or upgrade to the latest released version with Homebrew:
 
-```
-event-gateway -dev
-```
-
-## Running in Docker
-
-```
-docker run -p 4000:4000 -p 4001:4001 event-gateway -dev
+```sh
+$ brew install dep
+$ brew upgrade dep
 ```
 
-**Pass in your AWS credentials**
+Or you can install via `go get`:
 
-Mounts the `~/.aws` folder from the host to the `/home/.aws` folder inside the container. Event Gateway can then read the credentials from within the container.
-```
-docker run -p 4000:4000 -p 4001:4001 -e "HOME=/home" -v ~/.aws:/home/.aws event-gateway -dev
-```
-
-**Preserve state of etcd**
-
-While testing if you restart the container running Event Gateway and want to preserve the data in etcd, you can specify a data dir with the `-embed-data-dir "/home/data"` flag specifying a destination folder. Then you can mount the folder `~/.event-gateway/data` from your host into the container at `/home/data`. Event Gateway will read the data from there.
-
-```
-docker run -p 4000:4000 -p 4001:4001 -v ~/.event-gateway/data:/home/data event-gateway -embed-data-dir "/home/data" -dev
+```sh
+go get -u github.com/golang/dep/cmd/dep
 ```
 
-## Operations
+## Install dependencies
 
-* [Register a Function](#register-a-function)
-* [Subscribe to an Event](#subscribe-to-an-event)
-* [Emit an Event](#emit-an-event)
-
-### Register a Function
-
-Register an AWS Lambda function in the Function Discovery.
-
-```
-curl --request POST \
-  --url http://127.0.0.1:4001/v1/functions \
-  --header 'content-type: application/json' \
-  --data '{"functionId": "hello", "provider":{"type": "awslambda", "arn": "<Function AWS ARN>", "region": "<Region>", "accessKeyId": "<Access Key ID>", "secretAccessKey": "<Secret Access Key>"}}'
+```sh
+dep ensure
 ```
 
-### Subscribe to an Event
+## Run locally
 
-Once the function is register you can subscribe it to you custom event.
-
+```sh
+go run cmd/event-gateway/main.go -dev
 ```
-curl --request POST \
-  --url http://127.0.0.1:4001/v1/subscriptions \
-  --header 'content-type: application/json' \
-  --data '{"functionId": "hello", "event": "pageVisited"}'
-```
-
-### Emit an Event
-
-An event can be emitted using [Events API](#events-api).
-
-```
-curl --request POST \
-  --url http://127.0.0.1:4000/ \
-  --header 'content-type: application/json' \
-  --header 'event: pageVisited' \
-  --data '{"userId": "123"}'
-```
-
-After emitting the event subscribed function is called asynchronously.
