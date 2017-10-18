@@ -7,6 +7,7 @@ import (
 
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/cors"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -20,6 +21,7 @@ type Subscription struct {
 	FunctionID functions.FunctionID `json:"functionId" validate:"required"`
 	Method     string               `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
 	Path       string               `json:"path,omitempty" validate:"omitempty,urlpath"`
+	CORS       *cors.CORS           `json:"cors,omitempty"`
 }
 
 func newSubscriptionID(s *Subscription) SubscriptionID {

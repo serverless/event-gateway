@@ -487,8 +487,14 @@ JSON object:
 
 - `event` - `string` - event name
 - `functionId` - `string` - ID of function to receive events
-- `method` - `string` - optionally, in case of `http` event, uppercase HTTP method that accepts requests
-- `path` - `string` - optionally, in case of `http` event, path that accepts requests, it starts with "/"
+- `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+- `path` - `string` - optional, in case of `http` event, path that accepts requests, it starts with "/"
+- `cors` - `object` - optional, in case of `http` event, CORS configuration with following fields:
+  - `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
+  - `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
+  - `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
+  - `allowCredentials` - `bool` - default: false
+
 
 **Response**
 
@@ -500,8 +506,9 @@ JSON object:
 - `subscriptionId` - `string` - subscription ID
 - `event` - `string` - event name
 - `functionId` - ID of function
-- `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
-- `path` - `string` - optionally, in case of `http` event, path that accepts requests, starts with `/`
+- `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+- `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
+- `cors` - `object` - optional, in case of `http` event, CORS configuration
 
 ------
 
@@ -535,8 +542,9 @@ JSON object:
   - `subscriptionId` - `string` - subscription ID
   - `event` - `string` - event name
   - `functionId` - ID of function
-  - `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
-  - `path` - `string` - optionally, in case of `http` event, path that accepts requests
+  - `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+  - `path` - `string` - optional, in case of `http` event, path that accepts requests
+  - `cors` - `object` - optional, in case of `http` event, CORS configuration
 
 ### Status
 

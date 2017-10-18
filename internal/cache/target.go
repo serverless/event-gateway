@@ -8,6 +8,7 @@ import (
 
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/cors"
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/pathtree"
 )
@@ -23,13 +24,13 @@ type Target struct {
 
 // HTTPBackingFunction returns function ID for handling HTTP sync endpoint. It also returns matched URL parameters in
 // case of HTTP subscription containing parameters in path.
-func (tc *Target) HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params) {
+func (tc *Target) HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params, *cors.CORS) {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
 	root := tc.subscriptionCache.endpoints[method]
 	if root == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	return root.Resolve(path)
 }

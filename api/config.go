@@ -7,7 +7,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/cors"
 
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/httpapi"
@@ -17,7 +16,7 @@ import (
 )
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
-func StartConfigAPI(config httpapi.Config) httpapi.Server {
+func StartConfigAPI(config httpapi.Config) {
 	router := httprouter.New()
 
 	functionsDB := kv.NewPrefixedStore("/serverless-event-gateway/functions", config.KV)
@@ -42,7 +41,7 @@ func StartConfigAPI(config httpapi.Config) httpapi.Server {
 
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      cors.AllowAll().Handler(metrics.HTTPLogger{Handler: router, RequestDuration: metrics.RequestDuration}),
+		Handler:      metrics.HTTPLogger{Handler: router, RequestDuration: metrics.RequestDuration},
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
@@ -57,6 +56,4 @@ func StartConfigAPI(config httpapi.Config) httpapi.Server {
 		server.Listen()
 		config.ShutdownGuard.Done()
 	}()
-
-	return server
 }

@@ -150,10 +150,10 @@ func (ps Subscriptions) createEndpoint(method, path string) error {
 		}
 
 		// add existing paths to check
-		tree.AddRoute(sub.Path, functions.FunctionID(""))
+		tree.AddRoute(sub.Path, functions.FunctionID(""), nil)
 	}
 
-	err = tree.AddRoute(path, functions.FunctionID(""))
+	err = tree.AddRoute(path, functions.FunctionID(""), nil)
 	if err != nil {
 		return &ErrPathConfict{err.Error()}
 	}
@@ -183,6 +183,20 @@ func (ps Subscriptions) validateSubscription(s *Subscription) error {
 	s.Path = istrings.EnsurePrefix(s.Path, "/")
 	if s.Event == event.TypeHTTP {
 		s.Method = strings.ToUpper(s.Method)
+
+		if s.CORS != nil {
+			if s.CORS.Headers == nil {
+				s.CORS.Headers = []string{"Origin", "Accept", "Content-Type"}
+			}
+
+			if s.CORS.Methods == nil {
+				s.CORS.Methods = []string{"HEAD", "GET", "POST"}
+			}
+
+			if s.CORS.Origins == nil {
+				s.CORS.Origins = []string{"*"}
+			}
+		}
 	}
 
 	validate := validator.New()

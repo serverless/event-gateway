@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/cors"
 )
 
 // Node is a data structure, inspired by prefix tree, used for routing HTTP requests in the Event Gateway. It's used for creating tree structure
@@ -14,6 +15,7 @@ type Node struct {
 	segment     string
 	children    map[string]*Node
 	functionID  *functions.FunctionID
+	cors        *cors.CORS
 	parameter   string
 	isStatic    bool
 	isParameter bool
@@ -32,9 +34,10 @@ type Params map[string]string
 
 // AddRoute adds route to the tree. This function will panic in case of adding conflicting parameterized paths.
 // nolint: gocyclo
-func (n *Node) AddRoute(route string, functionID functions.FunctionID) error {
+func (n *Node) AddRoute(route string, functionID functions.FunctionID, corsConfig *cors.CORS) error {
 	if route == "/" {
 		n.functionID = &functionID
+		n.cors = corsConfig
 		return nil
 	}
 
@@ -56,6 +59,7 @@ func (n *Node) AddRoute(route string, functionID functions.FunctionID) error {
 				currentNode.children[segment] = createNode(segment)
 				if i == len(segments)-1 {
 					currentNode.children[segment].functionID = &functionID
+					currentNode.children[segment].cors = corsConfig
 					return nil
 				}
 				currentNode = currentNode.children[segment]
@@ -88,6 +92,7 @@ func (n *Node) AddRoute(route string, functionID functions.FunctionID) error {
 				return fmt.Errorf("route %s conflicts with existing route", route)
 			}
 			currentNode.children[segment].functionID = &functionID
+			currentNode.children[segment].cors = corsConfig
 			return nil
 		}
 		currentNode = currentNode.children[segment]
@@ -100,6 +105,7 @@ func (n *Node) AddRoute(route string, functionID functions.FunctionID) error {
 func (n *Node) DeleteRoute(route string) error {
 	if route == "/" {
 		n.functionID = nil
+		n.cors = nil
 		return nil
 	}
 
@@ -117,6 +123,7 @@ func (n *Node) DeleteRoute(route string) error {
 				delete(currentNode.children, segment)
 			} else {
 				currentNode.children[segment].functionID = nil
+				currentNode.children[segment].cors = nil
 			}
 
 			return nil
@@ -130,12 +137,12 @@ func (n *Node) DeleteRoute(route string) error {
 
 // Resolve takes request URL path and traverse the tree trying find corresponding route.
 // nolint: gocyclo
-func (n *Node) Resolve(path string) (*functions.FunctionID, Params) {
+func (n *Node) Resolve(path string) (*functions.FunctionID, Params, *cors.CORS) {
 	if path == "/" {
 		if n.functionID != nil {
-			return n.functionID, nil
+			return n.functionID, nil, n.cors
 		}
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	segments := toSegments(path)
@@ -149,7 +156,7 @@ func (n *Node) Resolve(path string) (*functions.FunctionID, Params) {
 			// look for param
 			child, exists = first(currentNode.children)
 			if !exists || !(child.isParameter || child.isWildcard) {
-				return nil, nil
+				return nil, nil, nil
 			}
 		}
 		currentNode = child
@@ -161,15 +168,15 @@ func (n *Node) Resolve(path string) (*functions.FunctionID, Params) {
 		if currentNode.isWildcard {
 			// add missing parts
 			params[currentNode.parameter] = strings.Join(segments[i:], "/")
-			return currentNode.functionID, params
+			return currentNode.functionID, params, currentNode.cors
 		}
 
 		if i == len(segments)-1 {
-			return currentNode.functionID, params
+			return currentNode.functionID, params, currentNode.cors
 		}
 	}
 
-	return nil, nil
+	return nil, nil, nil
 }
 
 func toSegments(route string) []string {
@@ -206,14 +213,4 @@ func createNode(segment string) *Node {
 	}
 
 	return child
-}
-
-func printChildren(n *Node, prefix string) {
-	fmt.Printf("%s segment:%s children:[%d] func:%v isStatic:%t isParam:%t isWildcard:%t \r\n", prefix, n.segment, len(n.children), n.functionID, n.isStatic, n.isParameter, n.isWildcard)
-	for l := len(n.segment); l > 0; l-- {
-		prefix += "  "
-	}
-	for _, child := range n.children {
-		printChildren(child, prefix)
-	}
 }

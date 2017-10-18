@@ -37,7 +37,7 @@ func TestRouterServeHTTP_HTTPEventFunctionNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/notfound").Return(nil, pathtree.Params{}).MaxTimes(1)
+	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/notfound").Return(nil, pathtree.Params{}, nil).MaxTimes(1)
 	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
 	router := testrouter(target)
 

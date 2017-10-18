@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/cors"
 	"go.uber.org/zap"
 
 	eventpkg "github.com/serverless/event-gateway/event"
@@ -66,8 +67,10 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if event.Type == eventpkg.TypeHTTP || (r.Method == http.MethodPost && event.Type == eventpkg.TypeInvoke) {
-		router.handleSyncEvent(event, w, r)
+	if event.Type == eventpkg.TypeHTTP {
+		router.handleHTTPEvent(event, w, r)
+	} else if r.Method == http.MethodPost && event.Type == eventpkg.TypeInvoke {
+		router.handleInvokeEvent(event, w, r)
 	} else if r.Method == http.MethodPost && !event.IsSystem() {
 		router.enqueueWork(r.URL.Path, event)
 		w.WriteHeader(http.StatusAccepted)
@@ -144,7 +147,7 @@ func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			res, _ := router.targetCache.HTTPBackingFunction(method, path)
+			res, _, _ := router.targetCache.HTTPBackingFunction(method, path)
 			if res != nil {
 				break
 			}
@@ -179,33 +182,31 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleSyncEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
-	var resp []byte
-	var functionID functions.FunctionID
+func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
+	reqMethod := r.Method
 
-	if event.Type == eventpkg.TypeInvoke {
-		functionID = functions.FunctionID(r.Header.Get(headerFunctionID))
-	} else if event.Type == eventpkg.TypeHTTP {
-		backingFunction, params := router.targetCache.HTTPBackingFunction(strings.ToUpper(r.Method), r.URL.EscapedPath())
-		if backingFunction == nil {
-			router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
-			http.Error(w, "resource not found", http.StatusNotFound)
-			return
-		}
-
-		httpdata := event.Data.(*eventpkg.HTTPEvent)
-		httpdata.Params = params
-		event.Data = httpdata
-		functionID = *backingFunction
+	// check if CORS pre-flight request
+	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+		reqMethod = r.Header.Get("Access-Control-Request-Method")
 	}
 
-	resp, err := router.callFunction(functionID, *event)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	backingFunction, params, corsConfig := router.targetCache.HTTPBackingFunction(strings.ToUpper(reqMethod), r.URL.EscapedPath())
+	if backingFunction == nil {
+		router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
+		http.Error(w, "resource not found", http.StatusNotFound)
 		return
 	}
 
-	if event.Type == eventpkg.TypeHTTP {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		httpdata := event.Data.(*eventpkg.HTTPEvent)
+		httpdata.Params = params
+		event.Data = httpdata
+		resp, err := router.callFunction(*backingFunction, *event)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		httpResponse := &HTTPResponse{StatusCode: http.StatusOK}
 		err = json.Unmarshal(resp, httpResponse)
 		if err != nil {
@@ -222,6 +223,36 @@ func (router *Router) handleSyncEvent(event *eventpkg.Event, w http.ResponseWrit
 		}
 		w.WriteHeader(httpResponse.StatusCode)
 		resp = []byte(httpResponse.Body)
+
+		_, err = w.Write(resp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if corsConfig == nil {
+		handler(w, r)
+	} else {
+		corsOptions := cors.Options{
+			AllowedOrigins:     corsConfig.Origins,
+			AllowedHeaders:     corsConfig.Headers,
+			AllowedMethods:     corsConfig.Methods,
+			AllowCredentials:   corsConfig.AllowCredentials,
+			OptionsPassthrough: false,
+			Debug:              true,
+		}
+
+		cors.New(corsOptions).ServeHTTP(w, r, handler)
+	}
+}
+
+func (router *Router) handleInvokeEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
+	functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
+	resp, err := router.callFunction(functionID, *event)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	_, err = w.Write(resp)
