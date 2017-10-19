@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -52,31 +53,37 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event, err := fromRequest(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// isHTTPEvent checks if a request carries HTTP event. It also accepts pre-flight CORS requests because CORS is
+	// resolved downstream.
+	if isHTTPEvent(r) {
+		event, err := router.eventFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-	router.log.Debug("Event received.", zap.String("path", r.URL.Path), zap.Object("event", event))
-	err = router.emitSystemEventReceived(r.URL.Path, *event, r.Header)
-	if err != nil {
-		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
-			zap.Object("event", event),
-			zap.Error(err))
-		return
-	}
-
-	if event.Type == eventpkg.TypeHTTP {
 		router.handleHTTPEvent(event, w, r)
-	} else if r.Method == http.MethodPost && event.Type == eventpkg.TypeInvoke {
-		router.handleInvokeEvent(event, w, r)
-	} else if r.Method == http.MethodPost && !event.IsSystem() {
-		router.enqueueWork(r.URL.Path, event)
-		w.WriteHeader(http.StatusAccepted)
 	} else {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "custom event can be emitted only with POST method")
+		cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintln(w, "custom event can be emitted only with POST method")
+				return
+			}
+
+			event, err := router.eventFromRequest(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			if event.Type == eventpkg.TypeInvoke {
+				router.handleInvokeEvent(event, w, r)
+			} else if !event.IsSystem() {
+				router.enqueueWork(r.URL.Path, event)
+				w.WriteHeader(http.StatusAccepted)
+			}
+		})
 	}
 }
 
@@ -182,6 +189,55 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
+func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, error) {
+	eventType := eventpkg.Type(r.Header.Get("event"))
+	if eventType == "" {
+		eventType = eventpkg.TypeHTTP
+	}
+
+	mime := r.Header.Get("content-type")
+	if mime == "" {
+		mime = mimeOctetStrem
+	}
+
+	body := []byte{}
+	var err error
+	if r.Body != nil {
+		body, err = ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	event := eventpkg.NewEvent(eventType, mime, body)
+	if mime == mimeJSON && len(body) > 0 {
+		err = json.Unmarshal(body, &event.Data)
+		if err != nil {
+			return nil, errors.New("malformed JSON body")
+		}
+	}
+
+	if event.Type == eventpkg.TypeHTTP {
+		event.Data = &eventpkg.HTTPEvent{
+			Headers: r.Header,
+			Query:   r.URL.Query(),
+			Body:    event.Data,
+			Path:    r.URL.Path,
+			Method:  r.Method,
+		}
+	}
+
+	router.log.Debug("Event received.", zap.String("path", r.URL.Path), zap.Object("event", event))
+	err = router.emitSystemEventReceived(r.URL.Path, *event, r.Header)
+	if err != nil {
+		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+			zap.Object("event", event),
+			zap.Error(err))
+		return nil, err
+	}
+
+	return event, nil
+}
 func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
 	reqMethod := r.Method
 
@@ -240,7 +296,6 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 			AllowedMethods:     corsConfig.Methods,
 			AllowCredentials:   corsConfig.AllowCredentials,
 			OptionsPassthrough: false,
-			Debug:              true,
 		}
 
 		cors.New(corsOptions).ServeHTTP(w, r, handler)

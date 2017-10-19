@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/internal/cors"
 	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/plugin"
@@ -67,7 +68,7 @@ func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
 	assert.Equal(t, "unable to look up registered function\n", recorder.Body.String())
 }
 
-func TestRouterServeHTTP_ErrorMalformedJSONRequest(t *testing.T) {
+func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
@@ -96,6 +97,49 @@ func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 	assert.Equal(t, "custom event can be emitted only with POST method\n", recorder.Body.String())
+}
+
+func TestRouterServeHTTP_AllowCORSPreflightForHTTPEventWhenConfigured(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	target := mock.NewMockTargeter(ctrl)
+	id := functions.FunctionID("testid")
+	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/test").Return(&id, pathtree.Params{}, &cors.CORS{
+		Origins: []string{"http://example.com"},
+		Methods: []string{"GET"},
+	}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	router := testrouter(target)
+
+	req, _ := http.NewRequest(http.MethodOptions, "/test", nil)
+	req.Header.Set("Access-Control-Request-Method", "GET")
+	req.Header.Set("Origin", "http://example.com")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, "GET", recorder.Header().Get("Access-Control-Allow-Methods"))
+	assert.Equal(t, "http://example.com", recorder.Header().Get("Access-Control-Allow-Origin"))
+}
+
+func TestRouterServeHTTP_AllowCORSPreflightForCustomEvents(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	target := mock.NewMockTargeter(ctrl)
+	router := testrouter(target)
+
+	req, _ := http.NewRequest(http.MethodOptions, "/", nil)
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "event")
+	req.Header.Set("Origin", "http://example.com")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, "true", recorder.Header().Get("Access-Control-Allow-Credentials"))
+	assert.Equal(t, "Event", recorder.Header().Get("Access-Control-Allow-Headers"))
+	assert.Equal(t, "POST", recorder.Header().Get("Access-Control-Allow-Methods"))
+	assert.Equal(t, "http://example.com", recorder.Header().Get("Access-Control-Allow-Origin"))
 }
 
 func testrouter(target Targeter) *Router {

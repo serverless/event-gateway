@@ -1,10 +1,8 @@
 package router
 
 import (
-	"encoding/json"
-	"errors"
-	"io/ioutil"
 	"net/http"
+	"strings"
 
 	eventpkg "github.com/serverless/event-gateway/event"
 )
@@ -21,46 +19,24 @@ const (
 	mimeOctetStrem = "application/octet-stream"
 )
 
-func fromRequest(r *http.Request) (*eventpkg.Event, error) {
-	eventType := eventpkg.Type(r.Header.Get("event"))
-	if eventType == "" {
-		eventType = eventpkg.TypeHTTP
+func isHTTPEvent(r *http.Request) bool {
+	// is request with custom event
+	if r.Header.Get("event") != "" {
+		return false
 	}
 
-	mime := r.Header.Get("content-type")
-	if mime == "" {
-		mime = mimeOctetStrem
-	}
-
-	body := []byte{}
-	var err error
-	if r.Body != nil {
-		body, err = ioutil.ReadAll(r.Body)
-		if err != nil {
-			return nil, err
+	// is pre-flight CORS request with "event" header
+	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+		corsReqHeaders := r.Header.Get("Access-Control-Request-Headers")
+		headers := strings.Split(corsReqHeaders, ",")
+		for _, header := range headers {
+			if header == "event" {
+				return false
+			}
 		}
 	}
 
-	event := eventpkg.NewEvent(eventType, mime, body)
-
-	if mime == mimeJSON && len(body) > 0 {
-		err := json.Unmarshal(body, &event.Data)
-		if err != nil {
-			return nil, errors.New("malformed JSON body")
-		}
-	}
-
-	if event.Type == eventpkg.TypeHTTP {
-		event.Data = &eventpkg.HTTPEvent{
-			Headers: r.Header,
-			Query:   r.URL.Query(),
-			Body:    event.Data,
-			Path:    r.URL.Path,
-			Method:  r.Method,
-		}
-	}
-
-	return event, nil
+	return true
 }
 
 type workEvent struct {
