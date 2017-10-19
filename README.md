@@ -489,7 +489,7 @@ JSON object:
 - `functionId` - `string` - ID of function to receive events
 - `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
 - `path` - `string` - optional, in case of `http` event, path that accepts requests, it starts with "/"
-- `cors` - `object` - optional, in case of `http` event, CORS configuration with following fields:
+- `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
   - `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
   - `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
   - `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
