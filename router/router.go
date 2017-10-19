@@ -76,7 +76,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "custom event emitted with non POST method")
+		fmt.Fprintln(w, "custom event can be emitted only with POST method")
 	}
 }
 

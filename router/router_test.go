@@ -95,7 +95,7 @@ func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-	assert.Equal(t, "custom event emitted with non POST method\n", recorder.Body.String())
+	assert.Equal(t, "custom event can be emitted only with POST method\n", recorder.Body.String())
 }
 
 func testrouter(target Targeter) *Router {
