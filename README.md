@@ -322,6 +322,14 @@ arbitrary payload, subscribed function receives an event in [HTTP Event](#http-e
 Status code:
 - `200 OK` with payload with function response
 
+##### CORS
+
+By default cross-origin resource sharing (CORS) is disabled for `http` subscriptions. It can be enabled and configured
+per-subscription basis.
+
+Event Gateway handles preflight `OPTIONS` requests for you. You don't need to setup subscription for `OPTIONS` method
+because the Event Gateway will respond with all appropriate headers.
+
 #### Path parameters
 
 The Event Gateway allows creating HTTP subscription with parameterized paths. Every path segment prefixed with `:` is
@@ -368,6 +376,11 @@ arbitrary payload, invoked function receives an event in above schema, where req
 
 Status code:
 - `200 OK` with payload with function response
+
+### CORS
+
+Events API supports CORS requests which means that any origin can emit a custom event. In case of `http` events CORS is
+configured per-subscription basis.
 
 ## Configuration API
 
