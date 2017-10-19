@@ -322,6 +322,14 @@ arbitrary payload, subscribed function receives an event in [HTTP Event](#http-e
 Status code:
 - `200 OK` with payload with function response
 
+##### CORS
+
+By default cross-origin resource sharing (CORS) is disabled for `http` subscriptions. It can be enabled and configured
+per-subscription basis.
+
+Event Gateway handles preflight `OPTIONS` requests for you. You don't need to setup subscription for `OPTIONS` method
+because the Event Gateway will respond with all appropriate headers.
+
 #### Path parameters
 
 The Event Gateway allows creating HTTP subscription with parameterized paths. Every path segment prefixed with `:` is
@@ -368,6 +376,11 @@ arbitrary payload, invoked function receives an event in above schema, where req
 
 Status code:
 - `200 OK` with payload with function response
+
+### CORS
+
+Events API supports CORS requests which means that any origin can emit a custom event. In case of `http` events CORS is
+configured per-subscription basis.
 
 ## Configuration API
 
@@ -487,8 +500,14 @@ JSON object:
 
 - `event` - `string` - event name
 - `functionId` - `string` - ID of function to receive events
-- `method` - `string` - optionally, in case of `http` event, uppercase HTTP method that accepts requests
-- `path` - `string` - optionally, in case of `http` event, path that accepts requests, it starts with "/"
+- `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+- `path` - `string` - optional, in case of `http` event, path that accepts requests, it starts with "/"
+- `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
+  - `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
+  - `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
+  - `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
+  - `allowCredentials` - `bool` - default: false
+
 
 **Response**
 
@@ -500,8 +519,9 @@ JSON object:
 - `subscriptionId` - `string` - subscription ID
 - `event` - `string` - event name
 - `functionId` - ID of function
-- `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
-- `path` - `string` - optionally, in case of `http` event, path that accepts requests, starts with `/`
+- `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+- `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
+- `cors` - `object` - optional, in case of `http` event, CORS configuration
 
 ------
 
@@ -535,8 +555,9 @@ JSON object:
   - `subscriptionId` - `string` - subscription ID
   - `event` - `string` - event name
   - `functionId` - ID of function
-  - `method` - `string` - optionally, in case of `http` event, HTTP method that accepts requests
-  - `path` - `string` - optionally, in case of `http` event, path that accepts requests
+  - `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+  - `path` - `string` - optional, in case of `http` event, path that accepts requests
+  - `cors` - `object` - optional, in case of `http` event, CORS configuration
 
 ### Status
 

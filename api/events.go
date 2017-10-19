@@ -5,28 +5,20 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/rs/cors"
 	"github.com/serverless/event-gateway/internal/httpapi"
 )
 
-// EventsAPIConfig stores configuration for Events API. Events API expects cofigured router. That's why new
-// configuration object is needed.
-type EventsAPIConfig struct {
-	httpapi.Config
-	Router http.Handler
-}
-
 // StartEventsAPI creates a new gateway endpoint and listens for requests.
-func StartEventsAPI(config EventsAPIConfig) httpapi.Server {
+func StartEventsAPI(config httpapi.Config, router http.Handler) {
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      cors.AllowAll().Handler(config.Router),
+		Handler:      router,
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
 
 	server := httpapi.Server{
-		Config:      config.Config,
+		Config:      config,
 		HTTPHandler: handler,
 	}
 
@@ -35,6 +27,4 @@ func StartEventsAPI(config EventsAPIConfig) httpapi.Server {
 		server.Listen()
 		config.ShutdownGuard.Done()
 	}()
-
-	return server
 }

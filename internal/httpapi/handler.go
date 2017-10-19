@@ -22,6 +22,7 @@ func (s Server) Listen() {
 	}()
 
 	var err error
+
 	if *s.Config.TLSCrt != "" && *s.Config.TLSKey != "" {
 		s.HTTPHandler.TLSConfig = tlsConf
 		s.HTTPHandler.TLSNextProto = map[string]func(*http.Server, *tls.Conn, http.Handler){}

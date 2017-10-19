@@ -91,19 +91,16 @@ func main() {
 	router := router.New(targetCache, pluginManager, metrics.DroppedPubSubEvents, log)
 	router.StartWorkers()
 
-	eventServer := api.StartEventsAPI(api.EventsAPIConfig{
-		Config: httpapi.Config{
-			KV:            kv,
-			Log:           log,
-			TLSCrt:        eventsTLSCrt,
-			TLSKey:        eventsTLSKey,
-			Port:          *eventsPort,
-			ShutdownGuard: shutdownGuard,
-		},
-		Router: router,
-	})
+	api.StartEventsAPI(httpapi.Config{
+		KV:            kv,
+		Log:           log,
+		TLSCrt:        eventsTLSCrt,
+		TLSKey:        eventsTLSKey,
+		Port:          *eventsPort,
+		ShutdownGuard: shutdownGuard,
+	}, router)
 
-	configServer := api.StartConfigAPI(httpapi.Config{
+	api.StartConfigAPI(httpapi.Config{
 		KV:            kv,
 		Log:           log,
 		TLSCrt:        configTLSCrt,
@@ -114,11 +111,11 @@ func main() {
 
 	if *developmentMode {
 		eventProto := "http"
-		if eventServer.HTTPHandler.TLSConfig != nil {
+		if *eventsTLSCrt != "" && *eventsTLSKey != "" {
 			eventProto = "https"
 		}
 		configProto := "http"
-		if configServer.HTTPHandler.TLSConfig != nil {
+		if *configTLSCrt != "" && *configTLSKey != "" {
 			configProto = "https"
 		}
 
