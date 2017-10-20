@@ -93,7 +93,7 @@ func (w *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
 		}
 
 		// populate directory if it doesn't exist
-		exists, err := w.kv.Exists(w.path)
+		exists, err := w.kv.Exists(w.path, nil)
 		if err != nil {
 			w.log.Error("Could not access database.",
 				zap.String("event", "db"),
@@ -114,7 +114,7 @@ func (w *Watcher) watchRoot(outgoingEvents chan event, shutdown chan struct{}) {
 		}
 
 		// create watch chan for this directory
-		events, err := w.kv.WatchTree(w.path, shutdown)
+		events, err := w.kv.WatchTree(w.path, shutdown, nil)
 		if err != nil {
 			w.log.Error("Could not watch directory.",
 				zap.String("event", "db"),

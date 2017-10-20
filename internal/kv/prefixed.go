@@ -29,8 +29,8 @@ func (ps *PrefixedStore) Put(key string, value []byte, options *store.WriteOptio
 }
 
 // Get passes requests to the underlying libkv implementation, appending the root to paths for isolation.
-func (ps *PrefixedStore) Get(key string) (*store.KVPair, error) {
-	return ps.kv.Get(ps.root + key)
+func (ps *PrefixedStore) Get(key string, options *store.ReadOptions) (*store.KVPair, error) {
+	return ps.kv.Get(ps.root+key, options)
 }
 
 // Delete passes requests to the underlying libkv implementation, appending the root to paths for isolation.
@@ -39,18 +39,18 @@ func (ps *PrefixedStore) Delete(key string) error {
 }
 
 // Exists passes requests to the underlying libkv implementation, appending the root to paths for isolation.
-func (ps *PrefixedStore) Exists(key string) (bool, error) {
-	return ps.kv.Exists(ps.root + key)
+func (ps *PrefixedStore) Exists(key string, options *store.ReadOptions) (bool, error) {
+	return ps.kv.Exists(ps.root+key, options)
 }
 
 // Watch passes requests to the underlying libkv implementation, appending the root to paths for isolation.
-func (ps *PrefixedStore) Watch(key string, stopCh <-chan struct{}) (<-chan *store.KVPair, error) {
-	return ps.kv.Watch(ps.root+key, stopCh)
+func (ps *PrefixedStore) Watch(key string, stopCh <-chan struct{}, options *store.ReadOptions) (<-chan *store.KVPair, error) {
+	return ps.kv.Watch(ps.root+key, stopCh, options)
 }
 
 // WatchTree passes requests to the underlying libkv implementation, appending the root to paths for isolation.
-func (ps *PrefixedStore) WatchTree(directory string, stopCh <-chan struct{}) (<-chan []*store.KVPair, error) {
-	return ps.kv.WatchTree(ps.root+directory, stopCh)
+func (ps *PrefixedStore) WatchTree(directory string, stopCh <-chan struct{}, options *store.ReadOptions) (<-chan []*store.KVPair, error) {
+	return ps.kv.WatchTree(ps.root+directory, stopCh, options)
 }
 
 // NewLock passes requests to the underlying libkv implementation, appending the root to paths for isolation.
@@ -59,8 +59,8 @@ func (ps *PrefixedStore) NewLock(key string, options *store.LockOptions) (store.
 }
 
 // List passes requests to the underlying libkv implementation, appending the root to paths for isolation.
-func (ps *PrefixedStore) List(directory string) ([]*store.KVPair, error) {
-	prefixed, err := ps.kv.List(ps.root + directory)
+func (ps *PrefixedStore) List(directory string, options *store.ReadOptions) ([]*store.KVPair, error) {
+	prefixed, err := ps.kv.List(ps.root+directory, options)
 	if err != nil {
 		return nil, err
 	}

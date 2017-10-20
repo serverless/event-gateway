@@ -30,7 +30,7 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 	}
 
 	s.ID = newSubscriptionID(s)
-	_, err = ps.SubscriptionsDB.Get(string(s.ID))
+	_, err = ps.SubscriptionsDB.Get(string(s.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &ErrSubscriptionAlreadyExists{
 			ID: s.ID,
@@ -44,7 +44,7 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 		}
 	}
 
-	exists, err := ps.FunctionsDB.Exists(string(s.FunctionID))
+	exists, err := ps.FunctionsDB.Exists(string(s.FunctionID), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 func (ps Subscriptions) GetAllSubscriptions() ([]*Subscription, error) {
 	subs := []*Subscription{}
 
-	kvs, err := ps.SubscriptionsDB.List("")
+	kvs, err := ps.SubscriptionsDB.List("", &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (ps Subscriptions) GetAllSubscriptions() ([]*Subscription, error) {
 
 // getSubscription returns subscription.
 func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error) {
-	rawsub, err := ps.SubscriptionsDB.Get(string(id))
+	rawsub, err := ps.SubscriptionsDB.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrSubscriptionNotFound{id}
 	}
@@ -134,7 +134,7 @@ func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error
 func (ps Subscriptions) createEndpoint(method, path string) error {
 	e := NewEndpoint(method, path)
 
-	kvs, err := ps.EndpointsDB.List("")
+	kvs, err := ps.EndpointsDB.List("", &store.ReadOptions{Consistent: true})
 	// We need to check for not found key as there is no Endpoint cached that creates the directory.
 	if err != nil && err.Error() != "Key not found in store" {
 		return err

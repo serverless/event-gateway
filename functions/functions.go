@@ -23,7 +23,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 		return nil, err
 	}
 
-	_, err := f.DB.Get(string(fn.ID))
+	_, err := f.DB.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &ErrAlreadyRegistered{fn.ID}
 	}
@@ -45,7 +45,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 
 // UpdateFunction updates function configuration.
 func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
-	_, err := f.DB.Get(string(fn.ID))
+	_, err := f.DB.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrNotFound{fn.ID}
 	}
@@ -71,7 +71,7 @@ func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
 
 // GetFunction returns function from configuration.
 func (f *Functions) GetFunction(id FunctionID) (*Function, error) {
-	kv, err := f.DB.Get(string(id))
+	kv, err := f.DB.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrNotFound{id}
 	}
@@ -89,7 +89,7 @@ func (f *Functions) GetFunction(id FunctionID) (*Function, error) {
 func (f *Functions) GetAllFunctions() ([]*Function, error) {
 	fns := []*Function{}
 
-	kvs, err := f.DB.List("")
+	kvs, err := f.DB.List("", &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, err
 	}

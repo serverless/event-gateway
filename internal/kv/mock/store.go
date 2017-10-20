@@ -80,37 +80,37 @@ func (_mr *_MockStoreRecorder) DeleteTree(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "DeleteTree", arg0)
 }
 
-func (_m *MockStore) Exists(_param0 string) (bool, error) {
-	ret := _m.ctrl.Call(_m, "Exists", _param0)
+func (_m *MockStore) Exists(_param0 string, _param1 *store.ReadOptions) (bool, error) {
+	ret := _m.ctrl.Call(_m, "Exists", _param0, _param1)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockStoreRecorder) Exists(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exists", arg0)
+func (_mr *_MockStoreRecorder) Exists(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exists", arg0, arg1)
 }
 
-func (_m *MockStore) Get(_param0 string) (*store.KVPair, error) {
-	ret := _m.ctrl.Call(_m, "Get", _param0)
+func (_m *MockStore) Get(_param0 string, _param1 *store.ReadOptions) (*store.KVPair, error) {
+	ret := _m.ctrl.Call(_m, "Get", _param0, _param1)
 	ret0, _ := ret[0].(*store.KVPair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockStoreRecorder) Get(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Get", arg0)
+func (_mr *_MockStoreRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Get", arg0, arg1)
 }
 
-func (_m *MockStore) List(_param0 string) ([]*store.KVPair, error) {
-	ret := _m.ctrl.Call(_m, "List", _param0)
+func (_m *MockStore) List(_param0 string, _param1 *store.ReadOptions) ([]*store.KVPair, error) {
+	ret := _m.ctrl.Call(_m, "List", _param0, _param1)
 	ret0, _ := ret[0].([]*store.KVPair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockStoreRecorder) List(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "List", arg0)
+func (_mr *_MockStoreRecorder) List(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "List", arg0, arg1)
 }
 
 func (_m *MockStore) NewLock(_param0 string, _param1 *store.LockOptions) (store.Locker, error) {
@@ -134,24 +134,24 @@ func (_mr *_MockStoreRecorder) Put(arg0, arg1, arg2 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Put", arg0, arg1, arg2)
 }
 
-func (_m *MockStore) Watch(_param0 string, _param1 <-chan struct{}) (<-chan *store.KVPair, error) {
-	ret := _m.ctrl.Call(_m, "Watch", _param0, _param1)
+func (_m *MockStore) Watch(_param0 string, _param1 <-chan struct{}, _param2 *store.ReadOptions) (<-chan *store.KVPair, error) {
+	ret := _m.ctrl.Call(_m, "Watch", _param0, _param1, _param2)
 	ret0, _ := ret[0].(<-chan *store.KVPair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockStoreRecorder) Watch(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Watch", arg0, arg1)
+func (_mr *_MockStoreRecorder) Watch(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Watch", arg0, arg1, arg2)
 }
 
-func (_m *MockStore) WatchTree(_param0 string, _param1 <-chan struct{}) (<-chan []*store.KVPair, error) {
-	ret := _m.ctrl.Call(_m, "WatchTree", _param0, _param1)
+func (_m *MockStore) WatchTree(_param0 string, _param1 <-chan struct{}, _param2 *store.ReadOptions) (<-chan []*store.KVPair, error) {
+	ret := _m.ctrl.Call(_m, "WatchTree", _param0, _param1, _param2)
 	ret0, _ := ret[0].(<-chan []*store.KVPair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockStoreRecorder) WatchTree(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "WatchTree", arg0, arg1)
+func (_mr *_MockStoreRecorder) WatchTree(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "WatchTree", arg0, arg1, arg2)
 }
