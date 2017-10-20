@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/serverless/event-gateway/functions/mock"
+	"github.com/serverless/event-gateway/internal/kv/mock"
 	"github.com/serverless/libkv/store"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,10 +20,10 @@ func TestPrefixedStoreList(t *testing.T) {
 		&store.KVPair{Key: "testroot/testdir/key2", Value: []byte("value2")},
 	}
 	kv := mock.NewMockStore(ctrl)
-	kv.EXPECT().List("testroot/testdir").Return(kvs, nil)
+	kv.EXPECT().List("testroot/testdir", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 	ps := NewPrefixedStore("testroot", kv)
 
-	values, err := ps.List("testdir")
+	values, err := ps.List("testdir", &store.ReadOptions{Consistent: true})
 	assert.Nil(t, err)
 	assert.Equal(t, []*store.KVPair{
 		&store.KVPair{Key: "testdir/key1", Value: []byte("value1")},
@@ -36,10 +36,10 @@ func TestPrefixedStoreList_Error(t *testing.T) {
 	defer ctrl.Finish()
 
 	kv := mock.NewMockStore(ctrl)
-	kv.EXPECT().List("testroot/key").Return(nil, errors.New("KV error"))
+	kv.EXPECT().List("testroot/key", nil).Return(nil, errors.New("KV error"))
 	ps := NewPrefixedStore("testroot", kv)
 
-	values, err := ps.List("key")
+	values, err := ps.List("key", nil)
 	assert.Nil(t, values)
 	assert.EqualError(t, err, "KV error")
 }
