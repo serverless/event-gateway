@@ -151,7 +151,7 @@ path property indicated URL path which Events API will be listening on.
 
 ```http
 curl --request POST \
-  --url http://locahost:4001/v1/subscriptions \
+  --url http://localhost:4001/v1/subscriptions \
   --header 'content-type: application/json' \
   --data '{
     "functionId": "sendEmail",
@@ -207,7 +207,7 @@ only one `http` subscription for the same `method` and `path` pair.
 
 ```http
 curl --request POST \
-  --url http://locahost:4001/v1/subscriptions \
+  --url http://localhost:4001/v1/subscriptions \
   --header 'content-type: application/json' \
   --data '{
     "functionId": "listUsers",
