@@ -59,6 +59,7 @@ type Provider struct {
 	Region             string `json:"region,omitempty"`
 	AWSAccessKeyID     string `json:"awsAccessKeyID,omitempty"`
 	AWSSecretAccessKey string `json:"awsSecretAccessKey,omitempty"`
+	AWSSessionToken    string `json:"awsSessionToken,omitempty"`
 
 	// Group weighted function
 	Weighted WeightedFunctions `json:"weighted,omitempty"`
@@ -128,7 +129,7 @@ func (w WeightedFunctions) Choose() (FunctionID, error) {
 func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 	config := aws.NewConfig().WithRegion(f.Provider.Region)
 	if f.Provider.AWSAccessKeyID != "" && f.Provider.AWSSecretAccessKey != "" {
-		config = config.WithCredentials(credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, ""))
+		config = config.WithCredentials(credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, f.Provider.AWSSessionToken))
 	}
 
 	awslambda := lambda.New(session.New(config))
