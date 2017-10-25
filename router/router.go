@@ -222,6 +222,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, error)
 			Headers: r.Header,
 			Query:   r.URL.Query(),
 			Body:    event.Data,
+			Host:    r.Host,
 			Path:    r.URL.Path,
 			Method:  r.Method,
 		}

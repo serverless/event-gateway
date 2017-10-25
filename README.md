@@ -275,6 +275,7 @@ the data block is base64 encoded.
 - `path` - `string` - request path
 - `method` - `string` - request method
 - `headers` - `object` - request headers
+- `host` - `string` - request host
 - `query` - `object` - query parameters
 - `params` - `object` - matched path parameters
 - `body` - depends on `Content-Type` header - request payload
