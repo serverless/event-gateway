@@ -90,7 +90,7 @@ curl --request POST \
     "functionId": "hello",
     "provider":{
       "type": "awslambda",
-      "arn": "arn:aws:lambda:us-east-1:377024778620:function:bluegreen-dev-helloa",
+      "arn": "arn:aws:lambda:us-east-1:377024778620:function:bluegreen-dev-hello",
       "region": "us-east-1"
     }
 }'
