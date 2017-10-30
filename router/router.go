@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -56,7 +57,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// isHTTPEvent checks if a request carries HTTP event. It also accepts pre-flight CORS requests because CORS is
 	// resolved downstream.
 	if isHTTPEvent(r) {
-		event, err := router.eventFromRequest(r)
+		event, _, err := router.eventFromRequest(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -71,7 +72,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			event, err := router.eventFromRequest(r)
+			event, path, err := router.eventFromRequest(r)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -80,7 +81,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if event.Type == eventpkg.TypeInvoke {
 				router.handleInvokeEvent(event, w, r)
 			} else if !event.IsSystem() {
-				router.enqueueWork(r.URL.Path, event)
+				router.enqueueWork(path, event)
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})
@@ -184,16 +185,15 @@ func (router *Router) WaitForSubscriber(path string, eventType eventpkg.Type) <-
 
 // headerFunctionID is a header name for specifying function id for sync invocation.
 const headerFunctionID = "function-id"
+const hostedDomain = "eventgateway([a-z-]*)?.io"
 
 var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, error) {
-	eventType := eventpkg.Type(r.Header.Get("event"))
-	if eventType == "" {
-		eventType = eventpkg.TypeHTTP
-	}
+func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string, error) {
+	path := extractPath(r)
+	eventType := extractEventType(r)
 
 	mime := r.Header.Get("content-type")
 	if mime == "" {
@@ -205,7 +205,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, error)
 	if r.Body != nil {
 		body, err = ioutil.ReadAll(r.Body)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	}
 
@@ -213,7 +213,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, error)
 	if mime == mimeJSON && len(body) > 0 {
 		err = json.Unmarshal(body, &event.Data)
 		if err != nil {
-			return nil, errors.New("malformed JSON body")
+			return nil, "", errors.New("malformed JSON body")
 		}
 	}
 
@@ -223,21 +223,21 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, error)
 			Query:   r.URL.Query(),
 			Body:    event.Data,
 			Host:    r.Host,
-			Path:    r.URL.Path,
+			Path:    r.URL.Path, // it's not path var as user has to get path from request to platform's EG
 			Method:  r.Method,
 		}
 	}
 
-	router.log.Debug("Event received.", zap.String("path", r.URL.Path), zap.Object("event", event))
-	err = router.emitSystemEventReceived(r.URL.Path, *event, r.Header)
+	router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
+	err = router.emitSystemEventReceived(path, *event, r.Header)
 	if err != nil {
 		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
 			zap.Object("event", event),
 			zap.Error(err))
-		return nil, err
+		return nil, "", err
 	}
 
-	return event, nil
+	return event, path, nil
 }
 func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
 	reqMethod := r.Method
@@ -479,4 +479,21 @@ func (router *Router) isDraining() bool {
 	default:
 	}
 	return false
+}
+
+func extractPath(r *http.Request) string {
+	path := r.URL.Path
+	rxp, _ := regexp.Compile(hostedDomain)
+	if rxp.MatchString(r.Host) {
+		path = "/" + strings.Split(r.Host, ".")[0] + path
+	}
+	return path
+}
+
+func extractEventType(r *http.Request) eventpkg.Type {
+	eventType := eventpkg.Type(r.Header.Get("event"))
+	if eventType == "" {
+		eventType = eventpkg.TypeHTTP
+	}
+	return eventType
 }
