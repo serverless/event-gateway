@@ -192,7 +192,7 @@ var (
 )
 
 func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string, error) {
-	path := extractPath(r)
+	path := extractPath(r.Host, r.URL.Path)
 	eventType := extractEventType(r)
 
 	mime := r.Header.Get("content-type")
@@ -247,7 +247,9 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		reqMethod = r.Header.Get("Access-Control-Request-Method")
 	}
 
-	backingFunction, params, corsConfig := router.targetCache.HTTPBackingFunction(strings.ToUpper(reqMethod), r.URL.EscapedPath())
+	backingFunction, params, corsConfig := router.targetCache.HTTPBackingFunction(
+		strings.ToUpper(reqMethod), extractPath(r.Host, r.URL.EscapedPath()),
+	)
 	if backingFunction == nil {
 		router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
 		http.Error(w, "resource not found", http.StatusNotFound)
@@ -481,13 +483,13 @@ func (router *Router) isDraining() bool {
 	return false
 }
 
-func extractPath(r *http.Request) string {
-	path := r.URL.Path
+func extractPath(host, path string) string {
+	extracted := path
 	rxp, _ := regexp.Compile(hostedDomain)
-	if rxp.MatchString(r.Host) {
-		path = "/" + strings.Split(r.Host, ".")[0] + path
+	if rxp.MatchString(host) {
+		extracted = "/" + strings.Split(host, ".")[0] + extracted
 	}
-	return path
+	return extracted
 }
 
 func extractEventType(r *http.Request) eventpkg.Type {
