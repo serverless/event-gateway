@@ -20,6 +20,7 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
+ignored = ["github.com/hashicorp/go-plugin", "github.com/hashicorp/go-hclog", "golang.org/x/net*"]
 
 [[constraint]]
   name = "github.com/aws/aws-sdk-go"

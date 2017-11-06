@@ -27,6 +27,9 @@ go get -u github.com/golang/dep/cmd/dep
 ## Install dependencies
 
 ```sh
+go get -u github.com/hashicorp/go-plugin
+go get -u github.com/hashicorp/go-hclog
+go get -u golang.org/x/net/{context,http2,trace}
 dep ensure
 ```
 
