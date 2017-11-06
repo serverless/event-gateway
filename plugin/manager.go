@@ -15,6 +15,7 @@ func init() {
 	gob.Register(event.SystemEventReceivedData{})
 	gob.Register(event.SystemFunctionInvokingData{})
 	gob.Register(event.SystemFunctionInvokedData{})
+	gob.Register(event.SystemFunctionInvocationFailedData{})
 }
 
 // Plugin is a generic struct for storing info about a plugin.
