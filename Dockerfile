@@ -4,6 +4,11 @@ RUN apk add --update git
 WORKDIR /go/src/github.com/serverless/event-gateway
 COPY . .
 
+RUN go get -u github.com/hashicorp/go-plugin
+RUN go get -u github.com/hashicorp/go-hclog
+RUN go get -u golang.org/x/net/context
+RUN go get -u golang.org/x/net/http2
+RUN go get -u golang.org/x/net/trace
 RUN go get -u github.com/golang/dep/cmd/dep
 RUN dep ensure
 RUN go build -o event-gateway cmd/event-gateway/main.go
