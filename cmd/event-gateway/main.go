@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
 	etcd "github.com/serverless/libkv/store/etcd/v3"
@@ -18,7 +17,6 @@ import (
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/embedded"
 	"github.com/serverless/event-gateway/internal/httpapi"
-	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/sync"
 	"github.com/serverless/event-gateway/plugin"
 	"github.com/serverless/event-gateway/router"
@@ -28,9 +26,6 @@ var version = "dev"
 
 func init() {
 	etcd.Register()
-
-	prometheus.MustRegister(metrics.RequestDuration)
-	prometheus.MustRegister(metrics.DroppedPubSubEvents)
 }
 
 // nolint: gocyclo
@@ -88,7 +83,7 @@ func main() {
 	}
 
 	targetCache := cache.NewTarget("/serverless-event-gateway", kv, log)
-	router := router.New(targetCache, pluginManager, metrics.DroppedPubSubEvents, log)
+	router := router.New(targetCache, pluginManager, log)
 	router.StartWorkers()
 
 	api.StartEventsAPI(httpapi.Config{

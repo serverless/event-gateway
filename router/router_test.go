@@ -12,7 +12,6 @@ import (
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/cors"
-	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/plugin"
 	"github.com/serverless/event-gateway/router/mock"
@@ -145,7 +144,7 @@ func TestRouterServeHTTP_AllowCORSPreflightForCustomEvents(t *testing.T) {
 func testrouter(target Targeter) *Router {
 	log := zap.NewNop()
 	plugins := plugin.NewManager([]string{}, log)
-	router := New(target, plugins, metrics.DroppedPubSubEvents, log)
+	router := New(target, plugins, log)
 	router.StartWorkers()
 	return router
 }
