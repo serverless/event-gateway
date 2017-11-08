@@ -13,8 +13,8 @@ func StartEventsAPI(config httpapi.Config, router http.Handler) {
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
 		Handler:      router,
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 540 * time.Second,
 	}
 
 	server := httpapi.Server{
