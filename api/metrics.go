@@ -16,9 +16,8 @@ var requestDuration = prometheus.NewHistogram(
 		Namespace: "gateway",
 		Subsystem: "config",
 		Name:      "request_duration_seconds",
-		Help: "Bucketed histogram of request duration of config API requests, " +
-			"by method and object (function, subscription).",
-		Buckets: prometheus.ExponentialBuckets(0.0005, 2, 16),
+		Help:      "Bucketed histogram of request duration of config API requests",
+		Buckets:   prometheus.ExponentialBuckets(0.0005, 2, 16),
 	})
 
 type metricsReporter struct {

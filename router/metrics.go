@@ -41,7 +41,7 @@ var routerProcessingDuration = prometheus.NewHistogram(
 		Subsystem: "router",
 		Name:      "event_processing_seconds",
 		Help: "Bucketed histogram of processing duration of an event in the router. " +
-			"From receving the event to calling a function.",
+			"From receiving the event to calling a function.",
 		Buckets: prometheus.ExponentialBuckets(0.00001, 2, 20),
 	})
 
