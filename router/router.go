@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 
@@ -25,25 +24,23 @@ type Router struct {
 	sync.Mutex
 	targetCache    Targeter
 	plugins        *plugin.Manager
-	dropMetric     prometheus.Counter
 	log            *zap.Logger
 	workerNumber   uint
 	drain          chan struct{}
 	drainWaitGroup sync.WaitGroup
 	active         bool
-	work           chan workEvent
+	backlog        chan backlogEvent
 }
 
 // New instantiates a new Router
-func New(targetCache Targeter, plugins *plugin.Manager, dropMetric prometheus.Counter, log *zap.Logger) *Router {
+func New(targetCache Targeter, plugins *plugin.Manager, log *zap.Logger) *Router {
 	return &Router{
 		targetCache:  targetCache,
 		plugins:      plugins,
-		dropMetric:   dropMetric,
 		log:          log,
 		workerNumber: 20,
 		drain:        make(chan struct{}),
-		work:         nil,
+		backlog:      nil,
 	}
 }
 
@@ -81,6 +78,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if event.Type == eventpkg.TypeInvoke {
 				router.handleInvokeEvent(event, w, r)
 			} else if !event.IsSystem() {
+				reportReceivedEvent(event.ID)
 				router.enqueueWork(path, event)
 				w.WriteHeader(http.StatusAccepted)
 			}
@@ -100,8 +98,8 @@ func (router *Router) StartWorkers() {
 	}
 	router.active = true
 
-	if router.work == nil {
-		router.work = make(chan workEvent, router.workerNumber*2)
+	if router.backlog == nil {
+		router.backlog = make(chan backlogEvent, router.workerNumber*2)
 	}
 
 	for i := 0; i < int(router.workerNumber); i++ {
@@ -326,13 +324,14 @@ func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 	}
 
 	select {
-	case router.work <- workEvent{
+	case router.backlog <- backlogEvent{
 		path:  path,
 		event: *event,
 	}:
+		routerBacklog.Inc()
 	default:
 		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
-		router.dropMetric.Inc()
+		routerDroppedEvents.Inc()
 	}
 }
 
@@ -397,7 +396,8 @@ func (router *Router) loop() {
 
 		// 1. see if there's work in a non-blocking way
 		select {
-		case e := <-router.work:
+		case e := <-router.backlog:
+			routerBacklog.Dec()
 			router.processEvent(e)
 			continue
 		default:
@@ -411,7 +411,8 @@ func (router *Router) loop() {
 			// without this, there is a race condition
 			// where we exit before work is processed.
 			select {
-			case e := <-router.work:
+			case e := <-router.backlog:
+				routerBacklog.Dec()
 				router.processEvent(e)
 				continue
 			default:
@@ -420,15 +421,17 @@ func (router *Router) loop() {
 			// no more work to do, decrement WaitGroup and return
 			router.drainWaitGroup.Done()
 			return
-		case e := <-router.work:
+		case e := <-router.backlog:
+			routerBacklog.Dec()
 			router.processEvent(e)
 		}
 	}
 }
 
 // processEvent call all functions subscribed for an event
-func (router *Router) processEvent(e workEvent) {
+func (router *Router) processEvent(e backlogEvent) {
 	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.Type)
+	reportProceededEvent(e.event.ID)
 	for _, subscriber := range subscribers {
 		router.callFunction(subscriber, e.event)
 	}

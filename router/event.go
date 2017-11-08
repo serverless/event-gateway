@@ -39,7 +39,7 @@ func isHTTPEvent(r *http.Request) bool {
 	return true
 }
 
-type workEvent struct {
+type backlogEvent struct {
 	path  string
 	event eventpkg.Event
 }

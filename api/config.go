@@ -6,12 +6,11 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/kv"
-	"github.com/serverless/event-gateway/internal/metrics"
 	"github.com/serverless/event-gateway/subscriptions"
 )
 
@@ -37,11 +36,11 @@ func StartConfigAPI(config httpapi.Config) {
 	subscriptionsAPI.RegisterRoutes(router)
 
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
-	router.Handler("GET", "/metrics", prometheus.Handler())
+	router.Handler("GET", "/metrics", promhttp.Handler())
 
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      metrics.HTTPLogger{Handler: router, RequestDuration: metrics.RequestDuration},
+		Handler:      metricsReporter{router},
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}
