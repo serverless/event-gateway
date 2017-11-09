@@ -54,6 +54,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// isHTTPEvent checks if a request carries HTTP event. It also accepts pre-flight CORS requests because CORS is
 	// resolved downstream.
 	if isHTTPEvent(r) {
+		routerEventsSyncReceived.Inc()
+
 		event, _, err := router.eventFromRequest(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -76,9 +78,9 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if event.Type == eventpkg.TypeInvoke {
+				routerEventsSyncReceived.Inc()
 				router.handleInvokeEvent(event, w, r)
 			} else if !event.IsSystem() {
-				reportReceivedEvent(event.ID)
 				router.enqueueWork(path, event)
 				w.WriteHeader(http.StatusAccepted)
 			}
@@ -286,6 +288,8 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		routerEventsSyncProceeded.Inc()
 	}
 
 	if corsConfig == nil {
@@ -316,9 +320,13 @@ func (router *Router) handleInvokeEvent(event *eventpkg.Event, w http.ResponseWr
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	routerEventsSyncProceeded.Inc()
 }
 
 func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
+	reportReceivedEvent(event.ID)
+
 	if event.IsSystem() {
 		router.log.Debug("System event received.", zap.Object("event", event))
 	}
@@ -331,7 +339,7 @@ func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 		routerBacklog.Inc()
 	default:
 		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
-		routerDroppedEvents.Inc()
+		routerEventsAsyncDropped.Inc()
 	}
 }
 
