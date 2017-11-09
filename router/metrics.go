@@ -11,10 +11,6 @@ func init() {
 	prometheus.MustRegister(routerBacklog, routerDroppedEvents, routerProcessingDuration)
 }
 
-// RouterDroppedEvents counts the number of times we need
-// to drop events instead of forwarding them in the router.
-// This should be alerted on in a monitoring system, and
-// trigger adding more capacity.
 var routerDroppedEvents = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
@@ -23,8 +19,6 @@ var routerDroppedEvents = prometheus.NewCounter(
 		Help:      "Dropped events due to insufficient processing power.",
 	})
 
-// RouterBacklog is a gauge of events count waiting to be
-// processed by the router.
 var routerBacklog = prometheus.NewGauge(
 	prometheus.GaugeOpts{
 		Namespace: "gateway",
@@ -33,8 +27,6 @@ var routerBacklog = prometheus.NewGauge(
 		Help:      "Gauge of events count waiting to be processed by the router.",
 	})
 
-// ProcessingDuration is a bucketed histogram of processing
-// duration of an event in the router.
 var routerProcessingDuration = prometheus.NewHistogram(
 	prometheus.HistogramOpts{
 		Namespace: "gateway",
