@@ -44,6 +44,7 @@ func main() {
 	eventsPort := flag.Uint("events-port", 4000, "Port to serve events API on.")
 	eventsTLSCrt := flag.String("events-tls-cert", "", "Path to events API TLS certificate file.")
 	eventsTLSKey := flag.String("events-tls-key", "", "Path to events API TLS key file.")
+	workersNumber := flag.Uint("workers", 100, "Number of workers processing incoming events.")
 	plugins := paths{}
 	flag.Var(&plugins, "plugin", "Path to a plugin to load.")
 	flag.Parse()
@@ -83,7 +84,7 @@ func main() {
 	}
 
 	targetCache := cache.NewTarget("/serverless-event-gateway", kv, log)
-	router := router.New(targetCache, pluginManager, log)
+	router := router.New(*workersNumber, targetCache, pluginManager, log)
 	router.StartWorkers()
 
 	api.StartEventsAPI(httpapi.Config{
