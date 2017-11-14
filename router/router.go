@@ -25,7 +25,7 @@ type Router struct {
 	targetCache    Targeter
 	plugins        *plugin.Manager
 	log            *zap.Logger
-	workerNumber   uint
+	workersNumber  uint
 	drain          chan struct{}
 	drainWaitGroup sync.WaitGroup
 	active         bool
@@ -33,14 +33,14 @@ type Router struct {
 }
 
 // New instantiates a new Router
-func New(targetCache Targeter, plugins *plugin.Manager, log *zap.Logger) *Router {
+func New(workersNumber uint, targetCache Targeter, plugins *plugin.Manager, log *zap.Logger) *Router {
 	return &Router{
-		targetCache:  targetCache,
-		plugins:      plugins,
-		log:          log,
-		workerNumber: 20,
-		drain:        make(chan struct{}),
-		backlog:      nil,
+		targetCache:   targetCache,
+		plugins:       plugins,
+		log:           log,
+		workersNumber: workersNumber,
+		drain:         make(chan struct{}),
+		backlog:       nil,
 	}
 }
 
@@ -101,10 +101,11 @@ func (router *Router) StartWorkers() {
 	router.active = true
 
 	if router.backlog == nil {
-		router.backlog = make(chan backlogEvent, router.workerNumber*2)
+		router.backlog = make(chan backlogEvent, router.workersNumber*2)
 	}
 
-	for i := 0; i < int(router.workerNumber); i++ {
+	router.log.Debug("Starting processing workers.", zap.Uint("workers", router.workersNumber))
+	for i := 0; i < int(router.workersNumber); i++ {
 		router.drainWaitGroup.Add(1)
 		go router.loop()
 	}
