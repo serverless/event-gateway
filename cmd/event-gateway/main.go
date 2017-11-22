@@ -45,7 +45,7 @@ func main() {
 	eventsTLSCrt := flag.String("events-tls-cert", "", "Path to events API TLS certificate file.")
 	eventsTLSKey := flag.String("events-tls-key", "", "Path to events API TLS key file.")
 	workersNumber := flag.Uint("workers", 100, "Number of workers processing incoming events.")
-	workersBacklog := flag.Uint("workers-backlog", 200, "Lenght of workers backlog. Maximum number of events that wait to be proceeded.")
+	workersBacklog := flag.Uint("workers-backlog", 200, "Lenght of workers backlog. Maximum number of events that wait for processing.")
 	plugins := paths{}
 	flag.Var(&plugins, "plugin", "Path to a plugin to load.")
 	flag.Parse()
