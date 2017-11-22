@@ -144,7 +144,7 @@ func TestRouterServeHTTP_AllowCORSPreflightForCustomEvents(t *testing.T) {
 func testrouter(target Targeter) *Router {
 	log := zap.NewNop()
 	plugins := plugin.NewManager([]string{}, log)
-	router := New(10, target, plugins, log)
+	router := New(10, 10, target, plugins, log)
 	router.StartWorkers()
 	return router
 }

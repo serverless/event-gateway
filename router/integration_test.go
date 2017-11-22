@@ -195,7 +195,7 @@ func get(url string) (int, http.Header, string) {
 func newTestRouterServer(kvstore store.Store, log *zap.Logger) (*Router, *httptest.Server) {
 	targetCache := cache.NewTarget("/serverless-event-gateway", kvstore, log)
 
-	router := New(10, targetCache, plugin.NewManager([]string{}, log), log)
+	router := New(10, 10, targetCache, plugin.NewManager([]string{}, log), log)
 	return router, httptest.NewServer(router)
 }
 
