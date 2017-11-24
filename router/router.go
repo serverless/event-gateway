@@ -265,18 +265,15 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		event.Data = httpdata
 		resp, err := router.callFunction(*backingFunction, *event)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "function call failed", http.StatusInternalServerError)
 			return
 		}
 
 		httpResponse := &HTTPResponse{StatusCode: http.StatusOK}
 		err = json.Unmarshal(resp, httpResponse)
 		if err != nil {
-			httperr := NewErrHTTPResponseObjectMalformed()
-			http.Error(w, httperr.Error(), httperr.StatusCode)
-
-			router.log.Info(httperr.Error(), zap.String("response", string(resp)))
-
+			router.log.Info("HTTP response object malformed.", zap.String("response", string(resp)))
+			http.Error(w, "HTTP response object malformed", http.StatusInternalServerError)
 			return
 		}
 
