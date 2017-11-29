@@ -12,7 +12,7 @@ install:
 script:
 - go get -u github.com/alecthomas/gometalinter
 - gometalinter --install --force
-- gometalinter --vendor --fast --disable=gotype --disable=vetshadow --skip=mock ./...
+- gometalinter --vendor --fast --disable=gotype --disable=vetshadow --disable=gas --skip=mock ./...
 - go get github.com/mattn/goveralls
 - goveralls -race -service=travis-ci -ignore=*/mock/*,*/*/mock/*
 after_success:
