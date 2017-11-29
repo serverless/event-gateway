@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/julienschmidt/httprouter"
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
@@ -27,7 +29,6 @@ import (
 	"github.com/serverless/libkv/store"
 	etcd "github.com/serverless/libkv/store/etcd/v3"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestMain(t *testing.T) {

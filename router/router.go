@@ -188,7 +188,7 @@ func (router *Router) WaitForSubscriber(path string, eventType eventpkg.Type) <-
 
 // headerFunctionID is a header name for specifying function id for sync invocation.
 const headerFunctionID = "function-id"
-const hostedDomain = "eventgateway([a-z-]*)?.io"
+const hostedDomain = "(eventgateway([a-z-]*)?.io|slsgateway.com)"
 
 var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
@@ -249,7 +249,6 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
 		reqMethod = r.Header.Get("Access-Control-Request-Method")
 	}
-
 	backingFunction, params, corsConfig := router.targetCache.HTTPBackingFunction(
 		strings.ToUpper(reqMethod), extractPath(r.Host, r.URL.EscapedPath()),
 	)
@@ -498,7 +497,13 @@ func extractPath(host, path string) string {
 	extracted := path
 	rxp, _ := regexp.Compile(hostedDomain)
 	if rxp.MatchString(host) {
-		extracted = "/" + strings.Split(host, ".")[0] + extracted
+		subdomain := strings.Split(host, ".")[0]
+		segments := strings.Split(subdomain, "---")
+		extracted = ""
+		for i := len(segments) - 1; i >= 0; i-- {
+			extracted += "/" + segments[i]
+		}
+		extracted += path
 	}
 	return extracted
 }
