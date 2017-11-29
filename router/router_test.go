@@ -141,6 +141,21 @@ func TestRouterServeHTTP_AllowCORSPreflightForCustomEvents(t *testing.T) {
 	assert.Equal(t, "http://example.com", recorder.Header().Get("Access-Control-Allow-Origin"))
 }
 
+func TestRouterServeHTTP_ExtractPathFromHostedDomain(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	target := mock.NewMockTargeter(ctrl)
+	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/name/app/dev/test").Return(nil, pathtree.Params{}, &cors.CORS{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	router := testrouter(target)
+
+	req, _ := http.NewRequest(http.MethodGet, "https://dev---app---name.slsgateway.com/test", nil)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+}
+
 func testrouter(target Targeter) *Router {
 	log := zap.NewNop()
 	plugins := plugin.NewManager([]string{}, log)
