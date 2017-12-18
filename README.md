@@ -5,25 +5,25 @@ dataflow for event-driven, serverless architectures. It routes Events (data) to 
 Everything it cares about is an event! Even calling a function. It makes it easy to share events across different
 systems, teams and organizations!
 
-Use the Event Gateway right now, by running the **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** locally, with the *[Serverless Framework](https://serverless.com/framework/)*.
+Use the Event Gateway right now, by running the **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** locally, with the _[Serverless Framework](https://serverless.com/framework/)_.
 
 Features:
-- **Platform agnostic** - All your cloud services are now compatible with one another: share cross-cloud functions and events with AWS Lambda, Microsoft Azure, IBM OpenWhisk and Google Cloud Platform.
-- **Send events from any cloud** - Data streams in your application become events. Centralize events from any cloud provider to get a bird’s eye view of all the data flowing through your cloud.
-- **React to cross-cloud events** - You aren’t locked in to events and functions being on the same provider: Any event, on any cloud, can trigger any function. Set events and functions up like dominoes and watch them fall.
-- **Expose events to your team** - Share events and functions to other parts of the application. Your teammates can find them and utilize them in their own services.
-- **Extendable through middleware** - Perform data transforms, authorizations, serializations, and other custom computes straight from the Event Gateway.
+
+* **Platform agnostic** - All your cloud services are now compatible with one another: share cross-cloud functions and events with AWS Lambda, Microsoft Azure, IBM OpenWhisk and Google Cloud Platform.
+* **Send events from any cloud** - Data streams in your application become events. Centralize events from any cloud provider to get a bird’s eye view of all the data flowing through your cloud.
+* **React to cross-cloud events** - You aren’t locked in to events and functions being on the same provider: Any event, on any cloud, can trigger any function. Set events and functions up like dominoes and watch them fall.
+* **Expose events to your team** - Share events and functions to other parts of the application. Your teammates can find them and utilize them in their own services.
+* **Extendable through middleware** - Perform data transforms, authorizations, serializations, and other custom computes straight from the Event Gateway.
 
 The Event Gateway is a L7 proxy and realtime dataflow engine, intended for use with Functions-as-a-Service on AWS,
 Azure, Google & IBM.
 
-*The project is under heavy development. The APIs will continue to [change](#versioning) until we release a 1.0.0 version. It's not
-yet ready for production applications.*
+_The project is under heavy development. The APIs will continue to [change](#versioning) until we release a 1.0.0 version. It's not
+yet ready for production applications._
 
 [![Build Status](https://travis-ci.org/serverless/event-gateway.svg?branch=master)](https://travis-ci.org/serverless/event-gateway)
 
- [Website](http://www.serverless.com) • [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/MjI5NzY1ODM2MTc3LTE1MDM0NDIyOTUtMDgxNTcxMTcxNg) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://www.meetup.com/pro/serverless/) • [Twitter](https://twitter.com/goserverless)
-
+[Website](http://www.serverless.com) • [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/MjI5NzY1ODM2MTc3LTE1MDM0NDIyOTUtMDgxNTcxMTcxNg) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://www.meetup.com/pro/serverless/) • [Twitter](https://twitter.com/goserverless)
 
 ## Contents
 
@@ -44,7 +44,6 @@ yet ready for production applications.*
    1. [Clustering](#clustering)
 1. [Background](#background)
 
-
 ## Quick Start
 
 The easiest way to get started with the Event Gateway is using the [Serverless Framework](https://serverless.com/framework/). The framework is setup to automatically download and install the Event Gateway during development of a serverless service.
@@ -57,13 +56,13 @@ If you want to install and develop with the Event Gateway without the Serverless
 
 ## Motivation
 
-- It is cumbersome to plug things into each other. This should be easy! Why do I need to set up a queue system to
+* It is cumbersome to plug things into each other. This should be easy! Why do I need to set up a queue system to
   keep track of new user registrations or failed logins?
-- Introspection is terrible. There is no performant way to emit logs and metrics from a function. How do I know
+* Introspection is terrible. There is no performant way to emit logs and metrics from a function. How do I know
   a new piece of code is actually working? How do I feed metrics to my existing monitoring system? How do I
   plug this function into to my existing analytics system?
-- Using new functions is risky without the ability to incrementally deploy them.
-- The AWS API Gateway is frequently cited as a performance and cost-prohibitive factor for using AWS Lambda.
+* Using new functions is risky without the ability to incrementally deploy them.
+* The AWS API Gateway is frequently cited as a performance and cost-prohibitive factor for using AWS Lambda.
 
 ## Components
 
@@ -72,8 +71,8 @@ If you want to install and develop with the Event Gateway without the Serverless
 Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the
 following function types:
 
-- FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
-- HTTP endpoints/Webhook (e.g. POST http://example.com/function)
+* FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
+* HTTP endpoints/Webhook (e.g. POST http://example.com/function)
 
 Function Discovery stores information about functions allowing the Event Gateway to call them as a reaction to received
 event.
@@ -126,11 +125,11 @@ curl --request POST \
 ##### FDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+const eventGateway = fdk.eventGateway({ url: "http://localhost" });
 eventGateway.invoke({
   functionId: "createUser",
   data: { name: "Max" }
-})
+});
 ```
 
 ### Subscriptions
@@ -163,12 +162,12 @@ curl --request POST \
 ##### FDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+const eventGateway = fdk.eventGateway({ url: "http://localhost" });
 eventGateway.subscribe({
   event: "user.created",
   functionId: "sendEmail",
   path: "/myteam"
-})
+});
 ```
 
 `sendEmail` function will be invoked for every `user.created` event to `<Events API>/myteam` endpoint.
@@ -188,11 +187,11 @@ curl --request POST \
 ##### FDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+const eventGateway = fdk.eventGateway({ url: "http://localhost" });
 eventGateway.emit({
   event: "user.created",
   data: { name: "Max" }
-})
+});
 ```
 
 #### Sync subscriptions via HTTP event
@@ -220,13 +219,13 @@ curl --request POST \
 ##### FDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+const eventGateway = fdk.eventGateway({ url: "http://localhost" });
 eventGateway.subscribe({
-  functionId: 'listUsers',
-  event: 'http',
-  method: 'GET',
-  path: '/users'
-})
+  functionId: "listUsers",
+  event: "http",
+  method: "GET",
+  path: "/users"
+});
 ```
 
 `listUsers` function will be invoked for every HTTP GET request to `<Events API>/users` endpoint.
@@ -240,11 +239,11 @@ for invoking function. By default Events API runs on `:4000` port.
 
 All data that passes through the Event Gateway is formatted as an Event, based on our default Event schema:
 
-- `event` - `string` - the event name
-- `id` - `string` - the event's instance universally unique ID (provided by the event gateway)
-- `receivedAt` - `number` - the time (milliseconds) when the Event was received by the Event Gateway (provided by the event gateway)
-- `data` - type depends on `dataType` - the event payload
-- `dataType` - `string` - the mime type of `data` payload
+* `event` - `string` - the event name
+* `id` - `string` - the event's instance universally unique ID (provided by the event gateway)
+* `receivedAt` - `number` - the time (milliseconds) when the Event was received by the Event Gateway (provided by the event gateway)
+* `data` - type depends on `dataType` - the event payload
+* `dataType` - `string` - the mime type of `data` payload
 
 Example:
 
@@ -253,7 +252,7 @@ Example:
   "event": "myapp.user.created",
   "id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
   "receivedAt": 1500897327098,
-  "data": {"foo": "bar"},
+  "data": { "foo": "bar" },
   "dataType": "application/json"
 }
 ```
@@ -272,13 +271,13 @@ the data block is base64 encoded.
 `http` event is a built-in type of event occurring for HTTP requests on paths defined in HTTP subscriptions. The
 `data` field of an `http` event has the following structure:
 
-- `path` - `string` - request path
-- `method` - `string` - request method
-- `headers` - `object` - request headers
-- `host` - `string` - request host
-- `query` - `object` - query parameters
-- `params` - `object` - matched path parameters
-- `body` - depends on `Content-Type` header - request payload
+* `path` - `string` - request path
+* `method` - `string` - request method
+* `headers` - `object` - request headers
+* `host` - `string` - request host
+* `query` - `object` - query parameters
+* `params` - `object` - matched path parameters
+* `body` - depends on `Content-Type` header - request payload
 
 #### Invoke Event
 
@@ -294,8 +293,8 @@ Creating a subscription requires `path` property (by default it's "/"). `path` i
 
 **Request Headers**
 
-- `Event` - `string` - required, event name
-- `Content-Type`  - `MIME type string` - payload type
+* `Event` - `string` - required, event name
+* `Content-Type` - `MIME type string` - payload type
 
 **Request**
 
@@ -304,7 +303,8 @@ arbitrary payload, subscribed function receives an event in Event schema
 **Response**
 
 Status code:
-- `202 Accepted`
+
+* `202 Accepted`
 
 ### Emit an HTTP Event
 
@@ -321,7 +321,8 @@ arbitrary payload, subscribed function receives an event in [HTTP Event](#http-e
 **Response**
 
 Status code:
-- `200 OK` with payload with function response
+
+* `200 OK` with payload with function response
 
 ##### CORS
 
@@ -337,8 +338,9 @@ The Event Gateway allows creating HTTP subscription with parameterized paths. Ev
 treated as a parameter, e.g. `/users/:id`.
 
 The Event Gateway prevents from creating subscriptions in following conflicting situations:
-- registering static path when there is parameterized path registered already (`/users/:id` vs. `/users/foo`)
-- registering parameterized path with different parameter name (`/users/:id` vs. `/users/:name`)
+
+* registering static path when there is parameterized path registered already (`/users/:id` vs. `/users/foo`)
+* registering parameterized path with different parameter name (`/users/:id` vs. `/users/:name`)
 
 Key and value of matched parameters are passed to a function in an HTTP Event under `params` field.
 
@@ -352,9 +354,9 @@ parameter `/users/*userpath` for request path `/users/group1/user1` will match `
 
 To respond to an HTTP event a function needs to return object with following fields:
 
-- `statusCode` - `int` - response status code, default: 200
-- `headers` - `object` - response headers
-- `body` - `string` - response body
+* `statusCode` - `int` - response status code, default: 200
+* `headers` - `object` - response headers
+* `body` - `string` - response body
 
 Currently, the event gateway supports only string responses.
 
@@ -366,8 +368,8 @@ Currently, the event gateway supports only string responses.
 
 **Request Headers**
 
-- `Event` - `string` - `"invoke"`
-- `Function-ID` - `string` - ID of a function to call
+* `Event` - `string` - `"invoke"`
+* `Function-ID` - `string` - ID of a function to call
 
 **Request**
 
@@ -376,7 +378,8 @@ arbitrary payload, invoked function receives an event in above schema, where req
 **Response**
 
 Status code:
-- `200 OK` with payload with function response
+
+* `200 OK` with payload with function response
 
 ### CORS
 
@@ -399,30 +402,32 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 
 JSON object:
 
-- `functionId` - `string` - required, function name
-- `provider` - `object` - required, provider specific information about a function, depends on type:
-  - for AWS Lambda:
-    - `type` - `string` - required, provider type: `awslambda`
-    - `arn` - `string` - required, AWS ARN identifier
-    - `region` - `string` - required, region name
-    - `awsAccessKeyID` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
-    - `awsSecretAccessKey` - `string` - optional, AWS API access key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
-    - `awsSessionToken` - `string` - optional, AWS session token
-  - for HTTP function:
-    - `type` - `string` - required, provider type: `http`
-    - `url` - `string` - required, the URL of an http or https remote endpoint
+* `functionId` - `string` - required, function name
+* `provider` - `object` - required, provider specific information about a function, depends on type:
+  * for AWS Lambda:
+    * `type` - `string` - required, provider type: `awslambda`
+    * `arn` - `string` - required, AWS ARN identifier
+    * `region` - `string` - required, region name
+    * `awsAccessKeyID` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
+    * `awsSecretAccessKey` - `string` - optional, AWS API access key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
+    * `awsSessionToken` - `string` - optional, AWS session token
+  * for HTTP function:
+    * `type` - `string` - required, provider type: `http`
+    * `url` - `string` - required, the URL of an http or https remote endpoint
 
 **Response**
 
 Status code:
-- `200 OK` on success
-- `400 Bad Request` on validation error
+
+* `200 OK` on success
+* `400 Bad Request` on validation error
 
 JSON object:
-- `functionId` - `string` - function name
-- `provider` - `object` - provider specific information about a function
 
-------
+* `functionId` - `string` - function name
+* `provider` - `object` - provider specific information about a function
+
+---
 
 #### Update Function
 
@@ -434,30 +439,32 @@ JSON object:
 
 JSON object:
 
-- `provider` - `object` - required, provider specific information about a function, depends on type:
-  - for AWS Lambda:
-    - `type` - `string` - required, provider type: `awslambda`
-    - `arn` - `string` - required, AWS ARN identifier
-    - `region` - `string` - required, region name
-    - `awsAccessKeyID` - `string` - optional, AWS API key ID
-    - `awsSecretAccessKey` - `string` - optional, AWS API key
-    - `awsSessionToken` - `string` - optional, AWS session token
-  - for HTTP function:
-    - `type` - `string` - required, provider type: `http`
-    - `url` - `string` - required, the URL of an http or https remote endpoint
+* `provider` - `object` - required, provider specific information about a function, depends on type:
+  * for AWS Lambda:
+    * `type` - `string` - required, provider type: `awslambda`
+    * `arn` - `string` - required, AWS ARN identifier
+    * `region` - `string` - required, region name
+    * `awsAccessKeyID` - `string` - optional, AWS API key ID
+    * `awsSecretAccessKey` - `string` - optional, AWS API key
+    * `awsSessionToken` - `string` - optional, AWS session token
+  * for HTTP function:
+    * `type` - `string` - required, provider type: `http`
+    * `url` - `string` - required, the URL of an http or https remote endpoint
 
 **Response**
 
 Status code:
-- `200 OK` on success
-- `400 Bad Request` on validation error
-- `404 Not Found` if function doesn't exists
+
+* `200 OK` on success
+* `400 Bad Request` on validation error
+* `404 Not Found` if function doesn't exists
 
 JSON object:
-- `functionId` - `string` - function name
-- `provider` - `object` - provider specific information about a function
 
-------
+* `functionId` - `string` - function name
+* `provider` - `object` - provider specific information about a function
+
+---
 
 #### Delete Function
 
@@ -470,10 +477,11 @@ Delete all types of functions. This operation fails if the function is currently
 **Response**
 
 Status code:
-- `204 No Content` on success
-- `404 Not Found` if function doesn't exists
 
-------
+* `204 No Content` on success
+* `404 Not Found` if function doesn't exists
+
+---
 
 #### Get Functions
 
@@ -484,12 +492,14 @@ Status code:
 **Response**
 
 Status code:
-- `200 OK` on success
+
+* `200 OK` on success
 
 JSON object:
-- `functions` - `array` of `object` - functions:
-  - `functionId` - `string` - function name
-  - `provider` - `object` - provider specific information about a function
+
+* `functions` - `array` of `object` - functions:
+  * `functionId` - `string` - function name
+  * `provider` - `object` - provider specific information about a function
 
 ### Subscriptions
 
@@ -501,32 +511,33 @@ JSON object:
 
 **Request**
 
-- `event` - `string` - event name
-- `functionId` - `string` - ID of function to receive events
-- `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
-- `path` - `string` - optional, in case of `http` event, path that accepts requests, it starts with "/"
-- `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
-  - `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
-  - `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
-  - `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
-  - `allowCredentials` - `bool` - default: false
-
+* `event` - `string` - event name
+* `functionId` - `string` - ID of function to receive events
+* `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+* `path` - `string` - optional, in case of `http` event, path that accepts requests, it starts with "/"
+* `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
+  * `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
+  * `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
+  * `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
+  * `allowCredentials` - `bool` - default: false
 
 **Response**
 
 Status code:
-- `200 OK` on success
-- `400 Bad Request` on validation error
+
+* `200 OK` on success
+* `400 Bad Request` on validation error
 
 JSON object:
-- `subscriptionId` - `string` - subscription ID
-- `event` - `string` - event name
-- `functionId` - ID of function
-- `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
-- `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
-- `cors` - `object` - optional, in case of `http` event, CORS configuration
 
-------
+* `subscriptionId` - `string` - subscription ID
+* `event` - `string` - event name
+* `functionId` - ID of function
+* `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+* `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
+* `cors` - `object` - optional, in case of `http` event, CORS configuration
+
+---
 
 #### Delete Subscription
 
@@ -537,10 +548,11 @@ JSON object:
 **Response**
 
 Status code:
-- `204 No Content` on success
-- `404 Not Found` if subscription doesn't exists
 
-------
+* `204 No Content` on success
+* `404 Not Found` if subscription doesn't exists
+
+---
 
 #### Get Subscriptions
 
@@ -551,16 +563,18 @@ Status code:
 **Response**
 
 Status code:
-- `200 OK` on success
+
+* `200 OK` on success
 
 JSON object:
-- `subscriptions` - `array` of `object` - subscriptions
-  - `subscriptionId` - `string` - subscription ID
-  - `event` - `string` - event name
-  - `functionId` - ID of function
-  - `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
-  - `path` - `string` - optional, in case of `http` event, path that accepts requests
-  - `cors` - `object` - optional, in case of `http` event, CORS configuration
+
+* `subscriptions` - `array` of `object` - subscriptions
+  * `subscriptionId` - `string` - subscription ID
+  * `event` - `string` - event name
+  * `functionId` - ID of function
+  * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+  * `path` - `string` - optional, in case of `http` event, path that accepts requests
+  * `cors` - `object` - optional, in case of `http` event, CORS configuration
 
 ### Status
 
@@ -575,21 +589,21 @@ Dummy endpoint (always returning `200 OK` status code) for checking if the event
 System Events are special type of events emitted by the Event Gateway instance. They are emitted on each stage of event
 processing flow starting from receiving event to function invocation end. Those events are:
 
-- `gateway.event.received` - the event is emitted when an event was received by Events API. Data fields:
-  - `event` - event payload
-  - `path` - Events API path
-  - `headers` - HTTP request headers
-- `gateway.function.invoking` - the event emitted before invoking a function. Data fields:
-  - `event` - event payload
-  - `functionId` - registered function ID
-- `gateway.function.invoked` - the event emitted after successful function invocation. Data fields:
-  - `event` - event payload
-  - `functionId` - registered function ID
-  - `result` - function response
-- `gateway.function.invocationFailed` - the event emitted after failed function invocation. Data fields:
-  - `event` - event payload
-  - `functionId` - registered function ID
-  - `error` - invocation error
+* `gateway.event.received` - the event is emitted when an event was received by Events API. Data fields:
+  * `event` - event payload
+  * `path` - Events API path
+  * `headers` - HTTP request headers
+* `gateway.function.invoking` - the event emitted before invoking a function. Data fields:
+  * `event` - event payload
+  * `functionId` - registered function ID
+* `gateway.function.invoked` - the event emitted after successful function invocation. Data fields:
+  * `event` - event payload
+  * `functionId` - registered function ID
+  * `result` - function response
+* `gateway.function.invocationFailed` - the event emitted after failed function invocation. Data fields:
+  * `event` - event payload
+  * `functionId` - registered function ID
+  * `error` - invocation error
 
 ## Plugin System
 
@@ -618,7 +632,7 @@ For more details, see [the example plugin](plugin/example).
 
 ## Client Libraries
 
-- [FDK for Node.js](https://github.com/serverless/fdk)
+* [FDK for Node.js](https://github.com/serverless/fdk)
 
 ## Versioning
 
@@ -630,10 +644,9 @@ right now (v0.X.Y). The public APIs should not be considered stable. Every break
 
 ### What The Event Gateway is NOT
 
-- it's not a replacement for message queues (no message ordering, currently weak durability guarantees only)
-- it's not a replacement for streaming platforms (no processing capability and consumers group)
-- it's not a replacement for existing service discovery solutions from the microservices world
-
+* it's not a replacement for message queues (no message ordering, currently weak durability guarantees only)
+* it's not a replacement for streaming platforms (no processing capability and consumers group)
+* it's not a replacement for existing service discovery solutions from the microservices world
 
 ### Event Gateway vs FaaS Providers
 
@@ -641,34 +654,33 @@ The Event Gateway is NOT a FaaS platform. It integrates with existing FaaS provi
 Azure Functions, OpenWhisk Actions). The Event Gateway enables building large serverless architectures in a unified way
 across different providers.
 
-
 ## Architecture
 
 ### System Overview
 
 ```
-                                                    ┌──────────────┐                               
-                                                    │              │                               
-                                                    │    Client    │                               
-                                                    │              │                               
-                                                    └──────────────┘                               
-                                                            ▲                                      
-                                                            │                                      
-                                                          Event                                    
-                                                            │                                      
-                                                            ▼                                      
-                              ┌───────────────────────────────────────────────────────────┐        
-                              │                                                           │        
-                              │                   Event Gateway Cluster                   │        
-                              │                                                           │        
-                              └───────────────────────────────────────────────────────────┘        
-                                                            ▲                                      
-                                                            │                                      
-                                                            │                                      
-                              ┌─────────────────────────────┼─────────────────────────────┐        
-                              │                             │                             │        
-                              │                             │                             │        
-                              ▼                             ▼                             ▼        
+                                                    ┌──────────────┐
+                                                    │              │
+                                                    │    Client    │
+                                                    │              │
+                                                    └──────────────┘
+                                                            ▲
+                                                            │
+                                                          Event
+                                                            │
+                                                            ▼
+                              ┌───────────────────────────────────────────────────────────┐
+                              │                                                           │
+                              │                   Event Gateway Cluster                   │
+                              │                                                           │
+                              └───────────────────────────────────────────────────────────┘
+                                                            ▲
+                                                            │
+                                                            │
+                              ┌─────────────────────────────┼─────────────────────────────┐
+                              │                             │                             │
+                              │                             │                             │
+                              ▼                             ▼                             ▼
                       ┌───────────────┐             ┌───────────────┐             ┌───────────────┐
                       │  AWS Lambda   │             │ Google Cloud  │             │Azure Function │
                       │   Function    │             │   Function    │             │               │
@@ -744,10 +756,10 @@ rarely-changing external service. In SOA it involves much more network communica
 
 The following systems are solutions those problems:
 
-- [Linkerd](https://linkerd.io/)
-- [Istio](https://istio.io/)
-- [Hystrix](https://github.com/Netflix/Hystrix/wiki) (library, not sidecar)
-- [Finagle](https://twitter.github.io/finagle/) (library, not sidecar)
+* [Linkerd](https://linkerd.io/)
+* [Istio](https://istio.io/)
+* [Hystrix](https://github.com/Netflix/Hystrix/wiki) (library, not sidecar)
+* [Finagle](https://twitter.github.io/finagle/) (library, not sidecar)
 
 The main goal of those tools is to manage the inconveniences of network communication.
 
@@ -766,14 +778,14 @@ Tools like Envoy/Linkerd solve different domain of technical problems that doesn
 
 ### Service Discovery in FaaS = Function Discovery
 
-Service discovery problems may be relevant to serverless architectures, especially when we have a multi-cloud setup or we want to call a serverless function from a legacy system (microservices, etc...). There is a need for some proxy that will know where the function is actually deployed and have  retry logic built-in. Mapping from function name to serverless function calling metadata is a different problem from tracking the availability of a changing number of service instances. That's why there is a room for new tools that solves **function discovery** problem rather than the service discovery problem. Those problems are fundamentally different.
+Service discovery problems may be relevant to serverless architectures, especially when we have a multi-cloud setup or we want to call a serverless function from a legacy system (microservices, etc...). There is a need for some proxy that will know where the function is actually deployed and have retry logic built-in. Mapping from function name to serverless function calling metadata is a different problem from tracking the availability of a changing number of service instances. That's why there is a room for new tools that solves **function discovery** problem rather than the service discovery problem. Those problems are fundamentally different.
 
 ## Community
 
-- [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/MjI5NzY1ODM2MTc3LTE1MDM0NDIyOTUtMDgxNTcxMTcxNg)
-- [Newsletter](http://eepurl.com/b8dv4P)
-- [Forum](http://forum.serverless.com)
-- [Meetups](https://www.meetup.com/pro/serverless/)
-- [Twitter](https://twitter.com/goserverless)
-- [Facebook](https://www.facebook.com/serverless)
-- [Contact Us](mailto:hello@serverless.com)
+* [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/MjI5NzY1ODM2MTc3LTE1MDM0NDIyOTUtMDgxNTcxMTcxNg)
+* [Newsletter](http://eepurl.com/b8dv4P)
+* [Forum](http://forum.serverless.com)
+* [Meetups](https://www.meetup.com/pro/serverless/)
+* [Twitter](https://twitter.com/goserverless)
+* [Facebook](https://www.facebook.com/serverless)
+* [Contact Us](mailto:hello@serverless.com)
