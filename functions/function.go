@@ -57,7 +57,7 @@ type Provider struct {
 	// AWS Lambda function
 	ARN                string `json:"arn,omitempty"`
 	Region             string `json:"region,omitempty"`
-	AWSAccessKeyID     string `json:"awsAccessKeyID,omitempty"`
+	AWSAccessKeyID     string `json:"awsAccessKeyId,omitempty"`
 	AWSSecretAccessKey string `json:"awsSecretAccessKey,omitempty"`
 	AWSSessionToken    string `json:"awsSessionToken,omitempty"`
 
