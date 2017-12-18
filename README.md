@@ -408,7 +408,7 @@ JSON object:
     * `type` - `string` - required, provider type: `awslambda`
     * `arn` - `string` - required, AWS ARN identifier
     * `region` - `string` - required, region name
-    * `awsAccessKeyID` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
+    * `awsAccessKeyId` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
     * `awsSecretAccessKey` - `string` - optional, AWS API access key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
     * `awsSessionToken` - `string` - optional, AWS session token
   * for HTTP function:
@@ -444,7 +444,7 @@ JSON object:
     * `type` - `string` - required, provider type: `awslambda`
     * `arn` - `string` - required, AWS ARN identifier
     * `region` - `string` - required, region name
-    * `awsAccessKeyID` - `string` - optional, AWS API key ID
+    * `awsAccessKeyId` - `string` - optional, AWS API key ID
     * `awsSecretAccessKey` - `string` - optional, AWS API key
     * `awsSessionToken` - `string` - optional, AWS session token
   * for HTTP function:
