@@ -145,11 +145,11 @@ func TestRouterServeHTTP_ExtractPathFromHostedDomain(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/name/app/dev/test").Return(nil, pathtree.Params{}, &cors.CORS{}).MaxTimes(1)
+	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/custom/test").Return(nil, pathtree.Params{}, &cors.CORS{}).MaxTimes(1)
 	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
 	router := testrouter(target)
 
-	req, _ := http.NewRequest(http.MethodGet, "https://dev---app---name.slsgateway.com/test", nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://custom.slsgateway.com/test", nil)
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, req)
 
