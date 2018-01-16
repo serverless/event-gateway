@@ -498,12 +498,7 @@ func extractPath(host, path string) string {
 	rxp, _ := regexp.Compile(hostedDomain)
 	if rxp.MatchString(host) {
 		subdomain := strings.Split(host, ".")[0]
-		segments := strings.Split(subdomain, "---")
-		extracted = ""
-		for i := len(segments) - 1; i >= 0; i-- {
-			extracted += "/" + segments[i]
-		}
-		extracted += path
+		extracted = "/" + subdomain + path
 	}
 	return extracted
 }
