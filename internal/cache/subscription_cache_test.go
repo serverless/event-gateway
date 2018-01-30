@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestSubscriptionCacheModified(t *testing.T) {
+func TestSubscriptionCacheModifiedEvents(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
 	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "event": "test.event", "functionId": "testfunc1", "path": "/"}`))
@@ -51,7 +51,7 @@ func TestSubscriptionCacheModifiedCORSConfiguration(t *testing.T) {
 	assert.Equal(t, &cors.CORS{Origins: []string{"http://example.com"}}, corsConfig)
 }
 
-func TestSubscriptionCacheModified_WrongPayload(t *testing.T) {
+func TestSubscriptionCacheModifiedEventsWrongPayload(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
 	scache.Modified("testsub", []byte(`not json`))
@@ -59,7 +59,7 @@ func TestSubscriptionCacheModified_WrongPayload(t *testing.T) {
 	assert.Equal(t, []functions.FunctionID(nil), scache.eventToFunctions["/"]["test.event"])
 }
 
-func TestSubscriptionCacheModifiedDeleted(t *testing.T) {
+func TestSubscriptionCacheModifiedEventsDeleted(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
 	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "event": "test.event", "functionId": "testfunc1", "path": "/"}`))
@@ -69,7 +69,7 @@ func TestSubscriptionCacheModifiedDeleted(t *testing.T) {
 	assert.Equal(t, []functions.FunctionID{functions.FunctionID("testfunc2")}, scache.eventToFunctions["/"]["test.event"])
 }
 
-func TestSubscriptionCacheModifiedDeletedHTTPSubscription(t *testing.T) {
+func TestSubscriptionCacheModifiedHTTPSubscriptionDeleted(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
 	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "event": "http", "functionId": "testfunc1", "path": "/", "method": "GET"}`))
@@ -79,11 +79,33 @@ func TestSubscriptionCacheModifiedDeletedHTTPSubscription(t *testing.T) {
 	assert.Nil(t, id)
 }
 
-func TestSubscriptionCacheModifiedDeletedLast(t *testing.T) {
+func TestSubscriptionCacheModifiedEventsDeletedLast(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
 	scache.Modified("testsub", []byte(`{"subscriptionId":"testsub", "event": "test.event", "functionId": "testfunc", "path": "/"}`))
 	scache.Deleted("testsub", []byte(`{"subscriptionId":"testsub", "event": "test.event", "functionId": "testfunc", "path": "/"}`))
 
 	assert.Equal(t, []functions.FunctionID(nil), scache.eventToFunctions["/"]["test.event"])
+}
+
+func TestSubscriptionCacheModifiedInvokable(t *testing.T) {
+	scache := newSubscriptionCache(zap.NewNop())
+
+	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "event": "invoke", "functionId": "testfunc1", "path": "/"}`))
+	scache.Modified("testsub2", []byte(`{"subscriptionId":"testsub2", "event": "invoke", "functionId": "testfunc2", "path": "/"}`))
+
+	_, exists := scache.invokable["/"][functions.FunctionID("testfunc1")]
+	assert.Equal(t, true, exists)
+	_, exists = scache.invokable["/"][functions.FunctionID("testfunc2")]
+	assert.Equal(t, true, exists)
+}
+
+func TestSubscriptionCacheModifiedInvokableDeleted(t *testing.T) {
+	scache := newSubscriptionCache(zap.NewNop())
+
+	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "event": "invoke", "functionId": "testfunc1", "path": "/"}`))
+	scache.Deleted("testsub1", []byte(`{"subscriptionId":"testsub1", "event": "invoke", "functionId": "testfunc1", "path": "/"}`))
+
+	_, exists := scache.invokable["/"][functions.FunctionID("testfunc1")]
+	assert.Equal(t, false, exists)
 }

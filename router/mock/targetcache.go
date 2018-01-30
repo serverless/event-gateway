@@ -54,6 +54,16 @@ func (_mr *_MockTargeterRecorder) HTTPBackingFunction(arg0, arg1 interface{}) *g
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "HTTPBackingFunction", arg0, arg1)
 }
 
+func (_m *MockTargeter) InvokableFunction(_param0 string, _param1 functions.FunctionID) bool {
+	ret := _m.ctrl.Call(_m, "InvokableFunction", _param0, _param1)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+func (_mr *_MockTargeterRecorder) InvokableFunction(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "InvokableFunction", arg0, arg1)
+}
+
 func (_m *MockTargeter) SubscribersOfEvent(_param0 string, _param1 event.Type) []functions.FunctionID {
 	ret := _m.ctrl.Call(_m, "SubscribersOfEvent", _param0, _param1)
 	ret0, _ := ret[0].([]functions.FunctionID)

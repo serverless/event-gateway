@@ -10,6 +10,7 @@ import (
 // Targeter is an interface for retrieving cached configuration for driving performance-sensitive routing decisions.
 type Targeter interface {
 	HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params, *cors.CORS)
+	InvokableFunction(path string, functionID functions.FunctionID) bool
 	Function(functionID functions.FunctionID) *functions.Function
 	SubscribersOfEvent(path string, eventType event.Type) []functions.FunctionID
 }

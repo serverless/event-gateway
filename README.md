@@ -281,7 +281,8 @@ the data block is base64 encoded.
 
 #### Invoke Event
 
-`invoke` is a built-in type of event allowing to call functions synchronously.
+`invoke` is a built-in event type allowing synchronous invocations. Function will react to this event only if there is a
+subscription created beforehand.
 
 ### Emit a Custom Event
 

@@ -35,6 +35,15 @@ func (tc *Target) HTTPBackingFunction(method, path string) (*functions.FunctionI
 	return root.Resolve(path)
 }
 
+// InvokableFunction returns function ID for handling invoke sync event.
+func (tc *Target) InvokableFunction(path string, functionID functions.FunctionID) bool {
+	tc.subscriptionCache.RLock()
+	defer tc.subscriptionCache.RUnlock()
+
+	_, exists := tc.subscriptionCache.invokable[path][functionID]
+	return exists
+}
+
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
 func (tc *Target) Function(functionID functions.FunctionID) *functions.Function {
 	tc.functionCache.RLock()
