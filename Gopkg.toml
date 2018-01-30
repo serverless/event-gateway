@@ -36,6 +36,7 @@ ignored = ["github.com/hashicorp/go-plugin", "github.com/hashicorp/go-hclog", "g
 
 [[constraint]]
   name = "github.com/golang/mock"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/julienschmidt/httprouter"

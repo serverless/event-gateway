@@ -89,9 +89,10 @@
   version = "v0.3"
 
 [[projects]]
+  branch = "master"
   name = "github.com/golang/mock"
   packages = ["gomock"]
-  revision = "bd3c8e81be01eef76d4b503f5e687d2d1354d2d9"
+  revision = "b3e60bcdc577185fce3cf625fc96b62857ce5574"
 
 [[projects]]
   name = "github.com/golang/protobuf"
@@ -153,7 +154,7 @@
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
-  packages = ["prometheus"]
+  packages = ["prometheus","prometheus/promhttp"]
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
   version = "v0.8.0"
 
@@ -256,6 +257,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d929e4718556437d9d53df02afe7c1f3ada4650fd2cbda3fb33d34f7221e55f9"
+  inputs-digest = "1df318290105d69ef5af96a69c5e35d34ff3b5dcc7b19280a96f138d175eee9a"
   solver-name = "gps-cdcl"
   solver-version = 1
