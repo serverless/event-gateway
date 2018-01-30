@@ -54,6 +54,7 @@ func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
 	target.EXPECT().Function(functions.FunctionID("testfunc")).Return(nil).MaxTimes(1)
+	target.EXPECT().InvokableFunction("/", functions.FunctionID("testfunc")).Return(true).MaxTimes(1)
 	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
 	router := testrouter(target)
 

@@ -17,6 +17,8 @@ type subscriptionCache struct {
 	eventToFunctions map[string]map[event.Type][]functions.FunctionID
 	// endpoints maps HTTP method to internal/pathtree. Tree struct which is used for resolving HTTP requests paths.
 	endpoints map[string]*pathtree.Node
+	// invokable stores functions that have invoke subscription
+	invokable map[string]map[functions.FunctionID]struct{}
 	log       *zap.Logger
 }
 
@@ -24,6 +26,7 @@ func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	return &subscriptionCache{
 		eventToFunctions: map[string]map[event.Type][]functions.FunctionID{},
 		endpoints:        map[string]*pathtree.Node{},
+		invokable:        map[string]map[functions.FunctionID]struct{}{},
 		log:              log,
 	}
 }
@@ -50,6 +53,15 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 		if err != nil {
 			c.log.Error("Could not add path to the tree.", zap.Error(err), zap.String("path", s.Path), zap.String("method", s.Method))
 		}
+	} else if s.Event == event.TypeInvoke {
+		fnSet, exists := c.invokable[s.Path]
+		if exists {
+			fnSet[s.FunctionID] = struct{}{}
+		} else {
+			fnSet := map[functions.FunctionID]struct{}{}
+			fnSet[s.FunctionID] = struct{}{}
+			c.invokable[s.Path] = fnSet
+		}
 	} else {
 		c.createPath(s.Path)
 		ids, exists := c.eventToFunctions[s.Path][s.Event]
@@ -75,29 +87,11 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 	}
 
 	if oldSub.Event == event.TypeHTTP {
-		root := c.endpoints[oldSub.Method]
-		if root == nil {
-			return
-		}
-		err := root.DeleteRoute(oldSub.Path)
-		if err != nil {
-			c.log.Error("Could not delete path from the tree.", zap.Error(err), zap.String("path", oldSub.Path), zap.String("method", oldSub.Method))
-		}
+		c.deleteEndpoint(oldSub)
+	} else if oldSub.Event == event.TypeInvoke {
+		c.deleteInvokable(oldSub)
 	} else {
-		ids, exists := c.eventToFunctions[oldSub.Path][oldSub.Event]
-		if exists {
-			for i, id := range ids {
-				if id == oldSub.FunctionID {
-					ids = append(ids[:i], ids[i+1:]...)
-					break
-				}
-			}
-			c.eventToFunctions[oldSub.Path][oldSub.Event] = ids
-
-			if len(ids) == 0 {
-				delete(c.eventToFunctions[oldSub.Path], oldSub.Event)
-			}
-		}
+		c.deleteSubscription(oldSub)
 	}
 }
 
@@ -105,5 +99,44 @@ func (c *subscriptionCache) createPath(path string) {
 	_, exists := c.eventToFunctions[path]
 	if !exists {
 		c.eventToFunctions[path] = map[event.Type][]functions.FunctionID{}
+	}
+}
+
+func (c *subscriptionCache) deleteEndpoint(sub subscriptions.Subscription) {
+	root := c.endpoints[sub.Method]
+	if root == nil {
+		return
+	}
+	err := root.DeleteRoute(sub.Path)
+	if err != nil {
+		c.log.Error("Could not delete path from the tree.", zap.Error(err), zap.String("path", sub.Path), zap.String("method", sub.Method))
+	}
+}
+
+func (c *subscriptionCache) deleteInvokable(sub subscriptions.Subscription) {
+	fnSet, exists := c.invokable[sub.Path]
+	if exists {
+		delete(fnSet, sub.FunctionID)
+
+		if len(fnSet) == 0 {
+			delete(c.invokable, sub.Path)
+		}
+	}
+}
+
+func (c *subscriptionCache) deleteSubscription(sub subscriptions.Subscription) {
+	ids, exists := c.eventToFunctions[sub.Path][sub.Event]
+	if exists {
+		for i, id := range ids {
+			if id == sub.FunctionID {
+				ids = append(ids[:i], ids[i+1:]...)
+				break
+			}
+		}
+		c.eventToFunctions[sub.Path][sub.Event] = ids
+
+		if len(ids) == 0 {
+			delete(c.eventToFunctions[sub.Path], sub.Event)
+		}
 	}
 }

@@ -80,8 +80,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if event.Type == eventpkg.TypeInvoke {
-				routerEventsSyncReceived.Inc()
-				router.handleInvokeEvent(event, w, r)
+				router.handleInvokeEvent(path, event, w, r)
 			} else if !event.IsSystem() {
 				router.enqueueWork(path, event)
 				w.WriteHeader(http.StatusAccepted)
@@ -306,8 +305,15 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	}
 }
 
-func (router *Router) handleInvokeEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
+func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
+	routerEventsSyncReceived.Inc()
+
 	functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
+	if !router.targetCache.InvokableFunction(path, functionID) {
+		http.Error(w, "function or subscription not found", http.StatusNotFound)
+		return
+	}
+
 	resp, err := router.callFunction(functionID, *event)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
