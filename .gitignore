@@ -4,3 +4,4 @@ vendor
 *.swo
 *.db
 default.etcd/
+dist/
