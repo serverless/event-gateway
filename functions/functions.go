@@ -128,43 +128,48 @@ func (f *Functions) validateFunction(fn *Function) error {
 		return &ErrValidation{err.Error()}
 	}
 
-	if fn.Provider.Type == AWSLambda {
-		if fn.Provider.ARN == "" || fn.Provider.Region == "" {
-			return &ErrValidation{"Missing required fields for AWS Lambda function."}
-		}
-	}
-
-	if fn.Provider.Type == Emulator {
-		return f.validateEmulator(fn)
-	}
-
-	if fn.Provider.Type == HTTPEndpoint && fn.Provider.URL == "" {
-		return &ErrValidation{"Missing required fields for HTTP endpoint."}
-	}
-
-	if fn.Provider.Type == Weighted {
-		return f.validateWeighted(fn)
-	}
-
-	if fn.Provider.Type == AmazonKinesis {
-		if fn.Provider.StreamName == "" || fn.Provider.Region == "" {
-			return &ErrValidation{"Missing required fields for Amazon Kinesis stream."}
-		}
-	}
+    switch fn.Provider.Type {
+    case AWSLambda:
+      return validateAWSLambda(fn)
+    case Emulator:
+      return validateEmulator(fn)
+    case HTTPEndpoint:
+      return validateHTTPEndpoint(fn)
+    case Weighted:
+      return validateWeighted(fn)
+    case AmazonKinesis:
+      return validateAmazonKinesis(fn)
+    }
 
 	return nil
 }
 
-func (f *Functions) validateEmulator(fn *Function) error {
+func validateAWSLambda(fn *Function) error {
+    if fn.Provider.ARN == "" || fn.Provider.Region == "" {
+        return &ErrValidation{"Missing required fields for AWS Lambda function."}
+    }
+
+    return nil
+}
+
+func validateEmulator(fn *Function) error {
 	if fn.Provider.EmulatorURL == "" {
 		return &ErrValidation{"Missing required field emulatorURL for Emulator function."}
 	} else if fn.Provider.APIVersion == "" {
 		return &ErrValidation{"Missing required field apiVersion for Emulator function."}
 	}
+
 	return nil
 }
 
-func (f *Functions) validateWeighted(fn *Function) error {
+func validateHTTPEndpoint(fn *Function) error {
+    if fn.Provider.URL == "" {
+		return &ErrValidation{"Missing required fields for HTTP endpoint."}
+    }
+    return nil
+}
+
+func validateWeighted(fn *Function) error {
 	if len(fn.Provider.Weighted) == 0 {
 		return &ErrValidation{"Missing required fields for weighted function."}
 	}
@@ -179,4 +184,12 @@ func (f *Functions) validateWeighted(fn *Function) error {
 	}
 
 	return nil
+}
+
+func validateAmazonKinesis(fn *Function) error {
+    if fn.Provider.StreamName == "" || fn.Provider.Region == "" {
+        return &ErrValidation{"Missing required fields for Amazon Kinesis stream."}
+    }
+
+    return nil
 }
