@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/aws/aws-sdk-go/service/kinesis"
 )
 
 // Caller sends a payload to a target function
@@ -48,11 +49,13 @@ const (
 	HTTPEndpoint ProviderType = "http"
 	// Emulator represents a function registered with the local emulator.
 	Emulator ProviderType = "emulator"
+	// AmazonKinesis represents an event pump to a Kinesis stream
+	AmazonKinesis ProviderType = "kinesis"
 )
 
 // Provider provides provider specific info about a function
 type Provider struct {
-	Type ProviderType `json:"type" validate:"required,eq=awslambda|eq=http|eq=weighted|eq=emulator"`
+	Type ProviderType `json:"type" validate:"required,eq=awslambda|eq=http|eq=weighted|eq=emulator|eq=kinesis"`
 
 	// AWS Lambda function
 	ARN                string `json:"arn,omitempty"`
@@ -70,6 +73,9 @@ type Provider struct {
 	// Emulator function
 	EmulatorURL string `json:"emulatorUrl,omitempty"`
 	APIVersion  string `json:"apiVersion,omitempty"`
+
+	// Kinesis pump
+	StreamName string `json:"streamName,omitempty"`
 }
 
 // Call tries to send a payload to a target function
@@ -81,6 +87,8 @@ func (f *Function) Call(eventType string, payload []byte) ([]byte, error) {
 		return f.callEmulator(eventType, payload)
 	case HTTPEndpoint:
 		return f.callHTTP(eventType, payload)
+	case AmazonKinesis:
+		return f.callAmazonKinesis(eventType, payload)
 	}
 
 	return []byte{}, errors.New("calling this kind of function is not implemented")
@@ -216,6 +224,29 @@ func (f *Function) callEmulator(eventType string, payload []byte) ([]byte, error
 
 	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
+}
+
+func (f *Function) callAmazonKinesis(eventType string, payload []byte) ([]byte, error) {
+	amazonkinesis := kinesis.New(session.New(aws.NewConfig().WithRegion(f.Provider.Region)))
+
+	if f.Provider.AWSAccessKeyID != "" {
+		creds := credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, "")
+		amazonkinesis = kinesis.New(session.New(aws.NewConfig().WithRegion(f.Provider.Region).WithCredentials(creds)))
+	}
+
+	putRecordOutput, err := amazonkinesis.PutRecord(&kinesis.PutRecordInput{
+		StreamName:   &f.Provider.StreamName,
+		Data:         payload,
+		PartitionKey: &eventType,
+	})
+
+	if err != nil {
+		if awserr, ok := err.(awserr.Error); ok {
+            return nil, &ErrFunctionCallFailed{awserr}
+		}
+	}
+
+	return []byte(*putRecordOutput.SequenceNumber), err
 }
 
 // functionIDValidator validates if field contains allowed characters for function ID

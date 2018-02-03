@@ -146,6 +146,12 @@ func (f *Functions) validateFunction(fn *Function) error {
 		return f.validateWeighted(fn)
 	}
 
+	if fn.Provider.Type == AmazonKinesis {
+		if fn.Provider.StreamName == "" || fn.Provider.Region == "" {
+			return &ErrValidation{"Missing required fields for Amazon Kinesis stream."}
+		}
+	}
+
 	return nil
 }
 
