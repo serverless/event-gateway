@@ -24,7 +24,7 @@ import (
 
 // Caller sends a payload to a target function
 type Caller interface {
-	Call([]byte) ([]byte, error)
+	Call(string, []byte) ([]byte, error)
 }
 
 // FunctionID uniquely identifies a function
@@ -73,14 +73,14 @@ type Provider struct {
 }
 
 // Call tries to send a payload to a target function
-func (f *Function) Call(payload []byte) ([]byte, error) {
+func (f *Function) Call(eventType string, payload []byte) ([]byte, error) {
 	switch f.Provider.Type {
 	case AWSLambda:
-		return f.callAWSLambda(payload)
+		return f.callAWSLambda(eventType, payload)
 	case Emulator:
-		return f.callEmulator(payload)
+		return f.callEmulator(eventType, payload)
 	case HTTPEndpoint:
-		return f.callHTTP(payload)
+		return f.callHTTP(eventType, payload)
 	}
 
 	return []byte{}, errors.New("calling this kind of function is not implemented")
@@ -126,7 +126,7 @@ func (w WeightedFunctions) Choose() (FunctionID, error) {
 	return chosenFunction, nil
 }
 
-func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
+func (f *Function) callAWSLambda(eventType string, payload []byte) ([]byte, error) {
 	config := aws.NewConfig().WithRegion(f.Provider.Region)
 	if f.Provider.AWSAccessKeyID != "" && f.Provider.AWSSecretAccessKey != "" {
 		config = config.WithCredentials(credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, f.Provider.AWSSessionToken))
@@ -156,7 +156,7 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 	return invokeOutput.Payload, err
 }
 
-func (f *Function) callHTTP(payload []byte) ([]byte, error) {
+func (f *Function) callHTTP(eventType string, payload []byte) ([]byte, error) {
 	client := http.Client{
 		Timeout: time.Second * 5,
 	}
@@ -173,7 +173,7 @@ func (f *Function) callHTTP(payload []byte) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func (f *Function) callEmulator(payload []byte) ([]byte, error) {
+func (f *Function) callEmulator(eventType string, payload []byte) ([]byte, error) {
 	type emulatorInvokeSchema struct {
 		FunctionID string      `json:"functionId"`
 		Payload    interface{} `json:"payload"`
