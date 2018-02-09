@@ -17,6 +17,7 @@ import (
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/functions"
 	"github.com/serverless/event-gateway/plugin"
+	"github.com/serverless/event-gateway/internal/httpapi"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
@@ -47,9 +48,11 @@ func New(workersNumber uint, backlogLength uint, targetCache Targeter, plugins *
 }
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	encoder := json.NewEncoder(w)
 	// if we're draining requests, spit back a 503
 	if router.isDraining() {
-		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: http.StatusText(http.StatusServiceUnavailable) }}})
 		return
 	}
 
@@ -60,7 +63,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		event, _, err := router.eventFromRequest(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 			return
 		}
 
@@ -75,7 +79,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			event, path, err := router.eventFromRequest(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				w.WriteHeader(http.StatusBadRequest)
+				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 				return
 			}
 
@@ -242,6 +247,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	return event, path, nil
 }
 func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
+	encoder := json.NewEncoder(w)
 	reqMethod := r.Method
 
 	// check if CORS pre-flight request
@@ -253,7 +259,8 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	)
 	if backingFunction == nil {
 		router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
-		http.Error(w, "resource not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "resource not found" }}})
 		return
 	}
 
@@ -263,7 +270,8 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		event.Data = httpdata
 		resp, err := router.callFunction(*backingFunction, *event)
 		if err != nil {
-			http.Error(w, "function call failed", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "function call failed" }}})
 			return
 		}
 
@@ -271,7 +279,8 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		err = json.Unmarshal(resp, httpResponse)
 		if err != nil {
 			router.log.Info("HTTP response object malformed.", zap.String("response", string(resp)))
-			http.Error(w, "HTTP response object malformed", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "HTTP response object malformed" }}})
 			return
 		}
 
@@ -283,7 +292,8 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 
 		_, err = w.Write(resp)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 			return
 		}
 
@@ -306,23 +316,27 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 }
 
 func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
+	encoder := json.NewEncoder(w)
 	routerEventsSyncReceived.Inc()
 
 	functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
 	if !router.targetCache.InvokableFunction(path, functionID) {
-		http.Error(w, "function or subscription not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "function or subscription not found" }}})
 		return
 	}
 
 	resp, err := router.callFunction(functionID, *event)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 		return
 	}
 
 	_, err = w.Write(resp)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 		return
 	}
 
