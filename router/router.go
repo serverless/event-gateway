@@ -408,7 +408,7 @@ func (router *Router) callFunction(backingFunctionID functions.FunctionID, event
 		return nil, err
 	}
 
-	result, err := f.Call(payload)
+	result, err := f.Call(string(event.Type), payload)
 	if err != nil {
 		router.log.Info("Function invocation failed.",
 			zap.String("functionId", string(backingFunctionID)), zap.Object("event", event), zap.Error(err))
