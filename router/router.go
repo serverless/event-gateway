@@ -73,7 +73,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				w.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintln(w, "custom event can be emitted only with POST method")
+				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "custom event can be emitted only with POST method" }}})
 				return
 			}
 
