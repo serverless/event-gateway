@@ -52,6 +52,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// if we're draining requests, spit back a 503
 	if router.isDraining() {
 		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Header().Set("content-type", "application/json")
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: http.StatusText(http.StatusServiceUnavailable) }}})
 		return
 	}
@@ -64,6 +65,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		event, _, err := router.eventFromRequest(r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Set("content-type", "application/json")
 			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 			return
 		}
@@ -73,6 +75,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				w.WriteHeader(http.StatusBadRequest)
+				w.Header().Set("content-type", "application/json")
 				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "custom event can be emitted only with POST method" }}})
 				return
 			}
@@ -80,6 +83,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			event, path, err := router.eventFromRequest(r)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
+				w.Header().Set("content-type", "application/json")
 				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 				return
 			}
@@ -260,6 +264,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	if backingFunction == nil {
 		router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
 		w.WriteHeader(http.StatusNotFound)
+		w.Header().Set("content-type", "application/json")
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "resource not found" }}})
 		return
 	}
@@ -271,6 +276,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		resp, err := router.callFunction(*backingFunction, *event)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			w.Header().Set("content-type", "application/json")
 			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "function call failed" }}})
 			return
 		}
@@ -280,6 +286,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		if err != nil {
 			router.log.Info("HTTP response object malformed.", zap.String("response", string(resp)))
 			w.WriteHeader(http.StatusInternalServerError)
+			w.Header().Set("content-type", "application/json")
 			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "HTTP response object malformed" }}})
 			return
 		}
@@ -293,6 +300,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		_, err = w.Write(resp)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			w.Header().Set("content-type", "application/json")
 			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 			return
 		}
@@ -322,6 +330,7 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 	functionID := functions.FunctionID(r.Header.Get(headerFunctionID))
 	if !router.targetCache.InvokableFunction(path, functionID) {
 		w.WriteHeader(http.StatusNotFound)
+		w.Header().Set("content-type", "application/json")
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "function or subscription not found" }}})
 		return
 	}
@@ -329,6 +338,7 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 	resp, err := router.callFunction(functionID, *event)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("content-type", "application/json")
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 		return
 	}
@@ -336,6 +346,7 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 	_, err = w.Write(resp)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("content-type", "application/json")
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 		return
 	}
