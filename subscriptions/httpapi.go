@@ -48,7 +48,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		encoder.Encode(&httpapi.Error{Error: err.Error()})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 		return
 	}
 
@@ -70,7 +70,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-		encoder.Encode(&httpapi.Error{Error: err.Error()})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -83,7 +83,7 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 	subs, err := h.Subscriptions.GetAllSubscriptions()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		encoder.Encode(&httpapi.Error{Error: err.Error()})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
 	} else {
 		encoder.Encode(&subscriptions{subs})
 	}
