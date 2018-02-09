@@ -6,9 +6,7 @@ import (
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/internal/cors"
+	"github.com/serverless/event-gateway/api"
 	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/pathtree"
 )
@@ -24,7 +22,7 @@ type Target struct {
 
 // HTTPBackingFunction returns function ID for handling HTTP sync endpoint. It also returns matched URL parameters in
 // case of HTTP subscription containing parameters in path.
-func (tc *Target) HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params, *cors.CORS) {
+func (tc *Target) HTTPBackingFunction(method, path string) (*api.FunctionID, pathtree.Params, *api.CORS) {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
@@ -36,7 +34,7 @@ func (tc *Target) HTTPBackingFunction(method, path string) (*functions.FunctionI
 }
 
 // InvokableFunction returns function ID for handling invoke sync event.
-func (tc *Target) InvokableFunction(path string, functionID functions.FunctionID) bool {
+func (tc *Target) InvokableFunction(path string, functionID api.FunctionID) bool {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
@@ -45,14 +43,14 @@ func (tc *Target) InvokableFunction(path string, functionID functions.FunctionID
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
-func (tc *Target) Function(functionID functions.FunctionID) *functions.Function {
+func (tc *Target) Function(functionID api.FunctionID) *api.Function {
 	tc.functionCache.RLock()
 	defer tc.functionCache.RUnlock()
 	return tc.functionCache.cache[functionID]
 }
 
 // SubscribersOfEvent is used for determining which functions to forward messages to.
-func (tc *Target) SubscribersOfEvent(path string, eventType event.Type) []functions.FunctionID {
+func (tc *Target) SubscribersOfEvent(path string, eventType api.EventType) []api.FunctionID {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 

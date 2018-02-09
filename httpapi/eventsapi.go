@@ -1,15 +1,13 @@
-package api
+package httpapi
 
 import (
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/serverless/event-gateway/internal/httpapi"
 )
 
 // StartEventsAPI creates a new gateway endpoint and listens for requests.
-func StartEventsAPI(config httpapi.Config, router http.Handler) {
+func StartEventsAPI(router http.Handler, config ServerConfig) {
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
 		Handler:      router,
@@ -17,7 +15,7 @@ func StartEventsAPI(config httpapi.Config, router http.Handler) {
 		WriteTimeout: 540 * time.Second,
 	}
 
-	server := httpapi.Server{
+	server := Server{
 		Config:      config,
 		HTTPHandler: handler,
 	}

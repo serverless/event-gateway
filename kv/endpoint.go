@@ -1,4 +1,4 @@
-package subscriptions
+package kv
 
 import (
 	"net/url"

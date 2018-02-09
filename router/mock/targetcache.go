@@ -5,9 +5,7 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	event "github.com/serverless/event-gateway/event"
-	functions "github.com/serverless/event-gateway/functions"
-	cors "github.com/serverless/event-gateway/internal/cors"
+	api "github.com/serverless/event-gateway/api"
 	pathtree "github.com/serverless/event-gateway/internal/pathtree"
 )
 
@@ -32,9 +30,9 @@ func (_m *MockTargeter) EXPECT() *_MockTargeterRecorder {
 	return _m.recorder
 }
 
-func (_m *MockTargeter) Function(_param0 functions.FunctionID) *functions.Function {
+func (_m *MockTargeter) Function(_param0 api.FunctionID) *api.Function {
 	ret := _m.ctrl.Call(_m, "Function", _param0)
-	ret0, _ := ret[0].(*functions.Function)
+	ret0, _ := ret[0].(*api.Function)
 	return ret0
 }
 
@@ -42,11 +40,11 @@ func (_mr *_MockTargeterRecorder) Function(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Function", arg0)
 }
 
-func (_m *MockTargeter) HTTPBackingFunction(_param0 string, _param1 string) (*functions.FunctionID, pathtree.Params, *cors.CORS) {
+func (_m *MockTargeter) HTTPBackingFunction(_param0 string, _param1 string) (*api.FunctionID, pathtree.Params, *api.CORS) {
 	ret := _m.ctrl.Call(_m, "HTTPBackingFunction", _param0, _param1)
-	ret0, _ := ret[0].(*functions.FunctionID)
+	ret0, _ := ret[0].(*api.FunctionID)
 	ret1, _ := ret[1].(pathtree.Params)
-	ret2, _ := ret[2].(*cors.CORS)
+	ret2, _ := ret[2].(*api.CORS)
 	return ret0, ret1, ret2
 }
 
@@ -54,7 +52,7 @@ func (_mr *_MockTargeterRecorder) HTTPBackingFunction(arg0, arg1 interface{}) *g
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "HTTPBackingFunction", arg0, arg1)
 }
 
-func (_m *MockTargeter) InvokableFunction(_param0 string, _param1 functions.FunctionID) bool {
+func (_m *MockTargeter) InvokableFunction(_param0 string, _param1 api.FunctionID) bool {
 	ret := _m.ctrl.Call(_m, "InvokableFunction", _param0, _param1)
 	ret0, _ := ret[0].(bool)
 	return ret0
@@ -64,9 +62,9 @@ func (_mr *_MockTargeterRecorder) InvokableFunction(arg0, arg1 interface{}) *gom
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "InvokableFunction", arg0, arg1)
 }
 
-func (_m *MockTargeter) SubscribersOfEvent(_param0 string, _param1 event.Type) []functions.FunctionID {
+func (_m *MockTargeter) SubscribersOfEvent(_param0 string, _param1 api.EventType) []api.FunctionID {
 	ret := _m.ctrl.Call(_m, "SubscribersOfEvent", _param0, _param1)
-	ret0, _ := ret[0].([]functions.FunctionID)
+	ret0, _ := ret[0].([]api.FunctionID)
 	return ret0
 }
 

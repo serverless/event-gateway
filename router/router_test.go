@@ -9,9 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/golang/mock/gomock"
-	"github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/internal/cors"
+	"github.com/serverless/event-gateway/api"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/plugin"
 	"github.com/serverless/event-gateway/router/mock"
@@ -38,7 +36,7 @@ func TestRouterServeHTTP_HTTPEventFunctionNotFound(t *testing.T) {
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
 	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/notfound").Return(nil, pathtree.Params{}, nil).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", api.SystemEventReceivedType).Return([]api.FunctionID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodGet, "/notfound", nil)
@@ -53,9 +51,9 @@ func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().Function(functions.FunctionID("testfunc")).Return(nil).MaxTimes(1)
-	target.EXPECT().InvokableFunction("/", functions.FunctionID("testfunc")).Return(true).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().Function(api.FunctionID("testfunc")).Return(nil).MaxTimes(1)
+	target.EXPECT().InvokableFunction("/", api.FunctionID("testfunc")).Return(true).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", api.SystemEventReceivedType).Return([]api.FunctionID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodPost, "/", nil)
@@ -87,7 +85,7 @@ func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", api.SystemEventReceivedType).Return([]api.FunctionID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
@@ -103,12 +101,12 @@ func TestRouterServeHTTP_AllowCORSPreflightForHTTPEventWhenConfigured(t *testing
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	id := functions.FunctionID("testid")
-	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/test").Return(&id, pathtree.Params{}, &cors.CORS{
+	id := api.FunctionID("testid")
+	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/test").Return(&id, pathtree.Params{}, &api.CORS{
 		Origins: []string{"http://example.com"},
 		Methods: []string{"GET"},
 	}).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", api.SystemEventReceivedType).Return([]api.FunctionID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodOptions, "/test", nil)
@@ -146,8 +144,8 @@ func TestRouterServeHTTP_ExtractPathFromHostedDomain(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/custom/test").Return(nil, pathtree.Params{}, &cors.CORS{}).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/custom/test").Return(nil, pathtree.Params{}, &api.CORS{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", api.SystemEventReceivedType).Return([]api.FunctionID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodGet, "https://custom.slsgateway.com/test", nil)

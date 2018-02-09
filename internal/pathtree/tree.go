@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/internal/cors"
+	"github.com/serverless/event-gateway/api"
 )
 
 // Node is a data structure, inspired by prefix tree, used for routing HTTP requests in the Event Gateway. It's used for creating tree structure
@@ -14,8 +13,8 @@ import (
 type Node struct {
 	segment     string
 	children    map[string]*Node
-	functionID  *functions.FunctionID
-	cors        *cors.CORS
+	functionID  *api.FunctionID
+	cors        *api.CORS
 	parameter   string
 	isStatic    bool
 	isParameter bool
@@ -34,7 +33,7 @@ type Params map[string]string
 
 // AddRoute adds route to the tree. This function will panic in case of adding conflicting parameterized paths.
 // nolint: gocyclo
-func (n *Node) AddRoute(route string, functionID functions.FunctionID, corsConfig *cors.CORS) error {
+func (n *Node) AddRoute(route string, functionID api.FunctionID, corsConfig *api.CORS) error {
 	if route == "/" {
 		n.functionID = &functionID
 		n.cors = corsConfig
@@ -137,7 +136,7 @@ func (n *Node) DeleteRoute(route string) error {
 
 // Resolve takes request URL path and traverse the tree trying find corresponding route.
 // nolint: gocyclo
-func (n *Node) Resolve(path string) (*functions.FunctionID, Params, *cors.CORS) {
+func (n *Node) Resolve(path string) (*api.FunctionID, Params, *api.CORS) {
 	if path == "/" {
 		if n.functionID != nil {
 			return n.functionID, nil, n.cors

@@ -17,14 +17,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/julienschmidt/httprouter"
-	eventpkg "github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/embedded"
-	"github.com/serverless/event-gateway/internal/kv"
+	ikv "github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/sync"
+	"github.com/serverless/event-gateway/kv"
 	"github.com/serverless/event-gateway/plugin"
-	"github.com/serverless/event-gateway/subscriptions"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
 	etcd "github.com/serverless/libkv/store/etcd/v3"
@@ -55,7 +55,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			reqBuf, _ := ioutil.ReadAll(r.Body)
 
-			var event eventpkg.Event
+			var event api.Event
 			err := json.Unmarshal(reqBuf, &event)
 			if err != nil {
 				panic(err)
@@ -70,12 +70,12 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		}))
 	defer testSubscriberServer.Close()
 
-	subscriberFnID := functions.FunctionID("smileysubscriber")
+	subscriberFnID := api.FunctionID("smileysubscriber")
 	post(testAPIServer.URL+"/v1/functions",
-		functions.Function{
+		api.Function{
 			ID: subscriberFnID,
-			Provider: &functions.Provider{
-				Type: functions.HTTPEndpoint,
+			Provider: &api.Provider{
+				Type: api.HTTPEndpoint,
 				URL:  testSubscriberServer.URL,
 			},
 		})
@@ -84,12 +84,12 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	// set up pub/sub
 	eventType := "smileys"
 
-	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
+	post(testAPIServer.URL+"/v1/subscriptions", api.Subscription{
 		FunctionID: subscriberFnID,
-		Event:      eventpkg.Type(eventType),
+		Event:      api.EventType(eventType),
 		Path:       "/",
 	})
-	wait(router.WaitForSubscriber("/", eventpkg.Type(eventType)), "timed out waiting for subscriber to be configured!")
+	wait(router.WaitForSubscriber("/", api.EventType(eventType)), "timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
 	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")
@@ -116,19 +116,19 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	}))
 	defer testTargetServer.Close()
 
-	functionID := functions.FunctionID("httpresponse")
+	functionID := api.FunctionID("httpresponse")
 	post(testAPIServer.URL+"/v1/functions",
-		functions.Function{
+		api.Function{
 			ID: functionID,
-			Provider: &functions.Provider{
-				Type: functions.HTTPEndpoint,
+			Provider: &api.Provider{
+				Type: api.HTTPEndpoint,
 				URL:  testTargetServer.URL,
 			},
 		})
 	wait(router.WaitForFunction(functionID), "timed out waiting for function to be configured!")
 
-	post(testAPIServer.URL+"/v1/subscriptions", subscriptions.Subscription{
-		FunctionID: functions.FunctionID("httpresponse"),
+	post(testAPIServer.URL+"/v1/subscriptions", api.Subscription{
+		FunctionID: api.FunctionID("httpresponse"),
 		Event:      "http",
 		Method:     "GET",
 		Path:       "/httpresponse",
@@ -204,22 +204,24 @@ func newTestRouterServer(kvstore store.Store, log *zap.Logger) (*Router, *httpte
 func newConfigAPIServer(kvstore store.Store, log *zap.Logger) *httptest.Server {
 	apiRouter := httprouter.New()
 
-	fnsDB := kv.NewPrefixedStore("/serverless-event-gateway/functions", kvstore)
-	fns := &functions.Functions{
+	fnsDB := ikv.NewPrefixedStore("/serverless-event-gateway/functions", kvstore)
+	fns := &kv.Functions{
 		DB:  fnsDB,
 		Log: log,
 	}
-	fnsapi := &functions.HTTPAPI{Functions: fns}
-	fnsapi.RegisterRoutes(apiRouter)
 
-	subs := &subscriptions.Subscriptions{
-		SubscriptionsDB: kv.NewPrefixedStore("/serverless-event-gateway/subscriptions", kvstore),
-		EndpointsDB:     kv.NewPrefixedStore("/serverless-event-gateway/endpoints", kvstore),
+	subs := &kv.Subscriptions{
+		SubscriptionsDB: ikv.NewPrefixedStore("/serverless-event-gateway/subscriptions", kvstore),
+		EndpointsDB:     ikv.NewPrefixedStore("/serverless-event-gateway/endpoints", kvstore),
 		FunctionsDB:     fnsDB,
 		Log:             log,
 	}
-	subsapi := &subscriptions.HTTPAPI{Subscriptions: subs}
-	subsapi.RegisterRoutes(apiRouter)
+
+	ha := &httpapi.HTTPAPI{
+		Functions:     fns,
+		Subscriptions: subs,
+	}
+	ha.RegisterRoutes(apiRouter)
 
 	return httptest.NewServer(apiRouter)
 }

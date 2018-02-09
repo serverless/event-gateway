@@ -1,12 +1,14 @@
-package subscriptions
+package kv
 
 import (
 	"bytes"
 	"encoding/json"
+	"net/url"
+	"path"
+	"regexp"
 	"strings"
 
-	"github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/functions"
+	"github.com/serverless/event-gateway/api"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	istrings "github.com/serverless/event-gateway/internal/strings"
 	"github.com/serverless/libkv/store"
@@ -23,7 +25,7 @@ type Subscriptions struct {
 }
 
 // CreateSubscription creates subscription.
-func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, error) {
+func (ps Subscriptions) CreateSubscription(s *api.Subscription) (*api.Subscription, error) {
 	err := ps.validateSubscription(s)
 	if err != nil {
 		return nil, err
@@ -37,7 +39,7 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 		}
 	}
 
-	if s.Event == event.TypeHTTP {
+	if s.Event == api.EventTypeHTTP {
 		err = ps.createEndpoint(s.Method, s.Path)
 		if err != nil {
 			return nil, err
@@ -67,7 +69,7 @@ func (ps Subscriptions) CreateSubscription(s *Subscription) (*Subscription, erro
 }
 
 // DeleteSubscription deletes subscription.
-func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
+func (ps Subscriptions) DeleteSubscription(id api.SubscriptionID) error {
 	sub, err := ps.getSubscription(id)
 	if err != nil {
 		return err
@@ -78,7 +80,7 @@ func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 		return &ErrSubscriptionNotFound{sub.ID}
 	}
 
-	if sub.Event == event.TypeHTTP {
+	if sub.Event == api.EventTypeHTTP {
 		err = ps.deleteEndpoint(sub.Method, sub.Path)
 		if err != nil {
 			return err
@@ -91,8 +93,8 @@ func (ps Subscriptions) DeleteSubscription(id SubscriptionID) error {
 }
 
 // GetAllSubscriptions returns array of all Subscription.
-func (ps Subscriptions) GetAllSubscriptions() ([]*Subscription, error) {
-	subs := []*Subscription{}
+func (ps Subscriptions) GetAllSubscriptions() ([]*api.Subscription, error) {
+	subs := []*api.Subscription{}
 
 	kvs, err := ps.SubscriptionsDB.List("", &store.ReadOptions{Consistent: true})
 	if err != nil {
@@ -100,7 +102,7 @@ func (ps Subscriptions) GetAllSubscriptions() ([]*Subscription, error) {
 	}
 
 	for _, kv := range kvs {
-		s := &Subscription{}
+		s := &api.Subscription{}
 		dec := json.NewDecoder(bytes.NewReader(kv.Value))
 		err = dec.Decode(s)
 		if err != nil {
@@ -114,13 +116,13 @@ func (ps Subscriptions) GetAllSubscriptions() ([]*Subscription, error) {
 }
 
 // getSubscription returns subscription.
-func (ps Subscriptions) getSubscription(id SubscriptionID) (*Subscription, error) {
+func (ps Subscriptions) getSubscription(id api.SubscriptionID) (*api.Subscription, error) {
 	rawsub, err := ps.SubscriptionsDB.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrSubscriptionNotFound{id}
 	}
 
-	sub := &Subscription{}
+	sub := &api.Subscription{}
 	dec := json.NewDecoder(bytes.NewReader(rawsub.Value))
 	err = dec.Decode(sub)
 	if err != nil {
@@ -143,17 +145,17 @@ func (ps Subscriptions) createEndpoint(method, path string) error {
 	tree := pathtree.NewNode()
 
 	for _, kv := range kvs {
-		sub := &Subscription{}
+		sub := &api.Subscription{}
 		err = json.NewDecoder(bytes.NewReader(kv.Value)).Decode(sub)
 		if err != nil {
 			return err
 		}
 
 		// add existing paths to check
-		tree.AddRoute(sub.Path, functions.FunctionID(""), nil)
+		tree.AddRoute(sub.Path, api.FunctionID(""), nil)
 	}
 
-	err = tree.AddRoute(path, functions.FunctionID(""), nil)
+	err = tree.AddRoute(path, api.FunctionID(""), nil)
 	if err != nil {
 		return &ErrPathConfict{err.Error()}
 	}
@@ -179,9 +181,9 @@ func (ps Subscriptions) deleteEndpoint(method, path string) error {
 	return nil
 }
 
-func (ps Subscriptions) validateSubscription(s *Subscription) error {
+func (ps Subscriptions) validateSubscription(s *api.Subscription) error {
 	s.Path = istrings.EnsurePrefix(s.Path, "/")
-	if s.Event == event.TypeHTTP {
+	if s.Event == api.EventTypeHTTP {
 		s.Method = strings.ToUpper(s.Method)
 
 		if s.CORS != nil {
@@ -207,7 +209,7 @@ func (ps Subscriptions) validateSubscription(s *Subscription) error {
 		return &ErrSubscriptionValidation{err.Error()}
 	}
 
-	if s.Event == event.TypeHTTP && s.Method == "" {
+	if s.Event == api.EventTypeHTTP && s.Method == "" {
 		return &ErrSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
 	}
 
@@ -263,4 +265,21 @@ func isPathInConflict(existing, new string) bool {
 	}
 
 	return true
+}
+
+func newSubscriptionID(s *api.Subscription) api.SubscriptionID {
+	if s.Event == api.EventTypeHTTP {
+		return api.SubscriptionID(string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
+	}
+	return api.SubscriptionID(string(s.Event) + "," + string(s.FunctionID) + "," + url.PathEscape(s.Path))
+}
+
+// urlPathValidator validates if field contains URL path
+func urlPathValidator(fl validator.FieldLevel) bool {
+	return path.IsAbs(fl.Field().String())
+}
+
+// eventTypeValidator validates if field contains event name
+func eventTypeValidator(fl validator.FieldLevel) bool {
+	return regexp.MustCompile(`^[a-zA-Z0-9\.\-_]+$`).MatchString(fl.Field().String())
 }

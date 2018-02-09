@@ -7,19 +7,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/serverless/event-gateway/kv"
+	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
 	etcd "github.com/serverless/libkv/store/etcd/v3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/embedded"
-	"github.com/serverless/event-gateway/internal/httpapi"
 	"github.com/serverless/event-gateway/internal/sync"
 	"github.com/serverless/event-gateway/plugin"
-	"github.com/serverless/event-gateway/router"
+
+	ikv "github.com/serverless/event-gateway/internal/kv"
 )
 
 var version = "dev"
@@ -61,13 +63,8 @@ func main() {
 	}
 	defer log.Sync()
 
-	shutdownGuard := sync.NewShutdownGuard()
-
-	if *developmentMode {
-		embedded.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
-	}
-
-	kv, err := libkv.NewStore(
+	// KV store
+	kvstore, err := libkv.NewStore(
 		store.ETCDV3,
 		strings.Split(*dbHosts, ","),
 		&store.Config{
@@ -78,28 +75,46 @@ func main() {
 		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
+	// Services
+	functionsDB := ikv.NewPrefixedStore("/serverless-event-gateway/functions", kvstore)
+	functionService := &kv.Functions{
+		DB:  functionsDB,
+		Log: log,
+	}
+
+	subscriptionsService := &kv.Subscriptions{
+		SubscriptionsDB: ikv.NewPrefixedStore("/serverless-event-gateway/subscriptions", kvstore),
+		EndpointsDB:     ikv.NewPrefixedStore("/serverless-event-gateway/endpoints", kvstore),
+		FunctionsDB:     functionsDB,
+		Log:             log,
+	}
+
+	// Plugin manager
 	pluginManager := plugin.NewManager(plugins, log)
 	err = pluginManager.Connect()
 	if err != nil {
 		log.Fatal("Loading plugins failed.", zap.Error(err))
 	}
 
-	targetCache := cache.NewTarget("/serverless-event-gateway", kv, log)
+	// Router
+	targetCache := cache.NewTarget("/serverless-event-gateway", kvstore, log)
 	router := router.New(*workersNumber, *workersBacklog, targetCache, pluginManager, log)
 	router.StartWorkers()
 
-	api.StartEventsAPI(httpapi.Config{
-		KV:            kv,
-		Log:           log,
+	shutdownGuard := sync.NewShutdownGuard()
+
+	if *developmentMode {
+		embedded.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
+	}
+
+	httpapi.StartEventsAPI(router, httpapi.ServerConfig{
 		TLSCrt:        eventsTLSCrt,
 		TLSKey:        eventsTLSKey,
 		Port:          *eventsPort,
 		ShutdownGuard: shutdownGuard,
-	}, router)
+	})
 
-	api.StartConfigAPI(httpapi.Config{
-		KV:            kv,
-		Log:           log,
+	httpapi.StartConfigAPI(functionService, subscriptionsService, httpapi.ServerConfig{
 		TLSCrt:        configTLSCrt,
 		TLSKey:        configTLSKey,
 		Port:          *configPort,

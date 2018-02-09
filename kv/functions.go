@@ -1,13 +1,15 @@
-package functions
+package kv
 
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
 
 	validator "gopkg.in/go-playground/validator.v9"
 
 	"go.uber.org/zap"
 
+	"github.com/serverless/event-gateway/api"
 	"github.com/serverless/libkv/store"
 )
 
@@ -18,7 +20,7 @@ type Functions struct {
 }
 
 // RegisterFunction registers function in configuration.
-func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
+func (f *Functions) RegisterFunction(fn *api.Function) (*api.Function, error) {
 	if err := f.validateFunction(fn); err != nil {
 		return nil, err
 	}
@@ -44,7 +46,7 @@ func (f *Functions) RegisterFunction(fn *Function) (*Function, error) {
 }
 
 // UpdateFunction updates function configuration.
-func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
+func (f *Functions) UpdateFunction(fn *api.Function) (*api.Function, error) {
 	_, err := f.DB.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrNotFound{fn.ID}
@@ -70,13 +72,13 @@ func (f *Functions) UpdateFunction(fn *Function) (*Function, error) {
 }
 
 // GetFunction returns function from configuration.
-func (f *Functions) GetFunction(id FunctionID) (*Function, error) {
+func (f *Functions) GetFunction(id api.FunctionID) (*api.Function, error) {
 	kv, err := f.DB.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrNotFound{id}
 	}
 
-	fn := Function{}
+	fn := api.Function{}
 	dec := json.NewDecoder(bytes.NewReader(kv.Value))
 	err = dec.Decode(&fn)
 	if err != nil {
@@ -86,8 +88,8 @@ func (f *Functions) GetFunction(id FunctionID) (*Function, error) {
 }
 
 // GetAllFunctions returns an array of all Function
-func (f *Functions) GetAllFunctions() ([]*Function, error) {
-	fns := []*Function{}
+func (f *Functions) GetAllFunctions() ([]*api.Function, error) {
+	fns := []*api.Function{}
 
 	kvs, err := f.DB.List("", &store.ReadOptions{Consistent: true})
 	if err != nil {
@@ -95,7 +97,7 @@ func (f *Functions) GetAllFunctions() ([]*Function, error) {
 	}
 
 	for _, kv := range kvs {
-		fn := &Function{}
+		fn := &api.Function{}
 		dec := json.NewDecoder(bytes.NewReader(kv.Value))
 		err = dec.Decode(fn)
 		if err != nil {
@@ -109,7 +111,7 @@ func (f *Functions) GetAllFunctions() ([]*Function, error) {
 }
 
 // DeleteFunction deletes function from configuration.
-func (f *Functions) DeleteFunction(id FunctionID) error {
+func (f *Functions) DeleteFunction(id api.FunctionID) error {
 	err := f.DB.Delete(string(id))
 	if err != nil {
 		return &ErrNotFound{id}
@@ -120,7 +122,7 @@ func (f *Functions) DeleteFunction(id FunctionID) error {
 	return nil
 }
 
-func (f *Functions) validateFunction(fn *Function) error {
+func (f *Functions) validateFunction(fn *api.Function) error {
 	validate := validator.New()
 	validate.RegisterValidation("functionid", functionIDValidator)
 	err := validate.Struct(fn)
@@ -128,28 +130,28 @@ func (f *Functions) validateFunction(fn *Function) error {
 		return &ErrValidation{err.Error()}
 	}
 
-	if fn.Provider.Type == AWSLambda {
+	if fn.Provider.Type == api.AWSLambda {
 		if fn.Provider.ARN == "" || fn.Provider.Region == "" {
 			return &ErrValidation{"Missing required fields for AWS Lambda function."}
 		}
 	}
 
-	if fn.Provider.Type == Emulator {
+	if fn.Provider.Type == api.Emulator {
 		return f.validateEmulator(fn)
 	}
 
-	if fn.Provider.Type == HTTPEndpoint && fn.Provider.URL == "" {
+	if fn.Provider.Type == api.HTTPEndpoint && fn.Provider.URL == "" {
 		return &ErrValidation{"Missing required fields for HTTP endpoint."}
 	}
 
-	if fn.Provider.Type == Weighted {
+	if fn.Provider.Type == api.Weighted {
 		return f.validateWeighted(fn)
 	}
 
 	return nil
 }
 
-func (f *Functions) validateEmulator(fn *Function) error {
+func (f *Functions) validateEmulator(fn *api.Function) error {
 	if fn.Provider.EmulatorURL == "" {
 		return &ErrValidation{"Missing required field emulatorURL for Emulator function."}
 	} else if fn.Provider.APIVersion == "" {
@@ -158,7 +160,7 @@ func (f *Functions) validateEmulator(fn *Function) error {
 	return nil
 }
 
-func (f *Functions) validateWeighted(fn *Function) error {
+func (f *Functions) validateWeighted(fn *api.Function) error {
 	if len(fn.Provider.Weighted) == 0 {
 		return &ErrValidation{"Missing required fields for weighted function."}
 	}
@@ -173,4 +175,9 @@ func (f *Functions) validateWeighted(fn *Function) error {
 	}
 
 	return nil
+}
+
+// functionIDValidator validates if field contains allowed characters for function ID
+func functionIDValidator(fl validator.FieldLevel) bool {
+	return regexp.MustCompile(`^[a-zA-Z0-9\.\-_]+$`).MatchString(fl.Field().String())
 }
