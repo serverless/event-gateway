@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/api"
-	"github.com/serverless/event-gateway/internal/kv"
 	"github.com/serverless/event-gateway/internal/pathtree"
 )
 
@@ -69,8 +68,8 @@ func NewTarget(path string, kvstore store.Store, log *zap.Logger) *Target {
 		path = path + "/"
 	}
 
-	functionPathWatcher := kv.NewWatcher(path+"functions", kvstore, log)
-	subscriptionPathWatcher := kv.NewWatcher(path+"subscriptions", kvstore, log)
+	functionPathWatcher := NewWatcher(path+"functions", kvstore, log)
+	subscriptionPathWatcher := NewWatcher(path+"subscriptions", kvstore, log)
 
 	// serves lookups for function info
 	functionCache := newFunctionCache(log)

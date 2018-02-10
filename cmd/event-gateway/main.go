@@ -18,10 +18,9 @@ import (
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/embedded"
+	intstore "github.com/serverless/event-gateway/internal/store"
 	"github.com/serverless/event-gateway/internal/sync"
 	"github.com/serverless/event-gateway/plugin"
-
-	ikv "github.com/serverless/event-gateway/internal/kv"
 )
 
 var version = "dev"
@@ -76,15 +75,15 @@ func main() {
 	}
 
 	// Services
-	functionsDB := ikv.NewPrefixedStore("/serverless-event-gateway/functions", kvstore)
+	functionsDB := intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore)
 	functionService := &kv.Functions{
 		DB:  functionsDB,
 		Log: log,
 	}
 
 	subscriptionsService := &kv.Subscriptions{
-		SubscriptionsDB: ikv.NewPrefixedStore("/serverless-event-gateway/subscriptions", kvstore),
-		EndpointsDB:     ikv.NewPrefixedStore("/serverless-event-gateway/endpoints", kvstore),
+		SubscriptionsDB: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
+		EndpointsDB:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
 		FunctionsDB:     functionsDB,
 		Log:             log,
 	}

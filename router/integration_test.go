@@ -21,7 +21,7 @@ import (
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/embedded"
-	ikv "github.com/serverless/event-gateway/internal/kv"
+	intstore "github.com/serverless/event-gateway/internal/store"
 	"github.com/serverless/event-gateway/internal/sync"
 	"github.com/serverless/event-gateway/kv"
 	"github.com/serverless/event-gateway/plugin"
@@ -204,15 +204,15 @@ func newTestRouterServer(kvstore store.Store, log *zap.Logger) (*Router, *httpte
 func newConfigAPIServer(kvstore store.Store, log *zap.Logger) *httptest.Server {
 	apiRouter := httprouter.New()
 
-	fnsDB := ikv.NewPrefixedStore("/serverless-event-gateway/functions", kvstore)
+	fnsDB := intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore)
 	fns := &kv.Functions{
 		DB:  fnsDB,
 		Log: log,
 	}
 
 	subs := &kv.Subscriptions{
-		SubscriptionsDB: ikv.NewPrefixedStore("/serverless-event-gateway/subscriptions", kvstore),
-		EndpointsDB:     ikv.NewPrefixedStore("/serverless-event-gateway/endpoints", kvstore),
+		SubscriptionsDB: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
+		EndpointsDB:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
 		FunctionsDB:     fnsDB,
 		Log:             log,
 	}
