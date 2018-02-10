@@ -20,15 +20,6 @@ type Event struct {
 	DataType   string      `json:"dataType"`
 }
 
-// Type uniquely identifies an event type.
-type Type string
-
-// TypeInvoke is a special type of event for sync function invocation.
-const TypeInvoke = Type("invoke")
-
-// TypeHTTP is a special type of event for sync http subscriptions.
-const TypeHTTP = Type("http")
-
 // New return new instance of Event.
 func New(eventType Type, mime string, payload interface{}) *Event {
 	return &Event{
@@ -39,6 +30,15 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		Data:       payload,
 	}
 }
+
+// Type uniquely identifies an event type.
+type Type string
+
+// TypeInvoke is a special type of event for sync function invocation.
+const TypeInvoke = Type("invoke")
+
+// TypeHTTP is a special type of event for sync http subscriptions.
+const TypeHTTP = Type("http")
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
