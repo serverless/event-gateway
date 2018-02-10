@@ -5,16 +5,16 @@ import (
 	"math/rand"
 )
 
-// Function represents a deployed on one of the supported providers.
+// Function represents a function deployed on one of the supported providers.
 type Function struct {
 	ID       FunctionID `json:"functionId" validate:"required,functionid"`
 	Provider *Provider  `json:"provider" validate:"required"`
 }
 
-// FunctionID uniquely identifies a function
+// FunctionID uniquely identifies a function.
 type FunctionID string
 
-// Provider provides provider specific info about a function
+// Provider provides provider specific info about a function.
 type Provider struct {
 	Type ProviderType `json:"type" validate:"required,eq=awslambda|eq=http|eq=weighted|eq=emulator"`
 

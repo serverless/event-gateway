@@ -2,7 +2,7 @@ package api
 
 import "net/http"
 
-// SystemEventReceivedType is a system event emmited when the Event Gateway receives an event.
+// SystemEventReceivedType is a system event emitted when the Event Gateway receives an event.
 const SystemEventReceivedType = EventType("gateway.event.received")
 
 // SystemEventReceivedData struct.
@@ -12,7 +12,7 @@ type SystemEventReceivedData struct {
 	Headers http.Header `json:"header"`
 }
 
-// SystemFunctionInvokingType is a system event emmited before invoking a function.
+// SystemFunctionInvokingType is a system event emitted before invoking a function.
 const SystemFunctionInvokingType = EventType("gateway.function.invoking")
 
 // SystemFunctionInvokingData struct.
@@ -21,7 +21,7 @@ type SystemFunctionInvokingData struct {
 	Event      Event      `json:"event"`
 }
 
-// SystemFunctionInvokedType is a system event emmited after successful function invocation.
+// SystemFunctionInvokedType is a system event emitted after successful function invocation.
 const SystemFunctionInvokedType = EventType("gateway.function.invoked")
 
 // SystemFunctionInvokedData struct.
@@ -31,7 +31,7 @@ type SystemFunctionInvokedData struct {
 	Result     []byte     `json:"result"`
 }
 
-// SystemFunctionInvocationFailedType is a system event emmited after successful function invocation.
+// SystemFunctionInvocationFailedType is a system event emitted after successful function invocation.
 const SystemFunctionInvocationFailedType = EventType("gateway.function.invocationFailed")
 
 // SystemFunctionInvocationFailedData struct.

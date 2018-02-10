@@ -1,6 +1,6 @@
 package api
 
-// Subscription maps from Event type to Function
+// Subscription maps event type to a function.
 type Subscription struct {
 	ID         SubscriptionID `json:"subscriptionId"`
 	Event      EventType      `json:"event" validate:"required,eventtype"`
@@ -10,10 +10,10 @@ type Subscription struct {
 	CORS       *CORS          `json:"cors,omitempty"`
 }
 
-// SubscriptionID uniquely identifies a subscription
+// SubscriptionID uniquely identifies a subscription.
 type SubscriptionID string
 
-// CORS is used to configure CORS on HTTP subscriptions
+// CORS is used to configure CORS on HTTP subscriptions.
 type CORS struct {
 	Origins          []string `json:"origins" validate:"min=1"`
 	Methods          []string `json:"methods" validate:"min=1"`
