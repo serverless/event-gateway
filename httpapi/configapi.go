@@ -7,7 +7,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/subscription"
 )
 
 func init() {
@@ -15,7 +16,7 @@ func init() {
 }
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
-func StartConfigAPI(functions api.FunctionService, subscriptions api.SubscriptionService, config ServerConfig) {
+func StartConfigAPI(functions function.Service, subscriptions subscription.Service, config ServerConfig) {
 	router := httprouter.New()
 	api := &HTTPAPI{
 		Functions:     functions,

@@ -7,14 +7,15 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/kv"
+	"github.com/serverless/event-gateway/subscription"
 )
 
 // HTTPAPI exposes REST API for configuring EG
 type HTTPAPI struct {
-	Functions     api.FunctionService
-	Subscriptions api.SubscriptionService
+	Functions     function.Service
+	Subscriptions subscription.Service
 }
 
 // RegisterRoutes register HTTP API routes
@@ -37,7 +38,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fn, err := h.Functions.GetFunction(api.FunctionID(params.ByName("id")))
+	fn, err := h.Functions.GetFunction(function.ID(params.ByName("id")))
 	if err != nil {
 		if _, ok := err.(*kv.ErrNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -65,14 +66,14 @@ func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params htt
 }
 
 type functions struct {
-	Functions []*api.Function `json:"functions"`
+	Functions []*function.Function `json:"functions"`
 }
 
 func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fn := &api.Function{}
+	fn := &function.Function{}
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(fn)
 	if err != nil {
@@ -102,7 +103,7 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fn := &api.Function{}
+	fn := &function.Function{}
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(fn)
 	if err != nil {
@@ -111,7 +112,7 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		return
 	}
 
-	fn.ID = api.FunctionID(params.ByName("id"))
+	fn.ID = function.ID(params.ByName("id"))
 	output, err := h.Functions.UpdateFunction(fn)
 	if err != nil {
 		if _, ok := err.(*kv.ErrValidation); ok {
@@ -133,7 +134,7 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.Functions.DeleteFunction(api.FunctionID(params.ByName("id")))
+	err := h.Functions.DeleteFunction(function.ID(params.ByName("id")))
 	if err != nil {
 		if _, ok := err.(*kv.ErrNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -151,7 +152,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	s := &api.Subscription{}
+	s := &subscription.Subscription{}
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(s)
 	if err != nil {
@@ -189,7 +190,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	segments := strings.Split(r.URL.RawPath, "/")
 	sid := segments[len(segments)-1]
 
-	err := h.Subscriptions.DeleteSubscription(api.SubscriptionID(sid))
+	err := h.Subscriptions.DeleteSubscription(subscription.ID(sid))
 	if err != nil {
 		if _, ok := err.(*kv.ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -216,5 +217,5 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 }
 
 type subscriptions struct {
-	Subscriptions []*api.Subscription `json:"subscriptions"`
+	Subscriptions []*subscription.Subscription `json:"subscriptions"`
 }

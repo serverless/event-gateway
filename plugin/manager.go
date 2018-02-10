@@ -7,15 +7,15 @@ import (
 	"go.uber.org/zap"
 
 	goplugin "github.com/hashicorp/go-plugin"
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/event"
 )
 
 func init() {
 	gob.Register(map[string]interface{}{})
-	gob.Register(api.SystemEventReceivedData{})
-	gob.Register(api.SystemFunctionInvokingData{})
-	gob.Register(api.SystemFunctionInvokedData{})
-	gob.Register(api.SystemFunctionInvocationFailedData{})
+	gob.Register(event.SystemEventReceivedData{})
+	gob.Register(event.SystemFunctionInvokingData{})
+	gob.Register(event.SystemFunctionInvokedData{})
+	gob.Register(event.SystemFunctionInvocationFailedData{})
 }
 
 // Plugin is a generic struct for storing info about a plugin.
@@ -85,7 +85,7 @@ func (m *Manager) Kill() {
 }
 
 // React call all plugins' React method. It returns when the first error is returned by a plugin.
-func (m *Manager) React(event *api.Event) error {
+func (m *Manager) React(event *event.Event) error {
 	for _, plugin := range m.Plugins {
 		for _, subscription := range plugin.Subscriptions {
 			if subscription.EventType == event.Type {

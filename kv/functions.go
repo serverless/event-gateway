@@ -9,7 +9,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/libkv/store"
 )
 
@@ -20,7 +20,7 @@ type Functions struct {
 }
 
 // RegisterFunction registers function in configuration.
-func (f *Functions) RegisterFunction(fn *api.Function) (*api.Function, error) {
+func (f *Functions) RegisterFunction(fn *function.Function) (*function.Function, error) {
 	if err := f.validateFunction(fn); err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (f *Functions) RegisterFunction(fn *api.Function) (*api.Function, error) {
 }
 
 // UpdateFunction updates function configuration.
-func (f *Functions) UpdateFunction(fn *api.Function) (*api.Function, error) {
+func (f *Functions) UpdateFunction(fn *function.Function) (*function.Function, error) {
 	_, err := f.DB.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrNotFound{fn.ID}
@@ -72,13 +72,13 @@ func (f *Functions) UpdateFunction(fn *api.Function) (*api.Function, error) {
 }
 
 // GetFunction returns function from configuration.
-func (f *Functions) GetFunction(id api.FunctionID) (*api.Function, error) {
+func (f *Functions) GetFunction(id function.ID) (*function.Function, error) {
 	kv, err := f.DB.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrNotFound{id}
 	}
 
-	fn := api.Function{}
+	fn := function.Function{}
 	dec := json.NewDecoder(bytes.NewReader(kv.Value))
 	err = dec.Decode(&fn)
 	if err != nil {
@@ -88,8 +88,8 @@ func (f *Functions) GetFunction(id api.FunctionID) (*api.Function, error) {
 }
 
 // GetAllFunctions returns an array of all Function
-func (f *Functions) GetAllFunctions() ([]*api.Function, error) {
-	fns := []*api.Function{}
+func (f *Functions) GetAllFunctions() ([]*function.Function, error) {
+	fns := []*function.Function{}
 
 	kvs, err := f.DB.List("", &store.ReadOptions{Consistent: true})
 	if err != nil {
@@ -97,7 +97,7 @@ func (f *Functions) GetAllFunctions() ([]*api.Function, error) {
 	}
 
 	for _, kv := range kvs {
-		fn := &api.Function{}
+		fn := &function.Function{}
 		dec := json.NewDecoder(bytes.NewReader(kv.Value))
 		err = dec.Decode(fn)
 		if err != nil {
@@ -111,7 +111,7 @@ func (f *Functions) GetAllFunctions() ([]*api.Function, error) {
 }
 
 // DeleteFunction deletes function from configuration.
-func (f *Functions) DeleteFunction(id api.FunctionID) error {
+func (f *Functions) DeleteFunction(id function.ID) error {
 	err := f.DB.Delete(string(id))
 	if err != nil {
 		return &ErrNotFound{id}
@@ -122,7 +122,7 @@ func (f *Functions) DeleteFunction(id api.FunctionID) error {
 	return nil
 }
 
-func (f *Functions) validateFunction(fn *api.Function) error {
+func (f *Functions) validateFunction(fn *function.Function) error {
 	validate := validator.New()
 	validate.RegisterValidation("functionid", functionIDValidator)
 	err := validate.Struct(fn)
@@ -130,28 +130,28 @@ func (f *Functions) validateFunction(fn *api.Function) error {
 		return &ErrValidation{err.Error()}
 	}
 
-	if fn.Provider.Type == api.AWSLambda {
+	if fn.Provider.Type == function.AWSLambda {
 		if fn.Provider.ARN == "" || fn.Provider.Region == "" {
 			return &ErrValidation{"Missing required fields for AWS Lambda function."}
 		}
 	}
 
-	if fn.Provider.Type == api.Emulator {
+	if fn.Provider.Type == function.Emulator {
 		return f.validateEmulator(fn)
 	}
 
-	if fn.Provider.Type == api.HTTPEndpoint && fn.Provider.URL == "" {
+	if fn.Provider.Type == function.HTTPEndpoint && fn.Provider.URL == "" {
 		return &ErrValidation{"Missing required fields for HTTP endpoint."}
 	}
 
-	if fn.Provider.Type == api.Weighted {
+	if fn.Provider.Type == function.Weighted {
 		return f.validateWeighted(fn)
 	}
 
 	return nil
 }
 
-func (f *Functions) validateEmulator(fn *api.Function) error {
+func (f *Functions) validateEmulator(fn *function.Function) error {
 	if fn.Provider.EmulatorURL == "" {
 		return &ErrValidation{"Missing required field emulatorURL for Emulator function."}
 	} else if fn.Provider.APIVersion == "" {
@@ -160,7 +160,7 @@ func (f *Functions) validateEmulator(fn *api.Function) error {
 	return nil
 }
 
-func (f *Functions) validateWeighted(fn *api.Function) error {
+func (f *Functions) validateWeighted(fn *function.Function) error {
 	if len(fn.Provider.Weighted) == 0 {
 		return &ErrValidation{"Missing required fields for weighted function."}
 	}

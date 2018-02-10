@@ -1,9 +1,13 @@
-package api
+package event
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/serverless/event-gateway/function"
+)
 
 // SystemEventReceivedType is a system event emitted when the Event Gateway receives an event.
-const SystemEventReceivedType = EventType("gateway.event.received")
+const SystemEventReceivedType = Type("gateway.event.received")
 
 // SystemEventReceivedData struct.
 type SystemEventReceivedData struct {
@@ -13,30 +17,30 @@ type SystemEventReceivedData struct {
 }
 
 // SystemFunctionInvokingType is a system event emitted before invoking a function.
-const SystemFunctionInvokingType = EventType("gateway.function.invoking")
+const SystemFunctionInvokingType = Type("gateway.function.invoking")
 
 // SystemFunctionInvokingData struct.
 type SystemFunctionInvokingData struct {
-	FunctionID FunctionID `json:"functionId"`
-	Event      Event      `json:"event"`
+	FunctionID function.ID `json:"functionId"`
+	Event      Event       `json:"event"`
 }
 
 // SystemFunctionInvokedType is a system event emitted after successful function invocation.
-const SystemFunctionInvokedType = EventType("gateway.function.invoked")
+const SystemFunctionInvokedType = Type("gateway.function.invoked")
 
 // SystemFunctionInvokedData struct.
 type SystemFunctionInvokedData struct {
-	FunctionID FunctionID `json:"functionId"`
-	Event      Event      `json:"event"`
-	Result     []byte     `json:"result"`
+	FunctionID function.ID `json:"functionId"`
+	Event      Event       `json:"event"`
+	Result     []byte      `json:"result"`
 }
 
 // SystemFunctionInvocationFailedType is a system event emitted after successful function invocation.
-const SystemFunctionInvocationFailedType = EventType("gateway.function.invocationFailed")
+const SystemFunctionInvocationFailedType = Type("gateway.function.invocationFailed")
 
 // SystemFunctionInvocationFailedData struct.
 type SystemFunctionInvocationFailedData struct {
-	FunctionID FunctionID `json:"functionId"`
-	Event      Event      `json:"event"`
-	Error      []byte     `json:"result"`
+	FunctionID function.ID `json:"functionId"`
+	Event      Event       `json:"event"`
+	Error      []byte      `json:"result"`
 }

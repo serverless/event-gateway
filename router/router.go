@@ -13,15 +13,16 @@ import (
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/api"
-	"github.com/serverless/event-gateway/plugin"
+	"github.com/serverless/event-gateway/event"
+	eventpkg "github.com/serverless/event-gateway/event"
+	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/httpapi"
+	"github.com/serverless/event-gateway/plugin"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
 type Router struct {
 	sync.Mutex
-	caller         Caller
 	targetCache    Targeter
 	plugins        *plugin.Manager
 	log            *zap.Logger
@@ -52,7 +53,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if router.isDraining() {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Header().Set("content-type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: http.StatusText(http.StatusServiceUnavailable) }}})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: http.StatusText(http.StatusServiceUnavailable)}}})
 		return
 	}
 
@@ -65,7 +66,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("content-type", "application/json")
-			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 			return
 		}
 
@@ -75,7 +76,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Header().Set("content-type", "application/json")
-				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "custom event can be emitted only with POST method" }}})
+				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "custom event can be emitted only with POST method"}}})
 				return
 			}
 
@@ -83,11 +84,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Header().Set("content-type", "application/json")
-				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
+				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 				return
 			}
 
-			if event.Type == api.EventTypeInvoke {
+			if event.Type == eventpkg.TypeInvoke {
 				router.handleInvokeEvent(path, event, w, r)
 			} else if !event.IsSystem() {
 				router.enqueueWork(path, event)
@@ -144,7 +145,7 @@ func (router *Router) Drain() {
 
 // WaitForFunction returns a chan that is closed when a function is created.
 // Primarily for testing purposes.
-func (router *Router) WaitForFunction(id api.FunctionID) <-chan struct{} {
+func (router *Router) WaitForFunction(id function.ID) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
@@ -178,7 +179,7 @@ func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
 
 // WaitForSubscriber returns a chan that is closed when an event has a subscriber.
 // Primarily for testing purposes.
-func (router *Router) WaitForSubscriber(path string, eventType api.EventType) <-chan struct{} {
+func (router *Router) WaitForSubscriber(path string, eventType event.Type) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
@@ -201,7 +202,7 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) eventFromRequest(r *http.Request) (*api.Event, string, error) {
+func (router *Router) eventFromRequest(r *http.Request) (*event.Event, string, error) {
 	path := extractPath(r.Host, r.URL.Path)
 	eventType := extractEventType(r)
 
@@ -219,7 +220,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*api.Event, string, err
 		}
 	}
 
-	event := api.NewEvent(eventType, mime, body)
+	event := event.New(eventType, mime, body)
 	if mime == mimeJSON && len(body) > 0 {
 		err = json.Unmarshal(body, &event.Data)
 		if err != nil {
@@ -227,8 +228,8 @@ func (router *Router) eventFromRequest(r *http.Request) (*api.Event, string, err
 		}
 	}
 
-	if event.Type == api.EventTypeHTTP {
-		event.Data = &api.HTTPEvent{
+	if event.Type == eventpkg.TypeHTTP {
+		event.Data = &eventpkg.HTTPEvent{
 			Headers: r.Header,
 			Query:   r.URL.Query(),
 			Body:    event.Data,
@@ -249,12 +250,9 @@ func (router *Router) eventFromRequest(r *http.Request) (*api.Event, string, err
 
 	return event, path, nil
 }
-<<<<<<< HEAD
+
 func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
-=======
-func (router *Router) handleHTTPEvent(event *api.Event, w http.ResponseWriter, r *http.Request) {
->>>>>>> refactor packages structure to avoid cyclic dependecies
 	reqMethod := r.Method
 
 	// check if CORS pre-flight request
@@ -268,19 +266,19 @@ func (router *Router) handleHTTPEvent(event *api.Event, w http.ResponseWriter, r
 		router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("content-type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "resource not found" }}})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "resource not found"}}})
 		return
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		httpdata := event.Data.(*api.HTTPEvent)
+		httpdata := event.Data.(*eventpkg.HTTPEvent)
 		httpdata.Params = params
 		event.Data = httpdata
 		resp, err := router.callFunction(*backingFunction, *event)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("content-type", "application/json")
-			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "function call failed" }}})
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "function call failed"}}})
 			return
 		}
 
@@ -290,7 +288,7 @@ func (router *Router) handleHTTPEvent(event *api.Event, w http.ResponseWriter, r
 			router.log.Info("HTTP response object malformed.", zap.String("response", string(resp)))
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("content-type", "application/json")
-			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "HTTP response object malformed" }}})
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "HTTP response object malformed"}}})
 			return
 		}
 
@@ -304,7 +302,7 @@ func (router *Router) handleHTTPEvent(event *api.Event, w http.ResponseWriter, r
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("content-type", "application/json")
-			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 			return
 		}
 
@@ -330,11 +328,11 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 	encoder := json.NewEncoder(w)
 	routerEventsSyncReceived.Inc()
 
-	functionID := api.FunctionID(r.Header.Get(headerFunctionID))
+	functionID := function.ID(r.Header.Get(headerFunctionID))
 	if !router.targetCache.InvokableFunction(path, functionID) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("content-type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: "function or subscription not found" }}})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "function or subscription not found"}}})
 		return
 	}
 
@@ -342,7 +340,7 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("content-type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 		return
 	}
 
@@ -350,14 +348,14 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("content-type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{ Message: err.Error() }}})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 		return
 	}
 
 	routerEventsSyncProceeded.Inc()
 }
 
-func (router *Router) enqueueWork(path string, event *api.Event) {
+func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 	reportReceivedEvent(event.ID)
 
 	if event.IsSystem() {
@@ -377,14 +375,14 @@ func (router *Router) enqueueWork(path string, event *api.Event) {
 }
 
 // callFunction looks up a function and calls it.
-func (router *Router) callFunction(backingFunctionID api.FunctionID, event api.Event) ([]byte, error) {
+func (router *Router) callFunction(backingFunctionID function.ID, event eventpkg.Event) ([]byte, error) {
 	backingFunction := router.targetCache.Function(backingFunctionID)
 	if backingFunction == nil {
 		return []byte{}, errUnableToLookUpRegisteredFunction
 	}
 
 	var chosenFunction = backingFunction.ID
-	if backingFunction.Provider.Type == api.Weighted {
+	if backingFunction.Provider.Type == function.Weighted {
 		chosen, err := backingFunction.Provider.Weighted.Choose()
 		if err != nil {
 			return nil, err
@@ -412,7 +410,7 @@ func (router *Router) callFunction(backingFunctionID api.FunctionID, event api.E
 		return nil, err
 	}
 
-	result, err := router.caller.Call(f, payload)
+	result, err := f.Call(payload)
 	if err != nil {
 		router.log.Info("Function invocation failed.",
 			zap.String("functionId", string(backingFunctionID)), zap.Object("event", event), zap.Error(err))
@@ -478,38 +476,38 @@ func (router *Router) processEvent(e backlogEvent) {
 	}
 }
 
-func (router *Router) emitSystemEventReceived(path string, event api.Event, headers http.Header) error {
-	system := api.NewEvent(
-		api.SystemEventReceivedType,
+func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers http.Header) error {
+	system := eventpkg.New(
+		eventpkg.SystemEventReceivedType,
 		mimeJSON,
-		api.SystemEventReceivedData{Path: path, Event: event, Headers: headers},
+		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: headers},
 	)
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
 }
 
-func (router *Router) emitSystemFunctionInvoking(functionID api.FunctionID, event api.Event) error {
-	system := api.NewEvent(
-		api.SystemFunctionInvokingType,
+func (router *Router) emitSystemFunctionInvoking(functionID function.ID, event eventpkg.Event) error {
+	system := eventpkg.New(
+		eventpkg.SystemFunctionInvokingType,
 		mimeJSON,
-		api.SystemFunctionInvokingData{FunctionID: functionID, Event: event},
+		eventpkg.SystemFunctionInvokingData{FunctionID: functionID, Event: event},
 	)
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
 }
 
-func (router *Router) emitSystemFunctionInvoked(functionID api.FunctionID, event api.Event, result []byte) error {
-	system := api.NewEvent(
-		api.SystemFunctionInvokedType,
+func (router *Router) emitSystemFunctionInvoked(functionID function.ID, event eventpkg.Event, result []byte) error {
+	system := eventpkg.New(
+		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
-		api.SystemFunctionInvokedData{FunctionID: functionID, Event: event, Result: result})
+		eventpkg.SystemFunctionInvokedData{FunctionID: functionID, Event: event, Result: result})
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
 }
 
-func (router *Router) emitSystemFunctionInvocationFailed(functionID api.FunctionID, event api.Event, err error) {
-	if _, ok := err.(*ErrFunctionError); ok {
-		system := api.NewEvent("gateway.function.invocationFailed", mimeJSON, struct {
+func (router *Router) emitSystemFunctionInvocationFailed(functionID function.ID, event eventpkg.Event, err error) {
+	if _, ok := err.(*function.ErrFunctionError); ok {
+		system := eventpkg.New("gateway.function.invocationFailed", mimeJSON, struct {
 			FunctionID string `json:"functionId"`
 		}{string(functionID)})
 
@@ -537,10 +535,10 @@ func extractPath(host, path string) string {
 	return extracted
 }
 
-func extractEventType(r *http.Request) api.EventType {
-	eventType := api.EventType(r.Header.Get("event"))
+func extractEventType(r *http.Request) event.Type {
+	eventType := event.Type(r.Header.Get("event"))
 	if eventType == "" {
-		eventType = api.EventTypeHTTP
+		eventType = event.TypeHTTP
 	}
 	return eventType
 }

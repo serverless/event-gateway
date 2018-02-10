@@ -6,8 +6,10 @@ import (
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/api"
+	eventpkg "github.com/serverless/event-gateway/event"
+	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
+	"github.com/serverless/event-gateway/subscription"
 )
 
 // Target is an implementation of router.Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
@@ -21,7 +23,7 @@ type Target struct {
 
 // HTTPBackingFunction returns function ID for handling HTTP sync endpoint. It also returns matched URL parameters in
 // case of HTTP subscription containing parameters in path.
-func (tc *Target) HTTPBackingFunction(method, path string) (*api.FunctionID, pathtree.Params, *api.CORS) {
+func (tc *Target) HTTPBackingFunction(method, path string) (*function.ID, pathtree.Params, *subscription.CORS) {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
@@ -33,7 +35,7 @@ func (tc *Target) HTTPBackingFunction(method, path string) (*api.FunctionID, pat
 }
 
 // InvokableFunction returns function ID for handling invoke sync event.
-func (tc *Target) InvokableFunction(path string, functionID api.FunctionID) bool {
+func (tc *Target) InvokableFunction(path string, functionID function.ID) bool {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
@@ -42,14 +44,14 @@ func (tc *Target) InvokableFunction(path string, functionID api.FunctionID) bool
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
-func (tc *Target) Function(functionID api.FunctionID) *api.Function {
+func (tc *Target) Function(functionID function.ID) *function.Function {
 	tc.functionCache.RLock()
 	defer tc.functionCache.RUnlock()
 	return tc.functionCache.cache[functionID]
 }
 
 // SubscribersOfEvent is used for determining which functions to forward messages to.
-func (tc *Target) SubscribersOfEvent(path string, eventType api.EventType) []api.FunctionID {
+func (tc *Target) SubscribersOfEvent(path string, eventType eventpkg.Type) []function.ID {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 

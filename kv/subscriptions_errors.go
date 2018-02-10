@@ -3,12 +3,12 @@ package kv
 import (
 	"fmt"
 
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/subscription"
 )
 
 // ErrSubscriptionAlreadyExists occurs when subscription with the same ID already exists.
 type ErrSubscriptionAlreadyExists struct {
-	ID api.SubscriptionID
+	ID subscription.ID
 }
 
 func (e ErrSubscriptionAlreadyExists) Error() string {
@@ -26,7 +26,7 @@ func (e ErrSubscriptionValidation) Error() string {
 
 // ErrSubscriptionNotFound occurs when subscription cannot be found.
 type ErrSubscriptionNotFound struct {
-	ID api.SubscriptionID
+	ID subscription.ID
 }
 
 func (e ErrSubscriptionNotFound) Error() string {

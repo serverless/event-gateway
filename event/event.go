@@ -1,4 +1,4 @@
-package api
+package event
 
 import (
 	"encoding/json"
@@ -13,24 +13,24 @@ import (
 // Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on
 // this schema.
 type Event struct {
-	Type       EventType   `json:"event"`
+	Type       Type        `json:"event"`
 	ID         string      `json:"id"`
 	ReceivedAt uint64      `json:"receivedAt"`
 	Data       interface{} `json:"data"`
 	DataType   string      `json:"dataType"`
 }
 
-// EventType uniquely identifies an event type.
-type EventType string
+// Type uniquely identifies an event type.
+type Type string
 
-// EventTypeInvoke is a special type of event for sync function invocation.
-const EventTypeInvoke = EventType("invoke")
+// TypeInvoke is a special type of event for sync function invocation.
+const TypeInvoke = Type("invoke")
 
-// EventTypeHTTP is a special type of event for sync http subscriptions.
-const EventTypeHTTP = EventType("http")
+// TypeHTTP is a special type of event for sync http subscriptions.
+const TypeHTTP = Type("http")
 
-// NewEvent return new instance of Event.
-func NewEvent(eventType EventType, mime string, payload interface{}) *Event {
+// New return new instance of Event.
+func New(eventType Type, mime string, payload interface{}) *Event {
 	return &Event{
 		Type:       eventType,
 		ID:         uuid.NewV4().String(),
@@ -55,15 +55,4 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 // IsSystem indicates if th event is a system event.
 func (e Event) IsSystem() bool {
 	return strings.HasPrefix(string(e.Type), "gateway.")
-}
-
-// HTTPEvent is a event schema used for sending events to HTTP subscriptions.
-type HTTPEvent struct {
-	Headers map[string][]string `json:"headers"`
-	Query   map[string][]string `json:"query"`
-	Body    interface{}         `json:"body"`
-	Host    string              `json:"host"`
-	Path    string              `json:"path"`
-	Method  string              `json:"method"`
-	Params  map[string]string   `json:"params"`
 }

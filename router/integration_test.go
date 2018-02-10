@@ -17,7 +17,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/event"
+	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/embedded"
@@ -25,6 +26,7 @@ import (
 	"github.com/serverless/event-gateway/internal/sync"
 	"github.com/serverless/event-gateway/kv"
 	"github.com/serverless/event-gateway/plugin"
+	"github.com/serverless/event-gateway/subscription"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
 	etcd "github.com/serverless/libkv/store/etcd/v3"
@@ -55,7 +57,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			reqBuf, _ := ioutil.ReadAll(r.Body)
 
-			var event api.Event
+			var event event.Event
 			err := json.Unmarshal(reqBuf, &event)
 			if err != nil {
 				panic(err)
@@ -70,12 +72,12 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		}))
 	defer testSubscriberServer.Close()
 
-	subscriberFnID := api.FunctionID("smileysubscriber")
+	subscriberFnID := function.ID("smileysubscriber")
 	post(testAPIServer.URL+"/v1/functions",
-		api.Function{
+		function.Function{
 			ID: subscriberFnID,
-			Provider: &api.Provider{
-				Type: api.HTTPEndpoint,
+			Provider: &function.Provider{
+				Type: function.HTTPEndpoint,
 				URL:  testSubscriberServer.URL,
 			},
 		})
@@ -84,12 +86,12 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	// set up pub/sub
 	eventType := "smileys"
 
-	post(testAPIServer.URL+"/v1/subscriptions", api.Subscription{
+	post(testAPIServer.URL+"/v1/subscriptions", subscription.Subscription{
 		FunctionID: subscriberFnID,
-		Event:      api.EventType(eventType),
+		Event:      event.Type(eventType),
 		Path:       "/",
 	})
-	wait(router.WaitForSubscriber("/", api.EventType(eventType)), "timed out waiting for subscriber to be configured!")
+	wait(router.WaitForSubscriber("/", event.Type(eventType)), "timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
 	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")
@@ -116,19 +118,19 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	}))
 	defer testTargetServer.Close()
 
-	functionID := api.FunctionID("httpresponse")
+	functionID := function.ID("httpresponse")
 	post(testAPIServer.URL+"/v1/functions",
-		api.Function{
+		function.Function{
 			ID: functionID,
-			Provider: &api.Provider{
-				Type: api.HTTPEndpoint,
+			Provider: &function.Provider{
+				Type: function.HTTPEndpoint,
 				URL:  testTargetServer.URL,
 			},
 		})
 	wait(router.WaitForFunction(functionID), "timed out waiting for function to be configured!")
 
-	post(testAPIServer.URL+"/v1/subscriptions", api.Subscription{
-		FunctionID: api.FunctionID("httpresponse"),
+	post(testAPIServer.URL+"/v1/subscriptions", subscription.Subscription{
+		FunctionID: function.ID("httpresponse"),
 		Event:      "http",
 		Method:     "GET",
 		Path:       "/httpresponse",

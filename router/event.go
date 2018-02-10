@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/event"
 )
 
 // HTTPResponse is a response schema returned by subscribed function in case of HTTP event.
@@ -41,5 +41,5 @@ func isHTTPEvent(r *http.Request) bool {
 
 type backlogEvent struct {
 	path  string
-	event api.Event
+	event event.Event
 }

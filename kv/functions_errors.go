@@ -3,12 +3,12 @@ package kv
 import (
 	"fmt"
 
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/function"
 )
 
 // ErrNotFound occurs when function couldn't been found in the discovery.
 type ErrNotFound struct {
-	ID api.FunctionID
+	ID function.ID
 }
 
 func (e ErrNotFound) Error() string {
@@ -17,7 +17,7 @@ func (e ErrNotFound) Error() string {
 
 // ErrAlreadyRegistered occurs when function with specified name is already registered..
 type ErrAlreadyRegistered struct {
-	ID api.FunctionID
+	ID function.ID
 }
 
 func (e ErrAlreadyRegistered) Error() string {
