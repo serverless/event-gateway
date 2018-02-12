@@ -357,7 +357,7 @@ To respond to an HTTP event a function needs to return object with following fie
 
 * `statusCode` - `int` - response status code, default: 200
 * `headers` - `object` - response headers
-* `body` - `string` - response body
+* `body` - `string` - required, response body
 
 Currently, the event gateway supports only string responses.
 
