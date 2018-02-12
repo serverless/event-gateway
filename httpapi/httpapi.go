@@ -45,7 +45,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		encoder.Encode(&Error{Error: err.Error()})
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		encoder.Encode(fn)
 	}
@@ -58,7 +58,7 @@ func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params htt
 	fns, err := h.Functions.GetAllFunctions()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		encoder.Encode(&Error{Error: err.Error()})
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		encoder.Encode(&function.Functions{Functions: fns})
 	}
@@ -87,7 +87,7 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		encoder.Encode(&Error{Error: err.Error()})
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 		return
 	}
 
@@ -118,7 +118,7 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		encoder.Encode(&Error{Error: err.Error()})
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 		return
 	}
 
@@ -137,7 +137,7 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		encoder.Encode(&Error{Error: err.Error()})
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -170,7 +170,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		encoder.Encode(&Error{Error: err.Error()})
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 		return
 	}
 
@@ -192,7 +192,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-		encoder.Encode(&Error{Error: err.Error()})
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -205,7 +205,7 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 	subs, err := h.Subscriptions.GetAllSubscriptions()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		encoder.Encode(&Error{Error: err.Error()})
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		encoder.Encode(&subscription.Subscriptions{Subscriptions: subs})
 	}
