@@ -4,13 +4,13 @@ import (
 	"net/rpc"
 
 	goplugin "github.com/hashicorp/go-plugin"
-	"github.com/serverless/event-gateway/event"
+	eventpkg "github.com/serverless/event-gateway/event"
 )
 
 // Reacter provides subscriptions for events that can react to.
 type Reacter interface {
 	Subscriptions() []Subscription
-	React(event event.Event) error
+	React(event eventpkg.Event) error
 }
 
 // Type of a subscription.
@@ -25,7 +25,7 @@ const (
 
 // Subscription use by plugin to indicate which event it want to react to.
 type Subscription struct {
-	EventType event.Type
+	EventType eventpkg.Type
 	Type      Type
 }
 
@@ -51,7 +51,7 @@ type SubscriberSubscriptionsResponse struct {
 }
 
 // React calls plugin implementation.
-func (s *Subscriber) React(event event.Event) error {
+func (s *Subscriber) React(event eventpkg.Event) error {
 	args := &SubscriberReactArgs{Event: event}
 	var resp SubscriberReactResponse
 	err := s.client.Call("Plugin.React", args, &resp)
@@ -67,7 +67,7 @@ func (s *Subscriber) React(event event.Event) error {
 
 // SubscriberReactArgs RPC args
 type SubscriberReactArgs struct {
-	Event event.Event
+	Event eventpkg.Event
 }
 
 // SubscriberReactResponse RPC response

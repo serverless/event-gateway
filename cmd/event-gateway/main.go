@@ -7,19 +7,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
 	etcd "github.com/serverless/libkv/store/etcd/v3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/serverless/event-gateway/api"
+	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/internal/cache"
 	"github.com/serverless/event-gateway/internal/embedded"
-	"github.com/serverless/event-gateway/internal/httpapi"
+	intstore "github.com/serverless/event-gateway/internal/store"
 	"github.com/serverless/event-gateway/internal/sync"
+	eventgateway "github.com/serverless/event-gateway/libkv"
 	"github.com/serverless/event-gateway/plugin"
-	"github.com/serverless/event-gateway/router"
 )
 
 var version = "dev"
@@ -67,7 +68,8 @@ func main() {
 		embedded.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
 	}
 
-	kv, err := libkv.NewStore(
+	// KV store
+	kvstore, err := libkv.NewStore(
 		store.ETCDV3,
 		strings.Split(*dbHosts, ","),
 		&store.Config{
@@ -78,28 +80,34 @@ func main() {
 		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
+	// Implementation of function and subscription services
+	service := &eventgateway.Service{
+		FunctionStore:     intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore),
+		SubscriptionStore: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
+		EndpointStore:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
+		Log:               log,
+	}
+
+	// Plugin manager
 	pluginManager := plugin.NewManager(plugins, log)
 	err = pluginManager.Connect()
 	if err != nil {
 		log.Fatal("Loading plugins failed.", zap.Error(err))
 	}
 
-	targetCache := cache.NewTarget("/serverless-event-gateway", kv, log)
+	// Router
+	targetCache := cache.NewTarget("/serverless-event-gateway", kvstore, log)
 	router := router.New(*workersNumber, *workersBacklog, targetCache, pluginManager, log)
 	router.StartWorkers()
 
-	api.StartEventsAPI(httpapi.Config{
-		KV:            kv,
-		Log:           log,
+	httpapi.StartEventsAPI(router, httpapi.ServerConfig{
 		TLSCrt:        eventsTLSCrt,
 		TLSKey:        eventsTLSKey,
 		Port:          *eventsPort,
 		ShutdownGuard: shutdownGuard,
-	}, router)
+	})
 
-	api.StartConfigAPI(httpapi.Config{
-		KV:            kv,
-		Log:           log,
+	httpapi.StartConfigAPI(service, service, httpapi.ServerConfig{
 		TLSCrt:        configTLSCrt,
 		TLSKey:        configTLSKey,
 		Port:          *configPort,

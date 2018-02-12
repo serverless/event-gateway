@@ -6,11 +6,10 @@ import (
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
 
-	"github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/internal/cors"
-	"github.com/serverless/event-gateway/internal/kv"
+	eventpkg "github.com/serverless/event-gateway/event"
+	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
+	"github.com/serverless/event-gateway/subscription"
 )
 
 // Target is an implementation of router.Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
@@ -24,7 +23,7 @@ type Target struct {
 
 // HTTPBackingFunction returns function ID for handling HTTP sync endpoint. It also returns matched URL parameters in
 // case of HTTP subscription containing parameters in path.
-func (tc *Target) HTTPBackingFunction(method, path string) (*functions.FunctionID, pathtree.Params, *cors.CORS) {
+func (tc *Target) HTTPBackingFunction(method, path string) (*function.ID, pathtree.Params, *subscription.CORS) {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
@@ -36,7 +35,7 @@ func (tc *Target) HTTPBackingFunction(method, path string) (*functions.FunctionI
 }
 
 // InvokableFunction returns function ID for handling invoke sync event.
-func (tc *Target) InvokableFunction(path string, functionID functions.FunctionID) bool {
+func (tc *Target) InvokableFunction(path string, functionID function.ID) bool {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
@@ -45,14 +44,14 @@ func (tc *Target) InvokableFunction(path string, functionID functions.FunctionID
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
-func (tc *Target) Function(functionID functions.FunctionID) *functions.Function {
+func (tc *Target) Function(functionID function.ID) *function.Function {
 	tc.functionCache.RLock()
 	defer tc.functionCache.RUnlock()
 	return tc.functionCache.cache[functionID]
 }
 
 // SubscribersOfEvent is used for determining which functions to forward messages to.
-func (tc *Target) SubscribersOfEvent(path string, eventType event.Type) []functions.FunctionID {
+func (tc *Target) SubscribersOfEvent(path string, eventType eventpkg.Type) []function.ID {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
@@ -71,8 +70,8 @@ func NewTarget(path string, kvstore store.Store, log *zap.Logger) *Target {
 		path = path + "/"
 	}
 
-	functionPathWatcher := kv.NewWatcher(path+"functions", kvstore, log)
-	subscriptionPathWatcher := kv.NewWatcher(path+"subscriptions", kvstore, log)
+	functionPathWatcher := NewWatcher(path+"functions", kvstore, log)
+	subscriptionPathWatcher := NewWatcher(path+"subscriptions", kvstore, log)
 
 	// serves lookups for function info
 	functionCache := newFunctionCache(log)

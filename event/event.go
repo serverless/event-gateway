@@ -10,7 +10,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-// Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on this schema.
+// Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on
+// this schema.
 type Event struct {
 	Type       Type        `json:"event"`
 	ID         string      `json:"id"`
@@ -19,8 +20,8 @@ type Event struct {
 	DataType   string      `json:"dataType"`
 }
 
-// NewEvent return new instance of Event.
-func NewEvent(eventType Type, mime string, payload interface{}) *Event {
+// New return new instance of Event.
+func New(eventType Type, mime string, payload interface{}) *Event {
 	return &Event{
 		Type:       eventType,
 		ID:         uuid.NewV4().String(),

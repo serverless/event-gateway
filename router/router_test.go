@@ -10,11 +10,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/functions"
-	"github.com/serverless/event-gateway/internal/cors"
+	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/plugin"
 	"github.com/serverless/event-gateway/router/mock"
+	"github.com/serverless/event-gateway/subscription"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +38,7 @@ func TestRouterServeHTTP_HTTPEventFunctionNotFound(t *testing.T) {
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
 	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/notfound").Return(nil, pathtree.Params{}, nil).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]function.ID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodGet, "/notfound", nil)
@@ -53,9 +53,9 @@ func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().Function(functions.FunctionID("testfunc")).Return(nil).MaxTimes(1)
-	target.EXPECT().InvokableFunction("/", functions.FunctionID("testfunc")).Return(true).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().Function(function.ID("testfunc")).Return(nil).MaxTimes(1)
+	target.EXPECT().InvokableFunction("/", function.ID("testfunc")).Return(true).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]function.ID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodPost, "/", nil)
@@ -87,7 +87,7 @@ func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]function.ID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
@@ -103,12 +103,12 @@ func TestRouterServeHTTP_AllowCORSPreflightForHTTPEventWhenConfigured(t *testing
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	id := functions.FunctionID("testid")
-	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/test").Return(&id, pathtree.Params{}, &cors.CORS{
+	id := function.ID("testid")
+	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/test").Return(&id, pathtree.Params{}, &subscription.CORS{
 		Origins: []string{"http://example.com"},
 		Methods: []string{"GET"},
 	}).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]function.ID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodOptions, "/test", nil)
@@ -146,8 +146,8 @@ func TestRouterServeHTTP_ExtractPathFromHostedDomain(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/custom/test").Return(nil, pathtree.Params{}, &cors.CORS{}).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]functions.FunctionID{}).MaxTimes(1)
+	target.EXPECT().HTTPBackingFunction(http.MethodGet, "/custom/test").Return(nil, pathtree.Params{}, &subscription.CORS{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]function.ID{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodGet, "https://custom.slsgateway.com/test", nil)
