@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/serverless/event-gateway/kv"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
@@ -20,6 +19,7 @@ import (
 	"github.com/serverless/event-gateway/internal/embedded"
 	intstore "github.com/serverless/event-gateway/internal/store"
 	"github.com/serverless/event-gateway/internal/sync"
+	eventgateway "github.com/serverless/event-gateway/libkv"
 	"github.com/serverless/event-gateway/plugin"
 )
 
@@ -74,18 +74,12 @@ func main() {
 		log.Fatal("Cannot create KV client.", zap.Error(err))
 	}
 
-	// Services
-	functionsDB := intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore)
-	functionService := &kv.Functions{
-		DB:  functionsDB,
-		Log: log,
-	}
-
-	subscriptionsService := &kv.Subscriptions{
-		SubscriptionsDB: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
-		EndpointsDB:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
-		FunctionsDB:     functionsDB,
-		Log:             log,
+	// Implementation of function and subscription services
+	service := &eventgateway.Service{
+		FunctionStore:     intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore),
+		SubscriptionStore: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
+		EndpointStore:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
+		Log:               log,
 	}
 
 	// Plugin manager
@@ -113,7 +107,7 @@ func main() {
 		ShutdownGuard: shutdownGuard,
 	})
 
-	httpapi.StartConfigAPI(functionService, subscriptionsService, httpapi.ServerConfig{
+	httpapi.StartConfigAPI(service, service, httpapi.ServerConfig{
 		TLSCrt:        configTLSCrt,
 		TLSKey:        configTLSKey,
 		Port:          *configPort,

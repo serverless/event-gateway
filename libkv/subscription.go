@@ -1,4 +1,4 @@
-package kv
+package libkv
 
 import (
 	"bytes"
@@ -18,23 +18,15 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// Subscriptions allows functions to subscribe to custom events.
-type Subscriptions struct {
-	SubscriptionsDB store.Store
-	FunctionsDB     store.Store
-	EndpointsDB     store.Store
-	Log             *zap.Logger
-}
-
 // CreateSubscription creates subscription.
-func (ps Subscriptions) CreateSubscription(s *subscription.Subscription) (*subscription.Subscription, error) {
+func (ps Service) CreateSubscription(s *subscription.Subscription) (*subscription.Subscription, error) {
 	err := ps.validateSubscription(s)
 	if err != nil {
 		return nil, err
 	}
 
 	s.ID = newSubscriptionID(s)
-	_, err = ps.SubscriptionsDB.Get(string(s.ID), &store.ReadOptions{Consistent: true})
+	_, err = ps.SubscriptionStore.Get(string(s.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &ErrSubscriptionAlreadyExists{
 			ID: s.ID,
@@ -48,7 +40,7 @@ func (ps Subscriptions) CreateSubscription(s *subscription.Subscription) (*subsc
 		}
 	}
 
-	exists, err := ps.FunctionsDB.Exists(string(s.FunctionID), &store.ReadOptions{Consistent: true})
+	exists, err := ps.FunctionStore.Exists(string(s.FunctionID), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +53,7 @@ func (ps Subscriptions) CreateSubscription(s *subscription.Subscription) (*subsc
 		return nil, err
 	}
 
-	err = ps.SubscriptionsDB.Put(string(s.ID), buf, nil)
+	err = ps.SubscriptionStore.Put(string(s.ID), buf, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -71,13 +63,13 @@ func (ps Subscriptions) CreateSubscription(s *subscription.Subscription) (*subsc
 }
 
 // DeleteSubscription deletes subscription.
-func (ps Subscriptions) DeleteSubscription(id subscription.ID) error {
+func (ps Service) DeleteSubscription(id subscription.ID) error {
 	sub, err := ps.getSubscription(id)
 	if err != nil {
 		return err
 	}
 
-	err = ps.SubscriptionsDB.Delete(string(sub.ID))
+	err = ps.SubscriptionStore.Delete(string(sub.ID))
 	if err != nil {
 		return &ErrSubscriptionNotFound{sub.ID}
 	}
@@ -95,10 +87,10 @@ func (ps Subscriptions) DeleteSubscription(id subscription.ID) error {
 }
 
 // GetAllSubscriptions returns array of all Subscription.
-func (ps Subscriptions) GetAllSubscriptions() ([]*subscription.Subscription, error) {
+func (ps Service) GetAllSubscriptions() ([]*subscription.Subscription, error) {
 	subs := []*subscription.Subscription{}
 
-	kvs, err := ps.SubscriptionsDB.List("", &store.ReadOptions{Consistent: true})
+	kvs, err := ps.SubscriptionStore.List("", &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +110,8 @@ func (ps Subscriptions) GetAllSubscriptions() ([]*subscription.Subscription, err
 }
 
 // getSubscription returns subscription.
-func (ps Subscriptions) getSubscription(id subscription.ID) (*subscription.Subscription, error) {
-	rawsub, err := ps.SubscriptionsDB.Get(string(id), &store.ReadOptions{Consistent: true})
+func (ps Service) getSubscription(id subscription.ID) (*subscription.Subscription, error) {
+	rawsub, err := ps.SubscriptionStore.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrSubscriptionNotFound{id}
 	}
@@ -135,10 +127,10 @@ func (ps Subscriptions) getSubscription(id subscription.ID) (*subscription.Subsc
 }
 
 // createEndpoint creates endpoint.
-func (ps Subscriptions) createEndpoint(method, path string) error {
+func (ps Service) createEndpoint(method, path string) error {
 	e := NewEndpoint(method, path)
 
-	kvs, err := ps.EndpointsDB.List("", &store.ReadOptions{Consistent: true})
+	kvs, err := ps.EndpointStore.List("", &store.ReadOptions{Consistent: true})
 	// We need to check for not found key as there is no Endpoint cached that creates the directory.
 	if err != nil && err.Error() != "Key not found in store" {
 		return err
@@ -166,7 +158,7 @@ func (ps Subscriptions) createEndpoint(method, path string) error {
 	if err != nil {
 		return err
 	}
-	err = ps.EndpointsDB.Put(string(e.ID), buf, nil)
+	err = ps.EndpointStore.Put(string(e.ID), buf, nil)
 	if err != nil {
 		return err
 	}
@@ -175,15 +167,15 @@ func (ps Subscriptions) createEndpoint(method, path string) error {
 }
 
 // deleteEndpoint deletes endpoint.
-func (ps Subscriptions) deleteEndpoint(method, path string) error {
-	err := ps.EndpointsDB.Delete(string(NewEndpointID(method, path)))
+func (ps Service) deleteEndpoint(method, path string) error {
+	err := ps.EndpointStore.Delete(string(NewEndpointID(method, path)))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ps Subscriptions) validateSubscription(s *subscription.Subscription) error {
+func (ps Service) validateSubscription(s *subscription.Subscription) error {
 	s.Path = istrings.EnsurePrefix(s.Path, "/")
 	if s.Event == event.TypeHTTP {
 		s.Method = strings.ToUpper(s.Method)

@@ -1,4 +1,6 @@
-package router
+// +build integration
+
+package tests
 
 import (
 	"bytes"
@@ -24,8 +26,9 @@ import (
 	"github.com/serverless/event-gateway/internal/embedded"
 	intstore "github.com/serverless/event-gateway/internal/store"
 	"github.com/serverless/event-gateway/internal/sync"
-	"github.com/serverless/event-gateway/kv"
+	eventgateway "github.com/serverless/event-gateway/libkv"
 	"github.com/serverless/event-gateway/plugin"
+	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/subscription"
 	"github.com/serverless/libkv"
 	"github.com/serverless/libkv/store"
@@ -45,9 +48,9 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 
 	testAPIServer := newConfigAPIServer(kv, log)
 	defer testAPIServer.Close()
-	router, testRouterServer := newTestRouterServer(kv, log)
+	instance, testRouterServer := newTestRouterServer(kv, log)
 	defer testRouterServer.Close()
-	router.StartWorkers()
+	instance.StartWorkers()
 
 	expected := "😸"
 
@@ -81,7 +84,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 				URL:  testSubscriberServer.URL,
 			},
 		})
-	wait(router.WaitForFunction(subscriberFnID), "timed out waiting for function to be configured!")
+	wait(instance.WaitForFunction(subscriberFnID), "timed out waiting for function to be configured!")
 
 	// set up pub/sub
 	eventType := "smileys"
@@ -91,12 +94,12 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		Event:      event.Type(eventType),
 		Path:       "/",
 	})
-	wait(router.WaitForSubscriber("/", event.Type(eventType)), "timed out waiting for subscriber to be configured!")
+	wait(instance.WaitForSubscriber("/", event.Type(eventType)), "timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
 	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")
 
-	router.Drain()
+	instance.Drain()
 	shutdownGuard.ShutdownAndWait()
 }
 
@@ -110,7 +113,7 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	testAPIServer := newConfigAPIServer(kv, log)
 	defer testAPIServer.Close()
 
-	router, testRouterServer := newTestRouterServer(kv, log)
+	instance, testRouterServer := newTestRouterServer(kv, log)
 	defer testRouterServer.Close()
 
 	testTargetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +130,7 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 				URL:  testTargetServer.URL,
 			},
 		})
-	wait(router.WaitForFunction(functionID), "timed out waiting for function to be configured!")
+	wait(instance.WaitForFunction(functionID), "timed out waiting for function to be configured!")
 
 	post(testAPIServer.URL+"/v1/subscriptions", subscription.Subscription{
 		FunctionID: function.ID("httpresponse"),
@@ -135,14 +138,14 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 		Method:     "GET",
 		Path:       "/httpresponse",
 	})
-	wait(router.WaitForEndpoint("GET", "/httpresponse"), "timed out waiting for endpoint to be configured!")
+	wait(instance.WaitForEndpoint("GET", "/httpresponse"), "timed out waiting for endpoint to be configured!")
 
 	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
 	assert.Equal(t, statusCode, 201)
 	assert.Equal(t, headers.Get("content-type"), "text/html")
 	assert.Equal(t, body, "<head></head>")
 
-	router.Drain()
+	instance.Drain()
 	shutdownGuard.ShutdownAndWait()
 }
 
@@ -195,33 +198,27 @@ func get(url string) (int, http.Header, string) {
 	return res.StatusCode, res.Header, string(body)
 }
 
-func newTestRouterServer(kvstore store.Store, log *zap.Logger) (*Router, *httptest.Server) {
+func newTestRouterServer(kvstore store.Store, log *zap.Logger) (*router.Router, *httptest.Server) {
 	targetCache := cache.NewTarget("/serverless-event-gateway", kvstore, log)
 
-	router := New(10, 10, targetCache, plugin.NewManager([]string{}, log), log)
-	return router, httptest.NewServer(router)
+	instance := router.New(10, 10, targetCache, plugin.NewManager([]string{}, log), log)
+	return instance, httptest.NewServer(instance)
 }
 
 // newConfigAPIServer creates test Configuration API server.
 func newConfigAPIServer(kvstore store.Store, log *zap.Logger) *httptest.Server {
 	apiRouter := httprouter.New()
 
-	fnsDB := intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore)
-	fns := &kv.Functions{
-		DB:  fnsDB,
-		Log: log,
-	}
-
-	subs := &kv.Subscriptions{
-		SubscriptionsDB: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
-		EndpointsDB:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
-		FunctionsDB:     fnsDB,
-		Log:             log,
+	service := &eventgateway.Service{
+		FunctionStore:     intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore),
+		SubscriptionStore: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
+		EndpointStore:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
+		Log:               log,
 	}
 
 	ha := &httpapi.HTTPAPI{
-		Functions:     fns,
-		Subscriptions: subs,
+		Functions:     service,
+		Subscriptions: service,
 	}
 	ha.RegisterRoutes(apiRouter)
 

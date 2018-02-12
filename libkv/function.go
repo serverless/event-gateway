@@ -1,4 +1,4 @@
-package kv
+package libkv
 
 import (
 	"bytes"
@@ -13,19 +13,13 @@ import (
 	"github.com/serverless/libkv/store"
 )
 
-// Functions implements Registry.
-type Functions struct {
-	DB  store.Store
-	Log *zap.Logger
-}
-
 // RegisterFunction registers function in configuration.
-func (f *Functions) RegisterFunction(fn *function.Function) (*function.Function, error) {
+func (f Service) RegisterFunction(fn *function.Function) (*function.Function, error) {
 	if err := f.validateFunction(fn); err != nil {
 		return nil, err
 	}
 
-	_, err := f.DB.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
+	_, err := f.FunctionStore.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &ErrAlreadyRegistered{fn.ID}
 	}
@@ -35,7 +29,7 @@ func (f *Functions) RegisterFunction(fn *function.Function) (*function.Function,
 		return nil, err
 	}
 
-	err = f.DB.Put(string(fn.ID), byt, nil)
+	err = f.FunctionStore.Put(string(fn.ID), byt, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +40,8 @@ func (f *Functions) RegisterFunction(fn *function.Function) (*function.Function,
 }
 
 // UpdateFunction updates function configuration.
-func (f *Functions) UpdateFunction(fn *function.Function) (*function.Function, error) {
-	_, err := f.DB.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
+func (f Service) UpdateFunction(fn *function.Function) (*function.Function, error) {
+	_, err := f.FunctionStore.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrNotFound{fn.ID}
 	}
@@ -61,7 +55,7 @@ func (f *Functions) UpdateFunction(fn *function.Function) (*function.Function, e
 		return nil, err
 	}
 
-	err = f.DB.Put(string(fn.ID), byt, nil)
+	err = f.FunctionStore.Put(string(fn.ID), byt, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +66,8 @@ func (f *Functions) UpdateFunction(fn *function.Function) (*function.Function, e
 }
 
 // GetFunction returns function from configuration.
-func (f *Functions) GetFunction(id function.ID) (*function.Function, error) {
-	kv, err := f.DB.Get(string(id), &store.ReadOptions{Consistent: true})
+func (f Service) GetFunction(id function.ID) (*function.Function, error) {
+	kv, err := f.FunctionStore.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &ErrNotFound{id}
 	}
@@ -88,10 +82,10 @@ func (f *Functions) GetFunction(id function.ID) (*function.Function, error) {
 }
 
 // GetAllFunctions returns an array of all Function
-func (f *Functions) GetAllFunctions() ([]*function.Function, error) {
+func (f Service) GetAllFunctions() ([]*function.Function, error) {
 	fns := []*function.Function{}
 
-	kvs, err := f.DB.List("", &store.ReadOptions{Consistent: true})
+	kvs, err := f.FunctionStore.List("", &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +105,8 @@ func (f *Functions) GetAllFunctions() ([]*function.Function, error) {
 }
 
 // DeleteFunction deletes function from configuration.
-func (f *Functions) DeleteFunction(id function.ID) error {
-	err := f.DB.Delete(string(id))
+func (f Service) DeleteFunction(id function.ID) error {
+	err := f.FunctionStore.Delete(string(id))
 	if err != nil {
 		return &ErrNotFound{id}
 	}
@@ -122,7 +116,7 @@ func (f *Functions) DeleteFunction(id function.ID) error {
 	return nil
 }
 
-func (f *Functions) validateFunction(fn *function.Function) error {
+func (f Service) validateFunction(fn *function.Function) error {
 	validate := validator.New()
 	validate.RegisterValidation("functionid", functionIDValidator)
 	err := validate.Struct(fn)
@@ -151,7 +145,7 @@ func (f *Functions) validateFunction(fn *function.Function) error {
 	return nil
 }
 
-func (f *Functions) validateEmulator(fn *function.Function) error {
+func (f Service) validateEmulator(fn *function.Function) error {
 	if fn.Provider.EmulatorURL == "" {
 		return &ErrValidation{"Missing required field emulatorURL for Emulator function."}
 	} else if fn.Provider.APIVersion == "" {
@@ -160,7 +154,7 @@ func (f *Functions) validateEmulator(fn *function.Function) error {
 	return nil
 }
 
-func (f *Functions) validateWeighted(fn *function.Function) error {
+func (f Service) validateWeighted(fn *function.Function) error {
 	if len(fn.Provider.Weighted) == 0 {
 		return &ErrValidation{"Missing required fields for weighted function."}
 	}

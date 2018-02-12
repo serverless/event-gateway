@@ -1,4 +1,4 @@
-package kv
+package libkv
 
 import (
 	"errors"
@@ -26,7 +26,7 @@ func TestCreateSubscription_HTTPOK(t *testing.T) {
 	endpointsDB.EXPECT().List("", &store.ReadOptions{Consistent: true}).Return([]*store.KVPair{}, nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func", &store.ReadOptions{Consistent: true}).Return(true, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
 
@@ -37,7 +37,7 @@ func TestCreateSubscription_HTTPValidationError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	subs := &Subscriptions{Log: zap.NewNop()}
+	subs := &Service{Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func"})
 
@@ -53,7 +53,7 @@ func TestCreateSubscription_OK(t *testing.T) {
 	subscriptionsDB.EXPECT().Put("test,func,%2F", []byte(`{"subscriptionId":"test,func,%2F","event":"test","functionId":"func","path":"/"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func", &store.ReadOptions{Consistent: true}).Return(true, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "test", FunctionID: "func"})
 
@@ -64,7 +64,7 @@ func TestCreateSubscription_ValidationError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	subs := &Subscriptions{Log: zap.NewNop()}
+	subs := &Service{Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{})
 
@@ -77,7 +77,7 @@ func TestCreateSubscription_AlreadyExistsError(t *testing.T) {
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("test,func,%2F", gomock.Any()).Return(&store.KVPair{Value: []byte(`{"subscriptionId":"testid"}`)}, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "test", FunctionID: "func"})
 
@@ -93,7 +93,7 @@ func TestCreateSubscription_EndpointPathConflictError(t *testing.T) {
 	subscriptionsDB.EXPECT().Get("http,GET,%2F:id", gomock.Any()).Return(nil, errors.New("KV sub not found"))
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().List("", gomock.Any()).Return([]*store.KVPair{kv}, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/:id"})
 
@@ -109,7 +109,7 @@ func TestCreateSubscription_EndpointPutError(t *testing.T) {
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().List("", gomock.Any()).Return([]*store.KVPair{}, nil)
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(errors.New("KV Put err"))
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
 
@@ -124,7 +124,7 @@ func TestCreateSubscription_EndpointListError(t *testing.T) {
 	subscriptionsDB.EXPECT().Get("http,GET,%2F", gomock.Any()).Return(nil, errors.New("KV sub not found"))
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().List("", gomock.Any()).Return(nil, errors.New("KV List err"))
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
 
@@ -142,7 +142,7 @@ func TestCreateSubscription_FunctionExistsKVError(t *testing.T) {
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func", gomock.Any()).Return(false, errors.New("KV Exists err"))
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
 
@@ -160,7 +160,7 @@ func TestCreateSubscription_FunctionExistsError(t *testing.T) {
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func", gomock.Any()).Return(false, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
 
@@ -179,7 +179,7 @@ func TestCreateSubscription_PutError(t *testing.T) {
 	endpointsDB.EXPECT().Put("GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Exists("func", gomock.Any()).Return(true, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, FunctionsDB: functionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/"})
 
@@ -194,7 +194,7 @@ func TestDeleteSubscription_OK(t *testing.T) {
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("testid", gomock.Any()).Return(kv, nil)
 	subscriptionsDB.EXPECT().Delete("testid").Return(nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	err := subs.DeleteSubscription(subscription.ID("testid"))
 
@@ -207,7 +207,7 @@ func TestDeleteSubscription_GetError(t *testing.T) {
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("testid", gomock.Any()).Return(nil, errors.New("KV Get err"))
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	err := subs.DeleteSubscription(subscription.ID("testid"))
 
@@ -222,7 +222,7 @@ func TestDeleteSubscription_DeleteError(t *testing.T) {
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("testid", gomock.Any()).Return(kv, nil)
 	subscriptionsDB.EXPECT().Delete("testid").Return(errors.New("KV Delete err"))
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	err := subs.DeleteSubscription(subscription.ID("testid"))
 
@@ -239,7 +239,7 @@ func TestDeleteSubscription_DeleteEndpointOK(t *testing.T) {
 	subscriptionsDB.EXPECT().Delete("testid").Return(nil)
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().Delete("GET,%2F").Return(nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, Log: zap.NewNop()}
 
 	err := subs.DeleteSubscription(subscription.ID("testid"))
 
@@ -256,7 +256,7 @@ func TestDeleteSubscription_DeleteEndpointError(t *testing.T) {
 	subscriptionsDB.EXPECT().Delete("testid").Return(nil)
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().Delete("GET,%2F").Return(errors.New("KV Delete err"))
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, EndpointsDB: endpointsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, EndpointStore: endpointsDB, Log: zap.NewNop()}
 
 	err := subs.DeleteSubscription(subscription.ID("testid"))
 
@@ -273,7 +273,7 @@ func TestGetAllSubscriptions_OK(t *testing.T) {
 	}
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().List("", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	list, _ := subs.GetAllSubscriptions()
 
@@ -289,7 +289,7 @@ func TestGetAllSubscriptions_ListError(t *testing.T) {
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().List("", gomock.Any()).Return(nil, errors.New("KV error"))
-	subs := &Subscriptions{SubscriptionsDB: subscriptionsDB, Log: zap.NewNop()}
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	_, err := subs.GetAllSubscriptions()
 	assert.EqualError(t, err, "KV error")
