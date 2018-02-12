@@ -2,6 +2,7 @@ package httpapi
 
 import "fmt"
 
+// Response is a generic response object from Configuration and Events API.
 type Response struct {
 	Errors []Error `json:"errors"`
 }
