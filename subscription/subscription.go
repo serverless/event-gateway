@@ -15,6 +15,11 @@ type Subscription struct {
 	CORS       *CORS       `json:"cors,omitempty"`
 }
 
+// Subscriptions is an array of subscriptions.
+type Subscriptions struct {
+	Subscriptions []*Subscription `json:"subscriptions"`
+}
+
 // ID uniquely identifies a subscription.
 type ID string
 

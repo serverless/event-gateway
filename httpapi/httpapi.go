@@ -60,12 +60,8 @@ func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params htt
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Error{Error: err.Error()})
 	} else {
-		encoder.Encode(&functions{fns})
+		encoder.Encode(&function.Functions{Functions: fns})
 	}
-}
-
-type functions struct {
-	Functions []*function.Function `json:"functions"`
 }
 
 func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -211,10 +207,6 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Error{Error: err.Error()})
 	} else {
-		encoder.Encode(&subscriptions{subs})
+		encoder.Encode(&subscription.Subscriptions{Subscriptions: subs})
 	}
-}
-
-type subscriptions struct {
-	Subscriptions []*subscription.Subscription `json:"subscriptions"`
 }

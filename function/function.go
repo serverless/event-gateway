@@ -25,6 +25,11 @@ type Function struct {
 	Provider *Provider `json:"provider" validate:"required"`
 }
 
+// Functions is an array of functions.
+type Functions struct {
+	Functions []*Function `json:"functions"`
+}
+
 // ID uniquely identifies a function.
 type ID string
 
