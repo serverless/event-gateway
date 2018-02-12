@@ -45,7 +45,7 @@ func (ps Service) CreateSubscription(s *subscription.Subscription) (*subscriptio
 		return nil, err
 	}
 	if !exists {
-		return nil, &function.ErrFunctionNotFound{s.FunctionID}
+		return nil, &function.ErrFunctionNotFound{ID: s.FunctionID}
 	}
 
 	buf, err := json.Marshal(s)
@@ -71,7 +71,7 @@ func (ps Service) DeleteSubscription(id subscription.ID) error {
 
 	err = ps.SubscriptionStore.Delete(string(sub.ID))
 	if err != nil {
-		return &subscription.ErrSubscriptionNotFound{sub.ID}
+		return &subscription.ErrSubscriptionNotFound{ID: sub.ID}
 	}
 
 	if sub.Event == event.TypeHTTP {
@@ -113,7 +113,7 @@ func (ps Service) GetAllSubscriptions() ([]*subscription.Subscription, error) {
 func (ps Service) getSubscription(id subscription.ID) (*subscription.Subscription, error) {
 	rawsub, err := ps.SubscriptionStore.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
-		return nil, &subscription.ErrSubscriptionNotFound{id}
+		return nil, &subscription.ErrSubscriptionNotFound{ID: id}
 	}
 
 	sub := &subscription.Subscription{}
@@ -151,7 +151,7 @@ func (ps Service) createEndpoint(method, path string) error {
 
 	err = tree.AddRoute(path, function.ID(""), nil)
 	if err != nil {
-		return &subscription.ErrPathConfict{err.Error()}
+		return &subscription.ErrPathConfict{Message: err.Error()}
 	}
 
 	buf, err := json.Marshal(e)
@@ -200,11 +200,11 @@ func (ps Service) validateSubscription(s *subscription.Subscription) error {
 	validate.RegisterValidation("eventtype", eventTypeValidator)
 	err := validate.Struct(s)
 	if err != nil {
-		return &subscription.ErrSubscriptionValidation{err.Error()}
+		return &subscription.ErrSubscriptionValidation{Message: err.Error()}
 	}
 
 	if s.Event == event.TypeHTTP && s.Method == "" {
-		return &subscription.ErrSubscriptionValidation{"Missing required fields (method, path) for HTTP event."}
+		return &subscription.ErrSubscriptionValidation{Message: "Missing required fields (method, path) for HTTP event."}
 	}
 
 	return nil

@@ -21,7 +21,7 @@ func (f Service) RegisterFunction(fn *function.Function) (*function.Function, er
 
 	_, err := f.FunctionStore.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
-		return nil, &function.ErrFunctionAlreadyRegistered{fn.ID}
+		return nil, &function.ErrFunctionAlreadyRegistered{ID: fn.ID}
 	}
 
 	byt, err := json.Marshal(fn)
@@ -43,7 +43,7 @@ func (f Service) RegisterFunction(fn *function.Function) (*function.Function, er
 func (f Service) UpdateFunction(fn *function.Function) (*function.Function, error) {
 	_, err := f.FunctionStore.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
 	if err != nil {
-		return nil, &function.ErrFunctionNotFound{fn.ID}
+		return nil, &function.ErrFunctionNotFound{ID: fn.ID}
 	}
 
 	if err = f.validateFunction(fn); err != nil {
@@ -69,7 +69,7 @@ func (f Service) UpdateFunction(fn *function.Function) (*function.Function, erro
 func (f Service) GetFunction(id function.ID) (*function.Function, error) {
 	kv, err := f.FunctionStore.Get(string(id), &store.ReadOptions{Consistent: true})
 	if err != nil {
-		return nil, &function.ErrFunctionNotFound{id}
+		return nil, &function.ErrFunctionNotFound{ID: id}
 	}
 
 	fn := function.Function{}
@@ -108,7 +108,7 @@ func (f Service) GetAllFunctions() ([]*function.Function, error) {
 func (f Service) DeleteFunction(id function.ID) error {
 	err := f.FunctionStore.Delete(string(id))
 	if err != nil {
-		return &function.ErrFunctionNotFound{id}
+		return &function.ErrFunctionNotFound{ID: id}
 	}
 
 	f.Log.Debug("Function deleted.", zap.String("functionId", string(id)))
@@ -121,12 +121,12 @@ func (f Service) validateFunction(fn *function.Function) error {
 	validate.RegisterValidation("functionid", functionIDValidator)
 	err := validate.Struct(fn)
 	if err != nil {
-		return &function.ErrFunctionValidation{err.Error()}
+		return &function.ErrFunctionValidation{Message: err.Error()}
 	}
 
 	if fn.Provider.Type == function.AWSLambda {
 		if fn.Provider.ARN == "" || fn.Provider.Region == "" {
-			return &function.ErrFunctionValidation{"Missing required fields for AWS Lambda function."}
+			return &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."}
 		}
 	}
 
@@ -135,7 +135,7 @@ func (f Service) validateFunction(fn *function.Function) error {
 	}
 
 	if fn.Provider.Type == function.HTTPEndpoint && fn.Provider.URL == "" {
-		return &function.ErrFunctionValidation{"Missing required fields for HTTP endpoint."}
+		return &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}
 	}
 
 	if fn.Provider.Type == function.Weighted {
@@ -147,16 +147,16 @@ func (f Service) validateFunction(fn *function.Function) error {
 
 func (f Service) validateEmulator(fn *function.Function) error {
 	if fn.Provider.EmulatorURL == "" {
-		return &function.ErrFunctionValidation{"Missing required field emulatorURL for Emulator function."}
+		return &function.ErrFunctionValidation{Message: "Missing required field emulatorURL for Emulator function."}
 	} else if fn.Provider.APIVersion == "" {
-		return &function.ErrFunctionValidation{"Missing required field apiVersion for Emulator function."}
+		return &function.ErrFunctionValidation{Message: "Missing required field apiVersion for Emulator function."}
 	}
 	return nil
 }
 
 func (f Service) validateWeighted(fn *function.Function) error {
 	if len(fn.Provider.Weighted) == 0 {
-		return &function.ErrFunctionValidation{"Missing required fields for weighted function."}
+		return &function.ErrFunctionValidation{Message: "Missing required fields for weighted function."}
 	}
 
 	weightTotal := uint(0)
@@ -165,7 +165,7 @@ func (f Service) validateWeighted(fn *function.Function) error {
 	}
 
 	if weightTotal < 1 {
-		return &function.ErrFunctionValidation{"Function weights sum to zero."}
+		return &function.ErrFunctionValidation{Message: "Function weights sum to zero."}
 	}
 
 	return nil

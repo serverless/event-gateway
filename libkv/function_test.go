@@ -35,7 +35,7 @@ func TestRegisterFunction_ValidationError(t *testing.T) {
 
 	_, err := service.RegisterFunction(&function.Function{ID: "testid", Provider: &function.Provider{Type: function.HTTPEndpoint}})
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{"Missing required fields for HTTP endpoint."})
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
 }
 
 func TestRegisterFunction_AlreadyExistsError(t *testing.T) {
@@ -89,7 +89,7 @@ func TestUpdateFunction_ValidationError(t *testing.T) {
 
 	_, err := service.UpdateFunction(&function.Function{ID: "testid", Provider: &function.Provider{Type: function.HTTPEndpoint}})
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{"Missing required fields for HTTP endpoint."})
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
 }
 
 func TestUpdateFunction_NotFoundError(t *testing.T) {
@@ -142,7 +142,7 @@ func TestGetFunction_NotFound(t *testing.T) {
 
 	_, err := service.GetFunction(function.ID("testid"))
 
-	assert.Equal(t, err, &function.ErrFunctionNotFound{"testid"})
+	assert.Equal(t, err, &function.ErrFunctionNotFound{ID: "testid"})
 }
 
 func TestGetAllFunctions(t *testing.T) {
@@ -206,7 +206,7 @@ func TestValidateFunction_AWSLambdaMissingRegion(t *testing.T) {
 
 	err := service.validateFunction(&function.Function{ID: "id", Provider: &function.Provider{Type: function.AWSLambda, ARN: "arn::"}})
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{"Missing required fields for AWS Lambda function."})
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."})
 }
 
 func TestValidateFunction_AWSLambdaMissingARN(t *testing.T) {
@@ -214,7 +214,7 @@ func TestValidateFunction_AWSLambdaMissingARN(t *testing.T) {
 
 	err := service.validateFunction(&function.Function{ID: "id", Provider: &function.Provider{Type: function.AWSLambda, Region: "us-east-1"}})
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{"Missing required fields for AWS Lambda function."})
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."})
 }
 
 func TestValidateFunction_HTTPMissingURL(t *testing.T) {
@@ -222,7 +222,7 @@ func TestValidateFunction_HTTPMissingURL(t *testing.T) {
 
 	err := service.validateFunction(&function.Function{ID: "id", Provider: &function.Provider{Type: function.HTTPEndpoint}})
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{"Missing required fields for HTTP endpoint."})
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
 }
 
 func TestValidateFunction_MissingID(t *testing.T) {
@@ -230,7 +230,7 @@ func TestValidateFunction_MissingID(t *testing.T) {
 
 	err := service.validateFunction(&function.Function{Provider: &function.Provider{Type: function.HTTPEndpoint}})
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{"Key: 'Function.ID' Error:Field validation for 'ID' failed on the 'required' tag"})
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Key: 'Function.ID' Error:Field validation for 'ID' failed on the 'required' tag"})
 }
 
 func TestValidateFunction_EmulatorMissingURL(t *testing.T) {
@@ -238,7 +238,7 @@ func TestValidateFunction_EmulatorMissingURL(t *testing.T) {
 
 	err := service.validateFunction(&function.Function{ID: "id", Provider: &function.Provider{Type: function.Emulator}})
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{"Missing required field emulatorURL for Emulator function."})
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required field emulatorURL for Emulator function."})
 }
 
 func TestValidateFunction_EmulatorMissingAPIVersion(t *testing.T) {
@@ -246,5 +246,5 @@ func TestValidateFunction_EmulatorMissingAPIVersion(t *testing.T) {
 
 	err := service.validateFunction(&function.Function{ID: "id", Provider: &function.Provider{Type: function.Emulator, EmulatorURL: "http://example.com"}})
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{"Missing required field apiVersion for Emulator function."})
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required field apiVersion for Emulator function."})
 }

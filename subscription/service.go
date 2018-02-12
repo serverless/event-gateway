@@ -1,6 +1,6 @@
 package subscription
 
-// SubscriptionService represents service for managing subscriptions.
+// Service represents service for managing subscriptions.
 type Service interface {
 	CreateSubscription(s *Subscription) (*Subscription, error)
 	DeleteSubscription(id ID) error

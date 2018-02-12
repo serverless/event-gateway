@@ -41,7 +41,7 @@ func TestCreateSubscription_HTTPValidationError(t *testing.T) {
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func"})
 
-	assert.Equal(t, err, &subscription.ErrSubscriptionValidation{"Missing required fields (method, path) for HTTP event."})
+	assert.Equal(t, err, &subscription.ErrSubscriptionValidation{Message: "Missing required fields (method, path) for HTTP event."})
 }
 
 func TestCreateSubscription_OK(t *testing.T) {
@@ -68,7 +68,7 @@ func TestCreateSubscription_ValidationError(t *testing.T) {
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{})
 
-	assert.Equal(t, err, &subscription.ErrSubscriptionValidation{"Key: 'Subscription.Event' Error:Field validation for 'Event' failed on the 'required' tag\nKey: 'Subscription.FunctionID' Error:Field validation for 'FunctionID' failed on the 'required' tag"})
+	assert.Equal(t, err, &subscription.ErrSubscriptionValidation{Message: "Key: 'Subscription.Event' Error:Field validation for 'Event' failed on the 'required' tag\nKey: 'Subscription.FunctionID' Error:Field validation for 'FunctionID' failed on the 'required' tag"})
 }
 
 func TestCreateSubscription_AlreadyExistsError(t *testing.T) {
@@ -97,7 +97,7 @@ func TestCreateSubscription_EndpointPathConflictError(t *testing.T) {
 
 	_, err := subs.CreateSubscription(&subscription.Subscription{ID: "testid", Event: "http", FunctionID: "func", Method: "GET", Path: "/:id"})
 
-	assert.Equal(t, err, &subscription.ErrPathConfict{`parameter with different name ("name") already defined: for route: /:id`})
+	assert.Equal(t, err, &subscription.ErrPathConfict{Message: `parameter with different name ("name") already defined: for route: /:id`})
 }
 
 func TestCreateSubscription_EndpointPutError(t *testing.T) {
@@ -211,7 +211,7 @@ func TestDeleteSubscription_GetError(t *testing.T) {
 
 	err := subs.DeleteSubscription(subscription.ID("testid"))
 
-	assert.Equal(t, err, &subscription.ErrSubscriptionNotFound{"testid"})
+	assert.Equal(t, err, &subscription.ErrSubscriptionNotFound{ID: "testid"})
 }
 
 func TestDeleteSubscription_DeleteError(t *testing.T) {
@@ -226,7 +226,7 @@ func TestDeleteSubscription_DeleteError(t *testing.T) {
 
 	err := subs.DeleteSubscription(subscription.ID("testid"))
 
-	assert.Equal(t, err, &subscription.ErrSubscriptionNotFound{"testid"})
+	assert.Equal(t, err, &subscription.ErrSubscriptionNotFound{ID: "testid"})
 }
 
 func TestDeleteSubscription_DeleteEndpointOK(t *testing.T) {

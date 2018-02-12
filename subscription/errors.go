@@ -24,18 +24,18 @@ func (e ErrSubscriptionAlreadyExists) Error() string {
 
 // ErrSubscriptionValidation occurs when subscription payload doesn't validate.
 type ErrSubscriptionValidation struct {
-	Original string
+	Message string
 }
 
 func (e ErrSubscriptionValidation) Error() string {
-	return fmt.Sprintf("Subscription doesn't validate. Validation error: %q", e.Original)
+	return fmt.Sprintf("Subscription doesn't validate. Validation error: %q", e.Message)
 }
 
 // ErrPathConfict occurs when HTTP subscription path conflicts with existing path.
 type ErrPathConfict struct {
-	Original string
+	Message string
 }
 
 func (e ErrPathConfict) Error() string {
-	return fmt.Sprintf("Subscription path conflict: %s.", e.Original)
+	return fmt.Sprintf("Subscription path conflict: %s.", e.Message)
 }
