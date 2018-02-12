@@ -8,7 +8,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/serverless/event-gateway/function"
-	"github.com/serverless/event-gateway/libkv"
 	"github.com/serverless/event-gateway/subscription"
 )
 
@@ -40,7 +39,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 
 	fn, err := h.Functions.GetFunction(function.ID(params.ByName("id")))
 	if err != nil {
-		if _, ok := err.(*libkv.ErrNotFound); ok {
+		if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -84,9 +83,9 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 
 	output, err := h.Functions.RegisterFunction(fn)
 	if err != nil {
-		if _, ok := err.(*libkv.ErrValidation); ok {
+		if _, ok := err.(*function.ErrFunctionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*libkv.ErrAlreadyRegistered); ok {
+		} else if _, ok := err.(*function.ErrFunctionAlreadyRegistered); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -115,9 +114,9 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 	fn.ID = function.ID(params.ByName("id"))
 	output, err := h.Functions.UpdateFunction(fn)
 	if err != nil {
-		if _, ok := err.(*libkv.ErrValidation); ok {
+		if _, ok := err.(*function.ErrFunctionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*libkv.ErrNotFound); ok {
+		} else if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -136,7 +135,7 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 
 	err := h.Functions.DeleteFunction(function.ID(params.ByName("id")))
 	if err != nil {
-		if _, ok := err.(*libkv.ErrNotFound); ok {
+		if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -163,13 +162,13 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 
 	output, err := h.Subscriptions.CreateSubscription(s)
 	if err != nil {
-		if _, ok := err.(*libkv.ErrSubscriptionAlreadyExists); ok {
+		if _, ok := err.(*subscription.ErrSubscriptionAlreadyExists); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*libkv.ErrFunctionNotFound); ok {
+		} else if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*libkv.ErrSubscriptionValidation); ok {
+		} else if _, ok := err.(*subscription.ErrSubscriptionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := err.(*libkv.ErrPathConfict); ok {
+		} else if _, ok := err.(*subscription.ErrPathConfict); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -192,7 +191,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 
 	err := h.Subscriptions.DeleteSubscription(subscription.ID(sid))
 	if err != nil {
-		if _, ok := err.(*libkv.ErrSubscriptionNotFound); ok {
+		if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
