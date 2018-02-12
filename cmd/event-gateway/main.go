@@ -62,6 +62,12 @@ func main() {
 	}
 	defer log.Sync()
 
+	shutdownGuard := sync.NewShutdownGuard()
+
+	if *developmentMode {
+		embedded.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
+	}
+
 	// KV store
 	kvstore, err := libkv.NewStore(
 		store.ETCDV3,
@@ -93,12 +99,6 @@ func main() {
 	targetCache := cache.NewTarget("/serverless-event-gateway", kvstore, log)
 	router := router.New(*workersNumber, *workersBacklog, targetCache, pluginManager, log)
 	router.StartWorkers()
-
-	shutdownGuard := sync.NewShutdownGuard()
-
-	if *developmentMode {
-		embedded.EmbedEtcd(*embedDataDir, *embedPeerAddr, *embedCliAddr, shutdownGuard)
-	}
 
 	httpapi.StartEventsAPI(router, httpapi.ServerConfig{
 		TLSCrt:        eventsTLSCrt,
