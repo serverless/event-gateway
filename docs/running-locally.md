@@ -18,6 +18,32 @@ cd event-gateway
 docker build -t event-gateway .
 ```
 
+You can also pull pre-built binaries from S3:
+
+```
+$ BUILD=darwin_amd64
+$ wget https://s3.amazonaws.com/eg-binaries/master/${BUILD}/event-gateway
+$ chmod +x event-gateway
+$ ./event-gateway -dev
+```
+
+For `BUILD`, the available choices are:
+
+- darwin_386
+- darwin_amd64
+- linux_386
+- linux_amd64
+- windows_386
+- windows_amd64
+
+To upload new releases to S3, you'll need [`goreleaser`](https://github.com/goreleaser/goreleaser) installed. You also need access keys for the account with the `eg-binaries` bucket.
+
+Run:
+
+```bash
+$ goreleaser --snapshot
+```
+
 ## Running Locally
 
 Run `event-gateway` in `dev` mode:
