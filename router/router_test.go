@@ -30,7 +30,7 @@ func TestRouterServeHTTP_StatusUnavailableWhenDraining(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusServiceUnavailable, recorder.Code)
-	assert.Equal(t, "Service Unavailable\n", recorder.Body.String())
+	assert.Equal(t, `{"errors":[{"message":"Service Unavailable"}]}`+"\n", recorder.Body.String())
 }
 
 func TestRouterServeHTTP_HTTPEventFunctionNotFound(t *testing.T) {
@@ -46,7 +46,7 @@ func TestRouterServeHTTP_HTTPEventFunctionNotFound(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
-	assert.Equal(t, "resource not found\n", recorder.Body.String())
+	assert.Equal(t, `{"errors":[{"message":"resource not found"}]}`+"\n", recorder.Body.String())
 }
 
 func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
@@ -65,7 +65,7 @@ func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusInternalServerError, recorder.Code)
-	assert.Equal(t, "unable to look up registered function\n", recorder.Body.String())
+	assert.Equal(t, `{"errors":[{"message":"unable to look up registered function"}]}`+"\n", recorder.Body.String())
 }
 
 func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
@@ -80,7 +80,7 @@ func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-	assert.Equal(t, "malformed JSON body\n", recorder.Body.String())
+	assert.Equal(t, `{"errors":[{"message":"malformed JSON body"}]}`+"\n", recorder.Body.String())
 }
 
 func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T) {
@@ -96,7 +96,7 @@ func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-	assert.Equal(t, "custom event can be emitted only with POST method\n", recorder.Body.String())
+	assert.Equal(t, `{"errors":[{"message":"custom event can be emitted only with POST method"}]}`+"\n", recorder.Body.String())
 }
 
 func TestRouterServeHTTP_AllowCORSPreflightForHTTPEventWhenConfigured(t *testing.T) {
