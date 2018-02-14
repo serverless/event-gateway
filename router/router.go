@@ -394,7 +394,10 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 		chosenFunction = chosen
 	}
 
-	router.log.Debug("Invoking function.", zap.String("functionId", string(backingFunctionID)), zap.Object("event", event))
+	router.log.Debug("Invoking function.",
+		zap.String("space", space),
+		zap.String("functionId", string(backingFunctionID)),
+		zap.Object("event", event))
 	err := router.emitSystemFunctionInvoking(backingFunctionID, event)
 	if err != nil {
 		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
@@ -417,12 +420,18 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 	result, err := f.Call(payload)
 	if err != nil {
 		router.log.Info("Function invocation failed.",
-			zap.String("functionId", string(backingFunctionID)), zap.Object("event", event), zap.Error(err))
+			zap.String("space", space),
+			zap.String("functionId", string(backingFunctionID)),
+			zap.Object("event", event),
+			zap.Error(err))
 
 		router.emitSystemFunctionInvocationFailed(backingFunctionID, event, err)
 	} else {
 		router.log.Debug("Function invoked.",
-			zap.String("functionId", string(backingFunctionID)), zap.Object("event", event), zap.ByteString("result", result))
+			zap.String("space", space),
+			zap.String("functionId", string(backingFunctionID)),
+			zap.Object("event", event),
+			zap.ByteString("result", result))
 
 		router.emitSystemFunctionInvoked(backingFunctionID, event, payload)
 	}

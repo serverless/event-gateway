@@ -58,7 +58,10 @@ func (service Service) CreateSubscription(s *subscription.Subscription) (*subscr
 		return nil, err
 	}
 
-	service.Log.Debug("Subscription created.", zap.String("event", string(s.Event)), zap.String("functionId", string(s.FunctionID)))
+	service.Log.Debug("Subscription created.",
+		zap.String("event", string(s.Event)),
+		zap.String("space", s.Space),
+		zap.String("functionId", string(s.FunctionID)))
 	return s, nil
 }
 
@@ -81,7 +84,10 @@ func (service Service) DeleteSubscription(space string, id subscription.ID) erro
 		}
 	}
 
-	service.Log.Debug("Subscription deleted.", zap.String("event", string(sub.Event)), zap.String("functionId", string(sub.FunctionID)))
+	service.Log.Debug("Subscription deleted.",
+		zap.String("event", string(sub.Event)),
+		zap.String("space", sub.Space),
+		zap.String("functionId", string(sub.FunctionID)))
 
 	return nil
 }
