@@ -330,6 +330,9 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 
 	functionID := function.ID(r.Header.Get(headerFunctionID))
 	space := r.Header.Get(headerSpace)
+	if space == "" {
+		space = "default"
+	}
 	if !router.targetCache.InvokableFunction(path, space, functionID) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")

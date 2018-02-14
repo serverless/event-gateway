@@ -70,6 +70,22 @@ func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
 	assert.Equal(t, `{"errors":[{"message":"unable to look up registered function"}]}`+"\n", recorder.Body.String())
 }
 
+func TestRouterServeHTTP_InvokeEventDefaultSpace(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	target := mock.NewMockTargeter(ctrl)
+	target.EXPECT().Function("default", function.ID("testfunc")).Return(nil).MaxTimes(1)
+	target.EXPECT().InvokableFunction("/", "default", function.ID("testfunc")).Return(true).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]router.FunctionInfo{}).MaxTimes(1)
+	router := testrouter(target)
+
+	req, _ := http.NewRequest(http.MethodPost, "/", nil)
+	req.Header.Set("event", "invoke")
+	req.Header.Set("function-id", "testfunc")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+}
+
 func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
