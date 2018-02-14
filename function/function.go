@@ -21,8 +21,8 @@ import (
 
 // Function represents a function deployed on one of the supported providers.
 type Function struct {
-	ID       ID        `json:"functionId" validate:"required,functionid"`
 	Space    string    `json:"space" validate:"required,space"`
+	ID       ID        `json:"functionId" validate:"required,functionid"`
 	Provider *Provider `json:"provider" validate:"required"`
 }
 

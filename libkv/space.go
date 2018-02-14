@@ -9,6 +9,9 @@ import (
 const defaultSpace = "default"
 
 func spacePath(space string) string {
+	if space == "" {
+		return ""
+	}
 	return space + "/"
 }
 

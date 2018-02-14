@@ -34,13 +34,15 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 
 	router.GET("/v1/functions/:space/:id", h.getFunction)
 	router.GET("/v1/functions/:space", h.getFunctions)
+	router.GET("/v1/functions", h.getFunctions)
 	router.POST("/v1/functions", h.registerFunction)
 	router.PUT("/v1/functions/:space/:id", h.updateFunction)
 	router.DELETE("/v1/functions/:space/:id", h.deleteFunction)
 
+	router.GET("/v1/subscriptions/:space", h.getSubscriptions)
+	router.GET("/v1/subscriptions", h.getSubscriptions)
 	router.POST("/v1/subscriptions", h.createSubscription)
 	router.DELETE("/v1/subscriptions/:space/*subscriptionID", h.deleteSubscription)
-	router.GET("/v1/subscriptions/:space", h.getSubscriptions)
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -161,6 +163,19 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 	}
 }
 
+func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	subs, err := h.Subscriptions.GetSubscriptions(params.ByName("space"))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		encoder.Encode(&SubscriptionsResponse{subs})
+	}
+}
+
 func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
@@ -213,18 +228,5 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		w.WriteHeader(http.StatusNoContent)
-	}
-}
-
-func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json")
-	encoder := json.NewEncoder(w)
-
-	subs, err := h.Subscriptions.GetSubscriptions(params.ByName("space"))
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
-	} else {
-		encoder.Encode(&SubscriptionsResponse{subs})
 	}
 }
