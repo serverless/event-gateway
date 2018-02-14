@@ -13,13 +13,23 @@ import (
 	"github.com/serverless/libkv/store"
 )
 
+// FunctionKey is a key under which function data is stored KV store.
+type FunctionKey struct {
+	Space string
+	ID    function.ID
+}
+
+func (key FunctionKey) String() string {
+	return key.Space + "/" + string(key.ID)
+}
+
 // RegisterFunction registers function in configuration.
-func (f Service) RegisterFunction(fn *function.Function) (*function.Function, error) {
-	if err := f.validateFunction(fn); err != nil {
+func (service Service) RegisterFunction(fn *function.Function) (*function.Function, error) {
+	if err := service.validateFunction(fn); err != nil {
 		return nil, err
 	}
 
-	_, err := f.FunctionStore.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
+	_, err := service.FunctionStore.Get(FunctionKey{fn.Space, fn.ID}.String(), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &function.ErrFunctionAlreadyRegistered{ID: fn.ID}
 	}
@@ -29,24 +39,27 @@ func (f Service) RegisterFunction(fn *function.Function) (*function.Function, er
 		return nil, err
 	}
 
-	err = f.FunctionStore.Put(string(fn.ID), byt, nil)
+	err = service.FunctionStore.Put(FunctionKey{fn.Space, fn.ID}.String(), byt, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	f.Log.Debug("Function registered.", zap.String("functionId", string(fn.ID)), zap.String("type", string(fn.Provider.Type)))
+	service.Log.Debug("Function registered.",
+		zap.String("space", fn.Space),
+		zap.String("functionId", string(fn.ID)),
+		zap.String("type", string(fn.Provider.Type)))
 
 	return fn, nil
 }
 
 // UpdateFunction updates function configuration.
-func (f Service) UpdateFunction(fn *function.Function) (*function.Function, error) {
-	_, err := f.FunctionStore.Get(string(fn.ID), &store.ReadOptions{Consistent: true})
+func (service Service) UpdateFunction(space string, fn *function.Function) (*function.Function, error) {
+	_, err := service.FunctionStore.Get(FunctionKey{space, fn.ID}.String(), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &function.ErrFunctionNotFound{ID: fn.ID}
 	}
 
-	if err = f.validateFunction(fn); err != nil {
+	if err = service.validateFunction(fn); err != nil {
 		return nil, err
 	}
 
@@ -55,21 +68,26 @@ func (f Service) UpdateFunction(fn *function.Function) (*function.Function, erro
 		return nil, err
 	}
 
-	err = f.FunctionStore.Put(string(fn.ID), byt, nil)
+	err = service.FunctionStore.Put(FunctionKey{fn.Space, fn.ID}.String(), byt, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	f.Log.Debug("Function updated.", zap.String("functionId", string(fn.ID)))
+	service.Log.Debug("Function updated.",
+		zap.String("space", fn.Space),
+		zap.String("functionId", string(fn.ID)))
 
 	return fn, nil
 }
 
 // GetFunction returns function from configuration.
-func (f Service) GetFunction(id function.ID) (*function.Function, error) {
-	kv, err := f.FunctionStore.Get(string(id), &store.ReadOptions{Consistent: true})
+func (service Service) GetFunction(space string, id function.ID) (*function.Function, error) {
+	kv, err := service.FunctionStore.Get(FunctionKey{space, id}.String(), &store.ReadOptions{Consistent: true})
 	if err != nil {
-		return nil, &function.ErrFunctionNotFound{ID: id}
+		if err.Error() == errKeyNotFound {
+			return nil, &function.ErrFunctionNotFound{ID: id}
+		}
+		return nil, err
 	}
 
 	fn := function.Function{}
@@ -81,12 +99,12 @@ func (f Service) GetFunction(id function.ID) (*function.Function, error) {
 	return &fn, nil
 }
 
-// GetAllFunctions returns an array of all Function
-func (f Service) GetAllFunctions() ([]*function.Function, error) {
+// GetFunctions returns an array of all functions in the space.
+func (service Service) GetFunctions(space string) (function.Functions, error) {
 	fns := []*function.Function{}
 
-	kvs, err := f.FunctionStore.List("", &store.ReadOptions{Consistent: true})
-	if err != nil {
+	kvs, err := service.FunctionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
+	if err != nil && err.Error() != errKeyNotFound {
 		return nil, err
 	}
 
@@ -101,24 +119,29 @@ func (f Service) GetAllFunctions() ([]*function.Function, error) {
 		fns = append(fns, fn)
 	}
 
-	return fns, nil
+	return function.Functions(fns), nil
 }
 
-// DeleteFunction deletes function from configuration.
-func (f Service) DeleteFunction(id function.ID) error {
-	err := f.FunctionStore.Delete(string(id))
+// DeleteFunction deletes function from the registry.
+func (service Service) DeleteFunction(space string, id function.ID) error {
+	err := service.FunctionStore.Delete(FunctionKey{space, id}.String())
 	if err != nil {
 		return &function.ErrFunctionNotFound{ID: id}
 	}
 
-	f.Log.Debug("Function deleted.", zap.String("functionId", string(id)))
+	service.Log.Debug("Function deleted.", zap.String("functionId", string(id)))
 
 	return nil
 }
 
-func (f Service) validateFunction(fn *function.Function) error {
+func (service Service) validateFunction(fn *function.Function) error {
+	if fn.Space == "" {
+		fn.Space = defaultSpace
+	}
+
 	validate := validator.New()
 	validate.RegisterValidation("functionid", functionIDValidator)
+	validate.RegisterValidation("space", spaceValidator)
 	err := validate.Struct(fn)
 	if err != nil {
 		return &function.ErrFunctionValidation{Message: err.Error()}
@@ -131,7 +154,7 @@ func (f Service) validateFunction(fn *function.Function) error {
 	}
 
 	if fn.Provider.Type == function.Emulator {
-		return f.validateEmulator(fn)
+		return service.validateEmulator(fn)
 	}
 
 	if fn.Provider.Type == function.HTTPEndpoint && fn.Provider.URL == "" {
@@ -139,13 +162,13 @@ func (f Service) validateFunction(fn *function.Function) error {
 	}
 
 	if fn.Provider.Type == function.Weighted {
-		return f.validateWeighted(fn)
+		return service.validateWeighted(fn)
 	}
 
 	return nil
 }
 
-func (f Service) validateEmulator(fn *function.Function) error {
+func (service Service) validateEmulator(fn *function.Function) error {
 	if fn.Provider.EmulatorURL == "" {
 		return &function.ErrFunctionValidation{Message: "Missing required field emulatorURL for Emulator function."}
 	} else if fn.Provider.APIVersion == "" {
@@ -154,7 +177,7 @@ func (f Service) validateEmulator(fn *function.Function) error {
 	return nil
 }
 
-func (f Service) validateWeighted(fn *function.Function) error {
+func (service Service) validateWeighted(fn *function.Function) error {
 	if len(fn.Provider.Weighted) == 0 {
 		return &function.ErrFunctionValidation{Message: "Missing required fields for weighted function."}
 	}

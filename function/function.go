@@ -21,14 +21,13 @@ import (
 
 // Function represents a function deployed on one of the supported providers.
 type Function struct {
+	Space    string    `json:"space" validate:"required,space"`
 	ID       ID        `json:"functionId" validate:"required,functionid"`
 	Provider *Provider `json:"provider" validate:"required"`
 }
 
 // Functions is an array of functions.
-type Functions struct {
-	Functions []*Function `json:"functions"`
-}
+type Functions []*Function
 
 // ID uniquely identifies a function.
 type ID string

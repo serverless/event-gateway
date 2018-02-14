@@ -9,6 +9,8 @@ import (
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
+	"github.com/serverless/event-gateway/libkv"
+	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/subscription"
 )
 
@@ -21,41 +23,47 @@ type Target struct {
 	subscriptionCache *subscriptionCache
 }
 
-// HTTPBackingFunction returns function ID for handling HTTP sync endpoint. It also returns matched URL parameters in
-// case of HTTP subscription containing parameters in path.
-func (tc *Target) HTTPBackingFunction(method, path string) (*function.ID, pathtree.Params, *subscription.CORS) {
+// HTTPBackingFunction returns function space and ID for handling HTTP sync endpoint. It also returns matched URL
+// parameters in case of HTTP subscription containing parameters in path.
+func (tc *Target) HTTPBackingFunction(method, path string) (string, *function.ID, pathtree.Params, *subscription.CORS) {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
 	root := tc.subscriptionCache.endpoints[method]
 	if root == nil {
-		return nil, nil, nil
+		return "", nil, nil, nil
 	}
+
 	return root.Resolve(path)
 }
 
 // InvokableFunction returns function ID for handling invoke sync event.
-func (tc *Target) InvokableFunction(path string, functionID function.ID) bool {
+func (tc *Target) InvokableFunction(path string, space string, id function.ID) bool {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
-	_, exists := tc.subscriptionCache.invokable[path][functionID]
+	_, exists := tc.subscriptionCache.invokable[path][libkv.FunctionKey{Space: space, ID: id}]
 	return exists
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
-func (tc *Target) Function(functionID function.ID) *function.Function {
+func (tc *Target) Function(space string, id function.ID) *function.Function {
 	tc.functionCache.RLock()
 	defer tc.functionCache.RUnlock()
-	return tc.functionCache.cache[functionID]
+	return tc.functionCache.cache[libkv.FunctionKey{Space: space, ID: id}]
 }
 
 // SubscribersOfEvent is used for determining which functions to forward messages to.
-func (tc *Target) SubscribersOfEvent(path string, eventType eventpkg.Type) []function.ID {
+func (tc *Target) SubscribersOfEvent(path string, eventType eventpkg.Type) []router.FunctionInfo {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
-	return tc.subscriptionCache.eventToFunctions[path][eventType]
+	keys := tc.subscriptionCache.eventToFunctions[path][eventType]
+	info := []router.FunctionInfo{}
+	for _, key := range keys {
+		info = append(info, router.FunctionInfo{Space: key.Space, ID: key.ID})
+	}
+	return info
 }
 
 // Shutdown causes all state watchers to clean up their state.
