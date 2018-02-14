@@ -8,6 +8,7 @@ import (
 // Subscription maps event type to a function.
 type Subscription struct {
 	ID         ID          `json:"subscriptionId"`
+	Space      string      `json:"space" validate:"required,space"`
 	Event      event.Type  `json:"event" validate:"required,eventtype"`
 	FunctionID function.ID `json:"functionId" validate:"required"`
 	Method     string      `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`

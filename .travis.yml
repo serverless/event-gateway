@@ -15,6 +15,7 @@ script:
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --disable=gas --skip=mock ./...
 - go get github.com/mattn/goveralls
 - goveralls -race -service=travis-ci -ignore=*/mock/*,*/*/mock/*
+- go test ./tests -tags=integration
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 notifications:

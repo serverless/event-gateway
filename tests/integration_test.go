@@ -84,7 +84,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 				URL:  testSubscriberServer.URL,
 			},
 		})
-	wait(instance.WaitForFunction(subscriberFnID), "timed out waiting for function to be configured!")
+	wait(instance.WaitForFunction("default", subscriberFnID), "timed out waiting for function to be configured!")
 
 	// set up pub/sub
 	eventType := "smileys"
@@ -130,7 +130,7 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 				URL:  testTargetServer.URL,
 			},
 		})
-	wait(instance.WaitForFunction(functionID), "timed out waiting for function to be configured!")
+	wait(instance.WaitForFunction("default", functionID), "timed out waiting for function to be configured!")
 
 	post(testAPIServer.URL+"/v1/subscriptions", subscription.Subscription{
 		FunctionID: function.ID("httpresponse"),

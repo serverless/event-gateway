@@ -145,11 +145,11 @@ func (router *Router) Drain() {
 
 // WaitForFunction returns a chan that is closed when a function is created.
 // Primarily for testing purposes.
-func (router *Router) WaitForFunction(id function.ID) <-chan struct{} {
+func (router *Router) WaitForFunction(space string, id function.ID) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			res := router.targetCache.Function(id)
+			res := router.targetCache.Function(space, id)
 			if res != nil {
 				break
 			}
@@ -166,7 +166,7 @@ func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			res, _, _ := router.targetCache.HTTPBackingFunction(method, path)
+			_, res, _, _ := router.targetCache.HTTPBackingFunction(method, path)
 			if res != nil {
 				break
 			}
@@ -196,6 +196,7 @@ func (router *Router) WaitForSubscriber(path string, eventType eventpkg.Type) <-
 
 // headerFunctionID is a header name for specifying function id for sync invocation.
 const headerFunctionID = "function-id"
+const headerSpace = "space"
 const hostedDomain = "(eventgateway([a-z-]*)?.io|slsgateway.com)"
 
 var (
@@ -258,7 +259,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
 		reqMethod = r.Header.Get("Access-Control-Request-Method")
 	}
-	backingFunction, params, corsConfig := router.targetCache.HTTPBackingFunction(
+	space, backingFunction, params, corsConfig := router.targetCache.HTTPBackingFunction(
 		strings.ToUpper(reqMethod), extractPath(r.Host, r.URL.EscapedPath()),
 	)
 	if backingFunction == nil {
@@ -273,7 +274,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		httpdata := event.Data.(*eventpkg.HTTPEvent)
 		httpdata.Params = params
 		event.Data = httpdata
-		resp, err := router.callFunction(*backingFunction, *event)
+		resp, err := router.callFunction(space, *backingFunction, *event)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("Content-Type", "application/json")
@@ -328,14 +329,15 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 	routerEventsSyncReceived.Inc()
 
 	functionID := function.ID(r.Header.Get(headerFunctionID))
-	if !router.targetCache.InvokableFunction(path, functionID) {
+	space := r.Header.Get(headerSpace)
+	if !router.targetCache.InvokableFunction(path, space, functionID) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "function or subscription not found"}}})
 		return
 	}
 
-	resp, err := router.callFunction(functionID, *event)
+	resp, err := router.callFunction(space, functionID, *event)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
@@ -374,8 +376,8 @@ func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 }
 
 // callFunction looks up a function and calls it.
-func (router *Router) callFunction(backingFunctionID function.ID, event eventpkg.Event) ([]byte, error) {
-	backingFunction := router.targetCache.Function(backingFunctionID)
+func (router *Router) callFunction(space string, backingFunctionID function.ID, event eventpkg.Event) ([]byte, error) {
+	backingFunction := router.targetCache.Function(space, backingFunctionID)
 	if backingFunction == nil {
 		return []byte{}, errUnableToLookUpRegisteredFunction
 	}
@@ -399,7 +401,7 @@ func (router *Router) callFunction(backingFunctionID function.ID, event eventpkg
 	}
 
 	// Call the target backing function.
-	f := router.targetCache.Function(chosenFunction)
+	f := router.targetCache.Function(space, chosenFunction)
 	if f == nil {
 		return []byte{}, errUnableToLookUpRegisteredFunction
 	}
@@ -471,7 +473,7 @@ func (router *Router) processEvent(e backlogEvent) {
 	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.Type)
 	reportProceededEvent(e.event.ID)
 	for _, subscriber := range subscribers {
-		router.callFunction(subscriber, e.event)
+		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}
 }
 

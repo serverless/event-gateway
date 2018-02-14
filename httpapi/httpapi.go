@@ -22,22 +22,22 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	router.Handler("GET", "/metrics", promhttp.Handler())
 
-	router.GET("/v1/functions", h.getFunctions)
+	router.GET("/v1/functions/:space", h.getFunctions)
 	router.POST("/v1/functions", h.registerFunction)
-	router.GET("/v1/functions/:id", h.getFunction)
-	router.PUT("/v1/functions/:id", h.updateFunction)
-	router.DELETE("/v1/functions/:id", h.deleteFunction)
+	router.GET("/v1/functions/:space/:id", h.getFunction)
+	router.PUT("/v1/functions/:space/:id", h.updateFunction)
+	router.DELETE("/v1/functions/:space/:id", h.deleteFunction)
 
 	router.POST("/v1/subscriptions", h.createSubscription)
-	router.DELETE("/v1/subscriptions/*subscriptionID", h.deleteSubscription)
-	router.GET("/v1/subscriptions", h.getSubscriptions)
+	router.DELETE("/v1/subscriptions/:space/*subscriptionID", h.deleteSubscription)
+	router.GET("/v1/subscriptions/:space", h.getSubscriptions)
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fn, err := h.Functions.GetFunction(function.ID(params.ByName("id")))
+	fn, err := h.Functions.GetFunction(params.ByName("space"), function.ID(params.ByName("id")))
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -55,7 +55,7 @@ func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params htt
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fns, err := h.Functions.GetAllFunctions()
+	fns, err := h.Functions.GetFunctions(params.ByName("space"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
@@ -107,8 +107,15 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		return
 	}
 
+	if params.ByName("space") != fn.Space {
+		w.WriteHeader(http.StatusBadRequest)
+		responseErr := &ErrSpaceMismatch{}
+		encoder.Encode(&Response{Errors: []Error{{Message: responseErr.Error()}}})
+		return
+	}
+
 	fn.ID = function.ID(params.ByName("id"))
-	output, err := h.Functions.UpdateFunction(fn)
+	output, err := h.Functions.UpdateFunction(params.ByName("space"), fn)
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -129,7 +136,7 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.Functions.DeleteFunction(function.ID(params.ByName("id")))
+	err := h.Functions.DeleteFunction(params.ByName("space"), function.ID(params.ByName("id")))
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -185,7 +192,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	segments := strings.Split(r.URL.RawPath, "/")
 	sid := segments[len(segments)-1]
 
-	err := h.Subscriptions.DeleteSubscription(subscription.ID(sid))
+	err := h.Subscriptions.DeleteSubscription(params.ByName("space"), subscription.ID(sid))
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -202,7 +209,7 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	subs, err := h.Subscriptions.GetAllSubscriptions()
+	subs, err := h.Subscriptions.GetSubscriptions(params.ByName("space"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})

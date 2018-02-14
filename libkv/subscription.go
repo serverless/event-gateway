@@ -19,14 +19,14 @@ import (
 )
 
 // CreateSubscription creates subscription.
-func (ps Service) CreateSubscription(s *subscription.Subscription) (*subscription.Subscription, error) {
-	err := ps.validateSubscription(s)
+func (service Service) CreateSubscription(s *subscription.Subscription) (*subscription.Subscription, error) {
+	err := service.validateSubscription(s)
 	if err != nil {
 		return nil, err
 	}
 
 	s.ID = newSubscriptionID(s)
-	_, err = ps.SubscriptionStore.Get(string(s.ID), &store.ReadOptions{Consistent: true})
+	_, err = service.SubscriptionStore.Get(subscriptionPath(s.Space, s.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &subscription.ErrSubscriptionAlreadyExists{
 			ID: s.ID,
@@ -34,17 +34,17 @@ func (ps Service) CreateSubscription(s *subscription.Subscription) (*subscriptio
 	}
 
 	if s.Event == event.TypeHTTP {
-		err = ps.createEndpoint(s.Method, s.Path)
+		err = service.createEndpoint(s.Space, s.Method, s.Path)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	exists, err := ps.FunctionStore.Exists(string(s.FunctionID), &store.ReadOptions{Consistent: true})
+	f, err := service.GetFunction(s.Space, s.FunctionID)
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
+	if f == nil {
 		return nil, &function.ErrFunctionNotFound{ID: s.FunctionID}
 	}
 
@@ -53,45 +53,45 @@ func (ps Service) CreateSubscription(s *subscription.Subscription) (*subscriptio
 		return nil, err
 	}
 
-	err = ps.SubscriptionStore.Put(string(s.ID), buf, nil)
+	err = service.SubscriptionStore.Put(subscriptionPath(s.Space, s.ID), buf, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	ps.Log.Debug("Subscription created.", zap.String("event", string(s.Event)), zap.String("functionId", string(s.FunctionID)))
+	service.Log.Debug("Subscription created.", zap.String("event", string(s.Event)), zap.String("functionId", string(s.FunctionID)))
 	return s, nil
 }
 
 // DeleteSubscription deletes subscription.
-func (ps Service) DeleteSubscription(id subscription.ID) error {
-	sub, err := ps.getSubscription(id)
+func (service Service) DeleteSubscription(space string, id subscription.ID) error {
+	sub, err := service.getSubscription(space, id)
 	if err != nil {
 		return err
 	}
 
-	err = ps.SubscriptionStore.Delete(string(sub.ID))
+	err = service.SubscriptionStore.Delete(subscriptionPath(space, id))
 	if err != nil {
 		return &subscription.ErrSubscriptionNotFound{ID: sub.ID}
 	}
 
 	if sub.Event == event.TypeHTTP {
-		err = ps.deleteEndpoint(sub.Method, sub.Path)
+		err = service.deleteEndpoint(space, sub.Method, sub.Path)
 		if err != nil {
 			return err
 		}
 	}
 
-	ps.Log.Debug("Subscription deleted.", zap.String("event", string(sub.Event)), zap.String("functionId", string(sub.FunctionID)))
+	service.Log.Debug("Subscription deleted.", zap.String("event", string(sub.Event)), zap.String("functionId", string(sub.FunctionID)))
 
 	return nil
 }
 
-// GetAllSubscriptions returns array of all Subscription.
-func (ps Service) GetAllSubscriptions() ([]*subscription.Subscription, error) {
+// GetSubscriptions returns array of all Subscription.
+func (service Service) GetSubscriptions(space string) ([]*subscription.Subscription, error) {
 	subs := []*subscription.Subscription{}
 
-	kvs, err := ps.SubscriptionStore.List("", &store.ReadOptions{Consistent: true})
-	if err != nil {
+	kvs, err := service.SubscriptionStore.List("", &store.ReadOptions{Consistent: true})
+	if err != nil && err.Error() != errKeyNotFound {
 		return nil, err
 	}
 
@@ -110,8 +110,8 @@ func (ps Service) GetAllSubscriptions() ([]*subscription.Subscription, error) {
 }
 
 // getSubscription returns subscription.
-func (ps Service) getSubscription(id subscription.ID) (*subscription.Subscription, error) {
-	rawsub, err := ps.SubscriptionStore.Get(string(id), &store.ReadOptions{Consistent: true})
+func (service Service) getSubscription(space string, id subscription.ID) (*subscription.Subscription, error) {
+	rawsub, err := service.SubscriptionStore.Get(subscriptionPath(space, id), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &subscription.ErrSubscriptionNotFound{ID: id}
 	}
@@ -127,10 +127,10 @@ func (ps Service) getSubscription(id subscription.ID) (*subscription.Subscriptio
 }
 
 // createEndpoint creates endpoint.
-func (ps Service) createEndpoint(method, path string) error {
+func (service Service) createEndpoint(space, method, path string) error {
 	e := NewEndpoint(method, path)
 
-	kvs, err := ps.EndpointStore.List("", &store.ReadOptions{Consistent: true})
+	kvs, err := service.EndpointStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
 	// We need to check for not found key as there is no Endpoint cached that creates the directory.
 	if err != nil && err.Error() != "Key not found in store" {
 		return err
@@ -146,10 +146,10 @@ func (ps Service) createEndpoint(method, path string) error {
 		}
 
 		// add existing paths to check
-		tree.AddRoute(sub.Path, function.ID(""), nil)
+		tree.AddRoute(sub.Path, sub.Space, function.ID(""), nil)
 	}
 
-	err = tree.AddRoute(path, function.ID(""), nil)
+	err = tree.AddRoute(path, space, function.ID(""), nil)
 	if err != nil {
 		return &subscription.ErrPathConfict{Message: err.Error()}
 	}
@@ -158,7 +158,7 @@ func (ps Service) createEndpoint(method, path string) error {
 	if err != nil {
 		return err
 	}
-	err = ps.EndpointStore.Put(string(e.ID), buf, nil)
+	err = service.EndpointStore.Put(endpointPath(space, e.ID), buf, nil)
 	if err != nil {
 		return err
 	}
@@ -167,16 +167,21 @@ func (ps Service) createEndpoint(method, path string) error {
 }
 
 // deleteEndpoint deletes endpoint.
-func (ps Service) deleteEndpoint(method, path string) error {
-	err := ps.EndpointStore.Delete(string(NewEndpointID(method, path)))
+func (service Service) deleteEndpoint(space, method, path string) error {
+	err := service.EndpointStore.Delete(endpointPath(space, NewEndpointID(method, path)))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ps Service) validateSubscription(s *subscription.Subscription) error {
+func (service Service) validateSubscription(s *subscription.Subscription) error {
+	if s.Space == "" {
+		s.Space = defaultSpace
+	}
+
 	s.Path = istrings.EnsurePrefix(s.Path, "/")
+
 	if s.Event == event.TypeHTTP {
 		s.Method = strings.ToUpper(s.Method)
 
@@ -198,6 +203,7 @@ func (ps Service) validateSubscription(s *subscription.Subscription) error {
 	validate := validator.New()
 	validate.RegisterValidation("urlpath", urlPathValidator)
 	validate.RegisterValidation("eventtype", eventTypeValidator)
+	validate.RegisterValidation("space", spaceValidator)
 	err := validate.Struct(s)
 	if err != nil {
 		return &subscription.ErrSubscriptionValidation{Message: err.Error()}
@@ -266,6 +272,14 @@ func newSubscriptionID(s *subscription.Subscription) subscription.ID {
 		return subscription.ID(string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
 	}
 	return subscription.ID(string(s.Event) + "," + string(s.FunctionID) + "," + url.PathEscape(s.Path))
+}
+
+func subscriptionPath(space string, id subscription.ID) string {
+	return spacePath(space) + string(id)
+}
+
+func endpointPath(space string, id EndpointID) string {
+	return spacePath(space) + string(id)
 }
 
 // urlPathValidator validates if field contains URL path

@@ -3,21 +3,23 @@ package cache
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/libkv"
 	"go.uber.org/zap"
 )
 
 type functionCache struct {
 	sync.RWMutex
-	cache map[function.ID]*function.Function
+	cache map[libkv.FunctionKey]*function.Function
 	log   *zap.Logger
 }
 
 func newFunctionCache(log *zap.Logger) *functionCache {
 	return &functionCache{
-		cache: map[function.ID]*function.Function{},
+		cache: map[libkv.FunctionKey]*function.Function{},
 		log:   log,
 	}
 }
@@ -32,12 +34,14 @@ func (c *functionCache) Modified(k string, v []byte) {
 	} else {
 		c.Lock()
 		defer c.Unlock()
-		c.cache[function.ID(k)] = f
+		segments := strings.Split(k, "/")
+		c.cache[libkv.FunctionKey{Space: segments[0], ID: function.ID(segments[1])}] = f
 	}
 }
 
 func (c *functionCache) Deleted(k string, v []byte) {
 	c.Lock()
 	defer c.Unlock()
-	delete(c.cache, function.ID(k))
+	segments := strings.Split(k, "/")
+	delete(c.cache, libkv.FunctionKey{Space: segments[0], ID: function.ID(segments[1])})
 }
