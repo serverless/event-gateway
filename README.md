@@ -32,6 +32,7 @@ yet ready for production applications._
 1. [Components](#components)
    1. [Function Discovery](#function-discovery)
    1. [Subscriptions](#subscriptions)
+   1. [Spaces](#spaces)
 1. [Events API](#events-api)
 1. [Configuration API](#configuration-api)
 1. [System Events](#system-events)
@@ -230,6 +231,25 @@ eventGateway.subscribe({
 
 `listUsers` function will be invoked for every HTTP GET request to `<Events API>/users` endpoint.
 
+### Spaces
+
+One additional concept in the Event Gateway are Spaces. Spaces provide isolation between resources. Space is a
+coarse-grained sandbox in which entities can interact freely Functions, and Subscriptions belong to one space. All
+actions are possible within a space: publishing, subscribing and invoking. All access cross-space is disabled.
+
+Space is not about access control/authentication/authorization. It's only about isolation. It doesn't enforce any
+specific subscription path.
+
+This is how Spaces fit different needs depending on use-case:
+* single user - single user uses default space for registering function and creating subscriptions.
+* multiple teams/departments - different teams/departments use different spaces for isolation and for hiding internal
+implementation and architecture.
+
+Technically speaking Space is a mandatory field ("default" by default) on Function or Subscription object that user has
+to provide during function registration or subscription creation. Space is a first class concept in Config API. Config
+API can register function in specific space or list all functions or subscriptions from a space.
+
+
 ## Events API
 
 The Event Gateway exposes an API for emitting events. Events API can be used for emitting custom event, HTTP events and
@@ -370,7 +390,8 @@ Currently, the event gateway supports only string responses.
 **Request Headers**
 
 * `Event` - `string` - `"invoke"`
-* `Function-ID` - `string` - ID of a function to call
+* `Function-ID` - `string` - required, ID of a function to call
+* `Space` - `string` - space name, default: `default`
 
 **Request**
 
@@ -403,7 +424,8 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 
 JSON object:
 
-* `functionId` - `string` - required, function name
+* `functionId` - `string` - required, function ID
+* `space` - `string` - space name, default: `default`
 * `provider` - `object` - required, provider specific information about a function, depends on type:
   * for AWS Lambda:
     * `type` - `string` - required, provider type: `awslambda`
@@ -425,7 +447,8 @@ Status code:
 
 JSON object:
 
-* `functionId` - `string` - function name
+* `functionId` - `string` - function ID
+* `space` - `string` - space name
 * `provider` - `object` - provider specific information about a function
 
 ---
@@ -434,7 +457,7 @@ JSON object:
 
 **Endpoint**
 
-`PUT <Configuration API URL>/v1/functions/<function id>`
+`PUT <Configuration API URL>/v1/functions/<space>/<function id>`
 
 **Request**
 
@@ -462,7 +485,8 @@ Status code:
 
 JSON object:
 
-* `functionId` - `string` - function name
+* `functionId` - `string` - function ID
+* `space` - `string` - space name
 * `provider` - `object` - provider specific information about a function
 
 ---
@@ -473,7 +497,7 @@ Delete all types of functions. This operation fails if the function is currently
 
 **Endpoint**
 
-`DELETE <Configuration API URL>/v1/functions/<function id>`
+`DELETE <Configuration API URL>/v1/functions/<space>/<function id>`
 
 **Response**
 
@@ -488,7 +512,7 @@ Status code:
 
 **Endpoint**
 
-`GET <Configuration API URL>/v1/functions`
+`GET <Configuration API URL>/v1/functions/<space>`
 
 **Response**
 
@@ -499,7 +523,8 @@ Status code:
 JSON object:
 
 * `functions` - `array` of `object` - functions:
-  * `functionId` - `string` - function name
+  * `functionId` - `string` - function ID
+  * `space` - `string` - space name
   * `provider` - `object` - provider specific information about a function
 
 ### Subscriptions
@@ -514,6 +539,7 @@ JSON object:
 
 * `event` - `string` - event name
 * `functionId` - `string` - ID of function to receive events
+* `space` - `string` - space name, default: `default`
 * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
 * `path` - `string` - optional, in case of `http` event, path that accepts requests, it starts with "/"
 * `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
@@ -533,7 +559,8 @@ JSON object:
 
 * `subscriptionId` - `string` - subscription ID
 * `event` - `string` - event name
-* `functionId` - ID of function
+* `functionId` - function ID
+* `space` - `string` - space name
 * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
 * `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
 * `cors` - `object` - optional, in case of `http` event, CORS configuration
@@ -544,7 +571,7 @@ JSON object:
 
 **Endpoint**
 
-`DELETE <Configuration API URL>/v1/subscriptions/<subscription id>`
+`DELETE <Configuration API URL>/v1/subscriptions/<space>/<subscription id>`
 
 **Response**
 
@@ -559,7 +586,7 @@ Status code:
 
 **Endpoint**
 
-`GET <Configuration API URL>/v1/subscriptions`
+`GET <Configuration API URL>/v1/subscriptions/<space>`
 
 **Response**
 
@@ -572,7 +599,8 @@ JSON object:
 * `subscriptions` - `array` of `object` - subscriptions
   * `subscriptionId` - `string` - subscription ID
   * `event` - `string` - event name
-  * `functionId` - ID of function
+  * `functionId` - function ID
+  * `space` - `string` - space name
   * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
   * `path` - `string` - optional, in case of `http` event, path that accepts requests
   * `cors` - `object` - optional, in case of `http` event, CORS configuration
