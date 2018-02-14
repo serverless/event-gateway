@@ -17,6 +17,16 @@ type HTTPAPI struct {
 	Subscriptions subscription.Service
 }
 
+// FunctionsResponse is a HTTPAPI JSON response containing functions.
+type FunctionsResponse struct {
+	Functions function.Functions `json:"functions"`
+}
+
+// SubscriptionsResponse is a HTTPAPI JSON response containing subscriptions.
+type SubscriptionsResponse struct {
+	Subscriptions subscription.Subscriptions `json:"subscriptions"`
+}
+
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
@@ -60,7 +70,7 @@ func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params htt
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
-		encoder.Encode(&function.Functions{Functions: fns})
+		encoder.Encode(&FunctionsResponse{fns})
 	}
 }
 
@@ -91,6 +101,7 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
+	w.WriteHeader(http.StatusCreated)
 	encoder.Encode(output)
 }
 
@@ -214,6 +225,6 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
-		encoder.Encode(&subscription.Subscriptions{Subscriptions: subs})
+		encoder.Encode(&SubscriptionsResponse{subs})
 	}
 }

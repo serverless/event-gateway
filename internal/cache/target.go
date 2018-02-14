@@ -23,8 +23,8 @@ type Target struct {
 	subscriptionCache *subscriptionCache
 }
 
-// HTTPBackingFunction returns function key for handling HTTP sync endpoint. It also returns matched URL parameters in
-// case of HTTP subscription containing parameters in path.
+// HTTPBackingFunction returns function space and ID for handling HTTP sync endpoint. It also returns matched URL
+// parameters in case of HTTP subscription containing parameters in path.
 func (tc *Target) HTTPBackingFunction(method, path string) (string, *function.ID, pathtree.Params, *subscription.CORS) {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()

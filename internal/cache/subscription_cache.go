@@ -14,7 +14,7 @@ import (
 
 type subscriptionCache struct {
 	sync.RWMutex
-	// eventToFunctions maps paths and event type to function key (space + function ID)
+	// eventToFunctions maps path and event type to function key (space + function ID)
 	eventToFunctions map[string]map[eventpkg.Type][]libkv.FunctionKey
 	// endpoints maps HTTP method to internal/pathtree. Tree struct which is used for resolving HTTP requests paths.
 	endpoints map[string]*pathtree.Node

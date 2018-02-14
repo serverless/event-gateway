@@ -4,5 +4,5 @@ package subscription
 type Service interface {
 	CreateSubscription(s *Subscription) (*Subscription, error)
 	DeleteSubscription(space string, id ID) error
-	GetSubscriptions(space string) ([]*Subscription, error)
+	GetSubscriptions(space string) (Subscriptions, error)
 }

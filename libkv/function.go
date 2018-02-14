@@ -100,7 +100,7 @@ func (service Service) GetFunction(space string, id function.ID) (*function.Func
 }
 
 // GetFunctions returns an array of all functions in the space.
-func (service Service) GetFunctions(space string) ([]*function.Function, error) {
+func (service Service) GetFunctions(space string) (function.Functions, error) {
 	fns := []*function.Function{}
 
 	kvs, err := service.FunctionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
@@ -119,7 +119,7 @@ func (service Service) GetFunctions(space string) ([]*function.Function, error) 
 		fns = append(fns, fn)
 	}
 
-	return fns, nil
+	return function.Functions(fns), nil
 }
 
 // DeleteFunction deletes function from the registry.

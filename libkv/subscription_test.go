@@ -259,7 +259,7 @@ func TestGetAllSubscriptions_OK(t *testing.T) {
 
 	list, _ := subs.GetSubscriptions("")
 
-	assert.Equal(t, []*subscription.Subscription{
+	assert.Equal(t, subscription.Subscriptions{
 		{ID: subscription.ID("s1"), Event: "test", FunctionID: function.ID("f1")},
 		{ID: subscription.ID("s2"), Event: "test", FunctionID: function.ID("f2")},
 	}, list)

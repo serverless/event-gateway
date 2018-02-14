@@ -59,9 +59,9 @@ func (mr *MockSubscriptionServiceMockRecorder) DeleteSubscription(arg0, arg1 int
 }
 
 // GetSubscriptions mocks base method
-func (m *MockSubscriptionService) GetSubscriptions(arg0 string) ([]*subscription.Subscription, error) {
+func (m *MockSubscriptionService) GetSubscriptions(arg0 string) (subscription.Subscriptions, error) {
 	ret := m.ctrl.Call(m, "GetSubscriptions", arg0)
-	ret0, _ := ret[0].([]*subscription.Subscription)
+	ret0, _ := ret[0].(subscription.Subscriptions)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

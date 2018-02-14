@@ -172,7 +172,7 @@ func TestGetFunctions(t *testing.T) {
 
 	list, _ := service.GetFunctions("default")
 
-	assert.Equal(t, []*function.Function{{ID: function.ID("f1")}, {ID: function.ID("f2")}}, list)
+	assert.Equal(t, function.Functions{{ID: function.ID("f1")}, {ID: function.ID("f2")}}, list)
 }
 
 func TestGetFunctions_ListError(t *testing.T) {
@@ -198,7 +198,7 @@ func TestGetFunctions_ListKeyNotFoundError(t *testing.T) {
 
 	list, _ := service.GetFunctions("default")
 
-	assert.Equal(t, []*function.Function{}, list)
+	assert.Equal(t, function.Functions{}, list)
 }
 
 func TestDeleteFunction(t *testing.T) {

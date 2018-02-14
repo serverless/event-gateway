@@ -87,7 +87,7 @@ func (service Service) DeleteSubscription(space string, id subscription.ID) erro
 }
 
 // GetSubscriptions returns array of all Subscription.
-func (service Service) GetSubscriptions(space string) ([]*subscription.Subscription, error) {
+func (service Service) GetSubscriptions(space string) (subscription.Subscriptions, error) {
 	subs := []*subscription.Subscription{}
 
 	kvs, err := service.SubscriptionStore.List("", &store.ReadOptions{Consistent: true})
@@ -106,7 +106,7 @@ func (service Service) GetSubscriptions(space string) ([]*subscription.Subscript
 		subs = append(subs, s)
 	}
 
-	return subs, nil
+	return subscription.Subscriptions(subs), nil
 }
 
 // getSubscription returns subscription.

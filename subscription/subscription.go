@@ -17,9 +17,7 @@ type Subscription struct {
 }
 
 // Subscriptions is an array of subscriptions.
-type Subscriptions struct {
-	Subscriptions []*Subscription `json:"subscriptions"`
-}
+type Subscriptions []*Subscription
 
 // ID uniquely identifies a subscription.
 type ID string

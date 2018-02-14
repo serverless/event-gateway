@@ -27,9 +27,7 @@ type Function struct {
 }
 
 // Functions is an array of functions.
-type Functions struct {
-	Functions []*Function `json:"functions"`
-}
+type Functions []*Function
 
 // ID uniquely identifies a function.
 type ID string

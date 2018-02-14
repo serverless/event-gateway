@@ -59,9 +59,9 @@ func (mr *MockFunctionServiceMockRecorder) GetFunction(arg0, arg1 interface{}) *
 }
 
 // GetFunctions mocks base method
-func (m *MockFunctionService) GetFunctions(arg0 string) ([]*function.Function, error) {
+func (m *MockFunctionService) GetFunctions(arg0 string) (function.Functions, error) {
 	ret := m.ctrl.Call(m, "GetFunctions", arg0)
-	ret0, _ := ret[0].([]*function.Function)
+	ret0, _ := ret[0].(function.Functions)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
