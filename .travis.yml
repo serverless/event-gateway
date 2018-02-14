@@ -13,8 +13,9 @@ script:
 - go get -u github.com/alecthomas/gometalinter
 - gometalinter --install --force
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --disable=gas --skip=mock ./...
-- go get github.com/mattn/goveralls
-- goveralls -race -service=travis-ci -ignore=./mock/*,./router/mock/*,
+- 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then go test ./...; fi'
+- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then go get github.com/mattn/goveralls; fi'
+- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then goveralls -race -service=travis-ci -ignore=./mock/*,./router/mock/*; fi'
 - go test ./tests -tags=integration
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
