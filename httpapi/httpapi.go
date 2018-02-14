@@ -22,9 +22,9 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	router.Handler("GET", "/metrics", promhttp.Handler())
 
+	router.GET("/v1/functions/:space/:id", h.getFunction)
 	router.GET("/v1/functions/:space", h.getFunctions)
 	router.POST("/v1/functions", h.registerFunction)
-	router.GET("/v1/functions/:space/:id", h.getFunction)
 	router.PUT("/v1/functions/:space/:id", h.updateFunction)
 	router.DELETE("/v1/functions/:space/:id", h.deleteFunction)
 
