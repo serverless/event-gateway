@@ -18,7 +18,7 @@ func TestRegisterFunction(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV func not found"))
-	payload := []byte(`{"functionId":"testid","space":"default","provider":{"type":"http","url":"http://example.com"}}`)
+	payload := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example.com"}}`)
 	db.EXPECT().Put("default/testid", payload, nil).Return(nil)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
@@ -66,7 +66,7 @@ func TestRegisterFunction_PutError(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV func not found"))
-	payload := []byte(`{"functionId":"testid","space":"default","provider":{"type":"http","url":"http://example.com"}}`)
+	payload := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example.com"}}`)
 	db.EXPECT().Put("default/testid", payload, nil).Return(errors.New("KV put error"))
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
@@ -83,9 +83,9 @@ func TestUpdateFunction(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	returned := []byte(`{"functionId":"testid","space":"default","provider":{"type":"http","url":"http://example.com"}}`)
+	returned := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example.com"}}`)
 	db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: returned}, nil)
-	payload := []byte(`{"functionId":"testid","space":"default","provider":{"type":"http","url":"http://example1.com"}}`)
+	payload := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example1.com"}}`)
 	db.EXPECT().Put("default/testid", payload, nil).Return(nil)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
@@ -103,7 +103,7 @@ func TestUpdateFunction_ValidationError(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	returned := []byte(`{"functionId":"testid","space":"default","provider":{"type":"http","url":"http://example.com"}}`)
+	returned := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example.com"}}`)
 	db.EXPECT().Get("default/testid", gomock.Any()).Return(&store.KVPair{Value: returned}, nil)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
@@ -139,7 +139,7 @@ func TestUpdateFunction_PutError(t *testing.T) {
 		{"functionId":"testid", "space": "default", "provider":{"type":"http","url":"http://example.com"}}
 		`)
 	db.EXPECT().Get("default/testid", gomock.Any()).Return(&store.KVPair{Value: returned}, nil)
-	payload := []byte(`{"functionId":"testid","space":"default","provider":{"type":"http","url":"http://example1.com"}}`)
+	payload := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example1.com"}}`)
 	db.EXPECT().Put("default/testid", payload, nil).Return(errors.New("KV put error"))
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 

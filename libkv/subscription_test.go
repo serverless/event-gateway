@@ -20,7 +20,7 @@ func TestCreateSubscription_HTTPOK(t *testing.T) {
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("default/http,GET,%2F", &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV sub not found"))
-	subscriptionsDB.EXPECT().Put("default/http,GET,%2F", []byte(`{"subscriptionId":"http,GET,%2F","space":"default","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
+	subscriptionsDB.EXPECT().Put("default/http,GET,%2F", []byte(`{"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(nil)
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().Put("default/GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
 	endpointsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return([]*store.KVPair{}, nil)
@@ -50,7 +50,7 @@ func TestCreateSubscription_OK(t *testing.T) {
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("default/test,func,%2F", &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV sub not found"))
-	subscriptionsDB.EXPECT().Put("default/test,func,%2F", []byte(`{"subscriptionId":"test,func,%2F","space":"default","event":"test","functionId":"func","path":"/"}`), nil).Return(nil)
+	subscriptionsDB.EXPECT().Put("default/test,func,%2F", []byte(`{"space":"default","subscriptionId":"test,func,%2F","event":"test","functionId":"func","path":"/"}`), nil).Return(nil)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: []byte(`{"functionId":"func"}`)}, nil)
 	subs := &Service{SubscriptionStore: subscriptionsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
@@ -155,7 +155,7 @@ func TestCreateSubscription_PutError(t *testing.T) {
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
 	subscriptionsDB.EXPECT().Get("default/http,GET,%2F", gomock.Any()).Return(nil, errors.New("KV sub not found"))
-	subscriptionsDB.EXPECT().Put("default/http,GET,%2F", []byte(`{"subscriptionId":"http,GET,%2F","space":"default","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(errors.New("KV Put err"))
+	subscriptionsDB.EXPECT().Put("default/http,GET,%2F", []byte(`{"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`), nil).Return(errors.New("KV Put err"))
 	endpointsDB := mock.NewMockStore(ctrl)
 	endpointsDB.EXPECT().List("default/", gomock.Any()).Return([]*store.KVPair{}, nil)
 	endpointsDB.EXPECT().Put("default/GET,%2F", []byte(`{"endpointId":"GET,%2F"}`), nil).Return(nil)
