@@ -84,7 +84,7 @@ event.
 
 ```http
 curl --request POST \
-  --url http://localhost:4001/v1/functions \
+  --url http://localhost:4001/v1/spaces/default/functions \
   --header 'content-type: application/json' \
   --data '{
     "functionId": "hello",
@@ -151,7 +151,7 @@ path property indicated URL path which Events API will be listening on.
 
 ```http
 curl --request POST \
-  --url http://localhost:4001/v1/subscriptions \
+  --url http://localhost:4001/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
   --data '{
     "functionId": "sendEmail",
@@ -207,7 +207,7 @@ only one `http` subscription for the same `method` and `path` pair.
 
 ```http
 curl --request POST \
-  --url http://localhost:4001/v1/subscriptions \
+  --url http://localhost:4001/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
   --data '{
     "functionId": "listUsers",
@@ -418,14 +418,13 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 
 **Endpoint**
 
-`POST <Configuration API URL>/v1/functions`
+`POST <Configuration API URL>/v1/spaces/<space>/functions`
 
 **Request**
 
 JSON object:
 
 * `functionId` - `string` - required, function ID
-* `space` - `string` - space name, default: `default`
 * `provider` - `object` - required, provider specific information about a function, depends on type:
   * for AWS Lambda:
     * `type` - `string` - required, provider type: `awslambda`
@@ -447,8 +446,8 @@ Status code:
 
 JSON object:
 
-* `functionId` - `string` - function ID
 * `space` - `string` - space name
+* `functionId` - `string` - function ID
 * `provider` - `object` - provider specific information about a function
 
 ---
@@ -457,7 +456,7 @@ JSON object:
 
 **Endpoint**
 
-`PUT <Configuration API URL>/v1/functions/<space>/<function id>`
+`PUT <Configuration API URL>/v1/spaces/<space>/functions/<function ID>`
 
 **Request**
 
@@ -481,12 +480,12 @@ Status code:
 
 * `200 OK` on success
 * `400 Bad Request` on validation error
-* `404 Not Found` if function doesn't exists
+* `404 Not Found` if function doesn't exist
 
 JSON object:
 
-* `functionId` - `string` - function ID
 * `space` - `string` - space name
+* `functionId` - `string` - function ID
 * `provider` - `object` - provider specific information about a function
 
 ---
@@ -497,14 +496,14 @@ Delete all types of functions. This operation fails if the function is currently
 
 **Endpoint**
 
-`DELETE <Configuration API URL>/v1/functions/<space>/<function id>`
+`DELETE <Configuration API URL>/v1/spaces/<space>/functions/<function ID>`
 
 **Response**
 
 Status code:
 
 * `204 No Content` on success
-* `404 Not Found` if function doesn't exists
+* `404 Not Found` if function doesn't exist
 
 ---
 
@@ -512,7 +511,7 @@ Status code:
 
 **Endpoint**
 
-`GET <Configuration API URL>/v1/functions/<space>`
+`GET <Configuration API URL>/v1/spaces/<space>/functions`
 
 **Response**
 
@@ -523,9 +522,28 @@ Status code:
 JSON object:
 
 * `functions` - `array` of `object` - functions:
-  * `functionId` - `string` - function ID
   * `space` - `string` - space name
+  * `functionId` - `string` - function ID
   * `provider` - `object` - provider specific information about a function
+
+#### Get Function
+
+**Endpoint**
+
+`GET <Configuration API URL>/v1/spaces/<space>/functions/<function ID>`
+
+**Response**
+
+Status code:
+
+* `200 OK` on success
+* `404 Not Found` if function doesn't exist
+
+JSON object:
+
+* `space` - `string` - space name
+* `functionId` - `string` - function ID
+* `provider` - `object` - provider specific information about a function
 
 ### Subscriptions
 
@@ -533,13 +551,12 @@ JSON object:
 
 **Endpoint**
 
-`POST <Configuration API URL>/v1/subscriptions`
+`POST <Configuration API URL>/v1/spaces/<space>/subscriptions`
 
 **Request**
 
 * `event` - `string` - event name
 * `functionId` - `string` - ID of function to receive events
-* `space` - `string` - space name, default: `default`
 * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
 * `path` - `string` - optional, in case of `http` event, path that accepts requests, it starts with "/"
 * `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
@@ -557,10 +574,10 @@ Status code:
 
 JSON object:
 
+* `space` - `string` - space name
 * `subscriptionId` - `string` - subscription ID
 * `event` - `string` - event name
 * `functionId` - function ID
-* `space` - `string` - space name
 * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
 * `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
 * `cors` - `object` - optional, in case of `http` event, CORS configuration
@@ -571,14 +588,14 @@ JSON object:
 
 **Endpoint**
 
-`DELETE <Configuration API URL>/v1/subscriptions/<space>/<subscription id>`
+`DELETE <Configuration API URL>/v1/spaces/<space>/subscriptions/<subscription ID>`
 
 **Response**
 
 Status code:
 
 * `204 No Content` on success
-* `404 Not Found` if subscription doesn't exists
+* `404 Not Found` if subscription doesn't exist
 
 ---
 
@@ -586,7 +603,7 @@ Status code:
 
 **Endpoint**
 
-`GET <Configuration API URL>/v1/subscriptions/<space>`
+`GET <Configuration API URL>/v1/spaces/<space>/subscriptions`
 
 **Response**
 
@@ -597,10 +614,34 @@ Status code:
 JSON object:
 
 * `subscriptions` - `array` of `object` - subscriptions
+* `space` - `string` - space name
   * `subscriptionId` - `string` - subscription ID
   * `event` - `string` - event name
   * `functionId` - function ID
-  * `space` - `string` - space name
+  * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+  * `path` - `string` - optional, in case of `http` event, path that accepts requests
+  * `cors` - `object` - optional, in case of `http` event, CORS configuration
+
+#### Get Subscription
+
+**Endpoint**
+
+`GET <Configuration API URL>/v1/spaces/<space>/subscriptions/<subscription ID>`
+
+**Response**
+
+Status code:
+
+* `200 OK` on success
+* `404 NotFound` if subscription doesn't exist
+
+JSON object:
+
+* `subscriptions` - `array` of `object` - subscriptions
+* `space` - `string` - space name
+  * `subscriptionId` - `string` - subscription ID
+  * `event` - `string` - event name
+  * `functionId` - function ID
   * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
   * `path` - `string` - optional, in case of `http` event, path that accepts requests
   * `cors` - `object` - optional, in case of `http` event, CORS configuration

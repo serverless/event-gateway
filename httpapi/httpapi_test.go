@@ -25,7 +25,7 @@ func TestGetFunction_OK(t *testing.T) {
 	functions.EXPECT().GetFunction("default", function.ID("func1")).Return(returned, nil)
 
 	resp := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/v1/functions/default/func1", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/v1/spaces/default/functions/func1", nil)
 	router.ServeHTTP(resp, req)
 
 	fn := &function.Function{}
@@ -44,7 +44,7 @@ func TestGetFunction_NotFound(t *testing.T) {
 	functions.EXPECT().GetFunction("default", function.ID("func1")).Return(nil, returned)
 
 	resp := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/v1/functions/default/func1", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/v1/spaces/default/functions/func1", nil)
 	router.ServeHTTP(resp, req)
 
 	httpresp := &httpapi.Response{}
@@ -61,7 +61,7 @@ func TestGetFunction_InternalError(t *testing.T) {
 	functions.EXPECT().GetFunction("default", function.ID("func1")).Return(nil, errors.New("processing failed"))
 
 	resp := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/v1/functions/default/func1", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/v1/spaces/default/functions/func1", nil)
 	router.ServeHTTP(resp, req)
 
 	httpresp := &httpapi.Response{}
@@ -79,7 +79,7 @@ func TestGetFunctions_OK(t *testing.T) {
 	functions.EXPECT().GetFunctions("default").Return(returned, nil)
 
 	resp := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/v1/functions/default", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/v1/spaces/default/functions", nil)
 	router.ServeHTTP(resp, req)
 
 	fns := &httpapi.FunctionsResponse{}
@@ -97,7 +97,7 @@ func TestGetFunctions_InternalError(t *testing.T) {
 	functions.EXPECT().GetFunctions("default").Return(nil, errors.New("processing failed"))
 
 	resp := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/v1/functions/default", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/v1/spaces/default/functions", nil)
 	router.ServeHTTP(resp, req)
 
 	httpresp := &httpapi.Response{}
@@ -125,7 +125,7 @@ func TestRegisterFunction_OK(t *testing.T) {
 	payload := bytes.NewReader([]byte(`
 		{"functionID":"func1", "space":"test1", "provider":{"type":"http", "url":"http://example.com"}}
 		`))
-	req, _ := http.NewRequest(http.MethodPost, "/v1/functions", payload)
+	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/test1/functions", payload)
 	router.ServeHTTP(resp, req)
 
 	fn = &function.Function{}
@@ -142,13 +142,14 @@ func TestRegisterFunction_ValidationError(t *testing.T) {
 	router, functions, _ := setup(ctrl)
 
 	fn := &function.Function{
-		ID: function.ID("func1"),
+		ID:    function.ID("func1"),
+		Space: "default",
 	}
 	functions.EXPECT().RegisterFunction(fn).Return(nil, &function.ErrFunctionValidation{Message: "no provider"})
 
 	resp := httptest.NewRecorder()
 	payload := bytes.NewReader([]byte(`{"functionID":"func1"}}`))
-	req, _ := http.NewRequest(http.MethodPost, "/v1/functions", payload)
+	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/default/functions", payload)
 	router.ServeHTTP(resp, req)
 
 	httpresp := &httpapi.Response{}
@@ -163,13 +164,14 @@ func TestRegisterFunction_AlreadyRegistered(t *testing.T) {
 	router, functions, _ := setup(ctrl)
 
 	fn := &function.Function{
-		ID: function.ID("func1"),
+		ID:    function.ID("func1"),
+		Space: "default",
 	}
 	functions.EXPECT().RegisterFunction(fn).Return(nil, &function.ErrFunctionAlreadyRegistered{ID: function.ID("func1")})
 
 	resp := httptest.NewRecorder()
 	payload := bytes.NewReader([]byte(`{"functionID":"func1"}}`))
-	req, _ := http.NewRequest(http.MethodPost, "/v1/functions", payload)
+	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/default/functions", payload)
 	router.ServeHTTP(resp, req)
 
 	httpresp := &httpapi.Response{}
@@ -184,13 +186,14 @@ func TestRegisterFunction_InternalError(t *testing.T) {
 	router, functions, _ := setup(ctrl)
 
 	fn := &function.Function{
-		ID: function.ID("func1"),
+		ID:    function.ID("func1"),
+		Space: "default",
 	}
 	functions.EXPECT().RegisterFunction(fn).Return(nil, errors.New("processing error"))
 
 	resp := httptest.NewRecorder()
 	payload := bytes.NewReader([]byte(`{"functionID":"func1"}}`))
-	req, _ := http.NewRequest(http.MethodPost, "/v1/functions", payload)
+	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/default/functions", payload)
 	router.ServeHTTP(resp, req)
 
 	httpresp := &httpapi.Response{}
