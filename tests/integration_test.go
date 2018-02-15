@@ -76,7 +76,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	defer testSubscriberServer.Close()
 
 	subscriberFnID := function.ID("smileysubscriber")
-	post(testAPIServer.URL+"/v1/functions",
+	post(testAPIServer.URL+"/v1/spaces/default/functions",
 		function.Function{
 			ID: subscriberFnID,
 			Provider: &function.Provider{
@@ -89,7 +89,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	// set up pub/sub
 	eventType := "smileys"
 
-	post(testAPIServer.URL+"/v1/subscriptions", subscription.Subscription{
+	post(testAPIServer.URL+"/v1/spaces/default/subscriptions", subscription.Subscription{
 		FunctionID: subscriberFnID,
 		Event:      event.Type(eventType),
 		Path:       "/",
@@ -122,7 +122,7 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	defer testTargetServer.Close()
 
 	functionID := function.ID("httpresponse")
-	post(testAPIServer.URL+"/v1/functions",
+	post(testAPIServer.URL+"/v1/spaces/default/functions",
 		function.Function{
 			ID: functionID,
 			Provider: &function.Provider{
@@ -132,7 +132,7 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 		})
 	wait(instance.WaitForFunction("default", functionID), "timed out waiting for function to be configured!")
 
-	post(testAPIServer.URL+"/v1/subscriptions", subscription.Subscription{
+	post(testAPIServer.URL+"/v1/spaces/default/subscriptions", subscription.Subscription{
 		FunctionID: function.ID("httpresponse"),
 		Event:      "http",
 		Method:     "GET",

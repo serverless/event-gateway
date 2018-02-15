@@ -67,7 +67,7 @@ func (service Service) CreateSubscription(s *subscription.Subscription) (*subscr
 
 // DeleteSubscription deletes subscription.
 func (service Service) DeleteSubscription(space string, id subscription.ID) error {
-	sub, err := service.getSubscription(space, id)
+	sub, err := service.GetSubscription(space, id)
 	if err != nil {
 		return err
 	}
@@ -115,11 +115,14 @@ func (service Service) GetSubscriptions(space string) (subscription.Subscription
 	return subscription.Subscriptions(subs), nil
 }
 
-// getSubscription returns subscription.
-func (service Service) getSubscription(space string, id subscription.ID) (*subscription.Subscription, error) {
+// GetSubscription return single subscription.
+func (service Service) GetSubscription(space string, id subscription.ID) (*subscription.Subscription, error) {
 	rawsub, err := service.SubscriptionStore.Get(subscriptionPath(space, id), &store.ReadOptions{Consistent: true})
 	if err != nil {
-		return nil, &subscription.ErrSubscriptionNotFound{ID: id}
+		if err.Error() == errKeyNotFound {
+			return nil, &subscription.ErrSubscriptionNotFound{ID: id}
+		}
+		return nil, err
 	}
 
 	sub := &subscription.Subscription{}

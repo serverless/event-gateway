@@ -32,17 +32,16 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	router.Handler("GET", "/metrics", promhttp.Handler())
 
-	router.GET("/v1/functions/:space/:id", h.getFunction)
-	router.GET("/v1/functions/:space", h.getFunctions)
-	router.GET("/v1/functions", h.getFunctions)
-	router.POST("/v1/functions", h.registerFunction)
-	router.PUT("/v1/functions/:space/:id", h.updateFunction)
-	router.DELETE("/v1/functions/:space/:id", h.deleteFunction)
+	router.GET("/v1/spaces/:space/functions", h.getFunctions)
+	router.GET("/v1/spaces/:space/functions/:id", h.getFunction)
+	router.POST("/v1/spaces/:space/functions", h.registerFunction)
+	router.PUT("/v1/spaces/:space/functions/:id", h.updateFunction)
+	router.DELETE("/v1/spaces/:space/functions/:id", h.deleteFunction)
 
-	router.GET("/v1/subscriptions/:space", h.getSubscriptions)
-	router.GET("/v1/subscriptions", h.getSubscriptions)
-	router.POST("/v1/subscriptions", h.createSubscription)
-	router.DELETE("/v1/subscriptions/:space/*subscriptionID", h.deleteSubscription)
+	router.GET("/v1/spaces/:space/subscriptions", h.getSubscriptions)
+	router.GET("/v1/spaces/:space/subscriptions/*id", h.getSubscription)
+	router.POST("/v1/spaces/:space/subscriptions", h.createSubscription)
+	router.DELETE("/v1/spaces/:space/subscriptions/*id", h.deleteSubscription)
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -89,6 +88,7 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
+	fn.Space = params.ByName("space")
 	output, err := h.Functions.RegisterFunction(fn)
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionValidation); ok {
@@ -176,6 +176,24 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 	}
 }
 
+func (h HTTPAPI) getSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	fn, err := h.Subscriptions.GetSubscription(params.ByName("space"), extractSubscriptionID(r.URL.RawPath))
+	if err != nil {
+		if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		encoder.Encode(fn)
+	}
+}
+
 func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
@@ -189,6 +207,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
+	s.Space = params.ByName("space")
 	output, err := h.Subscriptions.CreateSubscription(s)
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionAlreadyExists); ok {
@@ -214,11 +233,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	// httprouter weirdness: params are based on Request.URL.Path, not Request.URL.RawPath
-	segments := strings.Split(r.URL.RawPath, "/")
-	sid := segments[len(segments)-1]
-
-	err := h.Subscriptions.DeleteSubscription(params.ByName("space"), subscription.ID(sid))
+	err := h.Subscriptions.DeleteSubscription(params.ByName("space"), extractSubscriptionID(r.URL.RawPath))
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -229,4 +244,11 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+// httprouter weirdness: params are based on Request.URL.Path, not Request.URL.RawPath
+func extractSubscriptionID(rawPath string) subscription.ID {
+	segments := strings.Split(rawPath, "/")
+	sid := segments[len(segments)-1]
+	return subscription.ID(sid)
 }

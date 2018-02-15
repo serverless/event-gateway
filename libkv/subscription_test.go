@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/golang/mock/gomock"
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/mock"
 	"github.com/serverless/event-gateway/subscription"
@@ -188,7 +189,7 @@ func TestDeleteSubscription_GetError(t *testing.T) {
 	defer ctrl.Finish()
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV Get err"))
+	subscriptionsDB.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("Key not found in store"))
 	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	err := subs.DeleteSubscription("default", subscription.ID("testid"))
@@ -274,6 +275,48 @@ func TestGetSubscriptions_ListError(t *testing.T) {
 	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	_, err := subs.GetSubscriptions("default")
+	assert.EqualError(t, err, "KV error")
+}
+
+func TestGetSubscription_OK(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	kv := &store.KVPair{Value: []byte(`{"subscriptionId":"testid","event":"test","functionId":"f1"}`)}
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().Get("default/testid", gomock.Any()).Return(kv, nil)
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+
+	sub, _ := subs.GetSubscription("default", subscription.ID("testid"))
+
+	assert.Equal(t, subscription.ID("testid"), sub.ID)
+	assert.Equal(t, event.Type("test"), sub.Event)
+	assert.Equal(t, function.ID("f1"), sub.FunctionID)
+}
+
+func TestGetSubscription_NotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("Key not found in store"))
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+
+	_, err := subs.GetSubscription("default", subscription.ID("testid"))
+
+	assert.Equal(t, err, &subscription.ErrSubscriptionNotFound{ID: "testid"})
+}
+
+func TestGetSubscription_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV error"))
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+
+	_, err := subs.GetSubscription("default", subscription.ID("testid"))
+
 	assert.EqualError(t, err, "KV error")
 }
 

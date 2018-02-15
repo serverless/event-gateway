@@ -58,6 +58,19 @@ func (mr *MockSubscriptionServiceMockRecorder) DeleteSubscription(arg0, arg1 int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSubscription", reflect.TypeOf((*MockSubscriptionService)(nil).DeleteSubscription), arg0, arg1)
 }
 
+// GetSubscription mocks base method
+func (m *MockSubscriptionService) GetSubscription(arg0 string, arg1 subscription.ID) (*subscription.Subscription, error) {
+	ret := m.ctrl.Call(m, "GetSubscription", arg0, arg1)
+	ret0, _ := ret[0].(*subscription.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSubscription indicates an expected call of GetSubscription
+func (mr *MockSubscriptionServiceMockRecorder) GetSubscription(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscription", reflect.TypeOf((*MockSubscriptionService)(nil).GetSubscription), arg0, arg1)
+}
+
 // GetSubscriptions mocks base method
 func (m *MockSubscriptionService) GetSubscriptions(arg0 string) (subscription.Subscriptions, error) {
 	ret := m.ctrl.Call(m, "GetSubscriptions", arg0)
