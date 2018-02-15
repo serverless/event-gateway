@@ -19,10 +19,3 @@ type ErrMalformedJSON Error
 func NewErrMalformedJSON(err error) *ErrMalformedJSON {
 	return &ErrMalformedJSON{fmt.Sprintf("Malformed JSON payload: %s.", err.Error())}
 }
-
-// ErrSpaceMismatch occurs when function couldn't been found in the discovery.
-type ErrSpaceMismatch struct{}
-
-func (e ErrSpaceMismatch) Error() string {
-	return "Object space doesn't match space specified in the URL."
-}

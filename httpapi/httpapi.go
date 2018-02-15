@@ -120,13 +120,6 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		return
 	}
 
-	if params.ByName("space") != fn.Space {
-		w.WriteHeader(http.StatusBadRequest)
-		responseErr := &ErrSpaceMismatch{}
-		encoder.Encode(&Response{Errors: []Error{{Message: responseErr.Error()}}})
-		return
-	}
-
 	fn.ID = function.ID(params.ByName("id"))
 	output, err := h.Functions.UpdateFunction(params.ByName("space"), fn)
 	if err != nil {
