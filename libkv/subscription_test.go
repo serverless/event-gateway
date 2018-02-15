@@ -245,35 +245,35 @@ func TestDeleteSubscription_DeleteEndpointError(t *testing.T) {
 	assert.EqualError(t, err, "KV Delete err")
 }
 
-func TestGetAllSubscriptions_OK(t *testing.T) {
+func TestGetSubscriptions_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	kvs := []*store.KVPair{
-		{Value: []byte(`{"subscriptionId":"s1","event":"test","functionId":"f1"}`)},
-		{Value: []byte(`{"subscriptionId":"s2","event":"test","functionId":"f2"}`)},
+		{Value: []byte(`{"subscriptionId":"s1","space":"default","event":"test","functionId":"f1"}`)},
+		{Value: []byte(`{"subscriptionId":"s2","space":"default","event":"test","functionId":"f2"}`)},
 	}
 	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().List("", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+	subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
-	list, _ := subs.GetSubscriptions("")
+	list, _ := subs.GetSubscriptions("default")
 
 	assert.Equal(t, subscription.Subscriptions{
-		{ID: subscription.ID("s1"), Event: "test", FunctionID: function.ID("f1")},
-		{ID: subscription.ID("s2"), Event: "test", FunctionID: function.ID("f2")},
+		{ID: subscription.ID("s1"), Space: "default", Event: "test", FunctionID: function.ID("f1")},
+		{ID: subscription.ID("s2"), Space: "default", Event: "test", FunctionID: function.ID("f2")},
 	}, list)
 }
 
-func TestGetAllSubscriptions_ListError(t *testing.T) {
+func TestGetSubscriptions_ListError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().List("", gomock.Any()).Return(nil, errors.New("KV error"))
+	subscriptionsDB.EXPECT().List("default/", gomock.Any()).Return(nil, errors.New("KV error"))
 	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
-	_, err := subs.GetSubscriptions("")
+	_, err := subs.GetSubscriptions("default")
 	assert.EqualError(t, err, "KV error")
 }
 

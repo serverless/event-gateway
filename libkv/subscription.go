@@ -96,7 +96,7 @@ func (service Service) DeleteSubscription(space string, id subscription.ID) erro
 func (service Service) GetSubscriptions(space string) (subscription.Subscriptions, error) {
 	subs := []*subscription.Subscription{}
 
-	kvs, err := service.SubscriptionStore.List("", &store.ReadOptions{Consistent: true})
+	kvs, err := service.SubscriptionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
 	if err != nil && err.Error() != errKeyNotFound {
 		return nil, err
 	}
