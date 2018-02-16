@@ -146,6 +146,8 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
+		} else if _, ok := err.(*function.ErrFunctionHasSubscriptionsError); ok {
+			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
