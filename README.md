@@ -96,10 +96,10 @@ curl --request POST \
 }'
 ```
 
-##### FDK example
+##### SDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: 'http://localhost' })
+const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.registerFunction({
   functionId: "sendEmail"
   provider: {
@@ -123,10 +123,10 @@ curl --request POST \
   --data '{ "name": "Max" }'
 ```
 
-##### FDK example
+##### SDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: "http://localhost" });
+const eventGateway = new EventGateway({ url: "http://localhost" });
 eventGateway.invoke({
   functionId: "createUser",
   data: { name: "Max" }
@@ -160,10 +160,10 @@ curl --request POST \
   }'
 ```
 
-##### FDK example
+##### SDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: "http://localhost" });
+const eventGateway = new EventGateway({ url: "http://localhost" });
 eventGateway.subscribe({
   event: "user.created",
   functionId: "sendEmail",
@@ -185,10 +185,10 @@ curl --request POST \
   --data '{ "name": "Max" }'
 ```
 
-##### FDK example
+##### SDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: "http://localhost" });
+const eventGateway = new EventGateway({ url: "http://localhost" });
 eventGateway.emit({
   event: "user.created",
   data: { name: "Max" }
@@ -217,10 +217,10 @@ curl --request POST \
   }'
 ```
 
-##### FDK example
+##### SDK example
 
 ```javascript
-const eventGateway = fdk.eventGateway({ url: "http://localhost" });
+const eventGateway = new EventGateway({ url: "http://localhost" });
 eventGateway.subscribe({
   functionId: "listUsers",
   event: "http",
@@ -700,9 +700,9 @@ further processed by the Event Gateway.
 
 For more details, see [the example plugin](plugin/example).
 
-## Client Libraries
+## SDK
 
-* [FDK for Node.js](https://github.com/serverless/fdk)
+* [SDK for Node.js](https://github.com/serverless/event-gateway-sdk)
 
 ## Versioning
 
@@ -841,7 +841,7 @@ The greatest benefit of serverless/FaaS is that it solves almost all of above pr
 2. load balancing: I don't care! I know that there will be a function to handle my request (blue/green deployments still an issue though)
 3. retries: It's highly unusual that my request will not proceed as function instances are ephemeral and failing function is immediately replaced with a new instance. If it happens I can easily send another request. In case of failure, it's easy to understand what is the cause.
 4. circuit breaking: Functions are ephemeral and auto-scaled, low possibility of flooding/DoS & [cascading failures](https://landing.google.com/sre/book/chapters/addressing-cascading-failures.html).
-5. sidecar: calling function is as simple as calling method from cloud provider fdk.
+5. sidecar: calling function is as simple as calling method from cloud provider SDK.
 6. in FaaS setting up persistent connection between two functions defeats the purpose as functions instances are ephemeral.
 
 Tools like Envoy/Linkerd solve different domain of technical problems that doesn't occur in serverless space. They have a lot of features that are unnecessary in the context of serverless computing.
