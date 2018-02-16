@@ -441,7 +441,7 @@ JSON object:
 
 Status code:
 
-* `200 OK` on success
+* `201 Created` on success
 * `400 Bad Request` on validation error
 
 JSON object:
@@ -569,7 +569,7 @@ JSON object:
 
 Status code:
 
-* `200 OK` on success
+* `201 Created` on success
 * `400 Bad Request` on validation error
 
 JSON object:

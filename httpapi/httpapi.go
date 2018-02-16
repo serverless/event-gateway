@@ -221,6 +221,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
+	w.WriteHeader(http.StatusCreated)
 	encoder.Encode(output)
 }
 
