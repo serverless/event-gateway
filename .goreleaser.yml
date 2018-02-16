@@ -7,3 +7,5 @@ builds:
     goarch:
       - 386
       - amd64
+archive:
+  format: zip
