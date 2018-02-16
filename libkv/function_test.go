@@ -239,9 +239,12 @@ func TestDeleteFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Delete("default/testid").Return(nil)
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
+	kvs := []*store.KVPair{}
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+	functionsDB := mock.NewMockStore(ctrl)
+	functionsDB.EXPECT().Delete("default/testid").Return(nil)
+	service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	err := service.DeleteFunction("default", function.ID("testid"))
 
@@ -252,13 +255,32 @@ func TestDeleteFunction_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Delete("default/testid").Return(errors.New("KV func not found"))
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
+	kvs := []*store.KVPair{}
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+	functionsDB := mock.NewMockStore(ctrl)
+	functionsDB.EXPECT().Delete("default/testid").Return(errors.New("KV func not found"))
+	service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
 	err := service.DeleteFunction("default", function.ID("testid"))
 
 	assert.EqualError(t, err, `Function "testid" not found.`)
+}
+
+func TestDeleteFunction_SubscriptionExists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	kvs := []*store.KVPair{
+		{Value: []byte(`{"subscriptionId":"s1","default":"default","event":"test","functionId":"testid"}`)}}
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+	functionsDB := mock.NewMockStore(ctrl)
+	service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+
+	err := service.DeleteFunction("default", function.ID("testid"))
+
+	assert.Equal(t, err, &function.ErrFunctionHasSubscriptionsError{})
 }
 
 func TestValidateFunction_AWSLambdaMissingRegion(t *testing.T) {

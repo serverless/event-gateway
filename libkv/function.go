@@ -124,7 +124,17 @@ func (service Service) GetFunctions(space string) (function.Functions, error) {
 
 // DeleteFunction deletes function from the registry.
 func (service Service) DeleteFunction(space string, id function.ID) error {
-	err := service.FunctionStore.Delete(FunctionKey{space, id}.String())
+	subs, err := service.GetSubscriptions(space)
+	if err != nil {
+		return err
+	}
+	for _, sub := range subs {
+		if id == sub.FunctionID {
+			return &function.ErrFunctionHasSubscriptionsError{}
+		}
+	}
+
+	err = service.FunctionStore.Delete(FunctionKey{space, id}.String())
 	if err != nil {
 		return &function.ErrFunctionNotFound{ID: id}
 	}

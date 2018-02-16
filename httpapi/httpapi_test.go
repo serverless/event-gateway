@@ -202,6 +202,23 @@ func TestRegisterFunction_InternalError(t *testing.T) {
 	assert.Equal(t, `processing error`, httpresp.Errors[0].Message)
 }
 
+func TestDeleteFunction_BadRequest(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, functions, _ := setup(ctrl)
+
+	functions.EXPECT().DeleteFunction("default", function.ID("func1")).Return(&function.ErrFunctionHasSubscriptionsError{})
+
+	resp := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodDelete, "/v1/spaces/default/functions/func1", nil)
+	router.ServeHTTP(resp, req)
+
+	httpresp := &httpapi.Response{}
+	json.Unmarshal(resp.Body.Bytes(), httpresp)
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Equal(t, "Function cannot be deleted because it's subscribed to a least one event.", httpresp.Errors[0].Message)
+}
+
 func setup(ctrl *gomock.Controller) (
 	*httprouter.Router,
 	*mock.MockFunctionService,
