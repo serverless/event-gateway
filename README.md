@@ -47,13 +47,25 @@ yet ready for production applications._
 
 ## Quick Start
 
+### via Serverless Framework
+
 The easiest way to get started with the Event Gateway is using the [Serverless Framework](https://serverless.com/framework/). The framework is setup to automatically download and install the Event Gateway during development of a serverless service.
 
 Check out **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** for a walkthrough of
 using the Event Gateway locally.
 
+### via Docker
+
+There is a [official Docker image](https://hub.docker.com/r/serverless/event-gateway/).
+
+```
+docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway -dev
+```
+
+---
+
 If you want to install and develop with the Event Gateway without the Serverless Framework,
-[instructions can be found here](./docs/developing.md).
+please check [Running Locally](./docs/running-locally.md) and [Developing](./docs/developing.md) guides.
 
 ## Motivation
 
