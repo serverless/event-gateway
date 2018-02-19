@@ -1,10 +1,15 @@
 package router
 
 import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 
-	"github.com/serverless/event-gateway/event"
+	eventpkg "github.com/serverless/event-gateway/event"
+	"go.uber.org/zap"
 )
 
 // HTTPResponse is a response schema returned by subscribed function in case of HTTP event.
@@ -15,8 +20,7 @@ type HTTPResponse struct {
 }
 
 const (
-	mimeJSON       = "application/json"
-	mimeOctetStrem = "application/octet-stream"
+	mimeJSON = "application/json"
 )
 
 func isHTTPEvent(r *http.Request) bool {
@@ -39,7 +43,84 @@ func isHTTPEvent(r *http.Request) bool {
 	return true
 }
 
-type backlogEvent struct {
-	path  string
-	event event.Event
+func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string, error) {
+	path := extractPath(r.Host, r.URL.Path)
+	eventType := extractEventType(r)
+	headers := transformHeaders(r.Header)
+
+	mime := r.Header.Get("Content-Type")
+	if mime == "" {
+		mime = "application/octet-stream"
+	}
+
+	body := []byte{}
+	var err error
+	if r.Body != nil {
+		body, err = ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+
+	event := eventpkg.New(eventType, mime, body)
+	if mime == mimeJSON && len(body) > 0 {
+		err = json.Unmarshal(body, &event.Data)
+		if err != nil {
+			return nil, "", errors.New("malformed JSON body")
+		}
+	}
+
+	if event.Type == eventpkg.TypeHTTP {
+		event.Data = &eventpkg.HTTPEvent{
+			Headers: headers,
+			Query:   r.URL.Query(),
+			Body:    event.Data,
+			Host:    r.Host,
+			Path:    r.URL.Path,
+			Method:  r.Method,
+		}
+	}
+
+	router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
+	err = router.emitSystemEventReceived(path, *event, headers)
+	if err != nil {
+		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+			zap.Object("event", event),
+			zap.Error(err))
+		return nil, "", err
+	}
+
+	return event, path, nil
+}
+
+func extractPath(host, path string) string {
+	extracted := path
+	rxp, _ := regexp.Compile(hostedDomain)
+	if rxp.MatchString(host) {
+		subdomain := strings.Split(host, ".")[0]
+		extracted = "/" + subdomain + path
+	}
+	return extracted
+}
+
+func extractEventType(r *http.Request) eventpkg.Type {
+	eventType := eventpkg.Type(r.Header.Get("event"))
+	if eventType == "" {
+		eventType = eventpkg.TypeHTTP
+	}
+	return eventType
+}
+
+// transformHeaders takes http.Header and flatten value array (map[string][]string -> map[string]string) so it's easier
+// to access headers by user.
+func transformHeaders(req http.Header) map[string]string {
+	headers := map[string]string{}
+	for key, header := range req {
+		headers[key] = header[0]
+		if len(header) > 1 {
+			headers[key] = strings.Join(header, ", ")
+		}
+	}
+
+	return headers
 }
