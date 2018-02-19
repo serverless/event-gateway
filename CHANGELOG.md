@@ -1,4 +1,94 @@
 
+0.6.0 / 2018-02-19
+==================
+
+BACKWARDS INCOMPATIBILITIES:
+
+  * flatten header array so it's easier to access headers (#374)
+  * publish binaries as zip files (#371)
+  * remove checking space in update function payload (#367)
+  * add space as a first-class citizen in Config API (#365)
+  * fix listing all subscriptions (#366)
+  * add support for spaces (#362)
+  * standardize errors returned by both Events and Config API (#359)
+  * add subscription support for invoke event (#355)
+
+IMPROVEMENTS:
+
+  * prevent from removing function with subscriptions. Closes #208 (#370)
+  * replace FDK examples with SDK. Closes #363 (#368)
+  * update HTTP response object docs
+  * refactor packages structure to avoid cyclic dependecies (#358)
+  * update deps
+  * change behaviour of hosted domain (#353)
+  * improve support for hosted domains (#351)
+  * add flag for configuring backlog lenght (#349)
+  * add flag for configuring number of workers (#348)
+  * make metrics name consistent
+  * add more metrics about processing sync/async events
+  * remove old comments
+  * refactor prometheus metrics (#347)
+  * increase read/write timeout on events API
+  * add ssl certs to Docker image
+  * add support for platform subdomains (#342)
+  * expose used ports in Dockerfile
+  * add session token support in AWS creds. Closes #329 (#339)
+  * add host field in HTTP event. Closes #327 (#338)
+  * update libkv & etcd packages (#335)
+  * add CORS support. Closes #328, closes #309. (#334)
+  * add docs about developing EG locally
+  * Plugin System (#330). Closes #147
+  * add tests for internal/kv package
+  * add Path parameter support for async subscriptions (#326)
+  * add support for parameters in HTTP subscription path (#322). Closes #217.
+  * add unit tests for functions service (#323)
+  * update HTTP event docs. Closes #275
+  * move event to separate package. Cleanup topic/event type vocabulary (#320)
+  * remove obsolete if statement. It's no longer valid in etcd3
+  * add support for coveralls (#318)
+  * bump serverless/libkv fork
+  * switch to libkv fork with etcd v3 support. It fixes race condition in test and improve general stability. Closes #222 (#317)
+  * add dockerignore file to speed up docker build. Closes #314
+  * update dep installing in Dockerfile
+  * update slack link
+  * switch to dep (#313)
+  * remove slack badge
+  * bring back cache debug logs (#312)
+  * add support for HTTP response object. Closes #245 (#291)
+  * add info about versioning (#304)
+  * prefix log statements with timestamp. Closes #251 (#300)
+  * add slack link (#303)
+  * use docker multi-stage build to avoid compile time dependencies (#301)
+  * GitHub templates and docs improvements (#302)
+  * add example app
+
+BUG FIXES:
+
+  * fix typo (#373)
+  * fix status code when creating subscription (#372)
+  * run goveralls only for PR build (#364)
+  * fix failing router tests (#360)
+  * rename function property (#352)
+  * format README
+  * fix exposing detailed AWS SDK error by event API. Closes #344 (#350)
+  * fix interface mismatch for plugins, exclude hashicorp packages. Closes #345 (#346)
+  * fix type not registered in gob for plugin system
+  * fix extracting path from domain (#343)
+  * fix type in README.md (#341)
+  * fix typo in README (#336)
+  * fix typo about subscription removal (#332)
+  * fix type in error message (#331)
+  * update link to Slack in issue template
+  * cleanup confusion in clustering paragraph (#324)
+  * fix conflict in subscriptions ID. replace - with , as a subscription ID separator. Closes #170 (#321)
+  * fix issues reported by https://goreportcard.com/report/github.com/serverless/event-gateway
+  * fix rc when starting APIs. Closes #310 (#311)
+  * add docs for using EG with Docker (#307)
+  * fix framework links (#308)
+  * fix framework link (#305)
+  * fix meetups link
+  * fix readme.md typo (#297)
+
 0.5.15 / 2017-08-17
 ===================
 
