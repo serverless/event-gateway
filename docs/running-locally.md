@@ -1,6 +1,6 @@
 # Running Locally
 
-## Installation
+## Installation (via GitHub releases)
 
 On macOS or Linux run the following:
 
@@ -10,12 +10,12 @@ curl -sfL https://raw.githubusercontent.com/serverless/event-gateway/master/inst
 
 On Windows download [binary](https://github.com/serverless/event-gateway/releases).
 
-Alternatively, build a Docker image:
+## Installation (via Docker)
+
+There is a [official Docker image](https://hub.docker.com/r/serverless/event-gateway/).
 
 ```
-git clone git@github.com:serverless/event-gateway.git
-cd event-gateway
-docker build -t event-gateway .
+docker pull serverless/event-gateway
 ```
 
 ## Running Locally
@@ -29,7 +29,7 @@ event-gateway -dev
 ## Running in Docker
 
 ```
-docker run -p 4000:4000 -p 4001:4001 event-gateway -dev
+docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway -dev
 ```
 
 **Pass in your AWS credentials**
@@ -59,7 +59,7 @@ Register an AWS Lambda function in the Function Discovery.
 
 ```
 curl --request POST \
-  --url http://127.0.0.1:4001/v1/functions \
+  --url http://127.0.0.1:4001/v1/spaces/default/functions \
   --header 'content-type: application/json' \
   --data '{"functionId": "hello", "provider":{"type": "awslambda", "arn": "<Function AWS ARN>", "region": "<Region>", "accessKeyId": "<Access Key ID>", "secretAccessKey": "<Secret Access Key>"}}'
 ```
@@ -70,7 +70,7 @@ Once the function is register you can subscribe it to you custom event.
 
 ```
 curl --request POST \
-  --url http://127.0.0.1:4001/v1/subscriptions \
+  --url http://127.0.0.1:4001/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
   --data '{"functionId": "hello", "event": "pageVisited"}'
 ```
