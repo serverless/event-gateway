@@ -1,8 +1,6 @@
 package event
 
 import (
-	"net/http"
-
 	"github.com/serverless/event-gateway/function"
 )
 
@@ -11,9 +9,9 @@ const SystemEventReceivedType = Type("gateway.event.received")
 
 // SystemEventReceivedData struct.
 type SystemEventReceivedData struct {
-	Path    string      `json:"path"`
-	Event   Event       `json:"event"`
-	Headers http.Header `json:"header"`
+	Path    string            `json:"path"`
+	Event   Event             `json:"event"`
+	Headers map[string]string `json:"headers"`
 }
 
 // SystemFunctionInvokingType is a system event emitted before invoking a function.

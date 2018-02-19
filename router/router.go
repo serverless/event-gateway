@@ -3,9 +3,7 @@ package router
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -203,54 +201,6 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string, error) {
-	path := extractPath(r.Host, r.URL.Path)
-	eventType := extractEventType(r)
-
-	mime := r.Header.Get("Content-Type")
-	if mime == "" {
-		mime = mimeOctetStrem
-	}
-
-	body := []byte{}
-	var err error
-	if r.Body != nil {
-		body, err = ioutil.ReadAll(r.Body)
-		if err != nil {
-			return nil, "", err
-		}
-	}
-
-	event := eventpkg.New(eventType, mime, body)
-	if mime == mimeJSON && len(body) > 0 {
-		err = json.Unmarshal(body, &event.Data)
-		if err != nil {
-			return nil, "", errors.New("malformed JSON body")
-		}
-	}
-
-	if event.Type == eventpkg.TypeHTTP {
-		event.Data = &eventpkg.HTTPEvent{
-			Headers: r.Header,
-			Query:   r.URL.Query(),
-			Body:    event.Data,
-			Host:    r.Host,
-			Path:    r.URL.Path, // it's not path var as user has to get path from request to platform's EG
-			Method:  r.Method,
-		}
-	}
-
-	router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
-	err = router.emitSystemEventReceived(path, *event, r.Header)
-	if err != nil {
-		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
-			zap.Object("event", event),
-			zap.Error(err))
-		return nil, "", err
-	}
-
-	return event, path, nil
-}
 func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 	reqMethod := r.Method
@@ -489,7 +439,7 @@ func (router *Router) processEvent(e backlogEvent) {
 	}
 }
 
-func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers http.Header) error {
+func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers map[string]string) error {
 	system := eventpkg.New(
 		eventpkg.SystemEventReceivedType,
 		mimeJSON,
@@ -538,20 +488,7 @@ func (router *Router) isDraining() bool {
 	return false
 }
 
-func extractPath(host, path string) string {
-	extracted := path
-	rxp, _ := regexp.Compile(hostedDomain)
-	if rxp.MatchString(host) {
-		subdomain := strings.Split(host, ".")[0]
-		extracted = "/" + subdomain + path
-	}
-	return extracted
-}
-
-func extractEventType(r *http.Request) eventpkg.Type {
-	eventType := eventpkg.Type(r.Header.Get("event"))
-	if eventType == "" {
-		eventType = eventpkg.TypeHTTP
-	}
-	return eventType
+type backlogEvent struct {
+	path  string
+	event eventpkg.Event
 }
