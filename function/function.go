@@ -135,12 +135,12 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 		Payload:      payload,
 	})
 	if err != nil {
-		if awserr, ok := err.(awserr.Error); ok {
-			switch awserr.Code() {
+		if receivedAWSErr, ok := err.(awserr.Error); ok {
+			switch receivedAWSErr.Code() {
 			case lambda.ErrCodeServiceException:
-				return nil, &ErrFunctionProviderError{awserr}
+				return nil, &ErrFunctionProviderError{receivedAWSErr}
 			default:
-				return nil, &ErrFunctionCallFailed{awserr}
+				return nil, &ErrFunctionCallFailed{receivedAWSErr}
 			}
 		}
 	}
