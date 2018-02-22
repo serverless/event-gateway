@@ -246,8 +246,8 @@ eventGateway.subscribe({
 ### Spaces
 
 One additional concept in the Event Gateway are Spaces. Spaces provide isolation between resources. Space is a
-coarse-grained sandbox in which entities can interact freely Functions, and Subscriptions belong to one space. All
-actions are possible within a space: publishing, subscribing and invoking. All access cross-space is disabled.
+coarse-grained sandbox in which entities (Functions and Subscriptions) can interact freely. All actions are 
+possible within a space: publishing, subscribing and invoking. All access cross-space is disabled.
 
 Space is not about access control/authentication/authorization. It's only about isolation. It doesn't enforce any
 specific subscription path.
@@ -318,7 +318,8 @@ subscription created beforehand.
 
 ### Emit a Custom Event
 
-Creating a subscription requires `path` property (by default it's "/"). `path` indicates path under which you can push.
+Creating a subscription requires `path` property (by default it's "/"). `path` indicates path under which you can push an
+event.
 
 **Endpoint**
 
@@ -569,8 +570,8 @@ JSON object:
 
 * `event` - `string` - event name
 * `functionId` - `string` - ID of function to receive events
-* `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
-* `path` - `string` - optional, in case of `http` event, path that accepts requests, it starts with "/"
+* `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
+* `method` - `string` - required for `http` event, HTTP method that accepts requests
 * `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
   * `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
   * `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
