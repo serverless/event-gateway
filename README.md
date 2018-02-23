@@ -25,7 +25,7 @@ yet ready for production applications._
 
 [Website](http://www.serverless.com) • [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/MjI5NzY1ODM2MTc3LTE1MDM0NDIyOTUtMDgxNTcxMTcxNg) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://www.meetup.com/pro/serverless/) • [Twitter](https://twitter.com/goserverless)
 
-## Contents
+## Contents 
 
 1. [Quick Start](#quick-start)
 1. [Motivation](#motivation)
