@@ -369,7 +369,7 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 
 	result, err := f.Call(payload)
 	if err != nil {
-		router.log.Info("Function invocation failed: " + err.Error(),
+		router.log.Info("Function invocation failed.",
 			zap.String("space", space),
 			zap.String("functionId", string(backingFunctionID)),
 			zap.Object("event", event),
