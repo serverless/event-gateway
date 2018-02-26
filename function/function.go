@@ -128,7 +128,11 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 		config = config.WithCredentials(credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, f.Provider.AWSSessionToken))
 	}
 
-	awslambda := lambda.New(session.New(config))
+	awsSession, err := session.NewSession(config)
+	if err != nil {
+		return nil, &ErrFunctionError{err}
+	}
+	awslambda := lambda.New(awsSession)
 
 	invokeOutput, err := awslambda.Invoke(&lambda.InvokeInput{
 		FunctionName: &f.Provider.ARN,
