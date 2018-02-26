@@ -228,7 +228,11 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("Content-Type", "application/json")
-			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "function call failed"}}})
+			message := "function call failed"
+			if strings.Contains(err.Error(), "UnrecognizedClientException") {
+				message = "function call failed because The security token included in the request is invalid"
+			}
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: message}}})
 			return
 		}
 
