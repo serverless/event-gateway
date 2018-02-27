@@ -128,23 +128,23 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 		config = config.WithCredentials(credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, f.Provider.AWSSessionToken))
 	}
 
-	awsSession, err := session.NewSession(config)
-	if err != nil {
-		return nil, &ErrFunctionError{err}
-	}
-	awslambda := lambda.New(awsSession)
+	awslambda := lambda.New(session.New(config))
 
 	invokeOutput, err := awslambda.Invoke(&lambda.InvokeInput{
 		FunctionName: &f.Provider.ARN,
 		Payload:      payload,
 	})
 	if err != nil {
-		if receivedAWSErr, ok := err.(awserr.Error); ok {
-			switch receivedAWSErr.Code() {
+		if awserr, ok := err.(awserr.Error); ok {
+			switch awserr.Code() {
+			case "AccessDeniedException":
+			case "InvalidSignatureException":
+			case "UnrecognizedClientException":
+				return nil, &ErrFunctionAccessDenied{awserr}
 			case lambda.ErrCodeServiceException:
-				return nil, &ErrFunctionProviderError{receivedAWSErr}
+				return nil, &ErrFunctionProviderError{awserr}
 			default:
-				return nil, &ErrFunctionCallFailed{receivedAWSErr}
+				return nil, &ErrFunctionCallFailed{awserr}
 			}
 		}
 	}
