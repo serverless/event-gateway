@@ -40,6 +40,15 @@ func (e ErrFunctionCallFailed) Error() string {
 	return fmt.Sprintf("Function call failed. Error: %q", e.Original)
 }
 
+// ErrFunctionAccessDenied occurs when Event Gateway don't have access to call a function.
+type ErrFunctionAccessDenied struct {
+	Original error
+}
+
+func (e ErrFunctionAccessDenied) Error() string {
+	return fmt.Sprintf("Function access denied. Error: %q", e.Original)
+}
+
 // ErrFunctionProviderError occurs when function call failed because of provider error.
 type ErrFunctionProviderError struct {
 	Original error

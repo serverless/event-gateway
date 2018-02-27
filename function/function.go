@@ -122,13 +122,18 @@ func (w WeightedFunctions) Choose() (ID, error) {
 	return chosenFunction, nil
 }
 
+// nolint: gocyclo
 func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 	config := aws.NewConfig().WithRegion(f.Provider.Region)
 	if f.Provider.AWSAccessKeyID != "" && f.Provider.AWSSecretAccessKey != "" {
 		config = config.WithCredentials(credentials.NewStaticCredentials(f.Provider.AWSAccessKeyID, f.Provider.AWSSecretAccessKey, f.Provider.AWSSessionToken))
 	}
 
-	awslambda := lambda.New(session.New(config))
+	awsSession, err := session.NewSession(config)
+	if err != nil {
+		return nil, &ErrFunctionProviderError{err}
+	}
+	awslambda := lambda.New(awsSession)
 
 	invokeOutput, err := awslambda.Invoke(&lambda.InvokeInput{
 		FunctionName: &f.Provider.ARN,
@@ -137,6 +142,10 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			switch awserr.Code() {
+			case "AccessDeniedException":
+			case "InvalidSignatureException":
+			case "UnrecognizedClientException":
+				return nil, &ErrFunctionAccessDenied{awserr}
 			case lambda.ErrCodeServiceException:
 				return nil, &ErrFunctionProviderError{awserr}
 			default:
