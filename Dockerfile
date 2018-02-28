@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o event-gateway cmd
 
 FROM scratch
 WORKDIR /
-COPY --from=builder /go/src/github.com/serverless/event-gateway/event-gateway .
+COPY --from=builder /go/src/github.com/serverless/event-gateway/event-gateway /
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 EXPOSE 4000 4001
 ENTRYPOINT ["/event-gateway"]
