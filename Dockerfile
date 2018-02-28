@@ -19,4 +19,4 @@ WORKDIR /
 COPY --from=builder /go/src/github.com/serverless/event-gateway/event-gateway .
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 EXPOSE 4000 4001
-ENTRYPOINT ["./event-gateway"]
+ENTRYPOINT ["/event-gateway"]
