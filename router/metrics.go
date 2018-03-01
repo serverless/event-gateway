@@ -8,16 +8,44 @@ import (
 )
 
 func init() {
-	prometheus.MustRegister(routerEventsAsyncReceived)
-	prometheus.MustRegister(routerEventsAsyncDropped)
-	prometheus.MustRegister(routerEventsAsyncProceeded)
-	prometheus.MustRegister(routerEventsSyncReceived)
-	prometheus.MustRegister(routerEventsSyncProceeded)
-	prometheus.MustRegister(routerBacklog)
-	prometheus.MustRegister(routerProcessingDuration)
+	prometheus.MustRegister(metricSystemFunctionInvokingReceived)
+	prometheus.MustRegister(metricSystemFunctionInvokedReceived)
+	prometheus.MustRegister(metricSystemFunctionInvocationFailedReceived)
+
+	prometheus.MustRegister(metricEventsAsyncReceived)
+	prometheus.MustRegister(metricEventsAsyncDropped)
+	prometheus.MustRegister(metricEventsAsyncProceeded)
+	prometheus.MustRegister(metricEventsInvokeReceived)
+	prometheus.MustRegister(metricEventsInvokeProceeded)
+	prometheus.MustRegister(metricBacklog)
+	prometheus.MustRegister(metricProcessingDuration)
 }
 
-var routerEventsAsyncReceived = prometheus.NewCounter(
+var metricSystemFunctionInvokingReceived = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Namespace: "gateway",
+		Subsystem: "events",
+		Name:      "system_function_invoking_received_total",
+		Help:      "Total of gateway.function.invoking events received.",
+	}, []string{"space"})
+
+var metricSystemFunctionInvokedReceived = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Namespace: "gateway",
+		Subsystem: "events",
+		Name:      "system_function_invoked_received_total",
+		Help:      "Total of gateway.function.invoked events received.",
+	}, []string{"space"})
+
+var metricSystemFunctionInvocationFailedReceived = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Namespace: "gateway",
+		Subsystem: "events",
+		Name:      "system_function_invocation_failed_received_total",
+		Help:      "Total of gateway.function.invocationFailed events received.",
+	}, []string{"space"})
+
+var metricEventsAsyncReceived = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
@@ -25,7 +53,7 @@ var routerEventsAsyncReceived = prometheus.NewCounter(
 		Help:      "Total of asynchronously handled events received (including system events).",
 	})
 
-var routerEventsAsyncDropped = prometheus.NewCounter(
+var metricEventsAsyncDropped = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
@@ -33,7 +61,7 @@ var routerEventsAsyncDropped = prometheus.NewCounter(
 		Help:      "Total of asynchronously handled events dropped due to insufficient processing power.",
 	})
 
-var routerEventsAsyncProceeded = prometheus.NewCounter(
+var metricEventsAsyncProceeded = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
@@ -41,24 +69,41 @@ var routerEventsAsyncProceeded = prometheus.NewCounter(
 		Help:      "Total of asynchronously proceeded events.",
 	})
 
-var routerEventsSyncReceived = prometheus.NewCounter(
+var metricEventsInvokeReceived = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "sync_received_total",
-		Help:      "Total of synchronously handled (HTTP and invoke) events received.",
+		Name:      "invoke_received_total",
+		Help:      "Total of Invoke events received.",
 	})
 
-var routerEventsSyncProceeded = prometheus.NewCounter(
+var metricEventsInvokeProceeded = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "sync_proceeded_total",
-		Help: "Total of synchronously proceeded events. This counter excludes events for which there was no function " +
+		Name:      "invoke_proceeded_total",
+		Help: "Total of Invoke events proceeded. This counter excludes events for which there was no function " +
 			"registered or error occured during processing phase.",
 	})
 
-var routerBacklog = prometheus.NewGauge(
+var metricEventsHTTPReceived = prometheus.NewCounter(
+	prometheus.CounterOpts{
+		Namespace: "gateway",
+		Subsystem: "events",
+		Name:      "http_received_total",
+		Help:      "Total of HTTP events received.",
+	})
+
+var metricEventsHTTPProceeded = prometheus.NewCounter(
+	prometheus.CounterOpts{
+		Namespace: "gateway",
+		Subsystem: "events",
+		Name:      "http_proceeded_total",
+		Help: "Total of HTTP events proceeded. This counter excludes events for which there was no function " +
+			"registered or error occured during processing phase.",
+	})
+
+var metricBacklog = prometheus.NewGauge(
 	prometheus.GaugeOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
@@ -66,7 +111,7 @@ var routerBacklog = prometheus.NewGauge(
 		Help:      "Gauge of asynchronous events count waiting to be processed.",
 	})
 
-var routerProcessingDuration = prometheus.NewHistogram(
+var metricProcessingDuration = prometheus.NewHistogram(
 	prometheus.HistogramOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
@@ -80,7 +125,7 @@ var receivedEventsMutex = sync.Mutex{}
 var receivedEvents = map[string]time.Time{}
 
 func reportReceivedEvent(id string) {
-	routerEventsAsyncReceived.Inc()
+	metricEventsAsyncReceived.Inc()
 
 	receivedEventsMutex.Lock()
 	defer receivedEventsMutex.Unlock()
@@ -88,12 +133,12 @@ func reportReceivedEvent(id string) {
 }
 
 func reportProceededEvent(id string) {
-	routerEventsAsyncProceeded.Inc()
+	metricEventsAsyncProceeded.Inc()
 
 	receivedEventsMutex.Lock()
 	defer receivedEventsMutex.Unlock()
 	if startTime, ok := receivedEvents[id]; ok {
-		routerProcessingDuration.Observe(time.Since(startTime).Seconds())
+		metricProcessingDuration.Observe(time.Since(startTime).Seconds())
 		delete(receivedEvents, id)
 	}
 }

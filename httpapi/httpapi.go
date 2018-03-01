@@ -48,7 +48,8 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fn, err := h.Functions.GetFunction(params.ByName("space"), function.ID(params.ByName("id")))
+	space := params.ByName("space")
+	fn, err := h.Functions.GetFunction(space, function.ID(params.ByName("id")))
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -60,19 +61,24 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 	} else {
 		encoder.Encode(fn)
 	}
+
+	metricFunctionGetRequests.WithLabelValues(space).Inc()
 }
 
 func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fns, err := h.Functions.GetFunctions(params.ByName("space"))
+	space := params.ByName("space")
+	fns, err := h.Functions.GetFunctions(space)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		encoder.Encode(&FunctionsResponse{fns})
 	}
+
+	metricFunctionListRequests.WithLabelValues(space).Inc()
 }
 
 func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -100,11 +106,14 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 		}
 
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
-		return
+	} else {
+		w.WriteHeader(http.StatusCreated)
+		encoder.Encode(output)
+
+		metricFunctionRegistered.WithLabelValues(fn.Space).Inc()
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	encoder.Encode(output)
+	metricFunctionRegisterRequests.WithLabelValues(fn.Space).Inc()
 }
 
 func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -120,8 +129,9 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		return
 	}
 
+	space := params.ByName("space")
 	fn.ID = function.ID(params.ByName("id"))
-	output, err := h.Functions.UpdateFunction(params.ByName("space"), fn)
+	output, err := h.Functions.UpdateFunction(space, fn)
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -132,17 +142,19 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		}
 
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
-		return
+	} else {
+		encoder.Encode(output)
 	}
 
-	encoder.Encode(output)
+	metricFunctionUpdateRequests.WithLabelValues(space).Inc()
 }
 
 func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.Functions.DeleteFunction(params.ByName("space"), function.ID(params.ByName("id")))
+	space := params.ByName("space")
+	err := h.Functions.DeleteFunction(space, function.ID(params.ByName("id")))
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -155,27 +167,35 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		w.WriteHeader(http.StatusNoContent)
+
+		metricFunctionDeleted.WithLabelValues(space).Inc()
 	}
+
+	metricFunctionDeleteRequests.WithLabelValues(space).Inc()
 }
 
 func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	subs, err := h.Subscriptions.GetSubscriptions(params.ByName("space"))
+	space := params.ByName("space")
+	subs, err := h.Subscriptions.GetSubscriptions(space)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		encoder.Encode(&SubscriptionsResponse{subs})
 	}
+
+	metricSubscriptionListRequests.WithLabelValues(space).Inc()
 }
 
 func (h HTTPAPI) getSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	fn, err := h.Subscriptions.GetSubscription(params.ByName("space"), extractSubscriptionID(r.URL.RawPath))
+	space := params.ByName("space")
+	fn, err := h.Subscriptions.GetSubscription(space, extractSubscriptionID(r.URL.RawPath))
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -187,6 +207,8 @@ func (h HTTPAPI) getSubscription(w http.ResponseWriter, r *http.Request, params 
 	} else {
 		encoder.Encode(fn)
 	}
+
+	metricSubscriptionGetRequests.WithLabelValues(space).Inc()
 }
 
 func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -218,18 +240,22 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 		}
 
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
-		return
+	} else {
+		w.WriteHeader(http.StatusCreated)
+		encoder.Encode(output)
+
+		metricSubscriptionsCreated.WithLabelValues(s.Space).Inc()
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	encoder.Encode(output)
+	metricSubscriptionCreateRequests.WithLabelValues(s.Space).Inc()
 }
 
 func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
-	err := h.Subscriptions.DeleteSubscription(params.ByName("space"), extractSubscriptionID(r.URL.RawPath))
+	space := params.ByName("space")
+	err := h.Subscriptions.DeleteSubscription(space, extractSubscriptionID(r.URL.RawPath))
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -239,7 +265,11 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
 		w.WriteHeader(http.StatusNoContent)
+
+		metricSubscriptionsDeleted.WithLabelValues(space).Inc()
 	}
+
+	metricSubscriptionDeleteRequests.WithLabelValues(space).Inc()
 }
 
 // httprouter weirdness: params are based on Request.URL.Path, not Request.URL.RawPath

@@ -58,7 +58,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// isHTTPEvent checks if a request carries HTTP event. It also accepts pre-flight CORS requests because CORS is
 	// resolved downstream.
 	if isHTTPEvent(r) {
-		routerEventsSyncReceived.Inc()
+		metricEventsHTTPReceived.Inc()
 
 		event, _, err := router.eventFromRequest(r)
 		if err != nil {
@@ -69,6 +69,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		router.handleHTTPEvent(event, w, r)
+
+		metricEventsHTTPProceeded.Inc()
 	} else {
 		cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -87,8 +89,13 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if event.Type == eventpkg.TypeInvoke {
+				metricEventsInvokeReceived.Inc()
+
 				router.handleInvokeEvent(path, event, w, r)
+
+				metricEventsInvokeProceeded.Inc()
 			} else if !event.IsSystem() {
+				reportReceivedEvent(event.ID)
 				router.enqueueWork(path, event)
 				w.WriteHeader(http.StatusAccepted)
 			}
@@ -260,8 +267,6 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 			return
 		}
-
-		routerEventsSyncProceeded.Inc()
 	}
 
 	if corsConfig == nil {
@@ -281,7 +286,6 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 
 func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
-	routerEventsSyncReceived.Inc()
 
 	functionID := function.ID(r.Header.Get(headerFunctionID))
 	space := r.Header.Get(headerSpace)
@@ -310,13 +314,9 @@ func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w ht
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 		return
 	}
-
-	routerEventsSyncProceeded.Inc()
 }
 
 func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
-	reportReceivedEvent(event.ID)
-
 	if event.IsSystem() {
 		router.log.Debug("System event received.", zap.Object("event", event))
 	}
@@ -326,10 +326,10 @@ func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 		path:  path,
 		event: *event,
 	}:
-		routerBacklog.Inc()
+		metricBacklog.Inc()
 	default:
 		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
-		routerEventsAsyncDropped.Inc()
+		metricEventsAsyncDropped.Inc()
 	}
 }
 
@@ -353,7 +353,7 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 		zap.String("space", space),
 		zap.String("functionId", string(backingFunctionID)),
 		zap.Object("event", event))
-	err := router.emitSystemFunctionInvoking(backingFunctionID, event)
+	err := router.emitSystemFunctionInvoking(space, backingFunctionID, event)
 	if err != nil {
 		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
 			zap.Object("event", event),
@@ -380,7 +380,7 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 			zap.Object("event", event),
 			zap.Error(err))
 
-		router.emitSystemFunctionInvocationFailed(backingFunctionID, event, err)
+		router.emitSystemFunctionInvocationFailed(space, backingFunctionID, event, err)
 	} else {
 		router.log.Debug("Function invoked.",
 			zap.String("space", space),
@@ -388,7 +388,7 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 			zap.Object("event", event),
 			zap.ByteString("result", result))
 
-		router.emitSystemFunctionInvoked(backingFunctionID, event, payload)
+		router.emitSystemFunctionInvoked(space, backingFunctionID, event, payload)
 	}
 
 	return result, err
@@ -404,7 +404,7 @@ func (router *Router) loop() {
 		// 1. see if there's work in a non-blocking way
 		select {
 		case e := <-router.backlog:
-			routerBacklog.Dec()
+			metricBacklog.Dec()
 			router.processEvent(e)
 			continue
 		default:
@@ -419,7 +419,7 @@ func (router *Router) loop() {
 			// where we exit before work is processed.
 			select {
 			case e := <-router.backlog:
-				routerBacklog.Dec()
+				metricBacklog.Dec()
 				router.processEvent(e)
 				continue
 			default:
@@ -429,7 +429,7 @@ func (router *Router) loop() {
 			router.drainWaitGroup.Done()
 			return
 		case e := <-router.backlog:
-			routerBacklog.Dec()
+			metricBacklog.Dec()
 			router.processEvent(e)
 		}
 	}
@@ -437,8 +437,9 @@ func (router *Router) loop() {
 
 // processEvent call all functions subscribed for an event
 func (router *Router) processEvent(e backlogEvent) {
-	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.Type)
 	reportProceededEvent(e.event.ID)
+
+	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.Type)
 	for _, subscriber := range subscribers {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}
@@ -454,32 +455,40 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 	return router.plugins.React(system)
 }
 
-func (router *Router) emitSystemFunctionInvoking(functionID function.ID, event eventpkg.Event) error {
+func (router *Router) emitSystemFunctionInvoking(space string, functionID function.ID, event eventpkg.Event) error {
 	system := eventpkg.New(
 		eventpkg.SystemFunctionInvokingType,
 		mimeJSON,
-		eventpkg.SystemFunctionInvokingData{FunctionID: functionID, Event: event},
+		eventpkg.SystemFunctionInvokingData{Space: space, FunctionID: functionID, Event: event},
 	)
 	router.enqueueWork("/", system)
+
+	metricSystemFunctionInvokingReceived.WithLabelValues(space).Inc()
+
 	return router.plugins.React(system)
 }
 
-func (router *Router) emitSystemFunctionInvoked(functionID function.ID, event eventpkg.Event, result []byte) error {
+func (router *Router) emitSystemFunctionInvoked(space string, functionID function.ID, event eventpkg.Event, result []byte) error {
 	system := eventpkg.New(
 		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
-		eventpkg.SystemFunctionInvokedData{FunctionID: functionID, Event: event, Result: result})
+		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
 	router.enqueueWork("/", system)
+
+	metricSystemFunctionInvokedReceived.WithLabelValues(space).Inc()
+
 	return router.plugins.React(system)
 }
 
-func (router *Router) emitSystemFunctionInvocationFailed(functionID function.ID, event eventpkg.Event, err error) {
+func (router *Router) emitSystemFunctionInvocationFailed(space string, functionID function.ID, event eventpkg.Event, err error) {
 	if _, ok := err.(*function.ErrFunctionError); ok {
-		system := eventpkg.New("gateway.function.invocationFailed", mimeJSON, struct {
-			FunctionID string `json:"functionId"`
-		}{string(functionID)})
-
+		system := eventpkg.New(
+			eventpkg.SystemFunctionInvocationFailedType,
+			mimeJSON,
+			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
 		router.enqueueWork("/", system)
+
+		metricSystemFunctionInvocationFailedReceived.WithLabelValues(space).Inc()
 	}
 }
 
