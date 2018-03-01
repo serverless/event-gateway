@@ -46,7 +46,7 @@ var metricFunctionDeleted = prometheus.NewCounterVec(
 var metricFunctionGetRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "function_get_requests_total",
 		Help:      "Total of Config API get function requests.",
 	}, []string{"space"})
@@ -54,7 +54,7 @@ var metricFunctionGetRequests = prometheus.NewCounterVec(
 var metricFunctionRegisterRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "function_register_requests_total",
 		Help:      "Total of Config API register function requests.",
 	}, []string{"space"})
@@ -62,7 +62,7 @@ var metricFunctionRegisterRequests = prometheus.NewCounterVec(
 var metricFunctionDeleteRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "function_delete_requests_total",
 		Help:      "Total of Config API delete function requests.",
 	}, []string{"space"})
@@ -70,7 +70,7 @@ var metricFunctionDeleteRequests = prometheus.NewCounterVec(
 var metricFunctionUpdateRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "function_update_requests_total",
 		Help:      "Total of Config API update function requests.",
 	}, []string{"space"})
@@ -78,7 +78,7 @@ var metricFunctionUpdateRequests = prometheus.NewCounterVec(
 var metricFunctionListRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "function_list_requests_total",
 		Help:      "Total of Config API list functions requests.",
 	}, []string{"space"})
@@ -106,7 +106,7 @@ var metricSubscriptionDeleted = prometheus.NewCounterVec(
 var metricSubscriptionGetRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "subscription_get_requests_total",
 		Help:      "Total of Config API get subscription requests.",
 	}, []string{"space"})
@@ -114,7 +114,7 @@ var metricSubscriptionGetRequests = prometheus.NewCounterVec(
 var metricSubscriptionCreateRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "subscription_create_requests_total",
 		Help:      "Total of Config API create subscription requests.",
 	}, []string{"space"})
@@ -122,7 +122,7 @@ var metricSubscriptionCreateRequests = prometheus.NewCounterVec(
 var metricSubscriptionDeleteRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "subscription_delete_requests_total",
 		Help:      "Total of Config API delete subscription requests.",
 	}, []string{"space"})
@@ -130,7 +130,7 @@ var metricSubscriptionDeleteRequests = prometheus.NewCounterVec(
 var metricSubscriptionListRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
-		Subsystem: "httpapi",
+		Subsystem: "config",
 		Name:      "subscription_list_requests_total",
 		Help:      "Total of Config API list subscriptions requests.",
 	}, []string{"space"})
