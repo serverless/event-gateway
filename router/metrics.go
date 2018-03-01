@@ -69,22 +69,22 @@ var metricEventsAsyncProceeded = prometheus.NewCounter(
 		Help:      "Total of asynchronously proceeded events.",
 	})
 
-var metricEventsInvokeReceived = prometheus.NewCounter(
+var metricEventsInvokeReceived = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
 		Name:      "invoke_received_total",
 		Help:      "Total of Invoke events received.",
-	})
+	}, []string{"space"})
 
-var metricEventsInvokeProceeded = prometheus.NewCounter(
+var metricEventsInvokeProceeded = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
 		Name:      "invoke_proceeded_total",
 		Help: "Total of Invoke events proceeded. This counter excludes events for which there was no function " +
 			"registered or error occured during processing phase.",
-	})
+	}, []string{"space"})
 
 var metricEventsHTTPReceived = prometheus.NewCounter(
 	prometheus.CounterOpts{
@@ -94,14 +94,14 @@ var metricEventsHTTPReceived = prometheus.NewCounter(
 		Help:      "Total of HTTP events received.",
 	})
 
-var metricEventsHTTPProceeded = prometheus.NewCounter(
+var metricEventsHTTPProceeded = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
 		Name:      "http_proceeded_total",
 		Help: "Total of HTTP events proceeded. This counter excludes events for which there was no function " +
 			"registered or error occured during processing phase.",
-	})
+	}, []string{"space"})
 
 var metricBacklog = prometheus.NewGauge(
 	prometheus.GaugeOpts{

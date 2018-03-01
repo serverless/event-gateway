@@ -69,8 +69,6 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		router.handleHTTPEvent(event, w, r)
-
-		metricEventsHTTPProceeded.Inc()
 	} else {
 		cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -89,13 +87,15 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if event.Type == eventpkg.TypeInvoke {
-				metricEventsInvokeReceived.Inc()
+				functionID := function.ID(r.Header.Get(headerFunctionID))
+				space := r.Header.Get(headerSpace)
 
-				router.handleInvokeEvent(path, event, w, r)
-
-				metricEventsInvokeProceeded.Inc()
+				metricEventsInvokeReceived.WithLabelValues(space).Inc()
+				router.handleInvokeEvent(space, functionID, path, event, w)
+				metricEventsInvokeProceeded.WithLabelValues(space).Inc()
 			} else if !event.IsSystem() {
 				reportReceivedEvent(event.ID)
+
 				router.enqueueWork(path, event)
 				w.WriteHeader(http.StatusAccepted)
 			}
@@ -282,13 +282,13 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 
 		cors.New(corsOptions).ServeHTTP(w, r, handler)
 	}
+
+	metricEventsHTTPProceeded.WithLabelValues(space).Inc()
 }
 
-func (router *Router) handleInvokeEvent(path string, event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
+func (router *Router) handleInvokeEvent(space string, functionID function.ID, path string, event *eventpkg.Event, w http.ResponseWriter) {
 	encoder := json.NewEncoder(w)
 
-	functionID := function.ID(r.Header.Get(headerFunctionID))
-	space := r.Header.Get(headerSpace)
 	if space == "" {
 		space = "default"
 	}
