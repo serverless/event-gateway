@@ -14,8 +14,8 @@ func init() {
 	prometheus.MustRegister(metricFunctionUpdateRequests)
 	prometheus.MustRegister(metricFunctionListRequests)
 
-	prometheus.MustRegister(metricSubscriptionsCreated)
-	prometheus.MustRegister(metricSubscriptionsDeleted)
+	prometheus.MustRegister(metricSubscriptionCreated)
+	prometheus.MustRegister(metricSubscriptionDeleted)
 
 	prometheus.MustRegister(metricSubscriptionGetRequests)
 	prometheus.MustRegister(metricSubscriptionCreateRequests)
@@ -85,7 +85,7 @@ var metricFunctionListRequests = prometheus.NewCounterVec(
 
 // Subscriptions
 
-var metricSubscriptionsCreated = prometheus.NewCounterVec(
+var metricSubscriptionCreated = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "subscriptions",
@@ -93,7 +93,7 @@ var metricSubscriptionsCreated = prometheus.NewCounterVec(
 		Help:      "Total of subscriptions created.",
 	}, []string{"space"})
 
-var metricSubscriptionsDeleted = prometheus.NewCounterVec(
+var metricSubscriptionDeleted = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "subscriptions",

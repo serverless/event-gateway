@@ -244,7 +244,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 		w.WriteHeader(http.StatusCreated)
 		encoder.Encode(output)
 
-		metricSubscriptionsCreated.WithLabelValues(s.Space).Inc()
+		metricSubscriptionCreated.WithLabelValues(s.Space).Inc()
 	}
 
 	metricSubscriptionCreateRequests.WithLabelValues(s.Space).Inc()
@@ -266,7 +266,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 
-		metricSubscriptionsDeleted.WithLabelValues(space).Inc()
+		metricSubscriptionDeleted.WithLabelValues(space).Inc()
 	}
 
 	metricSubscriptionDeleteRequests.WithLabelValues(space).Inc()
