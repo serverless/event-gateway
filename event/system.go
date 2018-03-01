@@ -19,6 +19,7 @@ const SystemFunctionInvokingType = Type("gateway.function.invoking")
 
 // SystemFunctionInvokingData struct.
 type SystemFunctionInvokingData struct {
+	Space      string      `json:"space"`
 	FunctionID function.ID `json:"functionId"`
 	Event      Event       `json:"event"`
 }
@@ -28,6 +29,7 @@ const SystemFunctionInvokedType = Type("gateway.function.invoked")
 
 // SystemFunctionInvokedData struct.
 type SystemFunctionInvokedData struct {
+	Space      string      `json:"space"`
 	FunctionID function.ID `json:"functionId"`
 	Event      Event       `json:"event"`
 	Result     []byte      `json:"result"`
@@ -38,7 +40,8 @@ const SystemFunctionInvocationFailedType = Type("gateway.function.invocationFail
 
 // SystemFunctionInvocationFailedData struct.
 type SystemFunctionInvocationFailedData struct {
+	Space      string      `json:"space"`
 	FunctionID function.ID `json:"functionId"`
 	Event      Event       `json:"event"`
-	Error      []byte      `json:"result"`
+	Error      error       `json:"result"`
 }
