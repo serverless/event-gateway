@@ -90,7 +90,9 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				functionID := function.ID(r.Header.Get(headerFunctionID))
 				space := r.Header.Get(headerSpace)
 				if space == "" {
-					space = "default"
+					space, _, _, _ = router.targetCache.HTTPBackingFunction(
+						strings.ToUpper(r.Method), extractPath(r.Host, r.URL.EscapedPath()),
+					)
 				}
 
 				metricEventsInvokeReceived.WithLabelValues(space).Inc()
