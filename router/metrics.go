@@ -14,9 +14,9 @@ func init() {
 
 	prometheus.MustRegister(metricEventsAsyncReceived)
 	prometheus.MustRegister(metricEventsAsyncDropped)
-	prometheus.MustRegister(metricEventsAsyncProceeded)
+	prometheus.MustRegister(metricEventsAsyncProcessed)
 	prometheus.MustRegister(metricEventsInvokeReceived)
-	prometheus.MustRegister(metricEventsInvokeProceeded)
+	prometheus.MustRegister(metricEventsInvokeProcessed)
 	prometheus.MustRegister(metricBacklog)
 	prometheus.MustRegister(metricProcessingDuration)
 }
@@ -61,12 +61,12 @@ var metricEventsAsyncDropped = prometheus.NewCounter(
 		Help:      "Total of asynchronously handled events dropped due to insufficient processing power.",
 	})
 
-var metricEventsAsyncProceeded = prometheus.NewCounter(
+var metricEventsAsyncProcessed = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "async_proceeded_total",
-		Help:      "Total of asynchronously proceeded events.",
+		Name:      "async_processed_total",
+		Help:      "Total of asynchronously processed events.",
 	})
 
 var metricEventsInvokeReceived = prometheus.NewCounterVec(
@@ -77,12 +77,12 @@ var metricEventsInvokeReceived = prometheus.NewCounterVec(
 		Help:      "Total of Invoke events received.",
 	}, []string{"space"})
 
-var metricEventsInvokeProceeded = prometheus.NewCounterVec(
+var metricEventsInvokeProcessed = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "invoke_proceeded_total",
-		Help: "Total of Invoke events proceeded. This counter excludes events for which there was no function " +
+		Name:      "invoke_processed_total",
+		Help: "Total of Invoke events processed. This counter excludes events for which there was no function " +
 			"registered or error occured during processing phase.",
 	}, []string{"space"})
 
@@ -94,12 +94,12 @@ var metricEventsHTTPReceived = prometheus.NewCounter(
 		Help:      "Total of HTTP events received.",
 	})
 
-var metricEventsHTTPProceeded = prometheus.NewCounterVec(
+var metricEventsHTTPProcessed = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "http_proceeded_total",
-		Help: "Total of HTTP events proceeded. This counter excludes events for which there was no function " +
+		Name:      "http_processed_total",
+		Help: "Total of HTTP events processed. This counter excludes events for which there was no function " +
 			"registered or error occured during processing phase.",
 	}, []string{"space"})
 
@@ -132,9 +132,7 @@ func reportReceivedEvent(id string) {
 	receivedEvents[id] = time.Now()
 }
 
-func reportProceededEvent(id string) {
-	metricEventsAsyncProceeded.Inc()
-
+func reportEventOutOfQueue(id string) {
 	receivedEventsMutex.Lock()
 	defer receivedEventsMutex.Unlock()
 	if startTime, ok := receivedEvents[id]; ok {

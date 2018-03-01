@@ -89,10 +89,15 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if event.Type == eventpkg.TypeInvoke {
 				functionID := function.ID(r.Header.Get(headerFunctionID))
 				space := r.Header.Get(headerSpace)
+				if space == "" {
+					space = "default"
+				}
 
 				metricEventsInvokeReceived.WithLabelValues(space).Inc()
+
 				router.handleInvokeEvent(space, functionID, path, event, w)
-				metricEventsInvokeProceeded.WithLabelValues(space).Inc()
+
+				metricEventsInvokeProcessed.WithLabelValues(space).Inc()
 			} else if !event.IsSystem() {
 				reportReceivedEvent(event.ID)
 
@@ -283,15 +288,12 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		cors.New(corsOptions).ServeHTTP(w, r, handler)
 	}
 
-	metricEventsHTTPProceeded.WithLabelValues(space).Inc()
+	metricEventsHTTPProcessed.WithLabelValues(space).Inc()
 }
 
 func (router *Router) handleInvokeEvent(space string, functionID function.ID, path string, event *eventpkg.Event, w http.ResponseWriter) {
 	encoder := json.NewEncoder(w)
 
-	if space == "" {
-		space = "default"
-	}
 	if !router.targetCache.InvokableFunction(path, space, functionID) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
@@ -437,12 +439,14 @@ func (router *Router) loop() {
 
 // processEvent call all functions subscribed for an event
 func (router *Router) processEvent(e backlogEvent) {
-	reportProceededEvent(e.event.ID)
+	reportEventOutOfQueue(e.event.ID)
 
 	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.Type)
 	for _, subscriber := range subscribers {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}
+
+	metricEventsAsyncProcessed.Inc()
 }
 
 func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers map[string]string) error {
