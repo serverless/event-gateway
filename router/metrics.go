@@ -17,6 +17,8 @@ func init() {
 	prometheus.MustRegister(metricEventsCustomProcessed)
 	prometheus.MustRegister(metricEventsInvokeReceived)
 	prometheus.MustRegister(metricEventsInvokeProcessed)
+	prometheus.MustRegister(metricEventsHTTPReceived)
+	prometheus.MustRegister(metricEventsHTTPProcessed)
 	prometheus.MustRegister(metricBacklog)
 	prometheus.MustRegister(metricProcessingDuration)
 }
