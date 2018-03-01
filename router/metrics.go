@@ -117,9 +117,9 @@ var metricProcessingDuration = prometheus.NewHistogram(
 	prometheus.HistogramOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "async_processing_seconds",
+		Name:      "custom_processing_seconds",
 		Help: "Bucketed histogram of processing duration of an event. " +
-			"From receiving the asynchronous event to calling a function.",
+			"From receiving the asynchronous custom event to calling a function.",
 		Buckets: prometheus.ExponentialBuckets(0.00001, 2, 20),
 	})
 
