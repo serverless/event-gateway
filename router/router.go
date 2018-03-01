@@ -331,7 +331,7 @@ func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 		metricBacklog.Inc()
 	default:
 		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
-		metricEventsAsyncDropped.Inc()
+		metricEventsCustomDropped.Inc()
 	}
 }
 
@@ -446,7 +446,7 @@ func (router *Router) processEvent(e backlogEvent) {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}
 
-	metricEventsAsyncProcessed.Inc()
+	metricEventsCustomProcessed.Inc()
 }
 
 func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers map[string]string) error {

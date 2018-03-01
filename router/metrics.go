@@ -12,9 +12,9 @@ func init() {
 	prometheus.MustRegister(metricSystemFunctionInvokedReceived)
 	prometheus.MustRegister(metricSystemFunctionInvocationFailedReceived)
 
-	prometheus.MustRegister(metricEventsAsyncReceived)
-	prometheus.MustRegister(metricEventsAsyncDropped)
-	prometheus.MustRegister(metricEventsAsyncProcessed)
+	prometheus.MustRegister(metricEventsCustomReceived)
+	prometheus.MustRegister(metricEventsCustomDropped)
+	prometheus.MustRegister(metricEventsCustomProcessed)
 	prometheus.MustRegister(metricEventsInvokeReceived)
 	prometheus.MustRegister(metricEventsInvokeProcessed)
 	prometheus.MustRegister(metricBacklog)
@@ -45,28 +45,28 @@ var metricSystemFunctionInvocationFailedReceived = prometheus.NewCounterVec(
 		Help:      "Total of gateway.function.invocationFailed events received.",
 	}, []string{"space"})
 
-var metricEventsAsyncReceived = prometheus.NewCounter(
+var metricEventsCustomReceived = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "async_received_total",
-		Help:      "Total of asynchronously handled events received (including system events).",
+		Name:      "custom_received_total",
+		Help:      "Total of asynchronously handled custom events received (including system events).",
 	})
 
-var metricEventsAsyncDropped = prometheus.NewCounter(
+var metricEventsCustomDropped = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "async_dropped_total",
-		Help:      "Total of asynchronously handled events dropped due to insufficient processing power.",
+		Name:      "custom_dropped_total",
+		Help:      "Total of asynchronously handled custom events dropped due to insufficient processing power.",
 	})
 
-var metricEventsAsyncProcessed = prometheus.NewCounter(
+var metricEventsCustomProcessed = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "async_processed_total",
-		Help:      "Total of asynchronously processed events.",
+		Name:      "custom_processed_total",
+		Help:      "Total of asynchronously processed custom events.",
 	})
 
 var metricEventsInvokeReceived = prometheus.NewCounterVec(
@@ -125,7 +125,7 @@ var receivedEventsMutex = sync.Mutex{}
 var receivedEvents = map[string]time.Time{}
 
 func reportReceivedEvent(id string) {
-	metricEventsAsyncReceived.Inc()
+	metricEventsCustomReceived.Inc()
 
 	receivedEventsMutex.Lock()
 	defer receivedEventsMutex.Unlock()
