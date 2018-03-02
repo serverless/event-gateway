@@ -12,7 +12,7 @@ RUN go get -u golang.org/x/net/http2
 RUN go get -u golang.org/x/net/trace
 RUN go get -u github.com/golang/dep/cmd/dep
 RUN dep ensure
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o event-gateway cmd/event-gateway/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s' -a -installsuffix cgo -o event-gateway cmd/event-gateway/main.go
 
 FROM scratch
 WORKDIR /
