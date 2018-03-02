@@ -318,7 +318,7 @@ func (router *Router) handleInvokeEvent(space string, functionID function.ID, pa
 }
 
 func determineErrorMessage(err error) string {
-	message := "function call failed. Please check logs."
+	message := "Function call failed. Please check logs."
 	if accessError, ok := err.(*function.ErrFunctionAccessDenied); ok {
 		if originalErr, ok := accessError.Original.(awserr.Error); ok {
 			switch originalErr.Code() {
