@@ -93,7 +93,7 @@ func TestUpdateFunction(t *testing.T) {
 		ID:       "testid",
 		Space:    "default",
 		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example1.com"}}
-	_, err := service.UpdateFunction("default", fn)
+	_, err := service.UpdateFunction(fn)
 
 	assert.Nil(t, err)
 }
@@ -103,12 +103,10 @@ func TestUpdateFunction_ValidationError(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	returned := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example.com"}}`)
-	db.EXPECT().Get("default/testid", gomock.Any()).Return(&store.KVPair{Value: returned}, nil)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	fn := &function.Function{ID: "testid", Space: "default", Provider: &function.Provider{Type: function.HTTPEndpoint}}
-	_, err := service.UpdateFunction("default", fn)
+	_, err := service.UpdateFunction(fn)
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
 }
@@ -125,7 +123,7 @@ func TestUpdateFunction_NotFoundError(t *testing.T) {
 		ID:       "testid",
 		Space:    "default",
 		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}}
-	_, err := service.UpdateFunction("default", fn)
+	_, err := service.UpdateFunction(fn)
 
 	assert.Equal(t, err, &function.ErrFunctionNotFound{ID: "testid"})
 }
@@ -147,7 +145,7 @@ func TestUpdateFunction_PutError(t *testing.T) {
 		ID:       "testid",
 		Space:    "default",
 		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example1.com"}}
-	_, err := service.UpdateFunction("default", fn)
+	_, err := service.UpdateFunction(fn)
 
 	assert.EqualError(t, err, "KV put error")
 }
