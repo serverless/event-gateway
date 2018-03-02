@@ -53,14 +53,14 @@ func (service Service) RegisterFunction(fn *function.Function) (*function.Functi
 }
 
 // UpdateFunction updates function configuration.
-func (service Service) UpdateFunction(space string, fn *function.Function) (*function.Function, error) {
-	_, err := service.FunctionStore.Get(FunctionKey{space, fn.ID}.String(), &store.ReadOptions{Consistent: true})
-	if err != nil {
-		return nil, &function.ErrFunctionNotFound{ID: fn.ID}
+func (service Service) UpdateFunction(fn *function.Function) (*function.Function, error) {
+	if err := service.validateFunction(fn); err != nil {
+		return nil, err
 	}
 
-	if err = service.validateFunction(fn); err != nil {
-		return nil, err
+	_, err := service.FunctionStore.Get(FunctionKey{fn.Space, fn.ID}.String(), &store.ReadOptions{Consistent: true})
+	if err != nil {
+		return nil, &function.ErrFunctionNotFound{ID: fn.ID}
 	}
 
 	byt, err := json.Marshal(fn)

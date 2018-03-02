@@ -129,9 +129,9 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		return
 	}
 
-	space := params.ByName("space")
+	fn.Space = params.ByName("space")
 	fn.ID = function.ID(params.ByName("id"))
-	output, err := h.Functions.UpdateFunction(space, fn)
+	output, err := h.Functions.UpdateFunction(fn)
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -146,7 +146,7 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		encoder.Encode(output)
 	}
 
-	metricFunctionUpdateRequests.WithLabelValues(space).Inc()
+	metricFunctionUpdateRequests.WithLabelValues(fn.Space).Inc()
 }
 
 func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
