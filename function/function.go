@@ -143,7 +143,7 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 		if awserr, ok := err.(awserr.Error); ok {
 			switch awserr.Code() {
 			case "AccessDeniedException",
-				"InvalidSignatureException",
+				"ExpiredTokenException",
 				"UnrecognizedClientException":
 				return nil, &ErrFunctionAccessDenied{awserr}
 			case lambda.ErrCodeServiceException:
