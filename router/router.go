@@ -15,6 +15,7 @@ import (
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/plugin"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
@@ -238,10 +239,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		event.Data = httpdata
 		resp, err := router.callFunction(space, *backingFunction, *event)
 		if err != nil {
-			message := "function call failed"
-			if _, ok := err.(*function.ErrFunctionAccessDenied); ok {
-				message = "function access denied"
-			}
+			message := determineErrorMessage(err)
 
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("Content-Type", "application/json")
@@ -305,7 +303,8 @@ func (router *Router) handleInvokeEvent(space string, functionID function.ID, pa
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+		message := determineErrorMessage(err)
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: message}}})
 		return
 	}
 
@@ -316,6 +315,29 @@ func (router *Router) handleInvokeEvent(space string, functionID function.ID, pa
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 		return
 	}
+}
+
+func determineErrorMessage(err error) string {
+	message := "function call failed. Please check logs."
+	if accessError, ok := err.(*function.ErrFunctionAccessDenied); ok {
+		if originalErr, ok := accessError.Original.(awserr.Error); ok {
+			switch originalErr.Code() {
+			case "AccessDeniedException":
+				message = "Function call failed with AccessDeniedException. The provided credentials do not" +
+					" have the required IAM permissions to invoke this function. Please attach the" +
+					" lambda:invokeFunction permission to these credentials."
+			case "UnrecognizedClientException":
+				message = "Function call failed with UnrecognizedClientException. The provided credentials" +
+					" are invalid. Please provide valid credentials."
+			case "ExpiredTokenException":
+				message = "Function call failed with ExpiredTokenException. The provided security token for" +
+					" the function has expired. Please provide an updated security token or provide" +
+					" permanent credentials."
+			}
+		}
+	}
+
+	return message
 }
 
 func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
