@@ -15,6 +15,7 @@ import (
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/plugin"
+	"regexp"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
@@ -90,7 +91,12 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				functionID := function.ID(r.Header.Get(headerFunctionID))
 				space := r.Header.Get(headerSpace)
 				if space == "" {
-					space = "default"
+					rxp, _ := regexp.Compile(hostedDomain)
+					subdomain := "default"
+					if rxp.MatchString(r.Host) {
+						subdomain = strings.Split(r.Host, ".")[0]
+					}
+					space = subdomain
 				}
 
 				metricEventsInvokeReceived.WithLabelValues(space).Inc()
