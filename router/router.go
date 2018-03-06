@@ -92,13 +92,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				space := r.Header.Get(headerSpace)
 				if space == "" {
 					rxp, _ := regexp.Compile(hostedDomain)
-					subdomain := ""
+					subdomain := "default"
 					if rxp.MatchString(r.Host) {
 						subdomain = strings.Split(r.Host, ".")[0]
 					}
-					if subdomain == hostedDomain {
-						space = "default"
-					}
+					space = subdomain
 				}
 
 				metricEventsInvokeReceived.WithLabelValues(space).Inc()
