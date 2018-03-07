@@ -67,7 +67,7 @@ func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusInternalServerError, recorder.Code)
-	assert.Equal(t, `{"errors":[{"message":"unable to look up registered function"}]}`+"\n", recorder.Body.String())
+	assert.Equal(t, `{"errors":[{"message":"Function call failed. Please check logs"}]}`+"\n", recorder.Body.String())
 }
 
 func TestRouterServeHTTP_InvokeEventDefaultSpace(t *testing.T) {
