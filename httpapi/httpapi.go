@@ -62,7 +62,7 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 		encoder.Encode(fn)
 	}
 
-	metricFunctionGetRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "function", "get").Inc()
 }
 
 func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -78,7 +78,7 @@ func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params htt
 		encoder.Encode(&FunctionsResponse{fns})
 	}
 
-	metricFunctionListRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "function", "list").Inc()
 }
 
 func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -113,7 +113,7 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 		metricFunctionRegistered.WithLabelValues(fn.Space).Inc()
 	}
 
-	metricFunctionRegisterRequests.WithLabelValues(fn.Space).Inc()
+	metricConfigRequests.WithLabelValues(fn.Space, "function", "create").Inc()
 }
 
 func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -146,7 +146,7 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		encoder.Encode(output)
 	}
 
-	metricFunctionUpdateRequests.WithLabelValues(fn.Space).Inc()
+	metricConfigRequests.WithLabelValues(fn.Space, "function", "update").Inc()
 }
 
 func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -171,7 +171,7 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 		metricFunctionDeleted.WithLabelValues(space).Inc()
 	}
 
-	metricFunctionDeleteRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "function", "delete").Inc()
 }
 
 func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -187,7 +187,7 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 		encoder.Encode(&SubscriptionsResponse{subs})
 	}
 
-	metricSubscriptionListRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "subscription", "list").Inc()
 }
 
 func (h HTTPAPI) getSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -208,7 +208,7 @@ func (h HTTPAPI) getSubscription(w http.ResponseWriter, r *http.Request, params 
 		encoder.Encode(fn)
 	}
 
-	metricSubscriptionGetRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "subscription", "get").Inc()
 }
 
 func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -247,7 +247,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 		metricSubscriptionCreated.WithLabelValues(s.Space).Inc()
 	}
 
-	metricSubscriptionCreateRequests.WithLabelValues(s.Space).Inc()
+	metricConfigRequests.WithLabelValues(s.Space, "subscription", "create").Inc()
 }
 
 func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -269,7 +269,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 		metricSubscriptionDeleted.WithLabelValues(space).Inc()
 	}
 
-	metricSubscriptionDeleteRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "subscription", "delete").Inc()
 }
 
 // httprouter weirdness: params are based on Request.URL.Path, not Request.URL.RawPath

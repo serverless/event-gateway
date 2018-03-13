@@ -11,11 +11,11 @@ import (
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/plugin"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
@@ -59,7 +59,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// isHTTPEvent checks if a request carries HTTP event. It also accepts pre-flight CORS requests because CORS is
 	// resolved downstream.
 	if isHTTPEvent(r) {
-		metricEventsHTTPReceived.Inc()
+		metricEventsReceived.WithLabelValues("", "http").Inc()
 
 		event, _, err := router.eventFromRequest(r)
 		if err != nil {
@@ -94,11 +94,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					space = "default"
 				}
 
-				metricEventsInvokeReceived.WithLabelValues(space).Inc()
+				metricEventsReceived.WithLabelValues(space, "invoke").Inc()
 
 				router.handleInvokeEvent(space, functionID, path, event, w)
 
-				metricEventsInvokeProcessed.WithLabelValues(space).Inc()
+				metricEventsProcessed.WithLabelValues(space, "invoke").Inc()
 			} else if !event.IsSystem() {
 				reportReceivedEvent(event.ID)
 
@@ -286,7 +286,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		cors.New(corsOptions).ServeHTTP(w, r, handler)
 	}
 
-	metricEventsHTTPProcessed.WithLabelValues(space).Inc()
+	metricEventsProcessed.WithLabelValues(space, "http").Inc()
 }
 
 func (router *Router) handleInvokeEvent(space string, functionID function.ID, path string, event *eventpkg.Event, w http.ResponseWriter) {
@@ -353,7 +353,7 @@ func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 		metricBacklog.Inc()
 	default:
 		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
-		metricEventsCustomDropped.Inc()
+		metricEventsDropped.WithLabelValues("", "custom").Inc()
 	}
 }
 
@@ -468,7 +468,7 @@ func (router *Router) processEvent(e backlogEvent) {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}
 
-	metricEventsCustomProcessed.Inc()
+	metricEventsProcessed.WithLabelValues("", "custom").Inc()
 }
 
 func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers map[string]string) error {
@@ -489,7 +489,7 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 	)
 	router.enqueueWork("/", system)
 
-	metricSystemFunctionInvokingReceived.WithLabelValues(space).Inc()
+	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokingType)).Inc()
 
 	return router.plugins.React(system)
 }
@@ -501,7 +501,7 @@ func (router *Router) emitSystemFunctionInvoked(space string, functionID functio
 		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
 	router.enqueueWork("/", system)
 
-	metricSystemFunctionInvokedReceived.WithLabelValues(space).Inc()
+	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokedType)).Inc()
 
 	return router.plugins.React(system)
 }
@@ -514,7 +514,7 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
 		router.enqueueWork("/", system)
 
-		metricSystemFunctionInvocationFailedReceived.WithLabelValues(space).Inc()
+		metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
 	}
 }
 

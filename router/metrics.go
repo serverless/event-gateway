@@ -8,102 +8,37 @@ import (
 )
 
 func init() {
-	prometheus.MustRegister(metricSystemFunctionInvokingReceived)
-	prometheus.MustRegister(metricSystemFunctionInvokedReceived)
-	prometheus.MustRegister(metricSystemFunctionInvocationFailedReceived)
+	prometheus.MustRegister(metricEventsReceived)
+	prometheus.MustRegister(metricEventsProcessed)
+	prometheus.MustRegister(metricEventsDropped)
 
-	prometheus.MustRegister(metricEventsCustomReceived)
-	prometheus.MustRegister(metricEventsCustomDropped)
-	prometheus.MustRegister(metricEventsCustomProcessed)
-	prometheus.MustRegister(metricEventsInvokeReceived)
-	prometheus.MustRegister(metricEventsInvokeProcessed)
-	prometheus.MustRegister(metricEventsHTTPReceived)
-	prometheus.MustRegister(metricEventsHTTPProcessed)
 	prometheus.MustRegister(metricBacklog)
 	prometheus.MustRegister(metricProcessingDuration)
 }
 
-var metricSystemFunctionInvokingReceived = prometheus.NewCounterVec(
+var metricEventsReceived = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "system_function_invoking_received_total",
-		Help:      "Total of gateway.function.invoking events received.",
-	}, []string{"space"})
+		Name:      "received_total",
+		Help:      "Total of events received.",
+	}, []string{"space", "type"})
 
-var metricSystemFunctionInvokedReceived = prometheus.NewCounterVec(
+var metricEventsProcessed = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "system_function_invoked_received_total",
-		Help:      "Total of gateway.function.invoked events received.",
-	}, []string{"space"})
+		Name:      "processed_total",
+		Help:      "Total of processed events.",
+	}, []string{"space", "type"})
 
-var metricSystemFunctionInvocationFailedReceived = prometheus.NewCounterVec(
+var metricEventsDropped = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "gateway",
 		Subsystem: "events",
-		Name:      "system_function_invocation_failed_received_total",
-		Help:      "Total of gateway.function.invocationFailed events received.",
-	}, []string{"space"})
-
-var metricEventsCustomReceived = prometheus.NewCounter(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "events",
-		Name:      "custom_received_total",
-		Help:      "Total of asynchronously handled custom events received (including system events).",
-	})
-
-var metricEventsCustomDropped = prometheus.NewCounter(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "events",
-		Name:      "custom_dropped_total",
-		Help:      "Total of asynchronously handled custom events dropped due to insufficient processing power.",
-	})
-
-var metricEventsCustomProcessed = prometheus.NewCounter(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "events",
-		Name:      "custom_processed_total",
-		Help:      "Total of asynchronously processed custom events.",
-	})
-
-var metricEventsInvokeReceived = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "events",
-		Name:      "invoke_received_total",
-		Help:      "Total of Invoke events received.",
-	}, []string{"space"})
-
-var metricEventsInvokeProcessed = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "events",
-		Name:      "invoke_processed_total",
-		Help: "Total of Invoke events processed. This counter excludes events for which there was no function " +
-			"registered or error occured during processing phase.",
-	}, []string{"space"})
-
-var metricEventsHTTPReceived = prometheus.NewCounter(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "events",
-		Name:      "http_received_total",
-		Help:      "Total of HTTP events received.",
-	})
-
-var metricEventsHTTPProcessed = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "events",
-		Name:      "http_processed_total",
-		Help: "Total of HTTP events processed. This counter excludes events for which there was no function " +
-			"registered or error occured during processing phase.",
-	}, []string{"space"})
+		Name:      "dropped_total",
+		Help:      "Total of events dropped due to insufficient processing power.",
+	}, []string{"space", "type"})
 
 var metricBacklog = prometheus.NewGauge(
 	prometheus.GaugeOpts{
@@ -127,7 +62,7 @@ var receivedEventsMutex = sync.Mutex{}
 var receivedEvents = map[string]time.Time{}
 
 func reportReceivedEvent(id string) {
-	metricEventsCustomReceived.Inc()
+	metricEventsReceived.WithLabelValues("", "custom").Inc()
 
 	receivedEventsMutex.Lock()
 	defer receivedEventsMutex.Unlock()
