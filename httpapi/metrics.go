@@ -5,48 +5,30 @@ import (
 )
 
 func init() {
-	prometheus.MustRegister(metricFunctionRegistered)
-	prometheus.MustRegister(metricFunctionDeleted)
-	prometheus.MustRegister(metricSubscriptionCreated)
-	prometheus.MustRegister(metricSubscriptionDeleted)
+	prometheus.MustRegister(metricFunctions)
+	prometheus.MustRegister(metricSubscriptions)
 
 	prometheus.MustRegister(metricConfigRequests)
 }
 
 // Functions
 
-var metricFunctionRegistered = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
+var metricFunctions = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
 		Namespace: "gateway",
 		Subsystem: "functions",
-		Name:      "registered_total",
-		Help:      "Total of functions registered.",
-	}, []string{"space"})
-
-var metricFunctionDeleted = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "functions",
-		Name:      "deleted_total",
-		Help:      "Total of functions deleted.",
+		Name:      "total",
+		Help:      "Gauge of registered functions count.",
 	}, []string{"space"})
 
 // Subscriptions
 
-var metricSubscriptionCreated = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
+var metricSubscriptions = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
 		Namespace: "gateway",
 		Subsystem: "subscriptions",
-		Name:      "created_total",
-		Help:      "Total of subscriptions created.",
-	}, []string{"space"})
-
-var metricSubscriptionDeleted = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Namespace: "gateway",
-		Subsystem: "subscriptions",
-		Name:      "deleted_total",
-		Help:      "Total of subscriptions deleted.",
+		Name:      "total",
+		Help:      "Gauge of created subscriptions count.",
 	}, []string{"space"})
 
 // Config API
