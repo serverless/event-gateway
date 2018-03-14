@@ -32,13 +32,13 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	router.Handler("GET", "/metrics", promhttp.Handler())
 
-	router.GET("/v1/spaces/:space/functions", h.getFunctions)
+	router.GET("/v1/spaces/:space/functions", h.listFunctions)
 	router.GET("/v1/spaces/:space/functions/:id", h.getFunction)
-	router.POST("/v1/spaces/:space/functions", h.registerFunction)
+	router.POST("/v1/spaces/:space/functions", h.createFunction)
 	router.PUT("/v1/spaces/:space/functions/:id", h.updateFunction)
 	router.DELETE("/v1/spaces/:space/functions/:id", h.deleteFunction)
 
-	router.GET("/v1/spaces/:space/subscriptions", h.getSubscriptions)
+	router.GET("/v1/spaces/:space/subscriptions", h.listSubscriptions)
 	router.GET("/v1/spaces/:space/subscriptions/*id", h.getSubscription)
 	router.POST("/v1/spaces/:space/subscriptions", h.createSubscription)
 	router.DELETE("/v1/spaces/:space/subscriptions/*id", h.deleteSubscription)
@@ -62,10 +62,10 @@ func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params http
 		encoder.Encode(fn)
 	}
 
-	metricFunctionGetRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "function", "get").Inc()
 }
 
-func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (h HTTPAPI) listFunctions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
@@ -78,10 +78,10 @@ func (h HTTPAPI) getFunctions(w http.ResponseWriter, r *http.Request, params htt
 		encoder.Encode(&FunctionsResponse{fns})
 	}
 
-	metricFunctionListRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "function", "list").Inc()
 }
 
-func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (h HTTPAPI) createFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
@@ -110,10 +110,10 @@ func (h HTTPAPI) registerFunction(w http.ResponseWriter, r *http.Request, params
 		w.WriteHeader(http.StatusCreated)
 		encoder.Encode(output)
 
-		metricFunctionRegistered.WithLabelValues(fn.Space).Inc()
+		metricFunctions.WithLabelValues(fn.Space).Inc()
 	}
 
-	metricFunctionRegisterRequests.WithLabelValues(fn.Space).Inc()
+	metricConfigRequests.WithLabelValues(fn.Space, "function", "create").Inc()
 }
 
 func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -146,7 +146,7 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 		encoder.Encode(output)
 	}
 
-	metricFunctionUpdateRequests.WithLabelValues(fn.Space).Inc()
+	metricConfigRequests.WithLabelValues(fn.Space, "function", "update").Inc()
 }
 
 func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -168,13 +168,13 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 
-		metricFunctionDeleted.WithLabelValues(space).Inc()
+		metricFunctions.WithLabelValues(space).Dec()
 	}
 
-	metricFunctionDeleteRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "function", "delete").Inc()
 }
 
-func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (h HTTPAPI) listSubscriptions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 
@@ -187,7 +187,7 @@ func (h HTTPAPI) getSubscriptions(w http.ResponseWriter, r *http.Request, params
 		encoder.Encode(&SubscriptionsResponse{subs})
 	}
 
-	metricSubscriptionListRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "subscription", "list").Inc()
 }
 
 func (h HTTPAPI) getSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -208,7 +208,7 @@ func (h HTTPAPI) getSubscription(w http.ResponseWriter, r *http.Request, params 
 		encoder.Encode(fn)
 	}
 
-	metricSubscriptionGetRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "subscription", "get").Inc()
 }
 
 func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -244,10 +244,10 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 		w.WriteHeader(http.StatusCreated)
 		encoder.Encode(output)
 
-		metricSubscriptionCreated.WithLabelValues(s.Space).Inc()
+		metricSubscriptions.WithLabelValues(s.Space).Inc()
 	}
 
-	metricSubscriptionCreateRequests.WithLabelValues(s.Space).Inc()
+	metricConfigRequests.WithLabelValues(s.Space, "subscription", "create").Inc()
 }
 
 func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -266,10 +266,10 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 
-		metricSubscriptionDeleted.WithLabelValues(space).Inc()
+		metricSubscriptions.WithLabelValues(space).Dec()
 	}
 
-	metricSubscriptionDeleteRequests.WithLabelValues(space).Inc()
+	metricConfigRequests.WithLabelValues(space, "subscription", "delete").Inc()
 }
 
 // httprouter weirdness: params are based on Request.URL.Path, not Request.URL.RawPath
