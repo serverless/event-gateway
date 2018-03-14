@@ -25,18 +25,20 @@ func newFunctionCache(log *zap.Logger) *functionCache {
 }
 
 func (c *functionCache) Modified(k string, v []byte) {
-	c.log.Debug("Function local cache received value update.", zap.String("key", k), zap.String("value", string(v)))
-
 	f := &function.Function{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(f)
 	if err != nil {
 		c.log.Error("Could not deserialize Function state.", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
-	} else {
-		c.Lock()
-		defer c.Unlock()
-		segments := strings.Split(k, "/")
-		c.cache[libkv.FunctionKey{Space: segments[0], ID: function.ID(segments[1])}] = f
+		return
+
 	}
+
+	c.log.Debug("Function local cache received value update.", zap.String("key", k), zap.Object("value", f))
+
+	c.Lock()
+	defer c.Unlock()
+	segments := strings.Split(k, "/")
+	c.cache[libkv.FunctionKey{Space: segments[0], ID: function.ID(segments[1])}] = f
 }
 
 func (c *functionCache) Deleted(k string, v []byte) {
