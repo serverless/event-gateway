@@ -30,7 +30,7 @@ type Function struct {
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (f Function) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("space", string(f.Space))
-	enc.AddString("id", string(f.ID))
+	enc.AddString("functionId", string(f.ID))
 	if f.Provider != nil {
 		enc.AddObject("provider", f.Provider)
 	}

@@ -21,7 +21,7 @@ type Subscription struct {
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (s Subscription) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("space", string(s.Space))
-	enc.AddString("id", string(s.ID))
+	enc.AddString("subscriptionId", string(s.ID))
 	enc.AddString("event", string(s.Event))
 	enc.AddString("functionId", string(s.FunctionID))
 	if s.Method != "" {
