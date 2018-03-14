@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"go.uber.org/zap/zapcore"
 )
 
 // Function represents a function deployed on one of the supported providers.
@@ -24,6 +25,17 @@ type Function struct {
 	Space    string    `json:"space" validate:"required,min=3,space"`
 	ID       ID        `json:"functionId" validate:"required,functionid"`
 	Provider *Provider `json:"provider" validate:"required"`
+}
+
+// MarshalLogObject is a part of zapcore.ObjectMarshaler interface
+func (f Function) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("space", string(f.Space))
+	enc.AddString("functionId", string(f.ID))
+	if f.Provider != nil {
+		enc.AddObject("provider", f.Provider)
+	}
+
+	return nil
 }
 
 // Functions is an array of functions.
@@ -56,6 +68,34 @@ type Provider struct {
 
 // ProviderType represents what kind of function provider this is.
 type ProviderType string
+
+// MarshalLogObject is a part of zapcore.ObjectMarshaler interface
+func (p Provider) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("type", string(p.Type))
+	if p.ARN != "" {
+		enc.AddString("arn", p.ARN)
+	}
+	if p.AWSAccessKeyID != "" {
+		enc.AddString("awsAccessKeyId", "*****")
+	}
+	if p.AWSSecretAccessKey != "" {
+		enc.AddString("awsSecretAccessKey", "*****")
+	}
+	if p.AWSSessionToken != "" {
+		enc.AddString("awsSessionToken", "*****")
+	}
+	if p.URL != "" {
+		enc.AddString("url", p.URL)
+	}
+	if p.EmulatorURL != "" {
+		enc.AddString("emulatorUrl", p.EmulatorURL)
+	}
+	if p.APIVersion != "" {
+		enc.AddString("apiVersion", p.APIVersion)
+	}
+
+	return nil
+}
 
 const (
 	// AWSLambda represents AWS Lambda function.

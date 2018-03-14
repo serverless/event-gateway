@@ -124,7 +124,7 @@ func main() {
 			configProto = "https"
 		}
 
-		log.Info(fmt.Sprintf("Running in development mode with embedded etcd. Event API listening on %s://localhost:%d. Config API listening on %s://localhost:%d.", eventProto, *eventsPort, configProto, *configPort))
+		log.Info(fmt.Sprintf("Running in development mode with embedded etcd. Events API listening on %s://localhost:%d. Config API listening on %s://localhost:%d.", eventProto, *eventsPort, configProto, *configPort))
 	}
 
 	shutdownGuard.Wait()

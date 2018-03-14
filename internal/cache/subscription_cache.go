@@ -33,17 +33,17 @@ func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 }
 
 func (c *subscriptionCache) Modified(k string, v []byte) {
-	c.log.Debug("Subscription local cache received value update.", zap.String("key", k), zap.String("value", string(v)))
-
 	s := subscription.Subscription{}
 	err := json.NewDecoder(bytes.NewReader(v)).Decode(&s)
 	if err != nil {
 		c.log.Error("Could not deserialize Subscription state.", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
 		return
 	}
+
+	c.log.Debug("Subscription local cache received value update.", zap.String("key", k), zap.Object("value", s))
+
 	c.Lock()
 	defer c.Unlock()
-
 	key := libkv.FunctionKey{Space: s.Space, ID: s.FunctionID}
 
 	if s.Event == eventpkg.TypeHTTP {
