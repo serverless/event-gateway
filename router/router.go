@@ -359,20 +359,6 @@ func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
 
 // callFunction looks up a function and calls it.
 func (router *Router) callFunction(space string, backingFunctionID function.ID, event eventpkg.Event) ([]byte, error) {
-	backingFunction := router.targetCache.Function(space, backingFunctionID)
-	if backingFunction == nil {
-		return []byte{}, errUnableToLookUpRegisteredFunction
-	}
-
-	var chosenFunction = backingFunction.ID
-	if backingFunction.Provider.Type == function.Weighted {
-		chosen, err := backingFunction.Provider.Weighted.Choose()
-		if err != nil {
-			return nil, err
-		}
-		chosenFunction = chosen
-	}
-
 	router.log.Debug("Invoking function.",
 		zap.String("space", space),
 		zap.String("functionId", string(backingFunctionID)),
@@ -386,7 +372,7 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 	}
 
 	// Call the target backing function.
-	f := router.targetCache.Function(space, chosenFunction)
+	f := router.targetCache.Function(space, backingFunctionID)
 	if f == nil {
 		return []byte{}, errUnableToLookUpRegisteredFunction
 	}

@@ -163,42 +163,8 @@ func (service Service) validateFunction(fn *function.Function) error {
 		}
 	}
 
-	if fn.Provider.Type == function.Emulator {
-		return service.validateEmulator(fn)
-	}
-
 	if fn.Provider.Type == function.HTTPEndpoint && fn.Provider.URL == "" {
 		return &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}
-	}
-
-	if fn.Provider.Type == function.Weighted {
-		return service.validateWeighted(fn)
-	}
-
-	return nil
-}
-
-func (service Service) validateEmulator(fn *function.Function) error {
-	if fn.Provider.EmulatorURL == "" {
-		return &function.ErrFunctionValidation{Message: "Missing required field emulatorURL for Emulator function."}
-	} else if fn.Provider.APIVersion == "" {
-		return &function.ErrFunctionValidation{Message: "Missing required field apiVersion for Emulator function."}
-	}
-	return nil
-}
-
-func (service Service) validateWeighted(fn *function.Function) error {
-	if len(fn.Provider.Weighted) == 0 {
-		return &function.ErrFunctionValidation{Message: "Missing required fields for weighted function."}
-	}
-
-	weightTotal := uint(0)
-	for _, wf := range fn.Provider.Weighted {
-		weightTotal += wf.Weight
-	}
-
-	if weightTotal < 1 {
-		return &function.ErrFunctionValidation{Message: "Function weights sum to zero."}
 	}
 
 	return nil
