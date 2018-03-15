@@ -7,9 +7,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/mock"
+	"github.com/serverless/event-gateway/providers/http"
 	"github.com/serverless/libkv/store"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	_ "github.com/serverless/event-gateway/providers/http"
 )
 
 func TestRegisterFunction(t *testing.T) {
@@ -25,7 +28,7 @@ func TestRegisterFunction(t *testing.T) {
 	_, err := service.RegisterFunction(
 		&function.Function{
 			ID:       "testid",
-			Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}},
+			Provider: http.HTTP{URL: "http://example.com"}},
 	)
 
 	assert.Nil(t, err)
@@ -38,7 +41,10 @@ func TestRegisterFunction_ValidationError(t *testing.T) {
 	db := mock.NewMockStore(ctrl)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	fn := &function.Function{ID: "testid", Provider: &function.Provider{Type: function.HTTPEndpoint}}
+	fn := &function.Function{
+		ID:       "testid",
+		Provider: http.HTTP{URL: "http://example.com"},
+	}
 	_, err := service.RegisterFunction(fn)
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
@@ -54,7 +60,8 @@ func TestRegisterFunction_AlreadyExistsError(t *testing.T) {
 
 	fn := &function.Function{
 		ID:       "testid",
-		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}}
+		Provider: http.HTTP{URL: "http://example.com"},
+	}
 	_, err := service.RegisterFunction(fn)
 
 	assert.Equal(t, err, &function.ErrFunctionAlreadyRegistered{ID: "testid"})
@@ -72,7 +79,8 @@ func TestRegisterFunction_PutError(t *testing.T) {
 
 	fn := &function.Function{
 		ID:       "testid",
-		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}}
+		Provider: http.HTTP{URL: "http://example.com"},
+	}
 	_, err := service.RegisterFunction(fn)
 
 	assert.EqualError(t, err, "KV put error")
@@ -92,7 +100,8 @@ func TestUpdateFunction(t *testing.T) {
 	fn := &function.Function{
 		ID:       "testid",
 		Space:    "default",
-		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example1.com"}}
+		Provider: http.HTTP{URL: "http://example1.com"},
+	}
 	_, err := service.UpdateFunction(fn)
 
 	assert.Nil(t, err)
@@ -105,10 +114,14 @@ func TestUpdateFunction_ValidationError(t *testing.T) {
 	db := mock.NewMockStore(ctrl)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	fn := &function.Function{ID: "testid", Space: "default", Provider: &function.Provider{Type: function.HTTPEndpoint}}
+	fn := &function.Function{
+		ID:           "testid",
+		Space:        "default",
+		ProviderType: "http",
+		Provider:     http.HTTP{}}
 	_, err := service.UpdateFunction(fn)
 
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
+	assert.Equal(t, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}, err)
 }
 
 func TestUpdateFunction_NotFoundError(t *testing.T) {
@@ -122,7 +135,8 @@ func TestUpdateFunction_NotFoundError(t *testing.T) {
 	fn := &function.Function{
 		ID:       "testid",
 		Space:    "default",
-		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}}
+		Provider: http.HTTP{URL: "http://example.com"},
+	}
 	_, err := service.UpdateFunction(fn)
 
 	assert.Equal(t, err, &function.ErrFunctionNotFound{ID: "testid"})
@@ -134,17 +148,19 @@ func TestUpdateFunction_PutError(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	returned := []byte(`
-		{"functionId":"testid", "space": "default", "provider":{"type":"http","url":"http://example.com"}}
+		{"functionId":"testid", "space": "default", "type": "http", "provider": {"url":"http://example.com"}}
 		`)
 	db.EXPECT().Get("default/testid", gomock.Any()).Return(&store.KVPair{Value: returned}, nil)
-	payload := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example1.com"}}`)
+	payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
 	db.EXPECT().Put("default/testid", payload, nil).Return(errors.New("KV put error"))
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID:       "testid",
-		Space:    "default",
-		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example1.com"}}
+		ID:           "testid",
+		Space:        "default",
+		ProviderType: "http",
+		Provider:     &http.HTTP{URL: "http://example.com"},
+	}
 	_, err := service.UpdateFunction(fn)
 
 	assert.EqualError(t, err, "KV put error")
@@ -155,13 +171,17 @@ func TestGetFunction(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	returned := []byte(`{"functionId":"testid"}`)
+	returned := []byte(`{"functionId":"f1","type":"http","provider":{"url": "http://test.com"}}}`)
 	db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: returned}, nil)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	f, _ := service.GetFunction("default", function.ID("testid"))
 
-	assert.Equal(t, &function.Function{ID: "testid"}, f)
+	assert.Equal(t, &function.Function{
+		ID:           function.ID("f1"),
+		ProviderType: function.ProviderType("http"),
+		Provider:     &http.HTTP{URL: "http://test.com"},
+	}, f)
 }
 
 func TestGetFunction_NotFound(t *testing.T) {
@@ -195,16 +215,20 @@ func TestGetFunctions(t *testing.T) {
 	defer ctrl.Finish()
 
 	kvs := []*store.KVPair{
-		&store.KVPair{Value: []byte(`{"functionId":"f1"}`)},
-		&store.KVPair{Value: []byte(`{"functionId":"f2"}`)},
+		&store.KVPair{Value: []byte(`{"functionId":"f1","type":"http","provider":{"url": "http://test.com"}}}`)},
 	}
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	list, _ := service.GetFunctions("default")
+	list, err := service.GetFunctions("default")
 
-	assert.Equal(t, function.Functions{{ID: function.ID("f1")}, {ID: function.ID("f2")}}, list)
+	assert.Nil(t, err)
+	assert.Equal(t, function.Functions{{
+		ID:           function.ID("f1"),
+		ProviderType: function.ProviderType("http"),
+		Provider:     &http.HTTP{URL: "http://test.com"},
+	}}, list)
 }
 
 func TestGetFunctions_ListError(t *testing.T) {
@@ -281,37 +305,10 @@ func TestDeleteFunction_SubscriptionExists(t *testing.T) {
 	assert.Equal(t, err, &function.ErrFunctionHasSubscriptionsError{})
 }
 
-func TestValidateFunction_AWSLambdaMissingRegion(t *testing.T) {
-	service := &Service{Log: zap.NewNop()}
-
-	fn := &function.Function{ID: "id", Provider: &function.Provider{Type: function.AWSLambda, ARN: "arn::"}}
-	err := service.validateFunction(fn)
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."})
-}
-
-func TestValidateFunction_AWSLambdaMissingARN(t *testing.T) {
-	service := &Service{Log: zap.NewNop()}
-
-	fn := &function.Function{ID: "id", Provider: &function.Provider{Type: function.AWSLambda, Region: "us-east-1"}}
-	err := service.validateFunction(fn)
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."})
-}
-
-func TestValidateFunction_HTTPMissingURL(t *testing.T) {
-	service := &Service{Log: zap.NewNop()}
-
-	fn := &function.Function{ID: "id", Provider: &function.Provider{Type: function.HTTPEndpoint}}
-	err := service.validateFunction(fn)
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
-}
-
 func TestValidateFunction_MissingID(t *testing.T) {
 	service := &Service{Log: zap.NewNop()}
 
-	err := service.validateFunction(&function.Function{Provider: &function.Provider{Type: function.HTTPEndpoint}})
+	err := service.validateFunction(&function.Function{})
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{
 		Message: "Key: 'Function.ID' Error:Field validation for 'ID' failed on the 'required' tag"})
@@ -321,9 +318,8 @@ func TestValidateFunction_SpaceInvalid(t *testing.T) {
 	service := &Service{Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID:       "id",
-		Space:    "///",
-		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}}
+		ID:    "id",
+		Space: "///"}
 	err := service.validateFunction(fn)
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{
@@ -334,8 +330,7 @@ func TestValidateFunction_SetDefaultSpace(t *testing.T) {
 	service := &Service{Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID:       "id",
-		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}}
+		ID: "id"}
 	service.validateFunction(fn)
 
 	assert.Equal(t, "default", fn.Space)

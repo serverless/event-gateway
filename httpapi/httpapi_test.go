@@ -114,7 +114,7 @@ func TestRegisterFunction_OK(t *testing.T) {
 	fn := &function.Function{
 		ID:    function.ID("func1"),
 		Space: "test1",
-		Provider: &function.Provider{
+		Provider: &function.ProviderConfig{
 			Type: function.HTTPEndpoint,
 			URL:  "http://example.com",
 		},
