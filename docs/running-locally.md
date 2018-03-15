@@ -36,7 +36,7 @@ docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway -dev
 
 Mounts the `~/.aws` folder from the host to the `/home/.aws` folder inside the container. Event Gateway can then read the credentials from within the container.
 ```
-docker run -p 4000:4000 -p 4001:4001 -e "HOME=/home" -v ~/.aws:/home/.aws event-gateway -dev
+docker run -p 4000:4000 -p 4001:4001 -e "HOME=/home" -v ~/.aws:/home/.aws serverless/event-gateway -dev
 ```
 
 **Preserve state of etcd**
@@ -44,7 +44,7 @@ docker run -p 4000:4000 -p 4001:4001 -e "HOME=/home" -v ~/.aws:/home/.aws event-
 While testing if you restart the container running Event Gateway and want to preserve the data in etcd, you can specify a data dir with the `-embed-data-dir "/home/data"` flag specifying a destination folder. Then you can mount the folder `~/.event-gateway/data` from your host into the container at `/home/data`. Event Gateway will read the data from there.
 
 ```
-docker run -p 4000:4000 -p 4001:4001 -v ~/.event-gateway/data:/home/data event-gateway -embed-data-dir "/home/data" -dev
+docker run -p 4000:4000 -p 4001:4001 -v ~/.event-gateway/data:/home/data serverless/event-gateway -embed-data-dir "/home/data" -dev
 ```
 
 ## Operations
