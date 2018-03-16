@@ -2,9 +2,10 @@ package function
 
 import "go.uber.org/zap/zapcore"
 
+// ProviderType represents function provier type.
 type ProviderType string
 
-// Provider is an interface for function provider.
+// Provider is an interface that function provider has to implement.
 type Provider interface {
 	Call(payload []byte) ([]byte, error)
 	MarshalLogObject(enc zapcore.ObjectEncoder) error

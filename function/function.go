@@ -35,7 +35,7 @@ func (f Function) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// functionJSON is an intern struct used for JSON (un)marshaling
+// functionJSON is an internal struct used for JSON (un)marshaling
 type functionJSON struct {
 	Space string `json:"space"`
 	ID    ID     `json:"functionId"`
