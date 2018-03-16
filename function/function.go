@@ -30,6 +30,7 @@ func (f *Function) Call(payload []byte) ([]byte, error) {
 func (f Function) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("space", string(f.Space))
 	enc.AddString("functionId", string(f.ID))
+	enc.AddString("type", string(f.ProviderType))
 	enc.AddObject("provider", f.Provider)
 
 	return nil

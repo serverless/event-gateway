@@ -56,7 +56,6 @@ func (h HTTP) Validate() error {
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface.
 func (h HTTP) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("type", string(Type))
 	enc.AddString("url", h.URL)
 	return nil
 }
