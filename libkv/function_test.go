@@ -29,7 +29,8 @@ func TestRegisterFunction(t *testing.T) {
 		&function.Function{
 			ID:           "testid",
 			ProviderType: http.Type,
-			Provider:     http.HTTP{URL: "http://example.com"}},
+			Provider:     &http.HTTP{URL: "http://example.com"},
+		},
 	)
 
 	assert.Nil(t, err)
@@ -45,7 +46,7 @@ func TestRegisterFunction_ValidationError(t *testing.T) {
 	fn := &function.Function{
 		ID:           "testid",
 		ProviderType: http.Type,
-		Provider:     http.HTTP{},
+		Provider:     &http.HTTP{},
 	}
 	_, err := service.RegisterFunction(fn)
 
@@ -61,8 +62,9 @@ func TestRegisterFunction_AlreadyExistsError(t *testing.T) {
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID:       "testid",
-		Provider: http.HTTP{URL: "http://example.com"},
+		ID:           "testid",
+		ProviderType: http.Type,
+		Provider:     &http.HTTP{URL: "http://example.com"},
 	}
 	_, err := service.RegisterFunction(fn)
 
@@ -82,7 +84,7 @@ func TestRegisterFunction_PutError(t *testing.T) {
 	fn := &function.Function{
 		ID:           "testid",
 		ProviderType: http.Type,
-		Provider:     http.HTTP{URL: "http://example.com"},
+		Provider:     &http.HTTP{URL: "http://example.com"},
 	}
 	_, err := service.RegisterFunction(fn)
 
@@ -104,7 +106,7 @@ func TestUpdateFunction(t *testing.T) {
 		ID:           "testid",
 		Space:        "default",
 		ProviderType: http.Type,
-		Provider:     http.HTTP{URL: "http://example1.com"},
+		Provider:     &http.HTTP{URL: "http://example1.com"},
 	}
 	_, err := service.UpdateFunction(fn)
 
@@ -121,8 +123,8 @@ func TestUpdateFunction_ValidationError(t *testing.T) {
 	fn := &function.Function{
 		ID:           "testid",
 		Space:        "default",
-		ProviderType: "http",
-		Provider:     http.HTTP{}}
+		ProviderType: http.Type,
+		Provider:     &http.HTTP{}}
 	_, err := service.UpdateFunction(fn)
 
 	assert.Equal(t, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}, err)
@@ -137,9 +139,10 @@ func TestUpdateFunction_NotFoundError(t *testing.T) {
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID:       "testid",
-		Space:    "default",
-		Provider: http.HTTP{URL: "http://example.com"},
+		ID:           "testid",
+		Space:        "default",
+		ProviderType: http.Type,
+		Provider:     &http.HTTP{URL: "http://example.com"},
 	}
 	_, err := service.UpdateFunction(fn)
 
@@ -162,7 +165,7 @@ func TestUpdateFunction_PutError(t *testing.T) {
 	fn := &function.Function{
 		ID:           "testid",
 		Space:        "default",
-		ProviderType: "http",
+		ProviderType: http.Type,
 		Provider:     &http.HTTP{URL: "http://example.com"},
 	}
 	_, err := service.UpdateFunction(fn)
@@ -183,7 +186,7 @@ func TestGetFunction(t *testing.T) {
 
 	assert.Equal(t, &function.Function{
 		ID:           function.ID("f1"),
-		ProviderType: function.ProviderType("http"),
+		ProviderType: http.Type,
 		Provider:     &http.HTTP{URL: "http://test.com"},
 	}, f)
 }
@@ -230,7 +233,7 @@ func TestGetFunctions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, function.Functions{{
 		ID:           function.ID("f1"),
-		ProviderType: function.ProviderType("http"),
+		ProviderType: http.Type,
 		Provider:     &http.HTTP{URL: "http://test.com"},
 	}}, list)
 }
