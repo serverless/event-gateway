@@ -41,6 +41,7 @@ func TestGetFunction_OK(t *testing.T) {
 	assert.Equal(t, "default", fn.Space)
 	assert.Equal(t, function.ID("func1"), fn.ID)
 	assert.Equal(t, httpprovider.Type, fn.ProviderType)
+	assert.Equal(t, &httpprovider.HTTP{}, fn.Provider)
 }
 
 func TestGetFunction_NotFound(t *testing.T) {
