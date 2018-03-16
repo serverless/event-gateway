@@ -83,6 +83,7 @@ func (a AWSLambda) Validate() error {
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface.
 func (a AWSLambda) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("arn", a.ARN)
+	enc.AddString("region", a.Region)
 	if a.AWSAccessKeyID != "" {
 		enc.AddString("awsAccessKeyId", "*****")
 	}
