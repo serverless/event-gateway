@@ -8,6 +8,7 @@ type ProviderType string
 // Provider is an interface that function provider has to implement.
 type Provider interface {
 	Call(payload []byte) ([]byte, error)
+	Validate() error
 	MarshalLogObject(enc zapcore.ObjectEncoder) error
 }
 

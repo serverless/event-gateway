@@ -37,3 +37,12 @@ func TestUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, http.Type, fn.ProviderType)
 	assert.Equal(t, &http.HTTP{URL: "http://example.com"}, fn.Provider.(*http.HTTP))
 }
+
+func TestUnmarshalJSON_NoProvider(t *testing.T) {
+	data := []byte(`{"space":"testspace","functionId":"testid"}`)
+
+	fn := &function.Function{}
+	err := json.Unmarshal(data, fn)
+
+	assert.EqualError(t, err, "provider configuration not set")
+}

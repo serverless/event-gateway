@@ -44,6 +44,16 @@ func (h HTTP) Call(payload []byte) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
+// Validate provider config.
+func (h HTTP) Validate() error {
+	validate := validator.New()
+	err := validate.Struct(h)
+	if err != nil {
+		return &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}
+	}
+	return nil
+}
+
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface.
 func (h HTTP) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("type", string(Type))
@@ -60,12 +70,6 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 	err := json.Unmarshal(data, provider)
 	if err != nil {
 		return nil, errors.New("unable to load function provider config: " + err.Error())
-	}
-
-	validate := validator.New()
-	err = validate.Struct(provider)
-	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}
 	}
 
 	return provider, nil

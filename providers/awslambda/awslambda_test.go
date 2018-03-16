@@ -8,18 +8,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLoad_MissingARN(t *testing.T) {
-	loader := &awslambda.ProviderLoader{}
+func TestValidation_MissingARN(t *testing.T) {
+	provider := &awslambda.AWSLambda{
+		Region: "us-east-1",
+	}
 
-	_, err := loader.Load([]byte(`{"region": "us-east-1"}`))
+	err := provider.Validate()
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."})
 }
 
-func TestLoad_MissingRegion(t *testing.T) {
-	loader := &awslambda.ProviderLoader{}
+func TestValidation_MissingRegion(t *testing.T) {
+	provider := &awslambda.AWSLambda{
+		ARN: "arn",
+	}
 
-	_, err := loader.Load([]byte(`{"arn": "testarn"}`))
+	err := provider.Validate()
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."})
 }

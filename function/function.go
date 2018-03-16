@@ -69,6 +69,10 @@ func (f *Function) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if rawFunction.ProviderType == "" {
+		return errors.New("provider configuration not set")
+	}
+
 	f.ID = rawFunction.ID
 	f.Space = rawFunction.Space
 	f.ProviderType = rawFunction.ProviderType

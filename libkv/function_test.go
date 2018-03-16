@@ -21,14 +21,15 @@ func TestRegisterFunction(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV func not found"))
-	payload := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example.com"}}`)
+	payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
 	db.EXPECT().Put("default/testid", payload, nil).Return(nil)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	_, err := service.RegisterFunction(
 		&function.Function{
-			ID:       "testid",
-			Provider: http.HTTP{URL: "http://example.com"}},
+			ID:           "testid",
+			ProviderType: http.Type,
+			Provider:     http.HTTP{URL: "http://example.com"}},
 	)
 
 	assert.Nil(t, err)
@@ -42,8 +43,9 @@ func TestRegisterFunction_ValidationError(t *testing.T) {
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID:       "testid",
-		Provider: http.HTTP{URL: "http://example.com"},
+		ID:           "testid",
+		ProviderType: http.Type,
+		Provider:     http.HTTP{},
 	}
 	_, err := service.RegisterFunction(fn)
 
@@ -73,13 +75,14 @@ func TestRegisterFunction_PutError(t *testing.T) {
 
 	db := mock.NewMockStore(ctrl)
 	db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV func not found"))
-	payload := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example.com"}}`)
+	payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
 	db.EXPECT().Put("default/testid", payload, nil).Return(errors.New("KV put error"))
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID:       "testid",
-		Provider: http.HTTP{URL: "http://example.com"},
+		ID:           "testid",
+		ProviderType: http.Type,
+		Provider:     http.HTTP{URL: "http://example.com"},
 	}
 	_, err := service.RegisterFunction(fn)
 
@@ -91,16 +94,17 @@ func TestUpdateFunction(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mock.NewMockStore(ctrl)
-	returned := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example.com"}}`)
+	returned := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
 	db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: returned}, nil)
-	payload := []byte(`{"space":"default","functionId":"testid","provider":{"type":"http","url":"http://example1.com"}}`)
+	payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example1.com"}}`)
 	db.EXPECT().Put("default/testid", payload, nil).Return(nil)
 	service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID:       "testid",
-		Space:    "default",
-		Provider: http.HTTP{URL: "http://example1.com"},
+		ID:           "testid",
+		Space:        "default",
+		ProviderType: http.Type,
+		Provider:     http.HTTP{URL: "http://example1.com"},
 	}
 	_, err := service.UpdateFunction(fn)
 
@@ -330,7 +334,10 @@ func TestValidateFunction_SetDefaultSpace(t *testing.T) {
 	service := &Service{Log: zap.NewNop()}
 
 	fn := &function.Function{
-		ID: "id"}
+		ID:           "id",
+		ProviderType: http.Type,
+		Provider:     http.HTTP{URL: "http://example.com"},
+	}
 	service.validateFunction(fn)
 
 	assert.Equal(t, "default", fn.Space)

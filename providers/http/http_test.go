@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLoad_MissingURL(t *testing.T) {
-	loader := &http.ProviderLoader{}
+func TestValidate_MissingURL(t *testing.T) {
+	provider := http.HTTP{}
 
-	_, err := loader.Load([]byte(`{}`))
+	err := provider.Validate()
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
 }

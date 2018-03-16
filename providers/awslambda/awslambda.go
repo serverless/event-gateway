@@ -70,6 +70,16 @@ func (a AWSLambda) Call(payload []byte) ([]byte, error) {
 	return invokeOutput.Payload, err
 }
 
+// Validate provider config.
+func (a AWSLambda) Validate() error {
+	validate := validator.New()
+	err := validate.Struct(a)
+	if err != nil {
+		return &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."}
+	}
+	return nil
+}
+
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface.
 func (a AWSLambda) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("type", string(Type))
@@ -95,12 +105,6 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 	err := json.Unmarshal(data, provider)
 	if err != nil {
 		return nil, errors.New("unable to load function provider config: " + err.Error())
-	}
-
-	validate := validator.New()
-	err = validate.Struct(provider)
-	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."}
 	}
 
 	return provider, nil
