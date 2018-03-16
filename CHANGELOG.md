@@ -1,3 +1,24 @@
+0.x.x / xxxx-xx-xx
+==================
+
+BACKWARDS INCOMPATIBILITIES:
+
+  * remove unused providers (emulator, weighted) (#387)
+  * refactor Prometheus metrics. Less metrics, more labels (#384)
+  * use different messages on lambda errors (#381)
+  * add more detailed metrics (#379)
+  * improve function invocation error (#377)
+
+IMPROVEMENTS:
+
+  * hide sensitive information in logs (#385)
+  * minimalize Dockerfile (#378)
+
+BUG FIXES:
+
+  * fix for UpdateFunction (#382)
+  * update create subscription docs regarding path param
+  * update README with info about Docker image. Closes #325 (#375)
 
 0.6.0 / 2018-02-19
 ==================
@@ -281,3 +302,4 @@ BUG FIXES:
   * start workers (#126)
   * add info about default config api port
   * update API path
+

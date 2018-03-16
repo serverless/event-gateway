@@ -317,34 +317,13 @@ func TestValidateFunction_MissingID(t *testing.T) {
 		Message: "Key: 'Function.ID' Error:Field validation for 'ID' failed on the 'required' tag"})
 }
 
-func TestValidateFunction_EmulatorMissingURL(t *testing.T) {
-	service := &Service{Log: zap.NewNop()}
-
-	err := service.validateFunction(&function.Function{ID: "id", Provider: &function.Provider{Type: function.Emulator}})
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{
-		Message: "Missing required field emulatorURL for Emulator function."})
-}
-
-func TestValidateFunction_EmulatorMissingAPIVersion(t *testing.T) {
-	service := &Service{Log: zap.NewNop()}
-
-	fn := &function.Function{
-		ID:       "id",
-		Provider: &function.Provider{Type: function.Emulator, EmulatorURL: "http://example.com"}}
-	err := service.validateFunction(fn)
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{
-		Message: "Missing required field apiVersion for Emulator function."})
-}
-
 func TestValidateFunction_SpaceInvalid(t *testing.T) {
 	service := &Service{Log: zap.NewNop()}
 
 	fn := &function.Function{
 		ID:       "id",
 		Space:    "///",
-		Provider: &function.Provider{Type: function.Emulator, EmulatorURL: "http://example.com"}}
+		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}}
 	err := service.validateFunction(fn)
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{
@@ -356,7 +335,7 @@ func TestValidateFunction_SetDefaultSpace(t *testing.T) {
 
 	fn := &function.Function{
 		ID:       "id",
-		Provider: &function.Provider{Type: function.Emulator, EmulatorURL: "http://example.com"}}
+		Provider: &function.Provider{Type: function.HTTPEndpoint, URL: "http://example.com"}}
 	service.validateFunction(fn)
 
 	assert.Equal(t, "default", fn.Space)

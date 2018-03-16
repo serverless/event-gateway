@@ -56,7 +56,7 @@ func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
 	target := mock.NewMockTargeter(ctrl)
 	target.EXPECT().Function("default", function.ID("testfunc")).Return(nil).MaxTimes(1)
 	target.EXPECT().InvokableFunction("/", "default", function.ID("testfunc")).Return(true).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]router.FunctionInfo{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(2)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodPost, "/", nil)
@@ -76,7 +76,7 @@ func TestRouterServeHTTP_InvokeEventDefaultSpace(t *testing.T) {
 	target := mock.NewMockTargeter(ctrl)
 	target.EXPECT().Function("default", function.ID("testfunc")).Return(nil).MaxTimes(1)
 	target.EXPECT().InvokableFunction("/", "default", function.ID("testfunc")).Return(true).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", event.SystemEventReceivedType).Return([]router.FunctionInfo{}).MaxTimes(1)
+	target.EXPECT().SubscribersOfEvent("/", gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(2)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodPost, "/", nil)
