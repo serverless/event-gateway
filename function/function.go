@@ -12,10 +12,11 @@ type ID string
 
 // Function represents a function deployed on one of the supported providers.
 type Function struct {
-	Space string `validate:"required,min=3,space"`
-	ID    ID     `validate:"required,functionid"`
-	ProviderType
-	Provider `validate:"-"`
+	Space          string           `json:"space" validate:"required,min=3,space"`
+	ID             ID               `json:"functionId" validate:"required,functionid"`
+	ProviderType   ProviderType     `json:"type"`
+	ProviderConfig *json.RawMessage `json:"provider"`
+	Provider       Provider         `json:"-" validate:"-"`
 }
 
 // Functions is an array of functions.
@@ -36,17 +37,11 @@ func (f Function) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// functionJSON is an internal struct used for JSON (un)marshaling
-type functionJSON struct {
-	Space string `json:"space"`
-	ID    ID     `json:"functionId"`
-
-	ProviderType   `json:"type"`
-	ProviderConfig *json.RawMessage `json:"provider"`
-}
-
 // MarshalJSON marshals provides as config and returns JSON representation of the function.
 func (f *Function) MarshalJSON() ([]byte, error) {
+	// This line is needed to avoid stack overflow because of recursive MarshalJSON call
+	type functionJSON Function
+
 	config, err := json.Marshal(f.Provider)
 	if err != nil {
 		return nil, err
@@ -65,6 +60,9 @@ func (f *Function) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals function JSON, detects provider type and loads the provider.
 func (f *Function) UnmarshalJSON(data []byte) error {
+	// This line is needed to avoid stack overflow because of recursive UnmarshalJSON call
+	type functionJSON Function
+
 	rawFunction := functionJSON{}
 	if err := json.Unmarshal(data, &rawFunction); err != nil {
 		return err
