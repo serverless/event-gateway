@@ -119,10 +119,20 @@ func (f *Function) callAWSLambda(payload []byte) ([]byte, error) {
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			switch awserr.Code() {
-			case "AccessDeniedException",
-				"ExpiredTokenException",
-				"UnrecognizedClientException":
-				return nil, &ErrFunctionAccessDenied{awserr}
+			case "AccessDeniedException":
+				return nil, &ErrFunctionAccessDenied{errors.New(
+					"function call failed with AccessDeniedException. The provided credentials do not " +
+						"have the required IAM permissions to invoke this function. Please attach the " +
+						"lambda:invokeFunction permission to these credentials")}
+			case "UnrecognizedClientException":
+				return nil, &ErrFunctionAccessDenied{errors.New(
+					"function call failed with UnrecognizedClientException. The provided credentials " +
+						"are invalid. Please provide valid credentials")}
+			case "ExpiredTokenException":
+				return nil, &ErrFunctionAccessDenied{errors.New(
+					"function call failed with ExpiredTokenException. The provided security token for " +
+						"the function has expired. Please provide an updated security token or provide " +
+						"permanent credentials")}
 			case lambda.ErrCodeServiceException:
 				return nil, &ErrFunctionProviderError{awserr}
 			default:
