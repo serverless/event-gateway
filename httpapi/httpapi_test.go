@@ -27,7 +27,7 @@ func TestGetFunction_OK(t *testing.T) {
 		Space:        "default",
 		ID:           function.ID("func1"),
 		ProviderType: httpprovider.Type,
-		Provider:     &httpprovider.HTTP{},
+		Provider:     &httpprovider.HTTP{URL: "http://example.com"},
 	}
 	functions.EXPECT().GetFunction("default", function.ID("func1")).Return(returned, nil)
 
@@ -41,7 +41,7 @@ func TestGetFunction_OK(t *testing.T) {
 	assert.Equal(t, "default", fn.Space)
 	assert.Equal(t, function.ID("func1"), fn.ID)
 	assert.Equal(t, httpprovider.Type, fn.ProviderType)
-	assert.Equal(t, &httpprovider.HTTP{}, fn.Provider)
+	assert.Equal(t, &httpprovider.HTTP{URL: "http://example.com"}, fn.Provider)
 }
 
 func TestGetFunction_NotFound(t *testing.T) {

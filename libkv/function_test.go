@@ -36,23 +36,6 @@ func TestRegisterFunction(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestRegisterFunction_ValidationError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	db := mock.NewMockStore(ctrl)
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
-
-	fn := &function.Function{
-		ID:           "testid",
-		ProviderType: http.Type,
-		Provider:     &http.HTTP{},
-	}
-	_, err := service.RegisterFunction(fn)
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
-}
-
 func TestRegisterFunction_AlreadyExistsError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -111,23 +94,6 @@ func TestUpdateFunction(t *testing.T) {
 	_, err := service.UpdateFunction(fn)
 
 	assert.Nil(t, err)
-}
-
-func TestUpdateFunction_ValidationError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	db := mock.NewMockStore(ctrl)
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
-
-	fn := &function.Function{
-		ID:           "testid",
-		Space:        "default",
-		ProviderType: http.Type,
-		Provider:     &http.HTTP{}}
-	_, err := service.UpdateFunction(fn)
-
-	assert.Equal(t, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}, err)
 }
 
 func TestUpdateFunction_NotFoundError(t *testing.T) {

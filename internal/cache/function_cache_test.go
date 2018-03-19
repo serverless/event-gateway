@@ -16,23 +16,23 @@ func TestFunctionCacheModified(t *testing.T) {
 
 	fcache.Modified(
 		"default/testfunc1",
-		[]byte(`{"functionId":"testfunc1","space":"default","type":"http","provider":{"url":""}}`),
+		[]byte(`{"functionId":"testfunc1","space":"default","type":"http","provider":{"url":"http://e.io"}}`),
 	)
 	fcache.Modified(
 		"default/testfunc2",
-		[]byte(`{"functionId":"testfunc2","space":"default","type":"http","provider":{"url":""}}`),
+		[]byte(`{"functionId":"testfunc2","space":"default","type":"http","provider":{"url":"http://e.io"}}`),
 	)
 
 	id1 := function.ID("testfunc1")
 	id2 := function.ID("testfunc2")
 	assert.Equal(
 		t,
-		&function.Function{ID: id1, Space: "default", ProviderType: http.Type, Provider: &http.HTTP{}},
+		&function.Function{ID: id1, Space: "default", ProviderType: http.Type, Provider: &http.HTTP{URL: "http://e.io"}},
 		fcache.cache[libkv.FunctionKey{Space: "default", ID: id1}],
 	)
 	assert.Equal(
 		t,
-		&function.Function{ID: id2, Space: "default", ProviderType: http.Type, Provider: &http.HTTP{}},
+		&function.Function{ID: id2, Space: "default", ProviderType: http.Type, Provider: &http.HTTP{URL: "http://e.io"}},
 		fcache.cache[libkv.FunctionKey{Space: "default", ID: id2}],
 	)
 }
@@ -50,7 +50,7 @@ func TestFunctionCacheModifiedDeleted(t *testing.T) {
 
 	fcache.Modified(
 		"default/testfunc1",
-		[]byte(`{"functionId":"testfunc1","space":"default","type":"http","provider":{"url":""}}`),
+		[]byte(`{"functionId":"testfunc1","space":"default","type":"http","provider":{"url":"http://e.io"}}`),
 	)
 	fcache.Modified("default/testfunc2", []byte(`{"functionId":"testfunc2"}`))
 	fcache.Deleted("default/testfunc2", []byte(`{"functionId":"testfunc2"}`))
@@ -61,7 +61,7 @@ func TestFunctionCacheModifiedDeleted(t *testing.T) {
 			ID:           fid,
 			Space:        "default",
 			ProviderType: http.Type,
-			Provider:     &http.HTTP{},
+			Provider:     &http.HTTP{URL: "http://e.io"},
 		},
 	}
 	assert.Equal(t, expected, fcache.cache)
