@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
+	uuid "github.com/satori/go.uuid"
 	"github.com/serverless/event-gateway/function"
 	"go.uber.org/zap/zapcore"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -37,7 +38,7 @@ func (a AWSKinesis) Call(payload []byte) ([]byte, error) {
 	putRecordOutput, err := a.Service.PutRecord(&kinesis.PutRecordInput{
 		StreamName:   &a.StreamName,
 		Data:         payload,
-		PartitionKey: aws.String("123"),
+		PartitionKey: aws.String(uuid.NewV4().String()),
 	})
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {

@@ -46,15 +46,9 @@ func TestCall(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	serviceMock := mock.NewMockKinesisAPI(mockCtrl)
-	opts := &kinesis.PutRecordInput{
-		StreamName:   aws.String("teststream"),
-		Data:         []byte("testpayload"),
-		PartitionKey: gomock.Any(),
-	}
-	serviceMock.EXPECT().PutRecord(opts).Return(&kinesis.PutRecordOutput{SequenceNumber: aws.String("testseq")}, nil)
+	serviceMock.EXPECT().PutRecord(gomock.Any()).Return(&kinesis.PutRecordOutput{SequenceNumber: aws.String("testseq")}, nil)
 	provider := awskinesis.AWSKinesis{
-		Service: serviceMock,
-
+		Service:    serviceMock,
 		StreamName: "teststream",
 		Region:     "us-east-1",
 	}
@@ -62,5 +56,5 @@ func TestCall(t *testing.T) {
 	output, err := provider.Call([]byte("testpayload"))
 
 	assert.Nil(t, err)
-	assert.Equal(t, aws.String("testseq"), output)
+	assert.Equal(t, []byte("testseq"), output)
 }
