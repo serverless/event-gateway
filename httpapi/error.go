@@ -13,9 +13,10 @@ type Error struct {
 }
 
 // ErrMalformedJSON occurring when it's impossible to decode JSON payload.
-type ErrMalformedJSON Error
+type ErrMalformedJSON struct {
+	Original error
+}
 
-// NewErrMalformedJSON creates ErrMalformedJSON.
-func NewErrMalformedJSON(err error) *ErrMalformedJSON {
-	return &ErrMalformedJSON{fmt.Sprintf("Malformed JSON payload: %s.", err.Error())}
+func (e ErrMalformedJSON) Error() string {
+	return fmt.Sprintf("Malformed JSON payload: %q", e.Original)
 }

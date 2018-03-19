@@ -14,6 +14,8 @@ import (
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/mock"
 	"github.com/stretchr/testify/assert"
+
+	httpprovider "github.com/serverless/event-gateway/providers/http"
 )
 
 func TestGetFunction_OK(t *testing.T) {
@@ -21,7 +23,12 @@ func TestGetFunction_OK(t *testing.T) {
 	defer ctrl.Finish()
 	router, functions, _ := setup(ctrl)
 
-	returned := &function.Function{ID: function.ID("func1"), Space: "default"}
+	returned := &function.Function{
+		Space:        "default",
+		ID:           function.ID("func1"),
+		ProviderType: httpprovider.Type,
+		Provider:     &httpprovider.HTTP{URL: "http://example.com"},
+	}
 	functions.EXPECT().GetFunction("default", function.ID("func1")).Return(returned, nil)
 
 	resp := httptest.NewRecorder()
@@ -33,6 +40,8 @@ func TestGetFunction_OK(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.Code)
 	assert.Equal(t, "default", fn.Space)
 	assert.Equal(t, function.ID("func1"), fn.ID)
+	assert.Equal(t, httpprovider.Type, fn.ProviderType)
+	assert.Equal(t, &httpprovider.HTTP{URL: "http://example.com"}, fn.Provider)
 }
 
 func TestGetFunction_NotFound(t *testing.T) {
@@ -75,7 +84,12 @@ func TestGetFunctions_OK(t *testing.T) {
 	defer ctrl.Finish()
 	router, functions, _ := setup(ctrl)
 
-	returned := function.Functions{{ID: function.ID("func1"), Space: "default"}}
+	returned := function.Functions{{
+		ID:           function.ID("func1"),
+		Space:        "default",
+		ProviderType: httpprovider.Type,
+		Provider:     &httpprovider.HTTP{},
+	}}
 	functions.EXPECT().GetFunctions("default").Return(returned, nil)
 
 	resp := httptest.NewRecorder()
@@ -112,18 +126,18 @@ func TestRegisterFunction_OK(t *testing.T) {
 	router, functions, _ := setup(ctrl)
 
 	fn := &function.Function{
-		ID:    function.ID("func1"),
-		Space: "test1",
-		Provider: &function.Provider{
-			Type: function.HTTPEndpoint,
-			URL:  "http://example.com",
+		ID:           function.ID("func1"),
+		Space:        "test1",
+		ProviderType: httpprovider.Type,
+		Provider: &httpprovider.HTTP{
+			URL: "http://example.com",
 		},
 	}
 	functions.EXPECT().RegisterFunction(fn).Return(fn, nil)
 
 	resp := httptest.NewRecorder()
 	payload := bytes.NewReader([]byte(`
-		{"functionID":"func1", "space":"test1", "provider":{"type":"http", "url":"http://example.com"}}
+		{"functionId":"func1","space":"test1","type":"http","provider":{"url":"http://example.com"}}
 		`))
 	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/test1/functions", payload)
 	router.ServeHTTP(resp, req)
@@ -136,41 +150,21 @@ func TestRegisterFunction_OK(t *testing.T) {
 	assert.Equal(t, "test1", fn.Space)
 }
 
-func TestRegisterFunction_ValidationError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	router, functions, _ := setup(ctrl)
-
-	fn := &function.Function{
-		ID:    function.ID("func1"),
-		Space: "default",
-	}
-	functions.EXPECT().RegisterFunction(fn).Return(nil, &function.ErrFunctionValidation{Message: "no provider"})
-
-	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`{"functionID":"func1"}}`))
-	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/default/functions", payload)
-	router.ServeHTTP(resp, req)
-
-	httpresp := &httpapi.Response{}
-	json.Unmarshal(resp.Body.Bytes(), httpresp)
-	assert.Equal(t, http.StatusBadRequest, resp.Code)
-	assert.Equal(t, `Function doesn't validate. Validation error: "no provider"`, httpresp.Errors[0].Message)
-}
-
 func TestRegisterFunction_AlreadyRegistered(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	router, functions, _ := setup(ctrl)
 
 	fn := &function.Function{
-		ID:    function.ID("func1"),
-		Space: "default",
+		ID:           function.ID("func1"),
+		Space:        "default",
+		ProviderType: httpprovider.Type,
+		Provider:     &httpprovider.HTTP{URL: "http://test.com"},
 	}
 	functions.EXPECT().RegisterFunction(fn).Return(nil, &function.ErrFunctionAlreadyRegistered{ID: function.ID("func1")})
 
 	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`{"functionID":"func1"}}`))
+	payload := bytes.NewReader([]byte(`{"functionID":"func1","type":"http","provider":{"url":"http://test.com"}}}`))
 	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/default/functions", payload)
 	router.ServeHTTP(resp, req)
 
@@ -186,13 +180,15 @@ func TestRegisterFunction_InternalError(t *testing.T) {
 	router, functions, _ := setup(ctrl)
 
 	fn := &function.Function{
-		ID:    function.ID("func1"),
-		Space: "default",
+		ID:           function.ID("func1"),
+		Space:        "default",
+		ProviderType: httpprovider.Type,
+		Provider:     &httpprovider.HTTP{URL: "http://example.com"},
 	}
 	functions.EXPECT().RegisterFunction(fn).Return(nil, errors.New("processing error"))
 
 	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`{"functionID":"func1"}}`))
+	payload := bytes.NewReader([]byte(`{"functionID":"func1","type":"http","provider":{"url":"http://example.com"}}}`))
 	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/default/functions", payload)
 	router.ServeHTTP(resp, req)
 

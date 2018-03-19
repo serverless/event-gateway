@@ -27,23 +27,23 @@ yet ready for production applications._
 
 ## Contents
 
-1. [Quick Start](#quick-start)
-1. [Motivation](#motivation)
-1. [Components](#components)
-   1. [Function Discovery](#function-discovery)
-   1. [Subscriptions](#subscriptions)
-   1. [Spaces](#spaces)
-1. [Events API](#events-api)
-1. [Configuration API](#configuration-api)
-1. [System Events](#system-events)
-1. [Plugin System](#plugin-system)
-1. [Client Libraries](#client-libraries)
-1. [Versioning](#versioning)
-1. [Comparison](#comparison)
-1. [Architecture](#architecture)
-   1. [System Overview](#system-overview)
-   1. [Clustering](#clustering)
-1. [Background](#background)
+1.  [Quick Start](#quick-start)
+1.  [Motivation](#motivation)
+1.  [Components](#components)
+    1.  [Function Discovery](#function-discovery)
+    1.  [Subscriptions](#subscriptions)
+    1.  [Spaces](#spaces)
+1.  [Events API](#events-api)
+1.  [Configuration API](#configuration-api)
+1.  [System Events](#system-events)
+1.  [Plugin System](#plugin-system)
+1.  [Client Libraries](#client-libraries)
+1.  [Versioning](#versioning)
+1.  [Comparison](#comparison)
+1.  [Architecture](#architecture)
+    1.  [System Overview](#system-overview)
+    1.  [Clustering](#clustering)
+1.  [Background](#background)
 
 ## Quick Start
 
@@ -100,8 +100,8 @@ curl --request POST \
   --header 'content-type: application/json' \
   --data '{
     "functionId": "hello",
+    "type": "awslambda",
     "provider":{
-      "type": "awslambda",
       "arn": "arn:aws:lambda:us-east-1:377024778620:function:bluegreen-dev-hello",
       "region": "us-east-1"
     }
@@ -113,11 +113,11 @@ curl --request POST \
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.registerFunction({
-  functionId: "sendEmail"
+  functionId: 'sendEmail',
+  type: 'awslambda',
   provider: {
-    type: "awslambda"
-    arn: "xxx",
-    region: "us-west-2",
+    arn: 'xxx',
+    region: 'us-west-2'
   }
 })
 ```
@@ -138,11 +138,11 @@ curl --request POST \
 ##### SDK example
 
 ```javascript
-const eventGateway = new EventGateway({ url: "http://localhost" });
+const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.invoke({
-  functionId: "createUser",
-  data: { name: "Max" }
-});
+  functionId: 'createUser',
+  data: { name: 'Max' }
+})
 ```
 
 ### Subscriptions
@@ -175,12 +175,12 @@ curl --request POST \
 ##### SDK example
 
 ```javascript
-const eventGateway = new EventGateway({ url: "http://localhost" });
+const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.subscribe({
-  event: "user.created",
-  functionId: "sendEmail",
-  path: "/myteam"
-});
+  event: 'user.created',
+  functionId: 'sendEmail',
+  path: '/myteam'
+})
 ```
 
 `sendEmail` function will be invoked for every `user.created` event to `<Events API>/myteam` endpoint.
@@ -200,11 +200,11 @@ curl --request POST \
 ##### SDK example
 
 ```javascript
-const eventGateway = new EventGateway({ url: "http://localhost" });
+const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.emit({
-  event: "user.created",
-  data: { name: "Max" }
-});
+  event: 'user.created',
+  data: { name: 'Max' }
+})
 ```
 
 #### Sync subscriptions via HTTP event
@@ -232,13 +232,13 @@ curl --request POST \
 ##### SDK example
 
 ```javascript
-const eventGateway = new EventGateway({ url: "http://localhost" });
+const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.subscribe({
-  functionId: "listUsers",
-  event: "http",
-  method: "GET",
-  path: "/users"
-});
+  functionId: 'listUsers',
+  event: 'http',
+  method: 'GET',
+  path: '/users'
+})
 ```
 
 `listUsers` function will be invoked for every HTTP GET request to `<Events API>/users` endpoint.
@@ -246,21 +246,21 @@ eventGateway.subscribe({
 ### Spaces
 
 One additional concept in the Event Gateway are Spaces. Spaces provide isolation between resources. Space is a
-coarse-grained sandbox in which entities (Functions and Subscriptions) can interact freely. All actions are 
+coarse-grained sandbox in which entities (Functions and Subscriptions) can interact freely. All actions are
 possible within a space: publishing, subscribing and invoking. All access cross-space is disabled.
 
 Space is not about access control/authentication/authorization. It's only about isolation. It doesn't enforce any
 specific subscription path.
 
 This is how Spaces fit different needs depending on use-case:
+
 * single user - single user uses default space for registering function and creating subscriptions.
 * multiple teams/departments - different teams/departments use different spaces for isolation and for hiding internal
-implementation and architecture.
+  implementation and architecture.
 
 Technically speaking Space is a mandatory field ("default" by default) on Function or Subscription object that user has
 to provide during function registration or subscription creation. Space is a first class concept in Config API. Config
 API can register function in specific space or list all functions or subscriptions from a space.
-
 
 ## Events API
 
@@ -438,16 +438,15 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 JSON object:
 
 * `functionId` - `string` - required, function ID
+* `type` - `string` - required, provider type: `awslambda` or `http`
 * `provider` - `object` - required, provider specific information about a function, depends on type:
   * for AWS Lambda:
-    * `type` - `string` - required, provider type: `awslambda`
     * `arn` - `string` - required, AWS ARN identifier
     * `region` - `string` - required, region name
     * `awsAccessKeyId` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
     * `awsSecretAccessKey` - `string` - optional, AWS API access key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
     * `awsSessionToken` - `string` - optional, AWS session token
   * for HTTP function:
-    * `type` - `string` - required, provider type: `http`
     * `url` - `string` - required, the URL of an http or https remote endpoint
 
 **Response**
@@ -475,16 +474,15 @@ JSON object:
 
 JSON object:
 
+* `type` - `string` - required, provider type: `awslambda` or `http`
 * `provider` - `object` - required, provider specific information about a function, depends on type:
   * for AWS Lambda:
-    * `type` - `string` - required, provider type: `awslambda`
     * `arn` - `string` - required, AWS ARN identifier
     * `region` - `string` - required, region name
     * `awsAccessKeyId` - `string` - optional, AWS API key ID
     * `awsSecretAccessKey` - `string` - optional, AWS API key
     * `awsSessionToken` - `string` - optional, AWS session token
   * for HTTP function:
-    * `type` - `string` - required, provider type: `http`
     * `url` - `string` - required, the URL of an http or https remote endpoint
 
 **Response**
@@ -830,12 +828,12 @@ directly.
 SOA came along with a new set of challenges. In monolithic architectures, it was simple to call a built-in library or
 rarely-changing external service. In SOA it involves much more network communication which [is not reliable](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing). The main problems to solve include:
 
-1. Where is the service deployed? How many instances are there? Which instance is the closest to me? (service discovery)
-2. Requests to the service should be balanced between all service instances (load balancing)
-3. If a remote service call failed I want to retry it (retries)
-4. If the service instance failed I want to stop sending requests there (circuit breaking)
-5. Services are written in multiple languages, I want to communicate between them using the best language for the particular task (sidecar)
-6. Calling remote service should not require setting up new connection every time as it increases request time (persistent connections)
+1.  Where is the service deployed? How many instances are there? Which instance is the closest to me? (service discovery)
+2.  Requests to the service should be balanced between all service instances (load balancing)
+3.  If a remote service call failed I want to retry it (retries)
+4.  If the service instance failed I want to stop sending requests there (circuit breaking)
+5.  Services are written in multiple languages, I want to communicate between them using the best language for the particular task (sidecar)
+6.  Calling remote service should not require setting up new connection every time as it increases request time (persistent connections)
 
 The following systems are solutions those problems:
 
@@ -850,12 +848,12 @@ The main goal of those tools is to manage the inconveniences of network communic
 
 The greatest benefit of serverless/FaaS is that it solves almost all of above problems:
 
-1. service discovery: I don't care! I have a function name, that's all I need.
-2. load balancing: I don't care! I know that there will be a function to handle my request (blue/green deployments still an issue though)
-3. retries: It's highly unusual that my request will not proceed as function instances are ephemeral and failing function is immediately replaced with a new instance. If it happens I can easily send another request. In case of failure, it's easy to understand what is the cause.
-4. circuit breaking: Functions are ephemeral and auto-scaled, low possibility of flooding/DoS & [cascading failures](https://landing.google.com/sre/book/chapters/addressing-cascading-failures.html).
-5. sidecar: calling function is as simple as calling method from cloud provider SDK.
-6. in FaaS setting up persistent connection between two functions defeats the purpose as functions instances are ephemeral.
+1.  service discovery: I don't care! I have a function name, that's all I need.
+2.  load balancing: I don't care! I know that there will be a function to handle my request (blue/green deployments still an issue though)
+3.  retries: It's highly unusual that my request will not proceed as function instances are ephemeral and failing function is immediately replaced with a new instance. If it happens I can easily send another request. In case of failure, it's easy to understand what is the cause.
+4.  circuit breaking: Functions are ephemeral and auto-scaled, low possibility of flooding/DoS & [cascading failures](https://landing.google.com/sre/book/chapters/addressing-cascading-failures.html).
+5.  sidecar: calling function is as simple as calling method from cloud provider SDK.
+6.  in FaaS setting up persistent connection between two functions defeats the purpose as functions instances are ephemeral.
 
 Tools like Envoy/Linkerd solve different domain of technical problems that doesn't occur in serverless space. They have a lot of features that are unnecessary in the context of serverless computing.
 

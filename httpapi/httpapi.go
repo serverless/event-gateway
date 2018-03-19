@@ -90,7 +90,7 @@ func (h HTTPAPI) createFunction(w http.ResponseWriter, r *http.Request, params h
 	err := dec.Decode(fn)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		encoder.Encode(NewErrMalformedJSON(err))
+		encoder.Encode(&Response{Errors: []Error{{Message: ErrMalformedJSON{err}.Error()}}})
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h HTTPAPI) updateFunction(w http.ResponseWriter, r *http.Request, params h
 	err := dec.Decode(fn)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		encoder.Encode(NewErrMalformedJSON(err))
+		encoder.Encode(&Response{Errors: []Error{{Message: ErrMalformedJSON{err}.Error()}}})
 		return
 	}
 
@@ -220,7 +220,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 	err := dec.Decode(s)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		encoder.Encode(NewErrMalformedJSON(err))
+		encoder.Encode(&Response{Errors: []Error{{Message: ErrMalformedJSON{err}.Error()}}})
 		return
 	}
 

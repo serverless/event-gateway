@@ -28,6 +28,7 @@ import (
 	"github.com/serverless/event-gateway/internal/sync"
 	eventgateway "github.com/serverless/event-gateway/libkv"
 	"github.com/serverless/event-gateway/plugin"
+	httpprovider "github.com/serverless/event-gateway/providers/http"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/subscription"
 	"github.com/serverless/libkv"
@@ -76,12 +77,12 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	defer testSubscriberServer.Close()
 
 	subscriberFnID := function.ID("smileysubscriber")
-	post(testAPIServer.URL+"/v1/spaces/default/functions",
-		function.Function{
-			ID: subscriberFnID,
-			Provider: &function.Provider{
-				Type: function.HTTPEndpoint,
-				URL:  testSubscriberServer.URL,
+	postFunction(testAPIServer.URL+"/v1/spaces/default/functions",
+		&function.Function{
+			ID:           subscriberFnID,
+			ProviderType: httpprovider.Type,
+			Provider: &httpprovider.HTTP{
+				URL: testSubscriberServer.URL,
 			},
 		})
 	wait(instance.WaitForFunction("default", subscriberFnID), "timed out waiting for function to be configured!")
@@ -89,7 +90,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	// set up pub/sub
 	eventType := "smileys"
 
-	post(testAPIServer.URL+"/v1/spaces/default/subscriptions", subscription.Subscription{
+	postSubscription(testAPIServer.URL+"/v1/spaces/default/subscriptions", &subscription.Subscription{
 		FunctionID: subscriberFnID,
 		Event:      event.Type(eventType),
 		Path:       "/",
@@ -122,17 +123,17 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	defer testTargetServer.Close()
 
 	functionID := function.ID("httpresponse")
-	post(testAPIServer.URL+"/v1/spaces/default/functions",
-		function.Function{
-			ID: functionID,
-			Provider: &function.Provider{
-				Type: function.HTTPEndpoint,
-				URL:  testTargetServer.URL,
+	postFunction(testAPIServer.URL+"/v1/spaces/default/functions",
+		&function.Function{
+			ID:           functionID,
+			ProviderType: httpprovider.Type,
+			Provider: &httpprovider.HTTP{
+				URL: testTargetServer.URL,
 			},
 		})
 	wait(instance.WaitForFunction("default", functionID), "timed out waiting for function to be configured!")
 
-	post(testAPIServer.URL+"/v1/spaces/default/subscriptions", subscription.Subscription{
+	postSubscription(testAPIServer.URL+"/v1/spaces/default/subscriptions", &subscription.Subscription{
 		FunctionID: function.ID("httpresponse"),
 		Event:      "http",
 		Method:     "GET",
@@ -171,11 +172,20 @@ func emit(url, eventType string, body []byte) {
 	defer resp.Body.Close()
 }
 
-func post(url string, payload interface{}) ([]byte, error) {
+func postFunction(url string, fn *function.Function) ([]byte, error) {
 	reqBytes := &bytes.Buffer{}
-	json.NewEncoder(reqBytes).Encode(payload)
+	json.NewEncoder(reqBytes).Encode(fn)
+	return post(url, reqBytes)
+}
 
-	resp, err := http.Post(url, "application/json", reqBytes)
+func postSubscription(url string, sub *subscription.Subscription) ([]byte, error) {
+	reqBytes := &bytes.Buffer{}
+	json.NewEncoder(reqBytes).Encode(sub)
+	return post(url, reqBytes)
+}
+
+func post(url string, payload *bytes.Buffer) ([]byte, error) {
+	resp, err := http.Post(url, "application/json", payload)
 	if err != nil {
 		panic(err)
 	}
