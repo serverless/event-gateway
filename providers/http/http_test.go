@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/serverless/event-gateway/function"
 	httpprovider "github.com/serverless/event-gateway/providers/http"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +18,7 @@ func TestLoad(t *testing.T) {
 	provider, err := loader.Load(config)
 
 	assert.Nil(t, provider)
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
+	assert.EqualError(t, err, "missing required fields for HTTP endpoint")
 }
 
 func TestCall(t *testing.T) {
@@ -48,5 +47,5 @@ func TestCall_InternalError(t *testing.T) {
 
 	_, err := provider.Call([]byte("hello"))
 
-	assert.EqualError(t, err, "Function call failed because of runtime error. Error: \"HTTP status code: 500\"")
+	assert.EqualError(t, err, "Function call failed because of runtime error. Error: HTTP status code: 500")
 }

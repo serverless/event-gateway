@@ -28,16 +28,17 @@ type ErrFunctionValidation struct {
 }
 
 func (e ErrFunctionValidation) Error() string {
-	return fmt.Sprintf("Function doesn't validate. Validation error: %q", e.Message)
+	return fmt.Sprintf("Function doesn't validate. Validation error: %s", e.Message)
 }
 
-// ErrFunctionCallFailed occurs when function call failed because of provider error.
+// ErrFunctionCallFailed occurs when function call failed.
 type ErrFunctionCallFailed struct {
+	Message  string
 	Original error
 }
 
 func (e ErrFunctionCallFailed) Error() string {
-	return fmt.Sprintf("Function call failed. Error: %q", e.Original)
+	return fmt.Sprintf("Function call failed. Error: %s", e.Message)
 }
 
 // ErrFunctionAccessDenied occurs when Event Gateway don't have access to call a function.
@@ -46,7 +47,7 @@ type ErrFunctionAccessDenied struct {
 }
 
 func (e ErrFunctionAccessDenied) Error() string {
-	return fmt.Sprintf("Function access denied. Error: %q", e.Original)
+	return fmt.Sprintf("Function access denied. Error: %s", e.Original)
 }
 
 // ErrFunctionProviderError occurs when function call failed because of provider error.
@@ -55,7 +56,7 @@ type ErrFunctionProviderError struct {
 }
 
 func (e ErrFunctionProviderError) Error() string {
-	return fmt.Sprintf("Function call failed because of provider error. Error: %q", e.Original)
+	return fmt.Sprintf("Function call failed because of provider error. Error: %s", e.Original)
 }
 
 // ErrFunctionError occurs when function call failed because of function error.
@@ -64,7 +65,7 @@ type ErrFunctionError struct {
 }
 
 func (e ErrFunctionError) Error() string {
-	return fmt.Sprintf("Function call failed because of runtime error. Error: %q", e.Original)
+	return fmt.Sprintf("Function call failed because of runtime error. Error: %s", e.Original)
 }
 
 // ErrFunctionHasSubscriptionsError occurs when function with subscription is being deleted.

@@ -42,20 +42,28 @@ func (a AWSLambda) Call(payload []byte) ([]byte, error) {
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			switch awserr.Code() {
-			case "AccessDeniedException",
-				"ExpiredTokenException",
-				"UnrecognizedClientException":
-				return nil, &function.ErrFunctionAccessDenied{Original: awserr}
+			case "AccessDeniedException":
+				return nil, function.ErrFunctionCallFailed{Original: err, Message: "Function call failed with AccessDeniedException. The provided credentials do not" +
+					" have the required IAM permissions to invoke this function. Please attach the" +
+					" lambda:invokeFunction permission to these credentials."}
+			case "ExpiredTokenException":
+				return nil, function.ErrFunctionCallFailed{Original: err, Message: "Function call failed with ExpiredTokenException. The provided security token for" +
+					" the function has expired. Please provide an updated security token or provide" +
+					" permanent credentials."}
+			case "UnrecognizedClientException":
+				return nil, function.ErrFunctionCallFailed{Original: err, Message: "Function call failed with UnrecognizedClientException. The provided credentials" +
+					" are invalid. Please provide valid credentials."}
 			case lambda.ErrCodeServiceException:
-				return nil, &function.ErrFunctionProviderError{Original: awserr}
+				return nil, function.ErrFunctionCallFailed{Original: err, Message: "Function call failed with ServiceException. AWS Lambda service wasn't" +
+					" able to handle the request."}
 			default:
-				return nil, &function.ErrFunctionCallFailed{Original: awserr}
+				return nil, function.ErrFunctionCallFailed{Original: err, Message: "Function call failed. Please check logs."}
 			}
 		}
 	}
 
 	if invokeOutput.FunctionError != nil {
-		return nil, &function.ErrFunctionError{Original: errors.New(*invokeOutput.FunctionError)}
+		return nil, function.ErrFunctionError{Original: errors.New(*invokeOutput.FunctionError)}
 	}
 
 	return invokeOutput.Payload, err
@@ -95,12 +103,12 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 	provider := &AWSLambda{}
 	err := json.Unmarshal(data, provider)
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Unable to load function provider config: " + err.Error()}
+		return nil, errors.New("unable to load function provider config: " + err.Error())
 	}
 
 	err = provider.validate()
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."}
+		return nil, errors.New("missing required fields for AWS Lambda function")
 	}
 
 	config := aws.NewConfig().WithRegion(provider.Region)
@@ -110,7 +118,7 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 
 	awsSession, err := session.NewSession(config)
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Unable to create AWS Session: " + err.Error()}
+		return nil, errors.New("unable to create AWS Session: " + err.Error())
 	}
 
 	provider.Service = lambda.New(awsSession)

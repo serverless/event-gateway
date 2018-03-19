@@ -2,6 +2,7 @@ package awskinesis
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -83,12 +84,12 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 	provider := &AWSKinesis{}
 	err := json.Unmarshal(data, provider)
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Unable to load function provider config: " + err.Error()}
+		return nil, errors.New("unable to load function provider config: " + err.Error())
 	}
 
 	err = provider.validate()
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Kinesis function."}
+		return nil, errors.New("missing required fields for AWS Kinesis function")
 	}
 
 	config := aws.NewConfig().WithRegion(provider.Region)
@@ -98,7 +99,7 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 
 	awsSession, err := session.NewSession(config)
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Unable to create AWS Session: " + err.Error()}
+		return nil, errors.New("unable to create AWS Session: " + err.Error())
 	}
 
 	provider.Service = kinesis.New(awsSession)
