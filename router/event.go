@@ -65,20 +65,9 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	event := eventpkg.New(eventType, mime, body)
-	if len(body) > 0 {
-		switch mime {
-		case mimeJSON:
-			err = json.Unmarshal(body, &event.Data)
-			if err != nil {
-				return nil, "", errors.New("malformed JSON body")
-			}
-			break
-		default:
-			if byteSlice, ok := event.Data.([]byte);
-				ok && (strings.HasPrefix(mime, mimeFormMultipart) || mime == mimeFormURLEncoded) {
-				event.Data = string(byteSlice)
-			}
-		}
+
+	if err := correctEventData(event, body, mime); err != nil {
+		return nil, "", err
 	}
 
 	if event.Type == eventpkg.TypeHTTP {
@@ -134,4 +123,24 @@ func transformHeaders(req http.Header) map[string]string {
 	}
 
 	return headers
+}
+
+
+func correctEventData(event *eventpkg.Event, body []byte, mime string) error {
+	if len(body) > 0 {
+		switch mime {
+		case mimeJSON:
+			err := json.Unmarshal(body, &event.Data)
+			if err != nil {
+				return errors.New("malformed JSON body")
+			}
+			break
+		default:
+			if byteSlice, ok := event.Data.([]byte);
+				ok && (strings.HasPrefix(mime, mimeFormMultipart) || mime == mimeFormURLEncoded) {
+				event.Data = string(byteSlice)
+			}
+		}
+	}
+	return nil
 }
