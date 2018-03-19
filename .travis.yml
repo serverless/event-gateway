@@ -13,12 +13,11 @@ script:
 - go get -u github.com/alecthomas/gometalinter
 - gometalinter --install --force
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --disable=gas --skip=mock ./...
-- 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then go test ./...; fi'
-- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then go get github.com/mattn/goveralls; fi'
-- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then goveralls -race -service=travis-ci -ignore=./mock/*,./*/mock/*,./*/*/mock/*; fi'
+- ./codecov.sh
 - go test ./tests -tags=integration
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+- bash <(curl -s https://codecov.io/bash)
 notifications:
   email:
   - platform@serverless.com
