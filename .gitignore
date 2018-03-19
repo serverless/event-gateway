@@ -5,3 +5,5 @@ vendor
 *.swo
 *.db
 default.etcd/
+coverage.txt
+profile.out
