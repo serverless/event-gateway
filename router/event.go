@@ -21,6 +21,8 @@ type HTTPResponse struct {
 
 const (
 	mimeJSON = "application/json"
+	mimeFormMultipart = "multipart/form-data"
+	mimeFormURLEncoded = "application/x-www-form-urlencoded"
 )
 
 func isHTTPEvent(r *http.Request) bool {
@@ -63,10 +65,19 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	event := eventpkg.New(eventType, mime, body)
-	if mime == mimeJSON && len(body) > 0 {
-		err = json.Unmarshal(body, &event.Data)
-		if err != nil {
-			return nil, "", errors.New("malformed JSON body")
+	if len(body) > 0 {
+		switch mime {
+		case mimeJSON:
+			err = json.Unmarshal(body, &event.Data)
+			if err != nil {
+				return nil, "", errors.New("malformed JSON body")
+			}
+			break
+		default:
+			if byteSlice, ok := event.Data.([]byte);
+				ok && (strings.HasPrefix(mime, mimeFormMultipart) || mime == mimeFormURLEncoded) {
+				event.Data = string(byteSlice)
+			}
 		}
 	}
 
