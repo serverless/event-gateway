@@ -3,7 +3,6 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -44,12 +43,12 @@ func (h HTTP) Call(payload []byte) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-// Validate provider config.
-func (h HTTP) Validate() error {
+// validate provider config.
+func (h HTTP) validate() error {
 	validate := validator.New()
 	err := validate.Struct(h)
 	if err != nil {
-		return &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}
+		return err
 	}
 	return nil
 }
@@ -68,7 +67,12 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 	provider := &HTTP{}
 	err := json.Unmarshal(data, provider)
 	if err != nil {
-		return nil, errors.New("unable to load function provider config: " + err.Error())
+		return nil, &function.ErrFunctionValidation{Message: "Unable to load function provider config: " + err.Error()}
+	}
+
+	err = provider.validate()
+	if err != nil {
+		return nil, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}
 	}
 
 	return provider, nil

@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
 	"github.com/serverless/event-gateway/function"
 	"go.uber.org/zap/zapcore"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -23,6 +24,8 @@ func init() {
 
 // AWSLambda function implementation
 type AWSLambda struct {
+	Service lambdaiface.LambdaAPI `json:"-" validate:"-"`
+
 	ARN                string `json:"arn" validate:"required"`
 	Region             string `json:"region" validate:"required"`
 	AWSAccessKeyID     string `json:"awsAccessKeyId,omitempty"`
@@ -31,20 +34,8 @@ type AWSLambda struct {
 }
 
 // Call AWS Lambda function.
-// nolint: gocyclo
 func (a AWSLambda) Call(payload []byte) ([]byte, error) {
-	config := aws.NewConfig().WithRegion(a.Region)
-	if a.AWSAccessKeyID != "" && a.AWSSecretAccessKey != "" {
-		config = config.WithCredentials(credentials.NewStaticCredentials(a.AWSAccessKeyID, a.AWSSecretAccessKey, a.AWSSessionToken))
-	}
-
-	awsSession, err := session.NewSession(config)
-	if err != nil {
-		return nil, &function.ErrFunctionProviderError{Original: err}
-	}
-	awslambda := lambda.New(awsSession)
-
-	invokeOutput, err := awslambda.Invoke(&lambda.InvokeInput{
+	invokeOutput, err := a.Service.Invoke(&lambda.InvokeInput{
 		FunctionName: &a.ARN,
 		Payload:      payload,
 	})
@@ -70,12 +61,12 @@ func (a AWSLambda) Call(payload []byte) ([]byte, error) {
 	return invokeOutput.Payload, err
 }
 
-// Validate provider config.
-func (a AWSLambda) Validate() error {
+// validate provider config.
+func (a AWSLambda) validate() error {
 	validate := validator.New()
 	err := validate.Struct(a)
 	if err != nil {
-		return &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."}
+		return err
 	}
 	return nil
 }
@@ -104,8 +95,24 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 	provider := &AWSLambda{}
 	err := json.Unmarshal(data, provider)
 	if err != nil {
-		return nil, errors.New("unable to load function provider config: " + err.Error())
+		return nil, &function.ErrFunctionValidation{Message: "Unable to load function provider config: " + err.Error()}
 	}
 
+	err = provider.validate()
+	if err != nil {
+		return nil, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."}
+	}
+
+	config := aws.NewConfig().WithRegion(provider.Region)
+	if provider.AWSAccessKeyID != "" && provider.AWSSecretAccessKey != "" {
+		config = config.WithCredentials(credentials.NewStaticCredentials(provider.AWSAccessKeyID, provider.AWSSecretAccessKey, provider.AWSSessionToken))
+	}
+
+	awsSession, err := session.NewSession(config)
+	if err != nil {
+		return nil, &function.ErrFunctionValidation{Message: "Unable to create AWS Session: " + err.Error()}
+	}
+
+	provider.Service = lambda.New(awsSession)
 	return provider, nil
 }

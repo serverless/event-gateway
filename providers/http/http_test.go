@@ -12,6 +12,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestLoad(t *testing.T) {
+	config := []byte(`{"url":""}`)
+	loader := httpprovider.ProviderLoader{}
+
+	provider, err := loader.Load(config)
+
+	assert.Nil(t, provider)
+	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
+}
+
 func TestCall(t *testing.T) {
 	echo := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		payload, _ := ioutil.ReadAll(r.Body)
@@ -39,12 +49,4 @@ func TestCall_InternalError(t *testing.T) {
 	_, err := provider.Call([]byte("hello"))
 
 	assert.EqualError(t, err, "Function call failed because of runtime error. Error: \"HTTP status code: 500\"")
-}
-
-func TestValidate_MissingURL(t *testing.T) {
-	provider := httpprovider.HTTP{}
-
-	err := provider.Validate()
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."})
 }

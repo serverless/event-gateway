@@ -156,11 +156,6 @@ func (service Service) validateFunction(fn *function.Function) error {
 		return &function.ErrFunctionValidation{Message: err.Error()}
 	}
 
-	err = fn.Provider.Validate()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
