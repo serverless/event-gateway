@@ -449,6 +449,12 @@ JSON object:
     * `awsSessionToken` - `string` - optional, AWS session token
   * for HTTP function:
     * `url` - `string` - required, the URL of an http or https remote endpoint
+  * for AWS Kinesis connector:
+    * `streamName` - `string` - required, AWS Kinesis Stream Name
+    * `region` - `string` - required, region name
+    * `awsAccessKeyId` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
+    * `awsSecretAccessKey` - `string` - optional, AWS API access key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
+    * `awsSessionToken` - `string` - optional, AWS session token
 
 **Response**
 
