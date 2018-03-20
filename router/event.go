@@ -67,7 +67,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	event := eventpkg.New(eventType, mime, body)
 
 	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
-	// which is why we change the event.Data type to "string", so that, it is left intact.
+	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
 	if len(body) > 0 {
 		switch {
 		case mime == mimeJSON:
