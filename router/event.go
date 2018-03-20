@@ -66,7 +66,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 
 	event := eventpkg.New(eventType, mime, body)
 
-	if err := correctEventData(event, body, mime); err != nil {
+	if err := correctEventDataType(event, body, mime); err != nil {
 		return nil, "", err
 	}
 
@@ -126,7 +126,7 @@ func transformHeaders(req http.Header) map[string]string {
 }
 
 
-func correctEventData(event *eventpkg.Event, body []byte, mime string) error {
+func correctEventDataType(event *eventpkg.Event, body []byte, mime string) error {
 	if len(body) > 0 {
 		switch mime {
 		case mimeJSON:
