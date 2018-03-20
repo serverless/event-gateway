@@ -85,7 +85,7 @@ Discover and call serverless functions from anything that can reach the Event Ga
 following function types:
 
 * FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
-* Connectors (AWS Kinesis)
+* Connectors (AWS Kinesis, AWS Kinesis Firehose)
 * HTTP endpoints/Webhook (e.g. POST http://example.com/function)
 
 Function Discovery stores information about functions allowing the Event Gateway to call them as a reaction to received
@@ -451,6 +451,12 @@ JSON object:
     * `url` - `string` - required, the URL of an http or https remote endpoint
   * for AWS Kinesis connector:
     * `streamName` - `string` - required, AWS Kinesis Stream Name
+    * `region` - `string` - required, region name
+    * `awsAccessKeyId` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
+    * `awsSecretAccessKey` - `string` - optional, AWS API access key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
+    * `awsSessionToken` - `string` - optional, AWS session token
+  * for AWS Firehose connector:
+    * `deliveryStreamName` - `string` - required, AWS Firehose Delivery Stream Name
     * `region` - `string` - required, region name
     * `awsAccessKeyId` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
     * `awsSecretAccessKey` - `string` - optional, AWS API access key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
