@@ -128,16 +128,15 @@ func transformHeaders(req http.Header) map[string]string {
 
 func correctEventDataType(event *eventpkg.Event, body []byte, mime string) error {
 	if len(body) > 0 {
-		switch mime {
-		case mimeJSON:
+		switch {
+		case mime == mimeJSON:
 			err := json.Unmarshal(body, &event.Data)
 			if err != nil {
 				return errors.New("malformed JSON body")
 			}
 			break
-		default:
-			if byteSlice, ok := event.Data.([]byte);
-				ok && (strings.HasPrefix(mime, mimeFormMultipart) || mime == mimeFormURLEncoded) {
+		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
+			if byteSlice, ok := event.Data.([]byte); ok {
 				event.Data = string(byteSlice)
 			}
 		}
