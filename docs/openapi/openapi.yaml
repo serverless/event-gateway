@@ -62,9 +62,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Function"
         404:
-          description: function not found
+          $ref: '#/components/responses/NotFoundError'
         500:
-          description: internal server error
+          $ref: '#/components/responses/Error'
     put:
       summary: "Update function"
       operationId: "UpdateFunction"
@@ -134,6 +134,39 @@ paths:
                 $ref: "#/components/schemas/Subscription"
         400:
           $ref: '#/components/responses/ValidationError'
+        500:
+          $ref: '#/components/responses/Error'
+
+  /spaces/{spaceName}/subscription/{subscriptionId}:
+    summary: "Operations about single subscription"
+    get:
+      summary: "Get subscription"
+      operationId: "GetSubscription"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/SubscriptionID"
+      responses:
+        200:
+          description: subscription returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: "Delete subscription"
+      operationId: "DeleteSubscription"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/SubscriptionID"
+      responses:
+        204:
+          description: subscription deleted
+        404:
+          $ref: '#/components/responses/NotFoundError'
         500:
           $ref: '#/components/responses/Error'
 
@@ -319,6 +352,13 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/FunctionID"
+    SubscriptionID:
+      in: "path"
+      name: "subscriptionId"
+      description: "subscription identifier"
+      required: true
+      schema:
+        $ref: "#/components/schemas/SubscriptionID"
   requestBodies:
     CreateFunction:
       description: function create request body
