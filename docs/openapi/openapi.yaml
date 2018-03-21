@@ -11,7 +11,6 @@ info:
     url: http://www.serverless.com
 
 paths:
-
   /spaces/{spaceName}/functions:
     summary: "Operations about functions"
     get:
@@ -102,11 +101,49 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         500:
           $ref: '#/components/responses/Error'
+
+  /spaces/{spaceName}/subscriptions:
+    summary: "Operations about subscriptions"
+    get:
+      summary: "List subscriptions"
+      operationId: "ListSubscriptions"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      responses:
+        200:
+          description: subscriptions returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscriptions"
+        500:
+          $ref: '#/components/responses/Error'
+    post:
+      summary: "Create subscription"
+      operationId: "CreateSubscription"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateSubscription"
+      responses:
+        201:
+          description: subscription created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        500:
+          $ref: '#/components/responses/Error'
+
 components:
   schemas:
     SpaceName:
       type: string
     FunctionID:
+      type: string
+    SubscriptionID:
       type: string
     ProviderType:
       type: string
@@ -140,6 +177,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Function'
+    Subscription:
+      type: object
+      properties:
+        space:
+          $ref: '#/components/schemas/SpaceName'
+        subscriptionId:
+          $ref: '#/components/schemas/SubscriptionID'
+        functionId:
+          $ref: '#/components/schemas/FunctionID'
+        event:
+          $ref: '#/components/schemas/Event'
+        path:
+          $ref: '#/components/schemas/Path'
+        method:
+          $ref: '#/components/schemas/Method'
+        cors:
+          $ref: '#/components/schemas/CORS'
+    Subscriptions:
+      type: object
+      properties:
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscription'
     AWSLambda:
       type: object
       properties:
@@ -193,12 +254,48 @@ components:
       type: string
       format: url
       description: "HTTP endpoint URL"
+    Event:
+      type: string
+      description: "event type"
+    Method:
+      type: string
+      description: "(only for HTTP event) HTTP method that accepts requests"
+    Path:
+      type: string
+      description: "URL path under which events (HTTP requests) are accepted"
+      default: "/"
     Error:
       type: object
       description: "response error object"
       properties:
         message:
           type: string
+    CORS:
+      type: object
+      description: "(only for HTTP event) CORS configuration for HTTP event subscription"
+      default: null
+      properties:
+        origins:
+          type: array
+          description: "list of allowed origins. An origin may contain a wildcard (*) to replace 0 or more characters (i.e.: http://*.domain.com)"
+          items:
+            type: string
+          default: ["*"]
+        methods:
+          type: array
+          description: "list of allowed methods"
+          items:
+            type: string
+          default: ["HEAD", "GET", "POST"]
+        headers:
+          type: array
+          description: "list of allowed headers"
+          items:
+            type: string
+          default: ["Origin", "Accept", "Content-Type"]
+        allowCredentials:
+          type: boolean
+          default: false
     Errors:
       type: object
       description: "error response object"
@@ -247,6 +344,23 @@ components:
                 $ref: '#/components/schemas/ProviderType'
               provider:
                 $ref: '#/components/schemas/Provider'
+    CreateSubscription:
+      description: subscription create request body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              functionId:
+                $ref: '#/components/schemas/FunctionID'
+              event:
+                $ref: '#/components/schemas/Event'
+              path:
+                $ref: '#/components/schemas/Path'
+              method:
+                $ref: '#/components/schemas/Method'
+              cors:
+                $ref: '#/components/schemas/CORS'
   responses:
     Error:
       description: internal server error
