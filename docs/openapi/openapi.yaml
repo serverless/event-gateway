@@ -1,0 +1,174 @@
+openapi: "3.0.1"
+
+info:
+  title: Event Gateway
+  version: "0.7.0"
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  contact:
+    name: Serverless, Inc.
+    url: http://www.serverless.com
+
+paths:
+
+  /spaces/{spaceName}/functions:
+    summary: "Operations about functions"
+    get:
+      summary: "List functions"
+      operationId: "ListFunctions"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      responses:
+        200:
+          description: functions returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Functions"
+        500:
+          $ref: '#/components/responses/Error'
+
+  /spaces/{spaceName}/functions/{functionId}:
+    summary: "Operations about single function"
+    get:
+      summary: "Get function"
+      operationId: "GetFunction"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/FunctionID"
+      responses:
+        200:
+          description: function returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Function"
+        404:
+          description: function not found
+        500:
+          description: internal server error
+components:
+  schemas:
+    SpaceName:
+      type: string
+    FunctionID:
+      type: string
+    ProviderType:
+      type: string
+      enum:
+      - awslambda
+      - awskinesis
+      - http
+    Provider:
+      type: object
+      oneOf:
+      - $ref: '#/components/schemas/AWSKinesis'
+      - $ref: '#/components/schemas/AWSLambda'
+      - $ref: '#/components/schemas/HTTP'
+    Function:
+      type: object
+      properties:
+        space:
+          $ref: '#/components/schemas/SpaceName'
+        functionId:
+          $ref: '#/components/schemas/FunctionID'
+        type:
+          $ref: '#/components/schemas/ProviderType'
+        provider:
+          $ref: '#/components/schemas/Provider'
+    Functions:
+      type: object
+      properties:
+        functions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Function'
+    AWSLambda:
+      type: object
+      properties:
+        arn:
+          $ref: '#/components/schemas/ARN'
+        region:
+          $ref: '#/components/schemas/Region'
+        awsAccessKeyId:
+          $ref: '#/components/schemas/AWSAccessKeyId'
+        awsSecretAccessKey:
+          $ref: '#/components/schemas/AWSSecretAccessKey'
+        awsSessionToken:
+          $ref: '#/components/schemas/AWSSessionToken'
+    AWSKinesis:
+      type: object
+      properties:
+        streamName:
+          $ref: '#/components/schemas/StreamName'
+        region:
+          $ref: '#/components/schemas/Region'
+        awsAccessKeyId:
+          $ref: '#/components/schemas/AWSAccessKeyId'
+        awsSecretAccessKey:
+          $ref: '#/components/schemas/AWSSecretAccessKey'
+        awsSessionToken:
+          $ref: '#/components/schemas/AWSSessionToken'
+    HTTP:
+      type: object
+      properties:
+        url:
+          $ref: '#/components/schemas/URL'
+    ARN:
+      type: string
+      description: "AWS ARN identifier"
+    Region:
+      type: string
+      description: "AWS Region name"
+    AWSAccessKeyId:
+      type: string
+      description: "AWS Access Key ID"
+    AWSSecretAccessKey:
+      type: string
+      description: "AWS Secret Access Key"
+    AWSSessionToken:
+      type: string
+      description: "AWS Session Token"
+    StreamName:
+      type: string
+      description: "AWS Kinesis stream name"
+    URL:
+      type: string
+      format: url
+      description: "HTTP endpoint URL"
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+    Errors:
+      type: object
+      description: "Response Error object"
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+  parameters:
+    Space:
+      in: "path"
+      name: "spaceName"
+      description: "space name"
+      required: true
+      schema:
+        $ref: "#/components/schemas/SpaceName"
+    FunctionID:
+      in: "path"
+      name: "functionId"
+      description: "function identifier"
+      required: true
+      schema:
+        $ref: "#/components/schemas/FunctionID"
+  responses:
+    Error:
+      description: internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
