@@ -87,6 +87,21 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         500:
           $ref: '#/components/responses/Error'
+    delete:
+      summary: "Delete function"
+      operationId: "DeleteFunction"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/FunctionID"
+      responses:
+        204:
+          description: function deleted
+        400:
+          $ref: '#/components/responses/FunctionHasSubscriptionsError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
 components:
   schemas:
     SpaceName:
@@ -247,6 +262,12 @@ components:
             $ref: '#/components/schemas/Errors'
     ValidationError:
       description: validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+    FunctionHasSubscriptionsError:
+      description: function is subscribed to at least one event
       content:
         application/json:
           schema:
