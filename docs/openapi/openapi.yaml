@@ -1,7 +1,7 @@
 openapi: "3.0.1"
 
 info:
-  title: Event Gateway
+  title: Event Gateway - Configuration API
   version: "0.7.0"
   license:
     name: Apache 2.0
@@ -10,17 +10,32 @@ info:
     name: Serverless, Inc.
     url: http://www.serverless.com
 
+servers:
+- url: http://localhost:4001/{basePath}
+  description: Locally running Event Gateway
+  variables:
+    basePath:
+      default: v1
+
+tags:
+- name: "function"
+  description: "Operations about functions"
+- name: "subscription"
+  description: "Operations about subscriptions"
+
 paths:
   /spaces/{spaceName}/functions:
     summary: "Operations about functions"
     get:
       summary: "List functions"
+      tags:
+      - "function"
       operationId: "ListFunctions"
       parameters:
       - $ref: "#/components/parameters/Space"
       responses:
         200:
-          description: functions returned
+          description: "functions returned"
           content:
             application/json:
               schema:
@@ -29,6 +44,8 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       summary: "Register function"
+      tags:
+      - "function"
       operationId: "CreateFunction"
       parameters:
       - $ref: "#/components/parameters/Space"
@@ -36,7 +53,7 @@ paths:
         $ref: "#/components/requestBodies/CreateFunction"
       responses:
         201:
-          description: function registered
+          description: "function registered"
           content:
             application/json:
               schema:
@@ -50,13 +67,15 @@ paths:
     summary: "Operations about single function"
     get:
       summary: "Get function"
+      tags:
+      - "function"
       operationId: "GetFunction"
       parameters:
       - $ref: "#/components/parameters/Space"
       - $ref: "#/components/parameters/FunctionID"
       responses:
         200:
-          description: function returned
+          description: "function returned"
           content:
             application/json:
               schema:
@@ -67,6 +86,8 @@ paths:
           $ref: '#/components/responses/Error'
     put:
       summary: "Update function"
+      tags:
+      - "function"
       operationId: "UpdateFunction"
       parameters:
       - $ref: "#/components/parameters/Space"
@@ -75,7 +96,7 @@ paths:
         $ref: "#/components/requestBodies/UpdateFunction"
       responses:
         200:
-          description: function updated
+          description: "function updated"
           content:
             application/json:
               schema:
@@ -88,13 +109,15 @@ paths:
           $ref: '#/components/responses/Error'
     delete:
       summary: "Delete function"
+      tags:
+      - "function"
       operationId: "DeleteFunction"
       parameters:
       - $ref: "#/components/parameters/Space"
       - $ref: "#/components/parameters/FunctionID"
       responses:
         204:
-          description: function deleted
+          description: "function deleted"
         400:
           $ref: '#/components/responses/FunctionHasSubscriptionsError'
         404:
@@ -106,12 +129,14 @@ paths:
     summary: "Operations about subscriptions"
     get:
       summary: "List subscriptions"
+      tags:
+      - "subscription"
       operationId: "ListSubscriptions"
       parameters:
       - $ref: "#/components/parameters/Space"
       responses:
         200:
-          description: subscriptions returned
+          description: "subscriptions returned"
           content:
             application/json:
               schema:
@@ -120,6 +145,8 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       summary: "Create subscription"
+      tags:
+      - "subscription"
       operationId: "CreateSubscription"
       parameters:
       - $ref: "#/components/parameters/Space"
@@ -127,7 +154,7 @@ paths:
         $ref: "#/components/requestBodies/CreateSubscription"
       responses:
         201:
-          description: subscription created
+          description: "subscription created"
           content:
             application/json:
               schema:
@@ -141,13 +168,15 @@ paths:
     summary: "Operations about single subscription"
     get:
       summary: "Get subscription"
+      tags:
+      - "subscription"
       operationId: "GetSubscription"
       parameters:
       - $ref: "#/components/parameters/Space"
       - $ref: "#/components/parameters/SubscriptionID"
       responses:
         200:
-          description: subscription returned
+          description: "subscription returned"
           content:
             application/json:
               schema:
@@ -158,13 +187,15 @@ paths:
           $ref: '#/components/responses/Error'
     delete:
       summary: "Delete subscription"
+      tags:
+      - "subscription"
       operationId: "DeleteSubscription"
       parameters:
       - $ref: "#/components/parameters/Space"
       - $ref: "#/components/parameters/SubscriptionID"
       responses:
         204:
-          description: subscription deleted
+          description: "subscription deleted"
         404:
           $ref: '#/components/responses/NotFoundError'
         500:
@@ -180,14 +211,14 @@ components:
       type: string
     ProviderType:
       type: string
-      description: function provider
+      description: "function provider"
       enum:
       - awslambda
       - awskinesis
       - http
     Provider:
       type: object
-      description: function provider configuration
+      description: "function provider configuration"
       oneOf:
       - $ref: '#/components/schemas/AWSKinesis'
       - $ref: '#/components/schemas/AWSLambda'
@@ -361,7 +392,7 @@ components:
         $ref: "#/components/schemas/SubscriptionID"
   requestBodies:
     CreateFunction:
-      description: function create request body
+      description: "function create request body"
       content:
         application/json:
           schema:
@@ -374,7 +405,7 @@ components:
               provider:
                 $ref: '#/components/schemas/Provider'
     UpdateFunction:
-      description: function update request body
+      description: "function update request body"
       content:
         application/json:
           schema:
@@ -385,7 +416,7 @@ components:
               provider:
                 $ref: '#/components/schemas/Provider'
     CreateSubscription:
-      description: subscription create request body
+      description: "subscription create request body"
       content:
         application/json:
           schema:
@@ -403,25 +434,25 @@ components:
                 $ref: '#/components/schemas/CORS'
   responses:
     Error:
-      description: internal server error
+      description: "internal server error"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Errors'
     NotFoundError:
-      description: not found error
+      description: "not found error"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Errors'
     ValidationError:
-      description: validation error
+      description: "validation error"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Errors'
     FunctionHasSubscriptionsError:
-      description: function is subscribed to at least one event
+      description: "function is subscribed to at least one event"
       content:
         application/json:
           schema:
