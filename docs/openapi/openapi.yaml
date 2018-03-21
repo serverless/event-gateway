@@ -34,10 +34,10 @@ paths:
       parameters:
       - $ref: "#/components/parameters/Space"
       requestBody:
-        $ref: "#/components/requestBodies/Function"
+        $ref: "#/components/requestBodies/CreateFunction"
       responses:
         201:
-          description: functions registered
+          description: function registered
           content:
             application/json:
               schema:
@@ -66,6 +66,27 @@ paths:
           description: function not found
         500:
           description: internal server error
+    put:
+      summary: "Update function"
+      operationId: "UpdateFunction"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/FunctionID"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateFunction"
+      responses:
+        200:
+          description: function updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Function"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
 components:
   schemas:
     SpaceName:
@@ -187,8 +208,8 @@ components:
       schema:
         $ref: "#/components/schemas/FunctionID"
   requestBodies:
-    Function:
-      description: function request body
+    CreateFunction:
+      description: function create request body
       content:
         application/json:
           schema:
@@ -200,9 +221,26 @@ components:
                 $ref: '#/components/schemas/ProviderType'
               provider:
                 $ref: '#/components/schemas/Provider'
+    UpdateFunction:
+      description: function update request body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              type:
+                $ref: '#/components/schemas/ProviderType'
+              provider:
+                $ref: '#/components/schemas/Provider'
   responses:
     Error:
       description: internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+    NotFoundError:
+      description: not found error
       content:
         application/json:
           schema:
