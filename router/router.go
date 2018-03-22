@@ -11,6 +11,7 @@ import (
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/httpapi"
@@ -209,6 +210,10 @@ const headerFunctionID = "function-id"
 const headerSpace = "space"
 const hostedDomain = "(eventgateway([a-z-]*)?.io|slsgateway.com)"
 
+var (
+	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
+)
+
 func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 	reqMethod := r.Method
@@ -234,9 +239,11 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 		event.Data = httpdata
 		resp, err := router.callFunction(space, *backingFunction, *event)
 		if err != nil {
+			message := determineErrorMessage(err)
+
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("Content-Type", "application/json")
-			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: message}}})
 			return
 		}
 
@@ -288,7 +295,7 @@ func (router *Router) handleInvokeEvent(space string, functionID function.ID, pa
 	if !router.targetCache.InvokableFunction(path, space, functionID) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "Function or subscription not found."}}})
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "function or subscription not found"}}})
 		return
 	}
 
@@ -296,7 +303,8 @@ func (router *Router) handleInvokeEvent(space string, functionID function.ID, pa
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+		message := determineErrorMessage(err)
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: message}}})
 		return
 	}
 
@@ -307,6 +315,29 @@ func (router *Router) handleInvokeEvent(space string, functionID function.ID, pa
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 		return
 	}
+}
+
+func determineErrorMessage(err error) string {
+	message := "Function call failed. Please check logs."
+	if accessError, ok := err.(*function.ErrFunctionAccessDenied); ok {
+		if originalErr, ok := accessError.Original.(awserr.Error); ok {
+			switch originalErr.Code() {
+			case "AccessDeniedException":
+				message = "Function call failed with AccessDeniedException. The provided credentials do not" +
+					" have the required IAM permissions to invoke this function. Please attach the" +
+					" lambda:invokeFunction permission to these credentials."
+			case "UnrecognizedClientException":
+				message = "Function call failed with UnrecognizedClientException. The provided credentials" +
+					" are invalid. Please provide valid credentials."
+			case "ExpiredTokenException":
+				message = "Function call failed with ExpiredTokenException. The provided security token for" +
+					" the function has expired. Please provide an updated security token or provide" +
+					" permanent credentials."
+			}
+		}
+	}
+
+	return message
 }
 
 func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
@@ -343,7 +374,7 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 	// Call the target backing function.
 	f := router.targetCache.Function(space, backingFunctionID)
 	if f == nil {
-		return []byte{}, errors.New("unable to look up registered function")
+		return []byte{}, errUnableToLookUpRegisteredFunction
 	}
 
 	payload, err := json.Marshal(event)
