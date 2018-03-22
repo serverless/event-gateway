@@ -1,0 +1,459 @@
+openapi: "3.0.1"
+
+info:
+  title: Event Gateway - Configuration API
+  version: "0.7.0"
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  contact:
+    name: Serverless, Inc.
+    url: http://www.serverless.com
+
+servers:
+- url: http://localhost:4001/{basePath}
+  description: Locally running Event Gateway
+  variables:
+    basePath:
+      default: v1
+
+tags:
+- name: "function"
+  description: "Operations about functions"
+- name: "subscription"
+  description: "Operations about subscriptions"
+
+paths:
+  /spaces/{spaceName}/functions:
+    summary: "Operations about functions"
+    get:
+      summary: "List functions"
+      tags:
+      - "function"
+      operationId: "ListFunctions"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      responses:
+        200:
+          description: "functions returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Functions"
+        500:
+          $ref: '#/components/responses/Error'
+    post:
+      summary: "Register function"
+      tags:
+      - "function"
+      operationId: "CreateFunction"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateFunction"
+      responses:
+        201:
+          description: "function registered"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Function"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        500:
+          $ref: '#/components/responses/Error'
+
+  /spaces/{spaceName}/functions/{functionId}:
+    summary: "Operations about single function"
+    get:
+      summary: "Get function"
+      tags:
+      - "function"
+      operationId: "GetFunction"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/FunctionID"
+      responses:
+        200:
+          description: "function returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Function"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+    put:
+      summary: "Update function"
+      tags:
+      - "function"
+      operationId: "UpdateFunction"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/FunctionID"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateFunction"
+      responses:
+        200:
+          description: "function updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Function"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: "Delete function"
+      tags:
+      - "function"
+      operationId: "DeleteFunction"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/FunctionID"
+      responses:
+        204:
+          description: "function deleted"
+        400:
+          $ref: '#/components/responses/FunctionHasSubscriptionsError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+
+  /spaces/{spaceName}/subscriptions:
+    summary: "Operations about subscriptions"
+    get:
+      summary: "List subscriptions"
+      tags:
+      - "subscription"
+      operationId: "ListSubscriptions"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      responses:
+        200:
+          description: "subscriptions returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscriptions"
+        500:
+          $ref: '#/components/responses/Error'
+    post:
+      summary: "Create subscription"
+      tags:
+      - "subscription"
+      operationId: "CreateSubscription"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateSubscription"
+      responses:
+        201:
+          description: "subscription created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        500:
+          $ref: '#/components/responses/Error'
+
+  /spaces/{spaceName}/subscription/{subscriptionId}:
+    summary: "Operations about single subscription"
+    get:
+      summary: "Get subscription"
+      tags:
+      - "subscription"
+      operationId: "GetSubscription"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/SubscriptionID"
+      responses:
+        200:
+          description: "subscription returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: "Delete subscription"
+      tags:
+      - "subscription"
+      operationId: "DeleteSubscription"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/SubscriptionID"
+      responses:
+        204:
+          description: "subscription deleted"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+
+components:
+  schemas:
+    SpaceName:
+      type: string
+    FunctionID:
+      type: string
+    SubscriptionID:
+      type: string
+    ProviderType:
+      type: string
+      description: "function provider"
+      enum:
+      - awslambda
+      - awskinesis
+      - http
+    Provider:
+      type: object
+      description: "function provider configuration"
+      oneOf:
+      - $ref: '#/components/schemas/AWSKinesis'
+      - $ref: '#/components/schemas/AWSLambda'
+      - $ref: '#/components/schemas/HTTP'
+    Function:
+      type: object
+      properties:
+        space:
+          $ref: '#/components/schemas/SpaceName'
+        functionId:
+          $ref: '#/components/schemas/FunctionID'
+        type:
+          $ref: '#/components/schemas/ProviderType'
+        provider:
+          $ref: '#/components/schemas/Provider'
+    Functions:
+      type: object
+      properties:
+        functions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Function'
+    Subscription:
+      type: object
+      properties:
+        space:
+          $ref: '#/components/schemas/SpaceName'
+        subscriptionId:
+          $ref: '#/components/schemas/SubscriptionID'
+        functionId:
+          $ref: '#/components/schemas/FunctionID'
+        event:
+          $ref: '#/components/schemas/Event'
+        path:
+          $ref: '#/components/schemas/Path'
+        method:
+          $ref: '#/components/schemas/Method'
+        cors:
+          $ref: '#/components/schemas/CORS'
+    Subscriptions:
+      type: object
+      properties:
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscription'
+    AWSLambda:
+      type: object
+      properties:
+        arn:
+          $ref: '#/components/schemas/ARN'
+        region:
+          $ref: '#/components/schemas/Region'
+        awsAccessKeyId:
+          $ref: '#/components/schemas/AWSAccessKeyId'
+        awsSecretAccessKey:
+          $ref: '#/components/schemas/AWSSecretAccessKey'
+        awsSessionToken:
+          $ref: '#/components/schemas/AWSSessionToken'
+    AWSKinesis:
+      type: object
+      properties:
+        streamName:
+          $ref: '#/components/schemas/StreamName'
+        region:
+          $ref: '#/components/schemas/Region'
+        awsAccessKeyId:
+          $ref: '#/components/schemas/AWSAccessKeyId'
+        awsSecretAccessKey:
+          $ref: '#/components/schemas/AWSSecretAccessKey'
+        awsSessionToken:
+          $ref: '#/components/schemas/AWSSessionToken'
+    HTTP:
+      type: object
+      properties:
+        url:
+          $ref: '#/components/schemas/URL'
+    ARN:
+      type: string
+      description: "AWS ARN identifier"
+    Region:
+      type: string
+      description: "AWS Region name"
+    AWSAccessKeyId:
+      type: string
+      description: "AWS Access Key ID"
+    AWSSecretAccessKey:
+      type: string
+      description: "AWS Secret Access Key"
+    AWSSessionToken:
+      type: string
+      description: "AWS Session Token"
+    StreamName:
+      type: string
+      description: "AWS Kinesis stream name"
+    URL:
+      type: string
+      format: url
+      description: "HTTP endpoint URL"
+    Event:
+      type: string
+      description: "event type"
+    Method:
+      type: string
+      description: "(only for HTTP event) HTTP method that accepts requests"
+    Path:
+      type: string
+      description: "URL path under which events (HTTP requests) are accepted"
+      default: "/"
+    Error:
+      type: object
+      description: "response error object"
+      properties:
+        message:
+          type: string
+    CORS:
+      type: object
+      description: "(only for HTTP event) CORS configuration for HTTP event subscription"
+      default: null
+      properties:
+        origins:
+          type: array
+          description: "list of allowed origins. An origin may contain a wildcard (*) to replace 0 or more characters (i.e.: http://*.domain.com)"
+          items:
+            type: string
+          default: ["*"]
+        methods:
+          type: array
+          description: "list of allowed methods"
+          items:
+            type: string
+          default: ["HEAD", "GET", "POST"]
+        headers:
+          type: array
+          description: "list of allowed headers"
+          items:
+            type: string
+          default: ["Origin", "Accept", "Content-Type"]
+        allowCredentials:
+          type: boolean
+          default: false
+    Errors:
+      type: object
+      description: "error response object"
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+  parameters:
+    Space:
+      in: "path"
+      name: "spaceName"
+      description: "space name"
+      required: true
+      schema:
+        $ref: "#/components/schemas/SpaceName"
+    FunctionID:
+      in: "path"
+      name: "functionId"
+      description: "function identifier"
+      required: true
+      schema:
+        $ref: "#/components/schemas/FunctionID"
+    SubscriptionID:
+      in: "path"
+      name: "subscriptionId"
+      description: "subscription identifier"
+      required: true
+      schema:
+        $ref: "#/components/schemas/SubscriptionID"
+  requestBodies:
+    CreateFunction:
+      description: "function create request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              functionId:
+                $ref: '#/components/schemas/FunctionID'
+              type:
+                $ref: '#/components/schemas/ProviderType'
+              provider:
+                $ref: '#/components/schemas/Provider'
+    UpdateFunction:
+      description: "function update request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              type:
+                $ref: '#/components/schemas/ProviderType'
+              provider:
+                $ref: '#/components/schemas/Provider'
+    CreateSubscription:
+      description: "subscription create request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              functionId:
+                $ref: '#/components/schemas/FunctionID'
+              event:
+                $ref: '#/components/schemas/Event'
+              path:
+                $ref: '#/components/schemas/Path'
+              method:
+                $ref: '#/components/schemas/Method'
+              cors:
+                $ref: '#/components/schemas/CORS'
+  responses:
+    Error:
+      description: "internal server error"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+    NotFoundError:
+      description: "not found error"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+    ValidationError:
+      description: "validation error"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+    FunctionHasSubscriptionsError:
+      description: "function is subscribed to at least one event"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'

@@ -1,0 +1,75 @@
+openapi: "3.0.1"
+
+info:
+  title: Event Gateway - Events API
+  version: "0.7.0"
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  contact:
+    name: Serverless, Inc.
+    url: http://www.serverless.com
+
+servers:
+- url: http://localhost:4000/{basePath}
+  description: Locally running Event Gateway
+  variables:
+    basePath:
+      default: v1
+
+paths:
+  /{customEventSubscriptionPath}:
+    post:
+      summary: "Emit custom event"
+      operationId: "EmitEvent"
+      parameters:
+      - name: customEventSubscriptionPath
+        in: path
+        description: custom event subscription path
+        required: true
+        schema:
+          type: string
+      - name: Event
+        in: header
+        description: event type
+        required: true
+        schema:
+          type: string
+      responses:
+        202:
+          description: "event accepted"
+
+  /{invokeEventSubscriptionPath}:
+    post:
+      summary: "Sync function invocation"
+      operationId: "InvokeFunction"
+      parameters:
+      - name: invokeEventSubscriptionPath
+        in: path
+        description: invoke event subscription path
+        required: true
+        schema:
+          type: string
+      - name: Event
+        in: header
+        description: "'invoke' event type"
+        required: true
+        schema:
+          type: string
+          default: invoke
+      - name: Function-ID
+        in: header
+        description: function identifier
+        required: true
+        schema:
+          type: string
+      - name: Space
+        in: header
+        description: space name
+        required: false
+        schema:
+          type: string
+          default: default
+      responses:
+        202:
+          description: "event accepted"
