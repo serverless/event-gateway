@@ -28,7 +28,7 @@ type ErrSubscriptionValidation struct {
 }
 
 func (e ErrSubscriptionValidation) Error() string {
-	return fmt.Sprintf("Subscription doesn't validate. Validation error: %q", e.Message)
+	return fmt.Sprintf("Subscription doesn't validate. Validation error: %s", e.Message)
 }
 
 // ErrPathConfict occurs when HTTP subscription path conflicts with existing path.
@@ -37,5 +37,5 @@ type ErrPathConfict struct {
 }
 
 func (e ErrPathConfict) Error() string {
-	return fmt.Sprintf("Subscription path conflict: %s.", e.Message)
+	return fmt.Sprintf("Subscription path conflict: %s", e.Message)
 }

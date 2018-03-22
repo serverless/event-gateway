@@ -46,8 +46,7 @@ func (service Service) RegisterFunction(fn *function.Function) (*function.Functi
 
 	service.Log.Debug("Function registered.",
 		zap.String("space", fn.Space),
-		zap.String("functionId", string(fn.ID)),
-		zap.String("type", string(fn.Provider.Type)))
+		zap.String("functionId", string(fn.ID)))
 
 	return fn, nil
 }
@@ -65,7 +64,7 @@ func (service Service) UpdateFunction(fn *function.Function) (*function.Function
 
 	byt, err := json.Marshal(fn)
 	if err != nil {
-		return nil, err
+		return nil, &function.ErrFunctionValidation{Message: err.Error()}
 	}
 
 	err = service.FunctionStore.Put(FunctionKey{fn.Space, fn.ID}.String(), byt, nil)
@@ -155,16 +154,6 @@ func (service Service) validateFunction(fn *function.Function) error {
 	err := validate.Struct(fn)
 	if err != nil {
 		return &function.ErrFunctionValidation{Message: err.Error()}
-	}
-
-	if fn.Provider.Type == function.AWSLambda {
-		if fn.Provider.ARN == "" || fn.Provider.Region == "" {
-			return &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."}
-		}
-	}
-
-	if fn.Provider.Type == function.HTTPEndpoint && fn.Provider.URL == "" {
-		return &function.ErrFunctionValidation{Message: "Missing required fields for HTTP endpoint."}
 	}
 
 	return nil
