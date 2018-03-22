@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/golang/mock/gomock"
-	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/providers/awslambda"
 	"github.com/serverless/event-gateway/providers/awslambda/mock"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ func TestLoad_MalformedJSON(t *testing.T) {
 	provider, err := loader.Load(config)
 
 	assert.Nil(t, provider)
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Unable to load function provider config: unexpected end of JSON input"})
+	assert.EqualError(t, err, "unable to load function provider config: unexpected end of JSON input")
 }
 
 func TestLoad_MissingARN(t *testing.T) {
@@ -29,7 +28,7 @@ func TestLoad_MissingARN(t *testing.T) {
 	provider, err := loader.Load(config)
 
 	assert.Nil(t, provider)
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."})
+	assert.EqualError(t, err, "missing required fields for AWS Lambda function")
 }
 
 func TestLoad_MissingRegion(t *testing.T) {
@@ -39,7 +38,7 @@ func TestLoad_MissingRegion(t *testing.T) {
 	provider, err := loader.Load(config)
 
 	assert.Nil(t, provider)
-	assert.Equal(t, err, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Lambda function."})
+	assert.EqualError(t, err, "missing required fields for AWS Lambda function")
 }
 
 func TestCall(t *testing.T) {
