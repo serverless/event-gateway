@@ -33,12 +33,11 @@ func (e ErrFunctionValidation) Error() string {
 
 // ErrFunctionCallFailed occurs when function call failed.
 type ErrFunctionCallFailed struct {
-	Message  string
 	Original error
 }
 
 func (e ErrFunctionCallFailed) Error() string {
-	return fmt.Sprintf("Function call failed. Error: %s", e.Message)
+	return fmt.Sprintf("Function call failed. Error: %s", e.Original)
 }
 
 // ErrFunctionAccessDenied occurs when Event Gateway don't have access to call a function.
