@@ -75,10 +75,8 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 			if err != nil {
 				return nil, "", errors.New("malformed JSON body")
 			}
-			break
 		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
 			event.Data = string(body)
-			break
 		}
 	}
 
