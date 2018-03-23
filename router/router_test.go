@@ -1,6 +1,7 @@
 package router_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/plugin"
+	httpprovider "github.com/serverless/event-gateway/providers/http"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/router/mock"
 	"github.com/serverless/event-gateway/subscription"
@@ -99,6 +101,39 @@ func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 	assert.Equal(t, `{"errors":[{"message":"malformed JSON body"}]}`+"\n", recorder.Body.String())
+}
+
+func TestRouterServeHTTP_EncodingBase64(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	testListServer := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			testevent := event.Event{
+				Data: event.HTTPEvent{},
+			}
+			json.NewDecoder(r.Body).Decode(&testevent)
+
+			assert.Equal(t, "c29tZT10aGluZw==", testevent.Data.(map[string]interface{})["body"])
+		}))
+	target := mock.NewMockTargeter(ctrl)
+	provider := mock.NewMockProvider(ctrl)
+	someFunc := function.Function{
+		Space:        "",
+		ID:           "somefunc",
+		ProviderType: httpprovider.Type,
+		Provider: httpprovider.HTTP{
+			URL: testListServer.URL,
+		},
+	}
+	provider.EXPECT().Call("some=thing")
+	target.EXPECT().HTTPBackingFunction(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
+	target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
+	target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{})
+	router := testrouter(target)
+
+	req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("some=thing"))
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
 }
 
 func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T) {
