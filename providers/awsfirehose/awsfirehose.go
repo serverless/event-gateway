@@ -2,6 +2,7 @@ package awsfirehose
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -25,18 +26,18 @@ func init() {
 type AWSFirehose struct {
 	Service firehoseiface.FirehoseAPI `json:"-" validate:"-"`
 
-	DeliveryStreamName         string `json:"deliveryStreamName" validate:"required"`
-	Region                     string `json:"region" validate:"required"`
-	AWSAccessKeyID             string `json:"awsAccessKeyId,omitempty"`
-	AWSSecretAccessKey         string `json:"awsSecretAccessKey,omitempty"`
-	AWSSessionToken            string `json:"awsSessionToken,omitempty"`
+	DeliveryStreamName string `json:"deliveryStreamName" validate:"required"`
+	Region             string `json:"region" validate:"required"`
+	AWSAccessKeyID     string `json:"awsAccessKeyId,omitempty"`
+	AWSSecretAccessKey string `json:"awsSecretAccessKey,omitempty"`
+	AWSSessionToken    string `json:"awsSessionToken,omitempty"`
 }
 
 // Call puts record into AWS Firehose stream.
 func (a AWSFirehose) Call(payload []byte) ([]byte, error) {
 	putRecordOutput, err := a.Service.PutRecord(&firehose.PutRecordInput{
-		DeliveryStreamName:   &a.DeliveryStreamName,
-		Record:     &firehose.Record{Data: payload},
+		DeliveryStreamName: &a.DeliveryStreamName,
+		Record:             &firehose.Record{Data: payload},
 	})
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
@@ -81,12 +82,12 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 	provider := &AWSFirehose{}
 	err := json.Unmarshal(data, provider)
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Unable to load function provider config: " + err.Error()}
+		return nil, errors.New("unable to load function provider config: " + err.Error())
 	}
 
 	err = provider.validate()
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Missing required fields for AWS Firehose function."}
+		return nil, errors.New("missing required fields for AWS Firehose function")
 	}
 
 	config := aws.NewConfig().WithRegion(provider.Region)
@@ -96,7 +97,7 @@ func (p ProviderLoader) Load(data []byte) (function.Provider, error) {
 
 	awsSession, err := session.NewSession(config)
 	if err != nil {
-		return nil, &function.ErrFunctionValidation{Message: "Unable to create AWS Session: " + err.Error()}
+		return nil, errors.New("unable to create AWS Session: " + err.Error())
 	}
 
 	provider.Service = firehose.New(awsSession)
