@@ -22,6 +22,15 @@ func (e ErrSubscriptionAlreadyExists) Error() string {
 	return fmt.Sprintf("Subscription %q already exists.", e.ID)
 }
 
+// ErrInvalidSubscriptionUpdate occurs when a client tries to update a subscription in a way that changes the subscription ID.
+type ErrInvalidSubscriptionUpdate struct {
+	ID ID
+}
+
+func (e ErrInvalidSubscriptionUpdate) Error() string {
+	return fmt.Sprintf("Invalid update. This update would change the SubscriptionID for %q.", e.ID)
+}
+
 // ErrSubscriptionValidation occurs when subscription payload doesn't validate.
 type ErrSubscriptionValidation struct {
 	Message string

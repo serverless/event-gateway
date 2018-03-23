@@ -41,6 +41,7 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/spaces/:space/subscriptions", h.listSubscriptions)
 	router.GET("/v1/spaces/:space/subscriptions/*id", h.getSubscription)
 	router.POST("/v1/spaces/:space/subscriptions", h.createSubscription)
+	router.PUT("/v1/spaces/:space/subscriptions/*id", h.updateSubscription)
 	router.DELETE("/v1/spaces/:space/subscriptions/*id", h.deleteSubscription)
 }
 
@@ -251,6 +252,45 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 	}
 
 	metricConfigRequests.WithLabelValues(s.Space, "subscription", "create").Inc()
+}
+
+func (h HTTPAPI) updateSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	s := &subscription.Subscription{}
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(s)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		validationErr := subscription.ErrSubscriptionValidation{Message: err.Error()}
+		encoder.Encode(&Response{Errors: []Error{{Message: validationErr.Error()}}})
+		return
+	}
+
+	s.Space = params.ByName("space")
+	s.ID = extractSubscriptionID(r.URL.RawPath)
+	output, err := h.Subscriptions.UpdateSubscription(s.ID, s)
+	if err != nil {
+		if _, ok := err.(*subscription.ErrInvalidSubscriptionUpdate); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*function.ErrFunctionNotFound); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*subscription.ErrSubscriptionValidation); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		w.WriteHeader(http.StatusOK)
+		encoder.Encode(output)
+	}
+
+	metricConfigRequests.WithLabelValues(s.Space, "subscription", "update").Inc()
 }
 
 func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

@@ -25,7 +25,7 @@ func (service Service) CreateSubscription(s *subscription.Subscription) (*subscr
 		return nil, err
 	}
 
-	s.ID = newSubscriptionID(s)
+	s.ID = generateSubscriptionID(s)
 	_, err = service.SubscriptionStore.Get(subscriptionPath(s.Space, s.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &subscription.ErrSubscriptionAlreadyExists{
@@ -59,6 +59,50 @@ func (service Service) CreateSubscription(s *subscription.Subscription) (*subscr
 	}
 
 	service.Log.Debug("Subscription created.",
+		zap.String("event", string(s.Event)),
+		zap.String("space", s.Space),
+		zap.String("functionId", string(s.FunctionID)))
+	return s, nil
+}
+
+// UpdateSubscription updates subscription.
+func (service Service) UpdateSubscription(id subscription.ID, s *subscription.Subscription) (*subscription.Subscription, error) {
+	err := service.validateSubscription(s)
+	if err != nil {
+		return nil, err
+	}
+
+    // If the subscriptionID changes, it should be a new subscription rather than an update.
+	newID := generateSubscriptionID(s)
+	if newID != s.ID {
+	    return nil, &subscription.ErrInvalidSubscriptionUpdate{
+	        ID: s.ID,
+	    }
+	}
+	_, err = service.SubscriptionStore.Get(subscriptionPath(s.Space, s.ID), &store.ReadOptions{Consistent: true})
+	if err != nil {
+		return nil, &subscription.ErrSubscriptionNotFound{ID: s.ID}
+	}
+
+	f, err := service.GetFunction(s.Space, s.FunctionID)
+	if err != nil {
+		return nil, err
+	}
+	if f == nil {
+		return nil, &function.ErrFunctionNotFound{ID: s.FunctionID}
+	}
+
+	buf, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	err = service.SubscriptionStore.Put(subscriptionPath(s.Space, s.ID), buf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	service.Log.Debug("Subscription updated.",
 		zap.String("event", string(s.Event)),
 		zap.String("space", s.Space),
 		zap.String("functionId", string(s.FunctionID)))
@@ -276,7 +320,7 @@ func isPathInConflict(existing, new string) bool {
 	return true
 }
 
-func newSubscriptionID(s *subscription.Subscription) subscription.ID {
+func generateSubscriptionID(s *subscription.Subscription) subscription.ID {
 	if s.Event == event.TypeHTTP {
 		return subscription.ID(string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
 	}
