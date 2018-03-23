@@ -115,8 +115,8 @@ func TestRouterServeHTTP_EncodingBase64(t *testing.T) {
 
 			assert.Equal(t, "c29tZT10aGluZw==", testevent.Data.(map[string]interface{})["body"])
 		}))
+	defer testListServer.Close()
 	target := mock.NewMockTargeter(ctrl)
-	provider := mock.NewMockProvider(ctrl)
 	someFunc := function.Function{
 		Space:        "",
 		ID:           "somefunc",
@@ -125,10 +125,9 @@ func TestRouterServeHTTP_EncodingBase64(t *testing.T) {
 			URL: testListServer.URL,
 		},
 	}
-	provider.EXPECT().Call("some=thing")
 	target.EXPECT().HTTPBackingFunction(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
 	target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
-	target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{})
+	target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("some=thing"))
