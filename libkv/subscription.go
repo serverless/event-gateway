@@ -74,9 +74,9 @@ func (service Service) UpdateSubscription(id subscription.ID, s *subscription.Su
 
     // If the subscriptionID changes, it should be a new subscription rather than an update.
 	newID := generateSubscriptionID(s)
-	if newID != s.ID {
+	if newID != id {
 	    return nil, &subscription.ErrInvalidSubscriptionUpdate{
-	        ID: s.ID,
+	        ID: id,
 	    }
 	}
 	_, err = service.SubscriptionStore.Get(subscriptionPath(s.Space, s.ID), &store.ReadOptions{Consistent: true})
