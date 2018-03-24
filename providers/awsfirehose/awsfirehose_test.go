@@ -1,4 +1,4 @@
-package awskinesis_test
+package awsfirehose_test
 
 import (
 	"errors"
@@ -6,11 +6,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go/service/firehose"
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/function"
-	"github.com/serverless/event-gateway/providers/awskinesis"
-	"github.com/serverless/event-gateway/providers/awskinesis/mock"
+	"github.com/serverless/event-gateway/providers/awsfirehose"
+	"github.com/serverless/event-gateway/providers/awsfirehose/mock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
 )
@@ -18,7 +18,7 @@ import (
 func TestLoad(t *testing.T) {
 	for _, testCase := range loadTests {
 		config := []byte(testCase.config)
-		loader := awskinesis.ProviderLoader{}
+		loader := awsfirehose.ProviderLoader{}
 
 		_, err := loader.Load(config)
 
@@ -30,13 +30,13 @@ func TestCall(t *testing.T) {
 	for _, testCase := range callTests {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
-		serviceMock := mock.NewMockKinesisAPI(mockCtrl)
+		serviceMock := mock.NewMockFirehoseAPI(mockCtrl)
 		serviceMock.EXPECT().PutRecord(gomock.Any()).Return(testCase.putRecordResult, testCase.putRecordError)
 
-		provider := awskinesis.AWSKinesis{
-			Service:    serviceMock,
-			StreamName: "teststream",
-			Region:     "us-east-1",
+		provider := awsfirehose.AWSFirehose{
+			Service:            serviceMock,
+			DeliveryStreamName: "teststream",
+			Region:             "us-east-1",
 		}
 
 		output, err := provider.Call([]byte("testpayload"))
@@ -66,24 +66,24 @@ var loadTests = []struct {
 	},
 	{
 		`{"streamName": "", "region": "us-east-1"}`,
-		errors.New("missing required fields for AWS Kinesis function"),
+		errors.New("missing required fields for AWS Firehose function"),
 	},
 	{
 		`{"streamName": "test", "region": ""}`,
-		errors.New("missing required fields for AWS Kinesis function"),
+		errors.New("missing required fields for AWS Firehose function"),
 	},
 }
 
 var callTests = []struct {
-	putRecordResult *kinesis.PutRecordOutput
+	putRecordResult *firehose.PutRecordOutput
 	putRecordError  error
 	expectedResult  []byte
 	expectedError   error
 }{
 	{
-		&kinesis.PutRecordOutput{SequenceNumber: aws.String("testseq")},
+		&firehose.PutRecordOutput{RecordId: aws.String("testid")},
 		nil,
-		[]byte("testseq"),
+		[]byte("testid"),
 		nil,
 	},
 	{
@@ -99,23 +99,23 @@ var logTests = []struct {
 	expectedFields map[string]interface{}
 }{
 	{
-		awskinesis.AWSKinesis{
-			StreamName: "test",
-			Region:     "us-east-1",
+		awsfirehose.AWSFirehose{
+			DeliveryStreamName: "test",
+			Region:             "us-east-1",
 		},
 		map[string]interface{}{
-			"streamName": "test",
-			"region":     "us-east-1",
+			"deliveryStreamName": "test",
+			"region":             "us-east-1",
 		},
 	},
 	{
-		awskinesis.AWSKinesis{
+		awsfirehose.AWSFirehose{
 			AWSAccessKeyID:     "id",
 			AWSSecretAccessKey: "key",
 			AWSSessionToken:    "token",
 		},
 		map[string]interface{}{
-			"streamName":         "",
+			"deliveryStreamName": "",
 			"region":             "",
 			"awsAccessKeyId":     "*****",
 			"awsSecretAccessKey": "*****",

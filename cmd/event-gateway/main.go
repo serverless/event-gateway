@@ -23,6 +23,7 @@ import (
 	"github.com/serverless/event-gateway/plugin"
 
 	// providers
+	_ "github.com/serverless/event-gateway/providers/awsfirehose"
 	_ "github.com/serverless/event-gateway/providers/awskinesis"
 	_ "github.com/serverless/event-gateway/providers/awslambda"
 	_ "github.com/serverless/event-gateway/providers/http"
