@@ -233,15 +233,19 @@ components:
       type: string
       description: "function provider"
       enum:
-      - awslambda
+      - awsfirehose
       - awskinesis
+      - awslambda
+      - awssqs
       - http
     Provider:
       type: object
       description: "function provider configuration"
       oneOf:
+      - $ref: '#/components/schemas/AWSFirehose'
       - $ref: '#/components/schemas/AWSKinesis'
       - $ref: '#/components/schemas/AWSLambda'
+      - $ref: '#/components/schemas/AWSSQS'
       - $ref: '#/components/schemas/HTTP'
     Function:
       type: object
@@ -285,11 +289,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Subscription'
-    AWSLambda:
+    AWSFirehose:
       type: object
       properties:
-        arn:
-          $ref: '#/components/schemas/ARN'
+        deliveryStreamName:
+          $ref: '#/components/schemas/DeliveryStreamName'
         region:
           $ref: '#/components/schemas/Region'
         awsAccessKeyId:
@@ -303,6 +307,32 @@ components:
       properties:
         streamName:
           $ref: '#/components/schemas/StreamName'
+        region:
+          $ref: '#/components/schemas/Region'
+        awsAccessKeyId:
+          $ref: '#/components/schemas/AWSAccessKeyId'
+        awsSecretAccessKey:
+          $ref: '#/components/schemas/AWSSecretAccessKey'
+        awsSessionToken:
+          $ref: '#/components/schemas/AWSSessionToken'
+    AWSLambda:
+      type: object
+      properties:
+        arn:
+          $ref: '#/components/schemas/ARN'
+        region:
+          $ref: '#/components/schemas/Region'
+        awsAccessKeyId:
+          $ref: '#/components/schemas/AWSAccessKeyId'
+        awsSecretAccessKey:
+          $ref: '#/components/schemas/AWSSecretAccessKey'
+        awsSessionToken:
+          $ref: '#/components/schemas/AWSSessionToken'
+    AWSSQS:
+      type: object
+      properties:
+        queueUrl:
+          $ref: '#/components/schemas/QueueURL'
         region:
           $ref: '#/components/schemas/Region'
         awsAccessKeyId:
@@ -334,6 +364,12 @@ components:
     StreamName:
       type: string
       description: "AWS Kinesis stream name"
+    DeliveryStreamName:
+      type: string
+      description: "AWS Firehose delivery stream name"
+    QueueURL:
+      type: string
+      description: "AWS SQS Queue URL"
     URL:
       type: string
       format: url

@@ -175,6 +175,46 @@ func TestRegisterFunction_AlreadyRegistered(t *testing.T) {
 	assert.Equal(t, `Function "func1" already registered.`, httpresp.Errors[0].Message)
 }
 
+func TestRegisterFunction_ValidationError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, functions, _ := setup(ctrl)
+
+	fn := &function.Function{
+		ID:           function.ID("/"),
+		Space:        "default",
+		ProviderType: httpprovider.Type,
+		Provider:     &httpprovider.HTTP{URL: "http://test.com"},
+	}
+	functions.EXPECT().RegisterFunction(fn).Return(nil, &function.ErrFunctionValidation{Message: "wrong function ID format"})
+
+	resp := httptest.NewRecorder()
+	payload := bytes.NewReader([]byte(`{"functionID":"/","type":"http","provider":{"url":"http://test.com"}}}`))
+	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/default/functions", payload)
+	router.ServeHTTP(resp, req)
+
+	httpresp := &httpapi.Response{}
+	json.Unmarshal(resp.Body.Bytes(), httpresp)
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Equal(t, "Function doesn't validate. Validation error: wrong function ID format", httpresp.Errors[0].Message)
+}
+
+func TestRegisterFunction_MalformedJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _ := setup(ctrl)
+
+	resp := httptest.NewRecorder()
+	payload := bytes.NewReader([]byte(`{`))
+	req, _ := http.NewRequest(http.MethodPost, "/v1/spaces/default/functions", payload)
+	router.ServeHTTP(resp, req)
+
+	httpresp := &httpapi.Response{}
+	json.Unmarshal(resp.Body.Bytes(), httpresp)
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Equal(t, "Function doesn't validate. Validation error: unexpected EOF", httpresp.Errors[0].Message)
+}
+
 func TestRegisterFunction_InternalError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -214,6 +254,56 @@ func TestDeleteFunction_BadRequest(t *testing.T) {
 	json.Unmarshal(resp.Body.Bytes(), httpresp)
 	assert.Equal(t, http.StatusBadRequest, resp.Code)
 	assert.Equal(t, "Function cannot be deleted because it's subscribed to a least one event.", httpresp.Errors[0].Message)
+}
+
+func TestDeleteFunction_NotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, functions, _ := setup(ctrl)
+
+	functions.EXPECT().DeleteFunction("default", function.ID("func1")).Return(&function.ErrFunctionNotFound{ID: function.ID("testid")})
+
+	resp := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodDelete, "/v1/spaces/default/functions/func1", nil)
+	router.ServeHTTP(resp, req)
+
+	httpresp := &httpapi.Response{}
+	json.Unmarshal(resp.Body.Bytes(), httpresp)
+	assert.Equal(t, http.StatusNotFound, resp.Code)
+	assert.Equal(t, `Function "testid" not found.`, httpresp.Errors[0].Message)
+}
+
+func TestDeleteFunction_InternalError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, functions, _ := setup(ctrl)
+
+	functions.EXPECT().DeleteFunction("default", function.ID("func1")).Return(errors.New("internal error"))
+
+	resp := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodDelete, "/v1/spaces/default/functions/func1", nil)
+	router.ServeHTTP(resp, req)
+
+	httpresp := &httpapi.Response{}
+	json.Unmarshal(resp.Body.Bytes(), httpresp)
+	assert.Equal(t, http.StatusInternalServerError, resp.Code)
+	assert.Equal(t, "internal error", httpresp.Errors[0].Message)
+}
+
+func TestDeleteFunction_OK(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, functions, _ := setup(ctrl)
+
+	functions.EXPECT().DeleteFunction("default", function.ID("func1")).Return(nil)
+
+	resp := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodDelete, "/v1/spaces/default/functions/func1", nil)
+	router.ServeHTTP(resp, req)
+
+	httpresp := &httpapi.Response{}
+	json.Unmarshal(resp.Body.Bytes(), httpresp)
+	assert.Equal(t, http.StatusNoContent, resp.Code)
 }
 
 func TestUpdateSubscription_OK(t *testing.T) {
