@@ -15,6 +15,10 @@ script:
 - gometalinter --vendor --fast --disable=gotype --disable=vetshadow --disable=gas --skip=mock ./...
 - ./codecov.sh
 - go test ./tests -tags=integration
+- go get github.com/schrej/godacov
+- go get -u github.com/haya14busa/goverage
+- goverage -v -coverprofile=coverage.out ./..
+- godacov -t $CODACY_TOKEN -r ./coverage.out -c $TRAVIS_COMMIT
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 - bash <(curl -s https://codecov.io/bash)
