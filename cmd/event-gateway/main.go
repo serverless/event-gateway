@@ -26,6 +26,7 @@ import (
 	_ "github.com/serverless/event-gateway/providers/awsfirehose"
 	_ "github.com/serverless/event-gateway/providers/awskinesis"
 	_ "github.com/serverless/event-gateway/providers/awslambda"
+	_ "github.com/serverless/event-gateway/providers/githubwebhook"
 	_ "github.com/serverless/event-gateway/providers/http"
 )
 
