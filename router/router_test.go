@@ -108,11 +108,11 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 	defer ctrl.Finish()
 	tests := []map[string]string{
 		{
-			"body": "c29tZT10aGluZw==",
+			"expected": "c29tZT10aGluZw==",
 			"content-type": "",
 		},
 		{
-			"body": "some=thing",
+			"expected": "some=thing",
 			"content-type": "application/x-www-form-urlencoded",
 		},
 	}
@@ -124,7 +124,7 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 				}
 				json.NewDecoder(r.Body).Decode(&testevent)
 
-				assert.Equal(t, test["body"], testevent.Data.(map[string]interface{})["body"])
+				assert.Equal(t, test["expected"], testevent.Data.(map[string]interface{})["body"])
 			}))
 		defer testListServer.Close()
 		target := mock.NewMockTargeter(ctrl)
