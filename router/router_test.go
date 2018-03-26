@@ -103,7 +103,7 @@ func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 	assert.Equal(t, `{"errors":[{"message":"malformed JSON body"}]}`+"\n", recorder.Body.String())
 }
 
-func TestRouterServeHTTP_EncodingBase64(t *testing.T) {
+func TestRouterServeHTTP_Encoding(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	testListServer := httptest.NewServer(http.HandlerFunc(
