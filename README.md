@@ -42,6 +42,7 @@ yet ready for production applications._
 1.  [Comparison](#comparison)
 1.  [Architecture](#architecture)
     1.  [System Overview](#system-overview)
+    1.  [Reliability Guarantees](#reliability-guarantees)
     1.  [Clustering](#clustering)
 1.  [Background](#background)
 
@@ -841,6 +842,18 @@ directly.
 │                                                                                                                │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+## Reliability Guarantees
+
+### Events are not durable
+
+The event received by Event Gateway is stored only in memory, it's not persisted to disk during processing. This means that in case of hardware failure or software crash the event may not be delivered to the subscriber. For a synchronous subscription (`http` or `invoke` event) it can manifest by error message returned to the requester. If there is multiple subscribes to the same custom event type, in case of failure the event may not be delivered to all of them.
+
+### Events are delivered _at most once_
+
+Event Gateway tries to deliver an event only once, there is no retry mechanism. This and lack of durability implicates that event will be delivered to the subscriber _at most once_. Even though Event Gateway itself doesn't retry failed function invocations, AWS SDK used by few providers does that internally by default. The retry logic there happens only for very specific reasons and should not cause delivering the same event multiple times. Please find more information in [AWS documentation on API retries](https://docs.aws.amazon.com/general/latest/gr/api-retries.html).
+
+AWS Lambda provider uses `RequestResponse` invocation type which means that retry logic for asynchronous AWS events doesn't apply here. Among others it means, that failed deliveries of custom events are not sent to DLQ. Please find more information in [Understanding Retry Behavior](https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html), "Synchronous invocation" section.
 
 ## Background
 
