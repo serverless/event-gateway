@@ -106,33 +106,46 @@ func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 func TestRouterServeHTTP_Encoding(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	testListServer := httptest.NewServer(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			testevent := event.Event{
-				Data: event.HTTPEvent{},
-			}
-			json.NewDecoder(r.Body).Decode(&testevent)
-
-			assert.Equal(t, "c29tZT10aGluZw==", testevent.Data.(map[string]interface{})["body"])
-		}))
-	defer testListServer.Close()
-	target := mock.NewMockTargeter(ctrl)
-	someFunc := function.Function{
-		Space:        "",
-		ID:           "somefunc",
-		ProviderType: httpprovider.Type,
-		Provider: httpprovider.HTTP{
-			URL: testListServer.URL,
+	tests := []map[string]string{
+		{
+			"body": "c29tZT10aGluZw==",
+			"content-type": "",
+		},
+		{
+			"body": "some=thing",
+			"content-type": "application/x-www-form-urlencoded",
 		},
 	}
-	target.EXPECT().HTTPBackingFunction(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
-	target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
-	target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
-	router := testrouter(target)
+	for _, test := range tests {
+		testListServer := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				testevent := event.Event{
+					Data: event.HTTPEvent{},
+				}
+				json.NewDecoder(r.Body).Decode(&testevent)
 
-	req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("some=thing"))
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
+				assert.Equal(t, test["body"], testevent.Data.(map[string]interface{})["body"])
+			}))
+		defer testListServer.Close()
+		target := mock.NewMockTargeter(ctrl)
+		someFunc := function.Function{
+			Space:        "",
+			ID:           "somefunc",
+			ProviderType: httpprovider.Type,
+			Provider: httpprovider.HTTP{
+				URL: testListServer.URL,
+			},
+		}
+		target.EXPECT().HTTPBackingFunction(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
+		target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
+		target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
+		router := testrouter(target)
+
+		req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("some=thing"))
+		req.Header.Set("content-type", test["content-type"])
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+	}
 }
 
 func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T) {
