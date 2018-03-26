@@ -108,12 +108,19 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 	defer ctrl.Finish()
 	tests := []map[string]string{
 		{
+			"body": "some=thing",
 			"expected": "c29tZT10aGluZw==",
 			"content-type": "",
 		},
 		{
+			"body": "some=thing",
 			"expected": "some=thing",
 			"content-type": "application/x-www-form-urlencoded",
+		},
+		{
+			"body": "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+			"expected": "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+			"content-type": "multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
 		},
 	}
 	for _, test := range tests {
@@ -141,7 +148,7 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 		target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
 		router := testrouter(target)
 
-		req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("some=thing"))
+		req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader(test["body"]))
 		req.Header.Set("content-type", test["content-type"])
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, req)
