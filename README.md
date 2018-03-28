@@ -847,7 +847,7 @@ directly.
 
 ### Events are not durable
 
-The event received by Event Gateway is stored only in memory, it's not persisted to disk during processing. This means that in case of hardware failure or software crash the event may not be delivered to the subscriber. For a synchronous subscription (`http` or `invoke` event) it can manifest by error message returned to the requester. If there is multiple subscribes to the same custom event type, in case of failure the event may not be delivered to all of them.
+The event received by Event Gateway is stored only in memory, it's not persisted to disk before processing. This means that in case of hardware failure or software crash the event may not be delivered to the subscriber. For a synchronous subscription (`http` or `invoke` event) it can manifest as error message returned to the requester. For asynchronous custom event with multiple subscribers it means that the event may not be delivered to all of the subscribers.
 
 ### Events are delivered _at most once_
 
