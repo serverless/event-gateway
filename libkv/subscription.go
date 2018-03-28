@@ -20,7 +20,7 @@ import (
 
 // CreateSubscription creates subscription.
 func (service Service) CreateSubscription(s *subscription.Subscription) (*subscription.Subscription, error) {
-	err := service.validateSubscription(s)
+	err := validateSubscription(s)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (service Service) CreateSubscription(s *subscription.Subscription) (*subscr
 
 // UpdateSubscription updates subscription.
 func (service Service) UpdateSubscription(id subscription.ID, s *subscription.Subscription) (*subscription.Subscription, error) {
-	err := service.validateSubscription(s)
+	err := validateSubscription(s)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (service Service) deleteEndpoint(space, method, path string) error {
 	return nil
 }
 
-func (service Service) validateSubscription(s *subscription.Subscription) error {
+func validateSubscription(s *subscription.Subscription) error {
 	if s.Space == "" {
 		s.Space = defaultSpace
 	}

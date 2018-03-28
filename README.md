@@ -622,6 +622,8 @@ JSON object:
 
 **Request**
 
+_Note that `event`, `functionId`, `path`, and `method` may not be updated in an UpdateSubscription call._
+
 * `event` - `string` - event name
 * `functionId` - `string` - ID of function to receive events
 * `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
