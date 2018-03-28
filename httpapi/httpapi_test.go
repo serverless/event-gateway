@@ -365,8 +365,8 @@ func TestUpdateSubscription_InvalidSubscriptionUpdate(t *testing.T) {
 		Space:        "default",
 		ID:           subscription.ID("http,GET,%2F"),
 		Event:        "http",
-		FunctionID:   "func",
-		Method:       "POST",
+		FunctionID:   "func2",
+		Method:       "GET",
 		Path:         "/",
 		CORS:         &subscription.CORS{
 		    Origins:          []string{"*"},
@@ -375,11 +375,11 @@ func TestUpdateSubscription_InvalidSubscriptionUpdate(t *testing.T) {
 		    AllowCredentials: false,
 		},
 	}
-	subscriptions.EXPECT().UpdateSubscription(subscription.ID("http,GET,%2F"), input).Return(nil, &subscription.ErrInvalidSubscriptionUpdate{ID: subscription.ID("http,GET,%2F")})
+	subscriptions.EXPECT().UpdateSubscription(subscription.ID("http,GET,%2F"), input).Return(nil, &subscription.ErrInvalidSubscriptionUpdate{Field: "FunctionID"})
 
 	resp := httptest.NewRecorder()
 	payload := bytes.NewReader([]byte(`
-	    {"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"POST","path":"/","cors":{"origins":["*"],"methods":["HEAD","GET","POST"],"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}
+	    {"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func2","method":"GET","path":"/","cors":{"origins":["*"],"methods":["HEAD","GET","POST"],"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}
 		`))
 	req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/http,GET,%2F", payload)
 	router.ServeHTTP(resp, req)
@@ -387,7 +387,7 @@ func TestUpdateSubscription_InvalidSubscriptionUpdate(t *testing.T) {
 	httpresp := &httpapi.Response{}
 	json.Unmarshal(resp.Body.Bytes(), httpresp)
 	assert.Equal(t, http.StatusBadRequest, resp.Code)
-	assert.Equal(t, `Invalid update. This update would change the SubscriptionID for "http,GET,%2F".`, httpresp.Errors[0].Message)
+	assert.Equal(t, `Invalid update. 'FunctionID' of existing subscription cannot be updated.`, httpresp.Errors[0].Message)
 }
 
 func TestUpdateSubscription_SubscriptionNotFound(t *testing.T) {

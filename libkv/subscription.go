@@ -25,7 +25,7 @@ func (service Service) CreateSubscription(s *subscription.Subscription) (*subscr
 		return nil, err
 	}
 
-	s.ID = generateSubscriptionID(s)
+	s.ID = newSubscriptionID(s)
 	_, err = service.SubscriptionStore.Get(subscriptionPath(s.Space, s.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &subscription.ErrSubscriptionAlreadyExists{
@@ -72,16 +72,14 @@ func (service Service) UpdateSubscription(id subscription.ID, s *subscription.Su
 		return nil, err
 	}
 
-    // If the subscriptionID changes, it should be a new subscription rather than an update.
-	newID := generateSubscriptionID(s)
-	if newID != id {
-	    return nil, &subscription.ErrInvalidSubscriptionUpdate{
-	        ID: id,
-	    }
-	}
-	_, err = service.SubscriptionStore.Get(subscriptionPath(s.Space, s.ID), &store.ReadOptions{Consistent: true})
+	sub, err := service.GetSubscription(s.Space, id)
 	if err != nil {
-		return nil, &subscription.ErrSubscriptionNotFound{ID: s.ID}
+		return nil, err
+	}
+
+	err = validateSubscriptionUpdate(s, sub)
+	if err != nil {
+	    return nil, err
 	}
 
 	f, err := service.GetFunction(s.Space, s.FunctionID)
@@ -320,7 +318,7 @@ func isPathInConflict(existing, new string) bool {
 	return true
 }
 
-func generateSubscriptionID(s *subscription.Subscription) subscription.ID {
+func newSubscriptionID(s *subscription.Subscription) subscription.ID {
 	if s.Event == event.TypeHTTP {
 		return subscription.ID(string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
 	}
@@ -343,4 +341,21 @@ func urlPathValidator(fl validator.FieldLevel) bool {
 // eventTypeValidator validates if field contains event name
 func eventTypeValidator(fl validator.FieldLevel) bool {
 	return regexp.MustCompile(`^[a-zA-Z0-9\.\-_]+$`).MatchString(fl.Field().String())
+}
+
+func validateSubscriptionUpdate(newSub *subscription.Subscription, oldSub *subscription.Subscription) error {
+    if newSub.Event != oldSub.Event {
+        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Event"}
+    }
+    if newSub.FunctionID != oldSub.FunctionID {
+        return &subscription.ErrInvalidSubscriptionUpdate{Field: "FunctionID"}
+    }
+    if newSub.Path != oldSub.Path {
+        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Path"}
+    }
+    if newSub.Method != oldSub.Method {
+        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Method"}
+    }
+
+    return nil
 }

@@ -201,10 +201,12 @@ func TestUpdateSubscription_InvalidSubscriptionUpdate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	subs := &Service{Log: zap.NewNop()}
-	_, err := subs.UpdateSubscription(subscription.ID("http,POST,%2F"), &subscription.Subscription{ID: "http,GET,%2F", Event: "http", FunctionID: "func", Method: "GET", Path: "/", CORS: &subscription.CORS{ Origins: []string{"*"} } })
+	subscriptionsDB := mock.NewMockStore(ctrl)
+	subscriptionsDB.EXPECT().Get("default/http,GET,%2F", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: []byte(`{"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`)}, nil)
+	subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+	_, err := subs.UpdateSubscription(subscription.ID("http,GET,%2F"), &subscription.Subscription{ID: "http,GET,%2F", Event: "http", FunctionID: "func2", Method: "GET", Path: "/", CORS: &subscription.CORS{ Origins: []string{"*"} } })
 
-	assert.Equal(t, err, &subscription.ErrInvalidSubscriptionUpdate{ID: "http,POST,%2F"})
+	assert.Equal(t, err, &subscription.ErrInvalidSubscriptionUpdate{Field: "FunctionID"})
 }
 
 func TestUpdateSubscription_SubscriptionNotFound(t *testing.T) {
@@ -226,7 +228,7 @@ func TestUpdateSubscription_FunctionNotFound(t *testing.T) {
 	defer ctrl.Finish()
 
 	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().Get("default/http,GET,%2F", &store.ReadOptions{Consistent: true}).Return(nil, nil)
+	subscriptionsDB.EXPECT().Get("default/http,GET,%2F", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: []byte(`{"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/"}`)}, nil)
 	endpointsDB := mock.NewMockStore(ctrl)
 	functionsDB := mock.NewMockStore(ctrl)
 	functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(nil, errors.New("Key not found in store"))
