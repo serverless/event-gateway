@@ -275,7 +275,7 @@ func (h HTTPAPI) updateSubscription(w http.ResponseWriter, r *http.Request, para
 		if _, ok := err.(*subscription.ErrInvalidSubscriptionUpdate); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 		} else if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*subscription.ErrSubscriptionValidation); ok {

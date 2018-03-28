@@ -203,6 +203,8 @@ paths:
                 $ref: "#/components/schemas/Subscription"
         400:
           $ref: '#/components/responses/ValidationError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
         500:
           $ref: '#/components/responses/Error'
     delete:

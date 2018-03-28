@@ -640,6 +640,7 @@ Status code:
 
 * `200 Created` on success
 * `400 Bad Request` on validation error
+* `404 Not Found` if subscription doesn't exist
 
 JSON object:
 

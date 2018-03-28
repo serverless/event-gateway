@@ -420,7 +420,7 @@ func TestUpdateSubscription_SubscriptionNotFound(t *testing.T) {
 
 	httpresp := &httpapi.Response{}
 	json.Unmarshal(resp.Body.Bytes(), httpresp)
-	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Equal(t, http.StatusNotFound, resp.Code)
 	assert.Equal(t, `Subscription "http,GET,%2F" not found.`, httpresp.Errors[0].Message)
 }
 
