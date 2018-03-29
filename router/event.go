@@ -70,7 +70,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 		}
 	}
 
-	if event.Type == eventpkg.TypeHTTP {
+	if event.EventType == eventpkg.TypeHTTP {
 		event.Data = &eventpkg.HTTPEvent{
 			Headers: headers,
 			Query:   r.URL.Query(),

@@ -87,7 +87,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if event.Type == eventpkg.TypeInvoke {
+			if event.EventType == eventpkg.TypeInvoke {
 				functionID := function.ID(r.Header.Get(headerFunctionID))
 				space := r.Header.Get(headerSpace)
 				if space == "" {
@@ -100,7 +100,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				metricEventsProcessed.WithLabelValues(space, "invoke").Inc()
 			} else if !event.IsSystem() {
-				reportReceivedEvent(event.ID)
+				reportReceivedEvent(event.EventID)
 
 				router.enqueueWork(path, event)
 				w.WriteHeader(http.StatusAccepted)
@@ -447,9 +447,9 @@ func (router *Router) loop() {
 
 // processEvent call all functions subscribed for an event
 func (router *Router) processEvent(e backlogEvent) {
-	reportEventOutOfQueue(e.event.ID)
+	reportEventOutOfQueue(e.event.EventID)
 
-	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.Type)
+	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.EventType)
 	for _, subscriber := range subscribers {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}
