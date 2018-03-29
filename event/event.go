@@ -14,29 +14,29 @@ import (
 // Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on
 // this schema.
 type Event struct {
-	Namespace  			string      			`json:"namespace"`
-	EventType       	Type        			`json:"event-type"`
-	EventTypeVersion 	string      			`json:"event-type-version"`
-	CloudEventsVersion	string					`json:"cloud-events-version"`
-	Source				struct{
-		SourceType		string					`json:"source-type"`
-		SourceID		string					`json:"source-id"`
-	}											`json:"source"`
-	EventID         	string     				`json:"event-id"`
-	EventTime			uint64      			`json:"event-time"`
-	ContentType			string      			`json:"content-type"`
-	Extensions			zap.MapStringInterface	`json:"extensions"`
-	Data       			interface{} 			`json:"data"`
+	Namespace          string `json:"namespace"`
+	EventType          Type   `json:"event-type"`
+	EventTypeVersion   string `json:"event-type-version"`
+	CloudEventsVersion string `json:"cloud-events-version"`
+	Source             struct {
+		SourceType string `json:"source-type"`
+		SourceID   string `json:"source-id"`
+	} `json:"source"`
+	EventID     string                 `json:"event-id"`
+	EventTime   uint64                 `json:"event-time"`
+	ContentType string                 `json:"content-type"`
+	Extensions  zap.MapStringInterface `json:"extensions"`
+	Data        interface{}            `json:"data"`
 }
 
 // New return new instance of Event.
 func New(eventType Type, mime string, payload interface{}) *Event {
 	return &Event{
-		EventType:      eventType,
-		EventID:        uuid.NewV4().String(),
-		EventTime: 		uint64(time.Now().UnixNano() / int64(time.Millisecond)),
-		ContentType:   	mime,
-		Data:       	payload,
+		EventType:   eventType,
+		EventID:     uuid.NewV4().String(),
+		EventTime:   uint64(time.Now().UnixNano() / int64(time.Millisecond)),
+		ContentType: mime,
+		Data:        payload,
 	}
 }
 

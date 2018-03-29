@@ -1,8 +1,8 @@
 package zap
 
 import (
-	"go.uber.org/zap/zapcore"
 	"encoding/json"
+	"go.uber.org/zap/zapcore"
 )
 
 // Strings is a string array that implements MarshalLogArray.
