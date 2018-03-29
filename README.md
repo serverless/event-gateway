@@ -42,6 +42,7 @@ yet ready for production applications._
 1.  [Comparison](#comparison)
 1.  [Architecture](#architecture)
     1.  [System Overview](#system-overview)
+    1.  [Reliability Guarantees](#reliability-guarantees)
     1.  [Clustering](#clustering)
 1.  [Background](#background)
 
@@ -58,7 +59,7 @@ using the Event Gateway locally.
 
 There is a [official Docker image](https://hub.docker.com/r/serverless/event-gateway/).
 
-```
+```bash
 docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway -dev
 ```
 
@@ -95,7 +96,7 @@ event.
 
 ##### curl example
 
-```http
+```bash
 curl --request POST \
   --url http://localhost:4001/v1/spaces/default/functions \
   --header 'content-type: application/json' \
@@ -127,7 +128,7 @@ eventGateway.registerFunction({
 
 ##### curl example
 
-```http
+```bash
 curl --request POST \
   --url http://localhost:4000/ \
   --header 'content-type: application/json' \
@@ -162,7 +163,7 @@ path property indicated URL path which Events API will be listening on.
 
 ##### curl example
 
-```http
+```bash
 curl --request POST \
   --url http://localhost:4001/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
@@ -190,7 +191,7 @@ eventGateway.subscribe({
 
 ##### curl example
 
-```http
+```bash
 curl --request POST \
   --url http://localhost:4000/ \
   --header 'content-type: application/json' \
@@ -218,7 +219,7 @@ only one `http` subscription for the same `method` and `path` pair.
 
 ##### curl example
 
-```http
+```bash
 curl --request POST \
   --url http://localhost:4001/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
@@ -248,7 +249,7 @@ eventGateway.subscribe({
 
 One additional concept in the Event Gateway are Spaces. Spaces provide isolation between resources. Space is a
 coarse-grained sandbox in which entities (Functions and Subscriptions) can interact freely. All actions are
-possible within a space: publishing, subscribing and invoking. All access cross-space is disabled.
+possible within a space: publishing, subscribing and invoking.
 
 Space is not about access control/authentication/authorization. It's only about isolation. It doesn't enforce any
 specific subscription path.
@@ -355,9 +356,10 @@ arbitrary payload, subscribed function receives an event in [HTTP Event](#http-e
 
 **Response**
 
-Status code:
+HTTP subscription response depends on [response object](#respond-to-an-http-event) returned by the backing function. In case of failure during function invocation following error response are possible:
 
-* `200 OK` with payload with function response
+* `404 Not Found` if there is no backing function registered for requested HTTP endpoint
+* `500 Internal Server Error` if the function invocation failed or the backing function didn't return [HTTP response object](#respond-to-an-http-event)
 
 ##### CORS
 
@@ -415,7 +417,9 @@ arbitrary payload, invoked function receives an event in above schema, where req
 
 Status code:
 
-* `200 OK` with payload with function response
+* `200 OK` with payload returned by invoked function
+* `404 Not Found` if there is no function registered or `invoke` subscription created for requested function
+* `500 Internal Server Error` if the function invocation failed
 
 ### CORS
 
@@ -881,6 +885,18 @@ directly.
 │                                                                                                                │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+## Reliability Guarantees
+
+### Events are not durable
+
+The event received by Event Gateway is stored only in memory, it's not persisted to disk before processing. This means that in case of hardware failure or software crash the event may not be delivered to the subscriber. For a synchronous subscription (`http` or `invoke` event) it can manifest as error message returned to the requester. For asynchronous custom event with multiple subscribers it means that the event may not be delivered to all of the subscribers.
+
+### Events are delivered _at most once_
+
+Event Gateway attempts delivery fulfillment for an event only once and consequently any event received successfully by the Event Gateway is guaranteed to be received by the subscriber _at most once_. That said, the nature of Event Gateway provider implementation could result in retries under specific circumstances, but these should not cause delivering the same event multiple times. For example, Providers for AWS Services that use the AWS SDK are subject to auto retry logic that's built into the SDK ([AWS documentation on API retries](https://docs.aws.amazon.com/general/latest/gr/api-retries.html)).
+
+AWS Lambda provider uses `RequestResponse` invocation type which means that retry logic for asynchronous AWS events doesn't apply here. Among others it means, that failed deliveries of custom events are not sent to DLQ. Please find more information in [Understanding Retry Behavior](https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html), "Synchronous invocation" section.
 
 ## Background
 

@@ -71,5 +71,9 @@ paths:
           type: string
           default: default
       responses:
-        202:
-          description: "event accepted"
+        200:
+          description: "function invoked successfully, response body contains payload returned by the function"
+        404:
+          description: "no function registered or 'invoke' subscription created for requested function"
+        500:
+          description: "function invocation failed"
