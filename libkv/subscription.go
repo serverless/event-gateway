@@ -20,7 +20,7 @@ import (
 
 // CreateSubscription creates subscription.
 func (service Service) CreateSubscription(s *subscription.Subscription) (*subscription.Subscription, error) {
-	err := service.validateSubscription(s)
+	err := validateSubscription(s)
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +59,48 @@ func (service Service) CreateSubscription(s *subscription.Subscription) (*subscr
 	}
 
 	service.Log.Debug("Subscription created.",
+		zap.String("event", string(s.Event)),
+		zap.String("space", s.Space),
+		zap.String("functionId", string(s.FunctionID)))
+	return s, nil
+}
+
+// UpdateSubscription updates subscription.
+func (service Service) UpdateSubscription(id subscription.ID, s *subscription.Subscription) (*subscription.Subscription, error) {
+	err := validateSubscription(s)
+	if err != nil {
+		return nil, err
+	}
+
+	sub, err := service.GetSubscription(s.Space, id)
+	if err != nil {
+		return nil, err
+	}
+
+	err = validateSubscriptionUpdate(s, sub)
+	if err != nil {
+	    return nil, err
+	}
+
+	f, err := service.GetFunction(s.Space, s.FunctionID)
+	if err != nil {
+		return nil, err
+	}
+	if f == nil {
+		return nil, &function.ErrFunctionNotFound{ID: s.FunctionID}
+	}
+
+	buf, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	err = service.SubscriptionStore.Put(subscriptionPath(s.Space, s.ID), buf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	service.Log.Debug("Subscription updated.",
 		zap.String("event", string(s.Event)),
 		zap.String("space", s.Space),
 		zap.String("functionId", string(s.FunctionID)))
@@ -184,7 +226,7 @@ func (service Service) deleteEndpoint(space, method, path string) error {
 	return nil
 }
 
-func (service Service) validateSubscription(s *subscription.Subscription) error {
+func validateSubscription(s *subscription.Subscription) error {
 	if s.Space == "" {
 		s.Space = defaultSpace
 	}
@@ -299,4 +341,21 @@ func urlPathValidator(fl validator.FieldLevel) bool {
 // eventTypeValidator validates if field contains event name
 func eventTypeValidator(fl validator.FieldLevel) bool {
 	return regexp.MustCompile(`^[a-zA-Z0-9\.\-_]+$`).MatchString(fl.Field().String())
+}
+
+func validateSubscriptionUpdate(newSub *subscription.Subscription, oldSub *subscription.Subscription) error {
+    if newSub.Event != oldSub.Event {
+        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Event"}
+    }
+    if newSub.FunctionID != oldSub.FunctionID {
+        return &subscription.ErrInvalidSubscriptionUpdate{Field: "FunctionID"}
+    }
+    if newSub.Path != oldSub.Path {
+        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Path"}
+    }
+    if newSub.Method != oldSub.Method {
+        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Method"}
+    }
+
+    return nil
 }

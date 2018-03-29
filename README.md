@@ -614,6 +614,46 @@ JSON object:
 
 ---
 
+#### Update Subscription
+
+**Endpoint**
+
+`PUT <Configuration API URL>/v1/spaces/<space>/subscriptions/<subscription ID>`
+
+**Request**
+
+_Note that `event`, `functionId`, `path`, and `method` may not be updated in an UpdateSubscription call._
+
+* `event` - `string` - event name
+* `functionId` - `string` - ID of function to receive events
+* `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
+* `method` - `string` - required for `http` event, HTTP method that accepts requests
+* `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
+  * `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
+  * `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
+  * `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
+  * `allowCredentials` - `bool` - default: false
+
+**Response**
+
+Status code:
+
+* `200 Created` on success
+* `400 Bad Request` on validation error
+* `404 Not Found` if subscription doesn't exist
+
+JSON object:
+
+* `space` - `string` - space name
+* `subscriptionId` - `string` - subscription ID
+* `event` - `string` - event name
+* `functionId` - function ID
+* `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
+* `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
+* `cors` - `object` - optional, in case of `http` event, CORS configuration
+
+---
+
 #### Delete Subscription
 
 **Endpoint**
