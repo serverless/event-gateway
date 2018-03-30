@@ -14,29 +14,28 @@ import (
 // Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on
 // this schema.
 type Event struct {
-	Namespace          string `json:"namespace"`
-	EventType          Type   `json:"event-type"`
-	EventTypeVersion   string `json:"event-type-version"`
-	CloudEventsVersion string `json:"cloud-events-version"`
-	Source             struct {
-		SourceType string `json:"source-type"`
-		SourceID   string `json:"source-id"`
-	} `json:"source"`
-	EventID     string                 `json:"event-id"`
-	EventTime   uint64                 `json:"event-time"`
-	ContentType string                 `json:"content-type"`
-	Extensions  zap.MapStringInterface `json:"extensions"`
-	Data        interface{}            `json:"data"`
+	EventType          Type                   `json:"event-type"`
+	EventTypeVersion   string                 `json:"event-type-version"`
+	CloudEventsVersion string                 `json:"cloud-events-version"`
+	Source             string                 `json:"source"`
+	EventID            string                 `json:"event-id"`
+	EventTime          time.Time              `json:"event-time"`
+	SchemaURL          string                 `json:"schema-url"`
+	ContentType        string                 `json:"content-type"`
+	Extensions         zap.MapStringInterface `json:"extensions"`
+	Data               interface{}            `json:"data"`
 }
 
 // New return new instance of Event.
 func New(eventType Type, mime string, payload interface{}) *Event {
 	return &Event{
-		EventType:   eventType,
-		EventID:     uuid.NewV4().String(),
-		EventTime:   uint64(time.Now().UnixNano() / int64(time.Millisecond)),
-		ContentType: mime,
-		Data:        payload,
+		EventType:          eventType,
+		CloudEventsVersion: "0.1",
+		Source:             "",
+		EventID:            uuid.NewV4().String(),
+		EventTime:          time.Now(),
+		ContentType:        mime,
+		Data:               payload,
 	}
 }
 
@@ -51,16 +50,13 @@ const TypeHTTP = Type("http")
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	if e.Namespace != "" {
-		enc.AddString("namespace", string(e.Namespace))
-	}
 	enc.AddString("event-type", string(e.EventType))
-	enc.AddString("event-type-version", string(e.EventTypeVersion))
-	enc.AddString("cloud-events-version", string(e.CloudEventsVersion))
-	enc.AddString("source.source-type", string(e.Source.SourceType))
-	enc.AddString("source.source-id", string(e.Source.SourceID))
+	enc.AddString("event-type-version", e.EventTypeVersion)
+	enc.AddString("cloud-events-version", e.CloudEventsVersion)
+	enc.AddString("source", e.Source)
 	enc.AddString("event-id", e.EventID)
-	enc.AddUint64("event-time", e.EventTime)
+	enc.AddString("event-time", e.EventTime.String())
+	enc.AddString("schema-url", e.SchemaURL)
 	enc.AddString("content-type", e.ContentType)
 	e.Extensions.MarshalLogObject(enc)
 	payload, _ := json.Marshal(e.Data)
