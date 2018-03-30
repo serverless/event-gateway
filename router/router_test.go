@@ -113,9 +113,14 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 			"content-type": "",
 		},
 		{
-			"body": "some=thing",
-			"expected": "some=thing",
-			"content-type": "application/x-www-form-urlencoded; charset=utf-8",
+			"body": `{"some":"thing"}`,
+			"expected": `{"some":"thing"}`,
+			"content-type": "application/json",
+		},
+		{
+			"body": `{"some":"thing"}`,
+			"expected": `{"some":"thing"}`,
+			"content-type": "application/json; charset=utf-8",
 		},
 		{
 			"body": "some=thing",
@@ -136,7 +141,14 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 				}
 				json.NewDecoder(r.Body).Decode(&testevent)
 
-				assert.Equal(t, test["expected"], testevent.Data.(map[string]interface{})["body"])
+				if strings.HasPrefix(test["content-type"], "application/json") {
+					// Marshal body to JSON because it unmarshalled it deeply above when decoding the body
+					data, err := json.Marshal(testevent.Data.(map[string]interface{})["body"])
+					assert.Nil(t, err)
+					assert.Equal(t, test["expected"], string(data))
+				} else {
+					assert.Equal(t, test["expected"], testevent.Data.(map[string]interface{})["body"])
+				}
 			}))
 		defer testListServer.Close()
 		target := mock.NewMockTargeter(ctrl)
