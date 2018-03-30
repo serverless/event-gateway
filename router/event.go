@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	mimetype "mime"
+	"mime"
 	"net/http"
 	"regexp"
 	"strings"
@@ -51,10 +51,10 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	eventType := extractEventType(r)
 	headers := transformHeaders(r.Header)
 
-	mime, _, err := mimetype.ParseMediaType(r.Header.Get("Content-Type"))
+	mimetype, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
-			mime = "application/octet-stream"
+			mimetype = "application/octet-stream"
 		} else {
 			return nil, "", err
 		}
@@ -68,18 +68,18 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 		}
 	}
 
-	event := eventpkg.New(eventType, mime, body)
+	event := eventpkg.New(eventType, mimetype, body)
 
 	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
 	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
 	if len(body) > 0 {
 		switch {
-		case mime == mimeJSON:
+		case mimetype == mimeJSON:
 			err := json.Unmarshal(body, &event.Data)
 			if err != nil {
 				return nil, "", errors.New("malformed JSON body")
 			}
-		case mime == mimeFormURLEncoded, mime == mimeFormMultipart:
+		case mimetype == mimeFormURLEncoded, mimetype == mimeFormMultipart:
 			event.Data = string(body)
 		}
 	}
