@@ -34,7 +34,6 @@ yet ready for production applications._
     1.  [Subscriptions](#subscriptions)
     1.  [Spaces](#spaces)
 1.  [System Events](#system-events)
-1.  [Plugin System](#plugin-system)
 1.  [APIs](#apis)
 1.  [Client SDKs](#sdk)
 1.  [Versioning](#versioning)
@@ -286,31 +285,6 @@ This is how Spaces fit different needs depending on use-case:
 Technically speaking Space is a mandatory field ("default" by default) on Function or Subscription object that user has
 to provide during function registration or subscription creation. Space is a first class concept in Config API. Config
 API can register function in specific space or list all functions or subscriptions from a space.
-
-## Plugin System
-
-The Event Gateway is built with extensibility in mind. Built-in plugin system allows reacting on system events and
-manipulate how an event is processed through the Event Gateway.
-
-_Current implementation supports plugins written only in Golang. We plan to support other languages in the future._
-
-Plugin system is based on [go-plugin](https://github.com/hashicorp/go-plugin). A plugin needs to implement the following
-interface:
-
-```go
-type Reacter interface {
-	Subscriptions() []Subscription
-	React(event event.Event) error
-}
-```
-
-`Subscription` model indicates the event that plugin subscribes to and the subscription type. A subscription can be either
-sync or async. Sync (blocking) subscription means that in case of error returned from `React` method the event won't be
-further processed by the Event Gateway.
-
-`React` method is called for every system event that plugin subscribed to.
-
-For more details, see [the example plugin](plugin/example).
 
 ## APIs
 
