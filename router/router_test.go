@@ -115,6 +115,11 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 		{
 			"body": "some=thing",
 			"expected": "some=thing",
+			"content-type": "application/x-www-form-urlencoded; charset=utf-8",
+		},
+		{
+			"body": "some=thing",
+			"expected": "some=thing",
 			"content-type": "application/x-www-form-urlencoded",
 		},
 		{
