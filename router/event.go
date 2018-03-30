@@ -53,11 +53,10 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 
 	mimetype, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
-		if err.Error() == "mime: no media type" {
-			mimetype = "application/octet-stream"
-		} else {
+		if err.Error() != "mime: no media type" {
 			return nil, "", err
 		}
+		mimetype = "application/octet-stream"
 	}
 
 	body := []byte{}
