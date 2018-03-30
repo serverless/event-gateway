@@ -47,12 +47,20 @@ yet ready for production applications._
 
 ## Quick Start
 
-### via Serverless Framework
+### Example projects
 
-The easiest way to get started with the Event Gateway is using the [Serverless Framework](https://serverless.com/framework/). The framework is setup to automatically download and install the Event Gateway during development of a serverless service.
+Looking for some examples to get started? The easiest way to use the Event Gateway is with the [`serverless-event-gateway-plugin`](https://github.com/serverless/serverless-event-gateway-plugin) with the Serverless Framework. Below are a few walkthrough examples:
 
-Check out **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** for a walkthrough of
-using the Event Gateway locally.
+- To use custom events to allow for asynchronous, decoupled communication between services, check out [this example](./examples/crm-service) on updating your CRM service whenever a new user is created in your Users service.
+- For using Event Gateway as an API Gateway to tie together hundreds of functions across multiple services, look at [this example](./examples/users-service) for deploying a REST-like Users service with standard CRUD endpoints.
+
+To use these examples, you'll need a running instance of the Event Gateway. Check out the different methods below.
+
+---
+
+### Hosted version
+
+If you don't want to run the Event Gateway yourself, you can use the hosted version provided by the Serverless team. Please [contact us](mailto:hello@serverless.com) for an invitation to the beta.
 
 ### via Docker
 
@@ -62,9 +70,25 @@ There is a [official Docker image](https://hub.docker.com/r/serverless/event-gat
 docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway -dev
 ```
 
+### Binary
+
+On macOS or Linux run the following to download the binary:
+
+```
+curl -sfL https://raw.githubusercontent.com/serverless/event-gateway/master/install.sh | sh
+```
+
+On Windows download [binary](https://github.com/serverless/event-gateway/releases).
+
+Then run the binary in development mode with:
+
+```bash
+$ event-gateway -dev
+```
+
 ---
 
-If you want to install and develop with the Event Gateway without the Serverless Framework,
+If you want more detailed information on running and developing with the Event Gateway,
 please check [Running Locally](./docs/running-locally.md) and [Developing](./docs/developing.md) guides.
 
 ## Motivation
