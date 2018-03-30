@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	mime2 "mime"
 	"net/http"
 	"regexp"
 	"strings"
@@ -20,8 +21,8 @@ type HTTPResponse struct {
 }
 
 const (
-	mimeJSON = "application/json"
-	mimeFormMultipart = "multipart/form-data"
+	mimeJSON           = "application/json"
+	mimeFormMultipart  = "multipart/form-data"
 	mimeFormURLEncoded = "application/x-www-form-urlencoded"
 )
 
@@ -50,13 +51,16 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	eventType := extractEventType(r)
 	headers := transformHeaders(r.Header)
 
-	mime := r.Header.Get("Content-Type")
-	if mime == "" {
-		mime = "application/octet-stream"
+	mime, _, err := mime2.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil {
+		if err.Error() == "mime: no media type" {
+			mime = "application/octet-stream"
+		} else {
+			return nil, "", err
+		}
 	}
 
 	body := []byte{}
-	var err error
 	if r.Body != nil {
 		body, err = ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -70,12 +74,12 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
 	if len(body) > 0 {
 		switch {
-		case strings.HasPrefix(mime, mimeJSON):
+		case mime == mimeJSON:
 			err := json.Unmarshal(body, &event.Data)
 			if err != nil {
 				return nil, "", errors.New("malformed JSON body")
 			}
-		case strings.HasPrefix(mime, mimeFormMultipart), strings.HasPrefix(mime, mimeFormURLEncoded):
+		case mime == mimeFormURLEncoded, mime == mimeFormMultipart:
 			event.Data = string(body)
 		}
 	}
