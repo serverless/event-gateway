@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	mime2 "mime"
+	mimetype "mime"
 	"net/http"
 	"regexp"
 	"strings"
@@ -51,7 +51,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	eventType := extractEventType(r)
 	headers := transformHeaders(r.Header)
 
-	mime, _, err := mime2.ParseMediaType(r.Header.Get("Content-Type"))
+	mime, _, err := mimetype.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
 		if err.Error() == "mime: no media type" {
 			mime = "application/octet-stream"
