@@ -185,6 +185,28 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         500:
           $ref: '#/components/responses/Error'
+    put:
+      summary: "Update subscription"
+      tags:
+      - "subscription"
+      operationId: "UpdateSubscription"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateSubscription"
+      responses:
+        200:
+          description: "subscription updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
     delete:
       summary: "Delete subscription"
       tags:
@@ -453,6 +475,23 @@ components:
                 $ref: '#/components/schemas/Provider'
     CreateSubscription:
       description: "subscription create request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              functionId:
+                $ref: '#/components/schemas/FunctionID'
+              event:
+                $ref: '#/components/schemas/Event'
+              path:
+                $ref: '#/components/schemas/Path'
+              method:
+                $ref: '#/components/schemas/Method'
+              cors:
+                $ref: '#/components/schemas/CORS'
+    UpdateSubscription:
+      description: "subscription update request body"
       content:
         application/json:
           schema:

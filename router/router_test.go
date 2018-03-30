@@ -1,6 +1,7 @@
 package router_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/plugin"
+	httpprovider "github.com/serverless/event-gateway/providers/http"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/router/mock"
 	"github.com/serverless/event-gateway/subscription"
@@ -99,6 +101,58 @@ func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 	assert.Equal(t, `{"errors":[{"message":"malformed JSON body"}]}`+"\n", recorder.Body.String())
+}
+
+func TestRouterServeHTTP_Encoding(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	tests := []map[string]string{
+		{
+			"body": "some=thing",
+			"expected": "c29tZT10aGluZw==",
+			"content-type": "",
+		},
+		{
+			"body": "some=thing",
+			"expected": "some=thing",
+			"content-type": "application/x-www-form-urlencoded",
+		},
+		{
+			"body": "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+			"expected": "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+			"content-type": "multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
+		},
+	}
+	for _, test := range tests {
+		testListServer := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				testevent := event.Event{
+					Data: event.HTTPEvent{},
+				}
+				json.NewDecoder(r.Body).Decode(&testevent)
+
+				assert.Equal(t, test["expected"], testevent.Data.(map[string]interface{})["body"])
+			}))
+		defer testListServer.Close()
+		target := mock.NewMockTargeter(ctrl)
+		someFunc := function.Function{
+			Space:        "",
+			ID:           "somefunc",
+			ProviderType: httpprovider.Type,
+			Provider: httpprovider.HTTP{
+				URL: testListServer.URL,
+			},
+		}
+		target.EXPECT().HTTPBackingFunction(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
+		target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
+		target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
+		router := testrouter(target)
+
+		req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader(test["body"]))
+		req.Header.Set("content-type", test["content-type"])
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+	}
 }
 
 func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T) {
