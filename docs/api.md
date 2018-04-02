@@ -9,6 +9,8 @@ This document contains the API documentation for the Events API and the Configur
 
 ## Events API
 
+[OpenAPI spec](./openapi/openapi-events-api.yaml)
+
 The Event Gateway exposes an API for emitting events. Events API can be used for emitting custom event, HTTP events and
 for invoking function. By default Events API runs on `:4000` port.
 
@@ -174,6 +176,8 @@ Events API supports CORS requests which means that any origin can emit a custom 
 configured per-subscription basis.
 
 ## Configuration API
+
+[OpenAPI spec](./openapi/openapi-config-api.yaml)
 
 The Event Gateway exposes a RESTful JSON configuration API. By default Configuration API runs on `:4001` port.
 
