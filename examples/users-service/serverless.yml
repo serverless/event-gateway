@@ -1,0 +1,36 @@
+service: eg-users-service
+provider:
+  name: aws
+  runtime: nodejs6.10
+  region: us-east-1
+
+custom:
+  eventgateway:
+    space: <your space>
+    apiKey: <your API key>
+
+plugins:
+  - "@serverless/serverless-event-gateway-plugin"
+
+functions:
+  getUser:
+    handler: index.get
+    events:
+      - eventgateway:
+          event: http
+          method: GET
+          path: /users/:id
+  createUser:
+    handler: index.post
+    events:
+      - eventgateway:
+          event: http
+          path: /users
+          method: POST
+  deleteUser:
+    handler: index.delete
+    events:
+      - eventgateway:
+          event: http
+          path: /users/:id
+          method: DELETE

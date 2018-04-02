@@ -33,11 +33,9 @@ yet ready for production applications._
     1.  [Function Discovery](#function-discovery)
     1.  [Subscriptions](#subscriptions)
     1.  [Spaces](#spaces)
-1.  [Events API](#events-api)
-1.  [Configuration API](#configuration-api)
 1.  [System Events](#system-events)
-1.  [Plugin System](#plugin-system)
-1.  [Client Libraries](#client-libraries)
+1.  [APIs](#apis)
+1.  [Client SDKs](#sdk)
 1.  [Versioning](#versioning)
 1.  [Comparison](#comparison)
 1.  [Architecture](#architecture)
@@ -48,12 +46,20 @@ yet ready for production applications._
 
 ## Quick Start
 
-### via Serverless Framework
+### Example projects
 
-The easiest way to get started with the Event Gateway is using the [Serverless Framework](https://serverless.com/framework/). The framework is setup to automatically download and install the Event Gateway during development of a serverless service.
+Looking for some examples to get started? The easiest way to use the Event Gateway is with the [`serverless-event-gateway-plugin`](https://github.com/serverless/serverless-event-gateway-plugin) with the Serverless Framework. Below are a few walkthrough examples:
 
-Check out **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** for a walkthrough of
-using the Event Gateway locally.
+- To use custom events to allow for asynchronous, decoupled communication between services, check out [this example](./examples/crm-service) on updating your CRM service whenever a new user is created in your Users service.
+- For using Event Gateway as an API Gateway to tie together hundreds of functions across multiple services, look at [this example](./examples/users-service) for deploying a REST-like Users service with standard CRUD endpoints.
+
+To use these examples, you'll need a running instance of the Event Gateway. Check out the different methods below.
+
+---
+
+### Hosted version
+
+If you don't want to run the Event Gateway yourself, you can use the hosted version provided by the Serverless team. Please [contact us](mailto:hello@serverless.com) for an invitation to the beta.
 
 ### via Docker
 
@@ -63,9 +69,25 @@ There is a [official Docker image](https://hub.docker.com/r/serverless/event-gat
 docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway -dev
 ```
 
+### Binary
+
+On macOS or Linux run the following to download the binary:
+
+```
+curl -sfL https://raw.githubusercontent.com/serverless/event-gateway/master/install.sh | sh
+```
+
+On Windows download [binary](https://github.com/serverless/event-gateway/releases).
+
+Then run the binary in development mode with:
+
+```bash
+$ event-gateway -dev
+```
+
 ---
 
-If you want to install and develop with the Event Gateway without the Serverless Framework,
+If you want more detailed information on running and developing with the Event Gateway,
 please check [Running Locally](./docs/running-locally.md) and [Developing](./docs/developing.md) guides.
 
 ## Motivation
@@ -773,10 +795,12 @@ type Reacter interface {
 `Subscription` model indicates the event that plugin subscribes to and the subscription type. A subscription can be either
 sync or async. Sync (blocking) subscription means that in case of error returned from `React` method the event won't be
 further processed by the Event Gateway.
+=======
+## APIs
 
-`React` method is called for every system event that plugin subscribed to.
+[API reference](./docs/api.md)
 
-For more details, see [the example plugin](plugin/example).
+The Event Gateway has two APIs: the Configuration API for registering functions and subscriptions, and the runtime Events API for sending events into the Event Gateway.
 
 ## SDK
 
