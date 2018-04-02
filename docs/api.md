@@ -9,30 +9,32 @@ This document contains the API documentation for the Events API and the Configur
 
 ## Events API
 
-[OpenAPI spec](./openapi/openapi-events-api.yaml)
-
 The Event Gateway exposes an API for emitting events. Events API can be used for emitting custom event, HTTP events and
 for invoking function. By default Events API runs on `:4000` port.
 
 ### Event Definition
 
-All data that passes through the Event Gateway is formatted as an Event, based on our default Event schema:
+All data that passes through the Event Gateway is formatted as an CloudEvent, based on CloudEvent schema:
 
-* `event` - `string` - the event name
-* `id` - `string` - the event's instance universally unique ID (provided by the event gateway)
-* `receivedAt` - `number` - the time (milliseconds) when the Event was received by the Event Gateway (provided by the event gateway)
-* `data` - type depends on `dataType` - the event payload
-* `dataType` - `string` - the mime type of `data` payload
+* `event-type` - `string` - the event name
+* `event-id` - `string` - the event's instance universally unique ID (provided by the event gateway)
+* `cloud-events-version` - `string` - the version of CloudEvent definition
+* `source` - `string` - source for the event
+* `event-time` - `string` - RFC 3339 formatted time when the Event was received by the Event Gateway (provided by the event gateway)
+* `data` - type depends on `content-type` - the event payload
+* `content-type` - `string` - the mime type of `data` payload
 
 Example:
 
 ```json
 {
-  "event": "myapp.user.created",
-  "id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
-  "receivedAt": 1500897327098,
+  "event-type": "myapp.user.created",
+  "event-id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
+  "cloud-events-version": "0.1",
+  "source": "", // TBD
+  "event-time": "1990-12-31T23:59:60Z",
   "data": { "foo": "bar" },
-  "dataType": "application/json"
+  "content-type": "application/json"
 }
 ```
 
@@ -172,8 +174,6 @@ Events API supports CORS requests which means that any origin can emit a custom 
 configured per-subscription basis.
 
 ## Configuration API
-
-[OpenAPI spec](./openapi/openapi-config-api.yaml)
 
 The Event Gateway exposes a RESTful JSON configuration API. By default Configuration API runs on `:4001` port.
 
