@@ -65,18 +65,21 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	event := eventpkg.New(eventType, mime, body)
-
-	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
-	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-	if len(body) > 0 {
-		switch {
-		case mime == mimeJSON:
-			err := json.Unmarshal(body, &event.Data)
-			if err != nil {
-				return nil, "", errors.New("malformed JSON body")
+	if customevent, err := router.parseCustomEventAsCloudEvent(eventType, mime, body); err == nil {
+		event.Data = customevent.Data
+	} else {
+		// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
+		// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
+		if len(body) > 0 {
+			switch {
+			case mime == mimeJSON:
+				err := json.Unmarshal(body, &event.Data)
+				if err != nil {
+					return nil, "", errors.New("malformed JSON body")
+				}
+			case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
+				event.Data = string(body)
 			}
-		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
-			event.Data = string(body)
 		}
 	}
 
@@ -101,6 +104,16 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	return event, path, nil
+}
+
+func (router *Router) parseCustomEventAsCloudEvent(eventType eventpkg.Type, mime string, body []byte) (*eventpkg.Event, error) {
+	var event = &eventpkg.Event{}
+	if eventType == eventpkg.TypeHTTP || eventType == eventpkg.TypeInvoke {
+		return event, errors.New("not a custom event")
+	}
+
+	err := json.Unmarshal(body, event)
+	return event, err
 }
 
 func extractPath(host, path string) string {
