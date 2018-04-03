@@ -8,9 +8,6 @@ import (
 // Strings is a string array that implements MarshalLogArray.
 type Strings []string
 
-// MapStringInterface is a map that implements MarshalLogObject.
-type MapStringInterface map[string]interface{}
-
 // MarshalLogArray implementation
 func (ss Strings) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	for _, s := range ss {
@@ -18,6 +15,9 @@ func (ss Strings) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	}
 	return nil
 }
+
+// MapStringInterface is a map that implements MarshalLogObject.
+type MapStringInterface map[string]interface{}
 
 // MarshalLogObject implementation
 func (msi MapStringInterface) MarshalLogObject(enc zapcore.ObjectEncoder) error {
