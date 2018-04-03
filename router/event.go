@@ -65,25 +65,25 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	event := eventpkg.New(eventType, mime, body)
-	if customevent, err := router.parseCustomEventAsCloudEvent(eventType, mime, body); err == nil {
-		event.Data = customevent.Data
-	} else {
-		// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
-		// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-		if len(body) > 0 {
-			switch {
-			case mime == mimeJSON:
-				err := json.Unmarshal(body, &event.Data)
-				if err != nil {
-					return nil, "", errors.New("malformed JSON body")
-				}
-			case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
-				event.Data = string(body)
+	if customevent, err := router.parseCustomEventAsCloudEvent(eventType, event.ContentType, body); err == nil {
+		event = customevent
+	}
+
+	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
+	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
+	if eventbody, ok := event.Data.([]byte); ok && len(eventbody) > 0 {
+		switch {
+		case mime == mimeJSON:
+			err := json.Unmarshal(eventbody, &event.Data)
+			if err != nil {
+				return nil, "", errors.New("malformed JSON body")
 			}
+		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
+			event.Data = string(eventbody)
 		}
 	}
 
-	if event.EventType == eventpkg.TypeHTTP {
+	if eventType == eventpkg.TypeHTTP {
 		event.Data = &eventpkg.HTTPEvent{
 			Headers: headers,
 			Query:   r.URL.Query(),
@@ -106,13 +106,25 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	return event, path, nil
 }
 
-func (router *Router) parseCustomEventAsCloudEvent(eventType eventpkg.Type, mime string, body []byte) (*eventpkg.Event, error) {
+func (router *Router) parseCustomEventAsCloudEvent(originalEventType eventpkg.Type, contentType string, body []byte) (*eventpkg.Event, error) {
 	var event = &eventpkg.Event{}
-	if eventType == eventpkg.TypeHTTP || eventType == eventpkg.TypeInvoke {
+	if originalEventType == eventpkg.TypeHTTP || originalEventType == eventpkg.TypeInvoke {
 		return event, errors.New("not a custom event")
 	}
 
 	err := json.Unmarshal(body, event)
+	if err != nil {
+		return event, err
+	}
+	if len(event.EventType) < 0 ||
+		len(event.CloudEventsVersion) < 0 ||
+		len(event.EventID) < 0 ||
+		event.Data == nil {
+			return event, errors.New("payload is not in valid CloudEvent format")
+	}
+	if originalEventType != event.EventType {
+		return event, errors.New("event-type from header is not same as payload CloudEvent field")
+	}
 	return event, err
 }
 
