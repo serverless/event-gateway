@@ -16,7 +16,7 @@ for invoking function. By default Events API runs on `:4000` port.
 
 ### Event Definition
 
-All data that passes through the Event Gateway is formatted as a CloudEvent, based on CloudEvent v0.1 schema:
+All data that passes through the Event Gateway is formatted as a CloudEvent, based on [CloudEvents v0.1 schema](https://github.com/cloudevents/spec/blob/master/spec.md):
 
 Example:
 
