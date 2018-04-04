@@ -31,7 +31,7 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 	return &Event{
 		EventType:          eventType,
 		CloudEventsVersion: "0.1",
-		Source:             "",
+		Source:             "https://slsgateway.com/",
 		EventID:            uuid.NewV4().String(),
 		EventTime:          time.Now(),
 		ContentType:        mime,
