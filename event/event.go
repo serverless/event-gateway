@@ -35,7 +35,7 @@ type Event struct {
 
 // New return new instance of Event.
 func New(eventType Type, mime string, payload interface{}) *Event {
-	var event = &Event{
+	event := &Event{
 		EventType:          eventType,
 		CloudEventsVersion: "0.1",
 		Source:             "https://slsgateway.com/",
