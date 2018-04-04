@@ -18,8 +18,8 @@ const (
 	mimeFormURLEncoded = "application/x-www-form-urlencoded"
 )
 
-// Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on
-// this schema.
+// Event is a default event structure. All data that passes through the Event Gateway is formatted to a CloudEvent, based on
+// CloudEvents v0.1 schema.
 type Event struct {
 	EventType          Type                   `json:"event-type" validate:"required"`
 	EventTypeVersion   string                 `json:"event-type-version"`
