@@ -92,6 +92,19 @@ func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
+	testListServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer testListServer.Close()
+	someFunc := function.Function{
+		Space:        "",
+		ID:           "somefunc",
+		ProviderType: httpprovider.Type,
+		Provider: httpprovider.HTTP{
+			URL: testListServer.URL,
+		},
+	}
+	target.EXPECT().HTTPBackingFunction(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
+	target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
+	target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("not json"))
@@ -99,8 +112,8 @@ func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, req)
 
-	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-	assert.Equal(t, `{"errors":[{"message":"malformed JSON body"}]}`+"\n", recorder.Body.String())
+	assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+	assert.Equal(t, `{"errors":[{"message":"HTTP response object malformed"}]}`+"\n", recorder.Body.String())
 }
 
 func TestRouterServeHTTP_Encoding(t *testing.T) {
