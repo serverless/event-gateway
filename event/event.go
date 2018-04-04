@@ -52,12 +52,12 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		if !ok {
 			break
 		}
-		customevent := &Event{}
-		err := json.Unmarshal(body, customevent)
+		customEvent := &Event{}
+		err := json.Unmarshal(body, customEvent)
 		if err != nil || eventType != event.EventType {
 			break
 		}
-		event = customevent
+		event = customEvent
 	}
 
 	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
