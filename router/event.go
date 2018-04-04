@@ -65,8 +65,11 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	event := eventpkg.New(eventType, mime, body)
-	if customevent, err := router.parseCustomEventAsCloudEvent(eventType, event.ContentType, body); err == nil {
-		event = customevent
+	if eventType != eventpkg.TypeHTTP && eventType != eventpkg.TypeInvoke {
+		customevent, err := router.parseCustomEventAsCloudEvent(eventType, event.ContentType, body)
+		if err == nil {
+			event = customevent
+		}
 	}
 
 	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
@@ -108,19 +111,10 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 
 func (router *Router) parseCustomEventAsCloudEvent(originalEventType eventpkg.Type, contentType string, body []byte) (*eventpkg.Event, error) {
 	var event = &eventpkg.Event{}
-	if originalEventType == eventpkg.TypeHTTP || originalEventType == eventpkg.TypeInvoke {
-		return event, errors.New("not a custom event")
-	}
 
 	err := json.Unmarshal(body, event)
 	if err != nil {
 		return event, err
-	}
-	if len(event.EventType) < 0 ||
-		len(event.CloudEventsVersion) < 0 ||
-		len(event.EventID) < 0 ||
-		event.Data == nil {
-			return event, errors.New("payload is not in valid CloudEvent format")
 	}
 	if originalEventType != event.EventType {
 		return event, errors.New("event-type from header is not same as payload CloudEvent field")
