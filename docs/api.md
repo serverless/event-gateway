@@ -25,7 +25,7 @@ Example:
   "event-type": "myapp.user.created",
   "event-id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
   "cloud-events-version": "0.1",
-  "source": "", // TBD
+  "source": "https://slsgateway.com/",
   "event-time": "1990-12-31T23:59:60Z",
   "data": { "foo": "bar" },
   "content-type": "application/json"
