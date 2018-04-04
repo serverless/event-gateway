@@ -47,7 +47,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 		mime = "application/octet-stream"
 	}
 
-	var body []byte
+	body := []byte{}
 	var err error
 	if r.Body != nil {
 		body, err = ioutil.ReadAll(r.Body)
