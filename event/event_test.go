@@ -45,7 +45,6 @@ func TestNew_CustomToCloudEvent(t *testing.T) {
 
 // Will not parse payload to CloudEvent because payload event-type is different from request event-type
 func TestNew_CustomToCloudEventEventType(t *testing.T){
-	exampleEvent["source"] = ""
 	testevent, err := json.Marshal(exampleEvent)
 	assert.Nil(t, err)
 	event := eventpkg.New(eventpkg.Type("myevent"), exampleEvent["content-type"].(string), testevent)
