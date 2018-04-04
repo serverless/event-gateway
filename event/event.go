@@ -11,6 +11,13 @@ import (
 	"github.com/serverless/event-gateway/internal/zap"
 )
 
+
+const (
+	mimeJSON = "application/json"
+	mimeFormMultipart = "multipart/form-data"
+	mimeFormURLEncoded = "application/x-www-form-urlencoded"
+)
+
 // Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on
 // this schema.
 type Event struct {
@@ -28,7 +35,7 @@ type Event struct {
 
 // New return new instance of Event.
 func New(eventType Type, mime string, payload interface{}) *Event {
-	return &Event{
+	var event = &Event{
 		EventType:          eventType,
 		CloudEventsVersion: "0.1",
 		Source:             "https://slsgateway.com/",
@@ -37,6 +44,34 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		ContentType:        mime,
 		Data:               payload,
 	}
+
+	switch eventType {
+	case TypeInvoke, TypeHTTP:
+	default:
+		body, ok := payload.([]byte)
+		if !ok {
+			break
+		}
+		customevent := &Event{}
+		err := json.Unmarshal(body, customevent)
+		if err != nil || eventType != event.EventType {
+			break
+		}
+		event = customevent
+	}
+
+	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
+	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
+	if eventbody, ok := event.Data.([]byte); ok && len(eventbody) > 0 {
+		switch {
+		case mime == mimeJSON:
+			json.Unmarshal(eventbody, &event.Data)
+		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
+			event.Data = string(eventbody)
+		}
+	}
+
+	return event
 }
 
 // Type uniquely identifies an event type.

@@ -18,6 +18,10 @@ import (
 	"github.com/serverless/event-gateway/plugin"
 )
 
+const (
+	mimeJSON = "application/json"
+)
+
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
 type Router struct {
 	sync.Mutex

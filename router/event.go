@@ -1,8 +1,6 @@
 package router
 
 import (
-	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -18,12 +16,6 @@ type HTTPResponse struct {
 	Headers    map[string]string `json:"headers"`
 	Body       string            `json:"body"`
 }
-
-const (
-	mimeJSON = "application/json"
-	mimeFormMultipart = "multipart/form-data"
-	mimeFormURLEncoded = "application/x-www-form-urlencoded"
-)
 
 func isHTTPEvent(r *http.Request) bool {
 	// is request with custom event
@@ -65,26 +57,6 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	event := eventpkg.New(eventType, mime, body)
-	if eventType != eventpkg.TypeHTTP && eventType != eventpkg.TypeInvoke {
-		customevent, err := router.parseCustomEventAsCloudEvent(eventType, event.ContentType, body)
-		if err == nil {
-			event = customevent
-		}
-	}
-
-	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
-	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-	if eventbody, ok := event.Data.([]byte); ok && len(eventbody) > 0 {
-		switch {
-		case mime == mimeJSON:
-			err := json.Unmarshal(eventbody, &event.Data)
-			if err != nil {
-				return nil, "", errors.New("malformed JSON body")
-			}
-		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
-			event.Data = string(eventbody)
-		}
-	}
 
 	if eventType == eventpkg.TypeHTTP {
 		event.Data = &eventpkg.HTTPEvent{
@@ -107,19 +79,6 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	return event, path, nil
-}
-
-func (router *Router) parseCustomEventAsCloudEvent(originalEventType eventpkg.Type, contentType string, body []byte) (*eventpkg.Event, error) {
-	var event = &eventpkg.Event{}
-
-	err := json.Unmarshal(body, event)
-	if err != nil {
-		return event, err
-	}
-	if originalEventType != event.EventType {
-		return event, errors.New("event-type from header is not same as payload CloudEvent field")
-	}
-	return event, err
 }
 
 func extractPath(host, path string) string {
