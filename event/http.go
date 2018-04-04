@@ -13,6 +13,7 @@ type HTTPEvent struct {
 	Params  map[string]string   `json:"params"`
 }
 
+// Returns a new instance of HTTPEvent
 func NewHTTPEvent(r *http.Request, eventData interface{}, headers map[string]string) *HTTPEvent {
 	return &HTTPEvent{
 		Headers: headers,
