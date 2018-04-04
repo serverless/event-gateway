@@ -59,14 +59,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	event := eventpkg.New(eventType, mime, body)
 
 	if eventType == eventpkg.TypeHTTP {
-		event.Data = &eventpkg.HTTPEvent{
-			Headers: headers,
-			Query:   r.URL.Query(),
-			Body:    event.Data,
-			Host:    r.Host,
-			Path:    r.URL.Path,
-			Method:  r.Method,
-		}
+		event.Data = eventpkg.NewHTTPEvent(r, event.Data, headers)
 	}
 
 	router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
