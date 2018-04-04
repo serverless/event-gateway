@@ -12,7 +12,7 @@ install:
 script:
 - go get -u github.com/alecthomas/gometalinter
 - gometalinter --install --force
-- gometalinter --vendor --fast --cyclo-over 12 --disable=gotype --disable=vetshadow --disable=gas --skip=mock ./...
+- gometalinter --vendor --fast --disable=gotype --disable=vetshadow --disable=gas --skip=mock ./...
 - ./codecov.sh
 - go test ./tests -tags=integration
 after_success:
