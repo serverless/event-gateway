@@ -55,7 +55,7 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		}
 		customEvent := &Event{}
 		err := json.Unmarshal(body, customEvent)
-		if err != nil || customEvent.validate() != nil || eventType != event.EventType {
+		if err != nil || customEvent.validate() != nil || eventType != customEvent.EventType {
 			break
 		}
 		event = customEvent
