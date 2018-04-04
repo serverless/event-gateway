@@ -14,11 +14,11 @@ import (
 // Event is a default event structure. All data that passes through the Event Gateway is formatted as an Event, based on
 // this schema.
 type Event struct {
-	EventType          Type                   `json:"event-type"`
+	EventType          Type                   `json:"event-type" validate:"required"`
 	EventTypeVersion   string                 `json:"event-type-version"`
-	CloudEventsVersion string                 `json:"cloud-events-version"`
-	Source             string                 `json:"source"`
-	EventID            string                 `json:"event-id"`
+	CloudEventsVersion string                 `json:"cloud-events-version" validate:"required"`
+	Source             string                 `json:"source" validate:"required"`
+	EventID            string                 `json:"event-id" validate:"required"`
 	EventTime          time.Time              `json:"event-time"`
 	SchemaURL          string                 `json:"schema-url"`
 	ContentType        string                 `json:"content-type"`
