@@ -9,6 +9,7 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/serverless/event-gateway/internal/zap"
+	validator "gopkg.in/go-playground/validator.v9"
 )
 
 
@@ -24,7 +25,7 @@ type Event struct {
 	EventType          Type                   `json:"event-type" validate:"required"`
 	EventTypeVersion   string                 `json:"event-type-version"`
 	CloudEventsVersion string                 `json:"cloud-events-version" validate:"required"`
-	Source             string                 `json:"source" validate:"required"`
+	Source             string                 `json:"source" validate:"url,required"`
 	EventID            string                 `json:"event-id" validate:"required"`
 	EventTime          time.Time              `json:"event-time"`
 	SchemaURL          string                 `json:"schema-url"`
@@ -54,7 +55,7 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		}
 		customEvent := &Event{}
 		err := json.Unmarshal(body, customEvent)
-		if err != nil || eventType != event.EventType {
+		if err != nil || customEvent.validate() != nil || eventType != event.EventType {
 			break
 		}
 		event = customEvent
@@ -72,6 +73,11 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 	}
 
 	return event
+}
+
+func (e *Event) validate() error {
+	validate := validator.New()
+	return validate.Struct(e)
 }
 
 // Type uniquely identifies an event type.
