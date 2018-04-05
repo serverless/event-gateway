@@ -22,6 +22,14 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestNew_Encoding(t *testing.T) {
+	for _, testCase := range encodingTests {
+		result := eventpkg.New(eventpkg.Type("test.event"), testCase.contentType, testCase.body)
+
+		assert.Equal(t, testCase.expectedBody, result.Data)
+	}
+}
+
 var newTests = []struct {
 	eventType     eventpkg.Type
 	mime          string
@@ -141,5 +149,32 @@ var newTests = []struct {
 				},
 			},
 		},
+	},
+}
+
+var encodingTests = []struct {
+	body         []byte
+	contentType  string
+	expectedBody interface{}
+}{
+	{
+		[]byte("some=thing"),
+		"application/octet-stream",
+		[]byte("some=thing"),
+	},
+	{
+		[]byte("some=thing"),
+		"application/x-www-form-urlencoded",
+		"some=thing",
+	},
+	{
+		[]byte("--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n"),
+		"multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
+		"--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+	},
+	{
+		[]byte(`{"hello": "world"}`),
+		"application/json",
+		map[string]interface{}{"hello": "world"},
 	},
 }

@@ -88,51 +88,23 @@ func TestRouterServeHTTP_InvokeEventDefaultSpace(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 }
 
-func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	target := mock.NewMockTargeter(ctrl)
-	testListServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer testListServer.Close()
-	someFunc := function.Function{
-		Space:        "",
-		ID:           "somefunc",
-		ProviderType: httpprovider.Type,
-		Provider: httpprovider.HTTP{
-			URL: testListServer.URL,
-		},
-	}
-	target.EXPECT().HTTPBackingFunction(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
-	target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
-	target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
-	router := testrouter(target)
-
-	req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("not json"))
-	req.Header.Set("content-type", "application/json")
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
-
-	assert.Equal(t, http.StatusInternalServerError, recorder.Code)
-	assert.Equal(t, `{"errors":[{"message":"HTTP response object malformed"}]}`+"\n", recorder.Body.String())
-}
-
 func TestRouterServeHTTP_Encoding(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	tests := []map[string]string{
 		{
-			"body": "some=thing",
-			"expected": "c29tZT10aGluZw==",
+			"body":         "some=thing",
+			"expected":     "c29tZT10aGluZw==",
 			"content-type": "",
 		},
 		{
-			"body": "some=thing",
-			"expected": "some=thing",
+			"body":         "some=thing",
+			"expected":     "some=thing",
 			"content-type": "application/x-www-form-urlencoded",
 		},
 		{
-			"body": "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
-			"expected": "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+			"body":         "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+			"expected":     "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
 			"content-type": "multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
 		},
 	}
@@ -166,44 +138,6 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, req)
 	}
-}
-
-func TestRouterServeHTTP_CloudEvents(t *testing.T) {
-	var contentType = "application/json"
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	testListServer := httptest.NewServer(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			testevent := event.Event{}
-			json.NewDecoder(r.Body).Decode(&testevent)
-			defer r.Body.Close()
-
-			assert.Equal(t, testevent.EventType, event.TypeHTTP)
-			assert.Equal(t, testevent.CloudEventsVersion, "0.1")
-			assert.NotEqual(t, testevent.Source, nil)
-			assert.NotEqual(t, len(testevent.EventID), 0)
-			assert.NotEqual(t, testevent.EventTime, nil)
-			assert.Equal(t, testevent.ContentType, contentType)
-		}))
-	defer testListServer.Close()
-	target := mock.NewMockTargeter(ctrl)
-	someFunc := function.Function{
-		Space:        "",
-		ID:           "somefunc",
-		ProviderType: httpprovider.Type,
-		Provider: httpprovider.HTTP{
-			URL: testListServer.URL,
-		},
-	}
-	target.EXPECT().HTTPBackingFunction(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
-	target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
-	target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
-	router := testrouter(target)
-
-	req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"some": "thing"}`))
-	req.Header.Set("content-type", contentType)
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
 }
 
 func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T) {
