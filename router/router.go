@@ -15,6 +15,7 @@ import (
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/httpapi"
+	ihttp "github.com/serverless/event-gateway/internal/http"
 	"github.com/serverless/event-gateway/plugin"
 )
 
@@ -461,11 +462,11 @@ func (router *Router) processEvent(e backlogEvent) {
 	metricEventsProcessed.WithLabelValues("", "custom").Inc()
 }
 
-func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers map[string]string) error {
+func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, header http.Header) error {
 	system := eventpkg.New(
 		eventpkg.SystemEventReceivedType,
 		mimeJSON,
-		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: headers},
+		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
 	)
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)

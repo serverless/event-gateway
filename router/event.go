@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	eventpkg "github.com/serverless/event-gateway/event"
-	internalhttp "github.com/serverless/event-gateway/internal/http"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +40,6 @@ func isHTTPEvent(r *http.Request) bool {
 func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string, error) {
 	path := extractPath(r.Host, r.URL.Path)
 	eventType := extractEventType(r)
-	headers := internalhttp.TransformHeaders(r.Header)
 
 	mime := r.Header.Get("Content-Type")
 	if mime == "" {
@@ -58,13 +56,12 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	event := eventpkg.New(eventType, mime, body)
-
 	if eventType == eventpkg.TypeHTTP {
 		event.Data = eventpkg.NewHTTPEvent(r, event.Data)
 	}
 
 	router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
-	err = router.emitSystemEventReceived(path, *event, headers)
+	err = router.emitSystemEventReceived(path, *event, r.Header)
 	if err != nil {
 		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
 			zap.Object("event", event),

@@ -12,10 +12,9 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-
 const (
-	mimeJSON = "application/json"
-	mimeFormMultipart = "multipart/form-data"
+	mimeJSON           = "application/json"
+	mimeFormMultipart  = "multipart/form-data"
 	mimeFormURLEncoded = "application/x-www-form-urlencoded"
 )
 
