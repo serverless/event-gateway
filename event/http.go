@@ -1,6 +1,9 @@
 package event
 
-import "net/http"
+import (
+	internalhttp "github.com/serverless/event-gateway/internal/http"
+	"net/http"
+)
 
 // HTTPEvent is a event schema used for sending events to HTTP subscriptions.
 type HTTPEvent struct {
@@ -14,7 +17,9 @@ type HTTPEvent struct {
 }
 
 // NewHTTPEvent returns a new instance of HTTPEvent
-func NewHTTPEvent(r *http.Request, eventData interface{}, headers map[string]string) *HTTPEvent {
+func NewHTTPEvent(r *http.Request, eventData interface{}) *HTTPEvent {
+	headers := internalhttp.TransformHeaders(r.Header)
+	
 	return &HTTPEvent{
 		Headers: headers,
 		Query:   r.URL.Query(),
