@@ -2,60 +2,118 @@ package event_test
 
 import (
 	"testing"
+
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/stretchr/testify/assert"
-	"encoding/json"
 )
 
-var exampleEvent = map[string]interface{}{
-	"event-type": "user.created",
-	"event-type-version": "",
-	"cloud-events-version": "0.1",
-	"source": "https://slsgateway.com/",
-	"event-id": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-	"event-time": "2018-04-03T18:48:16.537683692+04:00",
-	"schema-url": "",
-	"content-type": "application/x-www-form-urlencoded",
-	"extensions": nil,
-	"data": map[string]interface{}{
-		"headers": map[string]interface{}{
-			"Accept": "*/*",
-			"Content-Length": "11",
-			"Content-Type": "application/x-www-form-urlencoded",
-			"User-Agent": "insomnia/5.14.9",
-		},
-		"query": map[string]interface{}{},
-		"body": "file=adsasd",
-		"host": "localhost:4000",
-		"path": "/something/users/1",
-		"method": "POST",
-		"params": map[string]interface{}{
-			"id": "1",
+func TestNew(t *testing.T) {
+	for _, testCase := range newTests {
+		result := eventpkg.New(testCase.eventType, testCase.mime, testCase.payload)
+
+		assert.NotEqual(t, result.EventID, "")
+		assert.Equal(t, testCase.expectedEvent.EventType, result.EventType)
+		assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, result.CloudEventsVersion)
+		assert.Equal(t, testCase.expectedEvent.Source, result.Source)
+		assert.Equal(t, testCase.expectedEvent.ContentType, result.ContentType)
+		assert.Equal(t, testCase.expectedEvent.Data, result.Data)
+	}
+}
+
+var newTests = []struct {
+	eventType     eventpkg.Type
+	mime          string
+	payload       interface{}
+	expectedEvent eventpkg.Event
+}{
+	{ // not CloudEvent
+		eventpkg.Type("user.created"),
+		"application/json",
+		[]byte("test"),
+		eventpkg.Event{
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: "0.1",
+			Source:             "https://slsgateway.com/",
+			ContentType:        "application/json",
+			Data:               []byte("test"),
 		},
 	},
-}
-
-func TestNew_CustomToCloudEvent(t *testing.T) {
-	testevent, err := json.Marshal(exampleEvent)
-	assert.Nil(t, err)
-	event := eventpkg.New(eventpkg.Type(exampleEvent["event-type"].(string)), exampleEvent["content-type"].(string), testevent)
-	assert.NotNil(t, event)
-	assert.NotNil(t, event.Data)
-}
-
-// Will not parse payload to CloudEvent because payload event-type is different from request event-type
-func TestNew_CustomToCloudEventEventType(t *testing.T){
-	testevent, err := json.Marshal(exampleEvent)
-	assert.Nil(t, err)
-	event := eventpkg.New(eventpkg.Type("myevent"), exampleEvent["content-type"].(string), testevent)
-	assert.NotEqual(t, exampleEvent["event-id"], event.EventID)
-}
-
-// Will not parse payload to CloudEvent because it will fail on "source" validation
-func TestNew_CustomToCloudEventSourceValidation(t *testing.T){
-	exampleEvent["source"] = ""
-	testevent, err := json.Marshal(exampleEvent)
-	assert.Nil(t, err)
-	event := eventpkg.New(eventpkg.Type(exampleEvent["event-type"].(string)), exampleEvent["content-type"].(string), testevent)
-	assert.NotEqual(t, exampleEvent["event-id"], event.EventID)
+	{ // System event
+		eventpkg.Type("user.created"),
+		"application/json",
+		eventpkg.SystemEventReceivedData{},
+		eventpkg.Event{
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: "0.1",
+			Source:             "https://slsgateway.com/",
+			ContentType:        "application/json",
+			Data:               eventpkg.SystemEventReceivedData{},
+		},
+	},
+	{
+		// valid CloudEvent
+		eventpkg.Type("user.created"),
+		"application/json",
+		[]byte(`{
+			"event-type": "user.created",
+			"cloud-events-version": "0.1",
+			"source": "https://example.com/",
+			"event-id": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"content-type": "text/plain",
+			"data": "test"
+			}`),
+		eventpkg.Event{
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: "0.1",
+			Source:             "https://example.com/",
+			ContentType:        "text/plain",
+			Data:               "test",
+		},
+	},
+	{
+		// type mismatch
+		eventpkg.Type("user.deleted"),
+		"application/json",
+		[]byte(`{
+			"event-type": "user.created",
+			"cloud-events-version": "0.1",
+			"source": "https://example.com/",
+			"event-id": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"content-type": "text/plain",
+			"data": "test"
+			}`),
+		eventpkg.Event{
+			EventType:          eventpkg.Type("user.deleted"),
+			CloudEventsVersion: "0.1",
+			Source:             "https://slsgateway.com/",
+			ContentType:        "application/json",
+			Data: map[string]interface{}{
+				"event-type":           "user.created",
+				"cloud-events-version": "0.1",
+				"source":               "https://example.com/",
+				"event-id":             "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+				"content-type":         "text/plain",
+				"data":                 "test",
+			},
+		},
+	},
+	{
+		// invalid CloudEvent (missing required fields)
+		eventpkg.Type("user.created"),
+		"application/json",
+		[]byte(`{
+			"event-type": "user.created",
+			"cloud-events-version": "0.1"
+			}`),
+		eventpkg.Event{
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: "0.1",
+			Source:             "https://slsgateway.com/",
+			ContentType:        "application/json",
+			Data: map[string]interface{}{
+				"event-type":           "user.created",
+				"cloud-events-version": "0.1",
+			},
+		},
+	},
 }

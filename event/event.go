@@ -2,6 +2,7 @@ package event
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -12,14 +13,23 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
+// Type uniquely identifies an event type.
+type Type string
+
+// TypeInvoke is a special type of event for sync function invocation.
+const TypeInvoke = Type("invoke")
+
+// TypeHTTP is a special type of event for sync http subscriptions.
+const TypeHTTP = Type("http")
+
 const (
 	mimeJSON           = "application/json"
 	mimeFormMultipart  = "multipart/form-data"
 	mimeFormURLEncoded = "application/x-www-form-urlencoded"
 )
 
-// Event is a default event structure. All data that passes through the Event Gateway is formatted to a CloudEvent, based on
-// CloudEvents v0.1 schema.
+// Event is a default event structure. All data that passes through the Event Gateway
+// is formatted to a format defined CloudEvents v0.1 spec.
 type Event struct {
 	EventType          Type                   `json:"event-type" validate:"required"`
 	EventTypeVersion   string                 `json:"event-type-version"`
@@ -45,19 +55,12 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		Data:               payload,
 	}
 
-	switch eventType {
-	case TypeInvoke, TypeHTTP:
-	default:
-		body, ok := payload.([]byte)
-		if !ok {
-			break
+	// it's a custom JSON event, possibly CloudEvent
+	if !(eventType == TypeHTTP || eventType == TypeInvoke) && mime == mimeJSON {
+		cloudEvent, err := parseAsCloudEvent(eventType, payload)
+		if err == nil {
+			event = cloudEvent
 		}
-		customEvent := &Event{}
-		err := json.Unmarshal(body, customEvent)
-		if err != nil || customEvent.validate() != nil || eventType != customEvent.EventType {
-			break
-		}
-		event = customEvent
 	}
 
 	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
@@ -73,20 +76,6 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 
 	return event
 }
-
-func (e *Event) validate() error {
-	validate := validator.New()
-	return validate.Struct(e)
-}
-
-// Type uniquely identifies an event type.
-type Type string
-
-// TypeInvoke is a special type of event for sync function invocation.
-const TypeInvoke = Type("invoke")
-
-// TypeHTTP is a special type of event for sync http subscriptions.
-const TypeHTTP = Type("http")
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -105,7 +94,33 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// IsSystem indicates if th event is a system event.
+// IsSystem indicates if the event is a system event.
 func (e Event) IsSystem() bool {
 	return strings.HasPrefix(string(e.EventType), "gateway.")
+}
+
+func parseAsCloudEvent(eventType Type, payload interface{}) (*Event, error) {
+	body, ok := payload.([]byte)
+	if ok {
+		validate := validator.New()
+
+		customEvent := &Event{}
+		err := json.Unmarshal(body, customEvent)
+		if err != nil {
+			return nil, err
+		}
+
+		err = validate.Struct(customEvent)
+		if err != nil {
+			return nil, err
+		}
+
+		if eventType != customEvent.EventType {
+			return nil, errors.New("wrong event type")
+		}
+
+		return customEvent, nil
+	}
+
+	return nil, errors.New("couldn't cast to []byte")
 }
