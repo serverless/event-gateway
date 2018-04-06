@@ -5,6 +5,7 @@ import (
 
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/stretchr/testify/assert"
+	"github.com/serverless/event-gateway/internal/zap"
 )
 
 func TestNew(t *testing.T) {
@@ -17,6 +18,7 @@ func TestNew(t *testing.T) {
 		assert.Equal(t, testCase.expectedEvent.Source, result.Source)
 		assert.Equal(t, testCase.expectedEvent.ContentType, result.ContentType)
 		assert.Equal(t, testCase.expectedEvent.Data, result.Data)
+		assert.Equal(t, testCase.expectedEvent.Extensions, result.Extensions)
 	}
 }
 
@@ -36,6 +38,12 @@ var newTests = []struct {
 			Source:             "https://slsgateway.com/",
 			ContentType:        "application/json",
 			Data:               []byte("test"),
+			Extensions: zap.MapStringInterface{
+				"eventgateway": map[string]interface{}{
+					"transformed": true,
+					"transformation-version": "0.1",
+				},
+			},
 		},
 	},
 	{ // System event
@@ -48,6 +56,12 @@ var newTests = []struct {
 			Source:             "https://slsgateway.com/",
 			ContentType:        "application/json",
 			Data:               eventpkg.SystemEventReceivedData{},
+			Extensions: zap.MapStringInterface{
+				"eventgateway": map[string]interface{}{
+					"transformed": true,
+					"transformation-version": "0.1",
+				},
+			},
 		},
 	},
 	{
@@ -95,6 +109,12 @@ var newTests = []struct {
 				"content-type":         "text/plain",
 				"data":                 "test",
 			},
+			Extensions: zap.MapStringInterface{
+				"eventgateway": map[string]interface{}{
+					"transformed": true,
+					"transformation-version": "0.1",
+				},
+			},
 		},
 	},
 	{
@@ -113,6 +133,12 @@ var newTests = []struct {
 			Data: map[string]interface{}{
 				"event-type":           "user.created",
 				"cloud-events-version": "0.1",
+			},
+			Extensions: zap.MapStringInterface{
+				"eventgateway": map[string]interface{}{
+					"transformed": true,
+					"transformation-version": "0.1",
+				},
 			},
 		},
 	},
