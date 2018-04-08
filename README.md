@@ -5,7 +5,7 @@ dataflow for event-driven, serverless architectures. It routes Events (data) to 
 Everything it cares about is an event! Even calling a function. It makes it easy to share events across different
 systems, teams and organizations!
 
-Use the Event Gateway right now, by running the **[Event Gateway Example Application](https://github.com/serverless/event-gateway-example)** locally, with the _[Serverless Framework](https://serverless.com/framework/)_.
+Use the Event Gateway right now, by running the **[Event Gateway Getting Started Application](https://github.com/serverless/event-gateway-getting-started)** with the _[Serverless Framework](https://serverless.com/framework/)_.
 
 Features:
 
@@ -28,6 +28,7 @@ yet ready for production applications._
 ## Contents
 
 1.  [Quick Start](#quick-start)
+1.  [Running the Event Gateway](#running-the-event-gateway)
 1.  [Motivation](#motivation)
 1.  [Components](#components)
     1.  [Function Discovery](#function-discovery)
@@ -46,16 +47,13 @@ yet ready for production applications._
 
 ## Quick Start
 
-### Example projects
+### Getting Started
 
-Looking for some examples to get started? The easiest way to use the Event Gateway is with the [`serverless-event-gateway-plugin`](https://github.com/serverless/serverless-event-gateway-plugin) with the Serverless Framework. Below are a few walkthrough examples:
-
-- To use custom events to allow for asynchronous, decoupled communication between services, check out [this example](./examples/crm-service) on updating your CRM service whenever a new user is created in your Users service.
-- For using Event Gateway as an API Gateway to tie together hundreds of functions across multiple services, look at [this example](./examples/users-service) for deploying a REST-like Users service with standard CRUD endpoints.
-
-To use these examples, you'll need a running instance of the Event Gateway. Check out the different methods below.
+Looking for an example to get started? The easiest way to use the Event Gateway is with the [`serverless-event-gateway-plugin`](https://github.com/serverless/serverless-event-gateway-plugin) with the Serverless Framework.  Check out the [**Getting Started Example**](https://github.com/serverless/event-gateway-getting-started) to deploy your first service to the Event Gateway.
 
 ---
+
+## Running the Event Gateway
 
 ### Hosted version
 
