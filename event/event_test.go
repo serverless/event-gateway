@@ -72,7 +72,7 @@ var newTests = []struct {
 			"eventType": "user.created",
 			"cloudEventsVersion": "0.1",
 			"source": "https://example.com/",
-			"eventId": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
 			}`),
@@ -92,7 +92,7 @@ var newTests = []struct {
 			"eventType": "user.created",
 			"cloudEventsVersion": "0.1",
 			"source": "https://example.com/",
-			"eventId": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
 			}`),
@@ -105,7 +105,7 @@ var newTests = []struct {
 				"eventType":           "user.created",
 				"cloudEventsVersion": "0.1",
 				"source":               "https://example.com/",
-				"eventId":             "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+				"eventID":             "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 				"contentType":         "text/plain",
 				"data":                 "test",
 			},

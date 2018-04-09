@@ -37,7 +37,7 @@ type Event struct {
 	Source             string                 `json:"source" validate:"url,required"`
 	EventID            string                 `json:"eventId" validate:"required"`
 	EventTime          time.Time              `json:"eventTime"`
-	SchemaURL          string                 `json:"schemaUrl"`
+	SchemaURL          string                 `json:"schemaURL"`
 	ContentType        string                 `json:"contentType"`
 	Extensions         zap.MapStringInterface `json:"extensions"`
 	Data               interface{}            `json:"data"`
@@ -92,7 +92,7 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("source", e.Source)
 	enc.AddString("eventId", e.EventID)
 	enc.AddString("eventTime", e.EventTime.String())
-	enc.AddString("schemaUrl", e.SchemaURL)
+	enc.AddString("schemaURL", e.SchemaURL)
 	enc.AddString("contentType", e.ContentType)
 	e.Extensions.MarshalLogObject(enc)
 	payload, _ := json.Marshal(e.Data)
