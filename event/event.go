@@ -31,14 +31,14 @@ const (
 // Event is a default event structure. All data that passes through the Event Gateway
 // is formatted to a format defined CloudEvents v0.1 spec.
 type Event struct {
-	EventType          Type                   `json:"event-type" validate:"required"`
-	EventTypeVersion   string                 `json:"event-type-version"`
-	CloudEventsVersion string                 `json:"cloud-events-version" validate:"required"`
+	EventType          Type                   `json:"eventType" validate:"required"`
+	EventTypeVersion   string                 `json:"eventTypeVersion"`
+	CloudEventsVersion string                 `json:"cloudEventsVersion" validate:"required"`
 	Source             string                 `json:"source" validate:"url,required"`
-	EventID            string                 `json:"event-id" validate:"required"`
-	EventTime          time.Time              `json:"event-time"`
-	SchemaURL          string                 `json:"schema-url"`
-	ContentType        string                 `json:"content-type"`
+	EventID            string                 `json:"eventId" validate:"required"`
+	EventTime          time.Time              `json:"eventTime"`
+	SchemaURL          string                 `json:"schemaUrl"`
+	ContentType        string                 `json:"contentType"`
 	Extensions         zap.MapStringInterface `json:"extensions"`
 	Data               interface{}            `json:"data"`
 }
@@ -86,14 +86,14 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("event-type", string(e.EventType))
-	enc.AddString("event-type-version", e.EventTypeVersion)
-	enc.AddString("cloud-events-version", e.CloudEventsVersion)
+	enc.AddString("eventType", string(e.EventType))
+	enc.AddString("eventTypeVersion", e.EventTypeVersion)
+	enc.AddString("cloudEventsVersion", e.CloudEventsVersion)
 	enc.AddString("source", e.Source)
-	enc.AddString("event-id", e.EventID)
-	enc.AddString("event-time", e.EventTime.String())
-	enc.AddString("schema-url", e.SchemaURL)
-	enc.AddString("content-type", e.ContentType)
+	enc.AddString("eventId", e.EventID)
+	enc.AddString("eventTime", e.EventTime.String())
+	enc.AddString("schemaUrl", e.SchemaURL)
+	enc.AddString("contentType", e.ContentType)
 	e.Extensions.MarshalLogObject(enc)
 	payload, _ := json.Marshal(e.Data)
 	enc.AddString("data", string(payload))

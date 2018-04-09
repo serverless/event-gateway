@@ -69,11 +69,11 @@ var newTests = []struct {
 		eventpkg.Type("user.created"),
 		"application/json",
 		[]byte(`{
-			"event-type": "user.created",
-			"cloud-events-version": "0.1",
+			"eventType": "user.created",
+			"cloudEventsVersion": "0.1",
 			"source": "https://example.com/",
-			"event-id": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-			"content-type": "text/plain",
+			"eventId": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
 			"data": "test"
 			}`),
 		eventpkg.Event{
@@ -89,11 +89,11 @@ var newTests = []struct {
 		eventpkg.Type("user.deleted"),
 		"application/json",
 		[]byte(`{
-			"event-type": "user.created",
-			"cloud-events-version": "0.1",
+			"eventType": "user.created",
+			"cloudEventsVersion": "0.1",
 			"source": "https://example.com/",
-			"event-id": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-			"content-type": "text/plain",
+			"eventId": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
 			"data": "test"
 			}`),
 		eventpkg.Event{
@@ -102,11 +102,11 @@ var newTests = []struct {
 			Source:             "https://slsgateway.com/",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
-				"event-type":           "user.created",
-				"cloud-events-version": "0.1",
+				"eventType":           "user.created",
+				"cloudEventsVersion": "0.1",
 				"source":               "https://example.com/",
-				"event-id":             "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-				"content-type":         "text/plain",
+				"eventId":             "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+				"contentType":         "text/plain",
 				"data":                 "test",
 			},
 			Extensions: zap.MapStringInterface{
@@ -122,8 +122,8 @@ var newTests = []struct {
 		eventpkg.Type("user.created"),
 		"application/json",
 		[]byte(`{
-			"event-type": "user.created",
-			"cloud-events-version": "0.1"
+			"eventType": "user.created",
+			"cloudEventsVersion": "0.1"
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
@@ -131,8 +131,8 @@ var newTests = []struct {
 			Source:             "https://slsgateway.com/",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
-				"event-type":           "user.created",
-				"cloud-events-version": "0.1",
+				"eventType":           "user.created",
+				"cloudEventsVersion": "0.1",
 			},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
