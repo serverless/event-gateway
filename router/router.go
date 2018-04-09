@@ -465,6 +465,7 @@ func (router *Router) processEvent(e backlogEvent) {
 func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, header http.Header) error {
 	system := eventpkg.New(
 		eventpkg.SystemEventReceivedType,
+		event.Source,
 		mimeJSON,
 		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
 	)
@@ -475,6 +476,7 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 func (router *Router) emitSystemFunctionInvoking(space string, functionID function.ID, event eventpkg.Event) error {
 	system := eventpkg.New(
 		eventpkg.SystemFunctionInvokingType,
+		event.Source,
 		mimeJSON,
 		eventpkg.SystemFunctionInvokingData{Space: space, FunctionID: functionID, Event: event},
 	)
@@ -488,6 +490,7 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 func (router *Router) emitSystemFunctionInvoked(space string, functionID function.ID, event eventpkg.Event, result []byte) error {
 	system := eventpkg.New(
 		eventpkg.SystemFunctionInvokedType,
+		event.Source,
 		mimeJSON,
 		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
 	router.enqueueWork("/", system)
@@ -501,6 +504,7 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 	if _, ok := err.(*function.ErrFunctionError); ok {
 		system := eventpkg.New(
 			eventpkg.SystemFunctionInvocationFailedType,
+			event.Source,
 			mimeJSON,
 			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
 		router.enqueueWork("/", system)

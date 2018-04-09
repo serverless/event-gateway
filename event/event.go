@@ -44,11 +44,11 @@ type Event struct {
 }
 
 // New return new instance of Event.
-func New(eventType Type, mime string, payload interface{}) *Event {
+func New(eventType Type, source string, mime string, payload interface{}) *Event {
 	event := &Event{
 		EventType:          eventType,
 		CloudEventsVersion: "0.1",
-		Source:             "https://slsgateway.com/",
+		Source:             source + "#transformationVersion=0.1",
 		EventID:            uuid.NewV4().String(),
 		EventTime:          time.Now(),
 		ContentType:        mime,
