@@ -10,7 +10,7 @@ import (
 
 func TestNew(t *testing.T) {
 	for _, testCase := range newTests {
-		result := eventpkg.New(testCase.eventType, testCase.mime, testCase.payload)
+		result := eventpkg.New(testCase.eventType, "https://slsgateway.com", testCase.mime, testCase.payload)
 
 		assert.NotEqual(t, result.EventID, "")
 		assert.Equal(t, testCase.expectedEvent.EventType, result.EventType)
@@ -35,7 +35,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: "0.1",
-			Source:             "https://slsgateway.com/",
+			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               []byte("test"),
 			Extensions: zap.MapStringInterface{
@@ -53,7 +53,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: "0.1",
-			Source:             "https://slsgateway.com/",
+			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               eventpkg.SystemEventReceivedData{},
 			Extensions: zap.MapStringInterface{
@@ -99,7 +99,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.deleted"),
 			CloudEventsVersion: "0.1",
-			Source:             "https://slsgateway.com/",
+			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
 				"eventType":           "user.created",
@@ -128,7 +128,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: "0.1",
-			Source:             "https://slsgateway.com/",
+			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
 				"eventType":           "user.created",
