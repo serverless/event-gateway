@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	transformationVersion = "0.1"
+	transformationVersion string = "0.1"
 )
 
 func TestNew(t *testing.T) {
@@ -74,7 +74,7 @@ var newTests = []struct {
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": transformationVersion,
+			"cloudEventsVersion": "`+ transformationVersion +`",
 			"source": "https://example.com/",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
@@ -82,7 +82,7 @@ var newTests = []struct {
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: transformationVersion,
+			CloudEventsVersion: "0.1",
 			Source:             "https://example.com/",
 			ContentType:        "text/plain",
 			Data:               "test",
@@ -94,7 +94,7 @@ var newTests = []struct {
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": transformationVersion,
+			"cloudEventsVersion": "`+ transformationVersion +`",
 			"source": "https://example.com/",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
@@ -102,7 +102,7 @@ var newTests = []struct {
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.deleted"),
-			CloudEventsVersion: transformationVersion,
+			CloudEventsVersion: "0.1",
 			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
@@ -127,11 +127,11 @@ var newTests = []struct {
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": transformationVersion
+			"cloudEventsVersion": "0.1"
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: transformationVersion,
+			CloudEventsVersion: "0.1",
 			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
