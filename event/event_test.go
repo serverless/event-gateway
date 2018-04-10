@@ -82,7 +82,7 @@ var newTests = []struct {
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: "0.1",
+			CloudEventsVersion: transformationVersion,
 			Source:             "https://example.com/",
 			ContentType:        "text/plain",
 			Data:               "test",
@@ -102,7 +102,7 @@ var newTests = []struct {
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.deleted"),
-			CloudEventsVersion: "0.1",
+			CloudEventsVersion: transformationVersion,
 			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
@@ -131,7 +131,7 @@ var newTests = []struct {
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: "0.1",
+			CloudEventsVersion: transformationVersion,
 			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
