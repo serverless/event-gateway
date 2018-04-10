@@ -35,7 +35,7 @@ type Event struct {
 	EventTypeVersion   string                 `json:"eventTypeVersion"`
 	CloudEventsVersion string                 `json:"cloudEventsVersion" validate:"required"`
 	Source             string                 `json:"source" validate:"url,required"`
-	EventID            string                 `json:"eventId" validate:"required"`
+	EventID            string                 `json:"eventID" validate:"required"`
 	EventTime          time.Time              `json:"eventTime"`
 	SchemaURL          string                 `json:"schemaURL"`
 	ContentType        string                 `json:"contentType"`
@@ -90,7 +90,7 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("eventTypeVersion", e.EventTypeVersion)
 	enc.AddString("cloudEventsVersion", e.CloudEventsVersion)
 	enc.AddString("source", e.Source)
-	enc.AddString("eventId", e.EventID)
+	enc.AddString("eventID", e.EventID)
 	enc.AddString("eventTime", e.EventTime.String())
 	enc.AddString("schemaURL", e.SchemaURL)
 	enc.AddString("contentType", e.ContentType)
