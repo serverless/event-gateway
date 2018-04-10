@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	transformationVersion = transformationVersion
+	transformationVersion = "0.1"
 )
 
 func TestNew(t *testing.T) {
