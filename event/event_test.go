@@ -35,7 +35,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
-			Source:             "https://slsgateway.com#transformationVersion=0.1",
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               []byte("test"),
 			Extensions: zap.MapStringInterface{
@@ -53,7 +53,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
-			Source:             "https://slsgateway.com#transformationVersion=0.1",
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               eventpkg.SystemEventReceivedData{},
 			Extensions: zap.MapStringInterface{
@@ -99,7 +99,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.deleted"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
-			Source:             "https://slsgateway.com#transformationVersion=0.1",
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
 				"eventType":           "user.created",
@@ -128,7 +128,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
-			Source:             "https://slsgateway.com#transformationVersion=0.1",
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
 				"eventType":           "user.created",
