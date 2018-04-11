@@ -22,11 +22,15 @@ const TypeInvoke = Type("invoke")
 // TypeHTTP is a special type of event for sync http subscriptions.
 const TypeHTTP = Type("http")
 
+// TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
+const (
+	TransformationVersion = "0.1"
+)
+
 const (
 	mimeJSON           = "application/json"
 	mimeFormMultipart  = "multipart/form-data"
 	mimeFormURLEncoded = "application/x-www-form-urlencoded"
-	TransformationVersion = "0.1"
 )
 
 // Event is a default event structure. All data that passes through the Event Gateway
