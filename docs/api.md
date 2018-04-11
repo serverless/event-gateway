@@ -25,7 +25,7 @@ Example:
   "eventType": "myapp.user.created",
   "eventID": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
   "cloudEventsVersion": "0.1",
-  "source": "https://slsgateway.com/",
+  "source": "https://serverless.com/event-gateway/#transformationVersion=0.1",
   "eventTime": "1990-12-31T23:59:60Z",
   "data": { "foo": "bar" },
   "contentType": "application/json"
