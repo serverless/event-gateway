@@ -8,13 +8,9 @@ import (
 	"github.com/serverless/event-gateway/internal/zap"
 )
 
-const (
-	transformationVersion string = "0.1"
-)
-
 func TestNew(t *testing.T) {
 	for _, testCase := range newTests {
-		result := eventpkg.New(testCase.eventType, "https://slsgateway.com", testCase.mime, testCase.payload)
+		result := eventpkg.New(testCase.eventType, testCase.mime, testCase.payload)
 
 		assert.NotEqual(t, result.EventID, "")
 		assert.Equal(t, testCase.expectedEvent.EventType, result.EventType)
@@ -38,14 +34,14 @@ var newTests = []struct {
 		[]byte("test"),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: transformationVersion,
+			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               []byte("test"),
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
 					"transformed": true,
-					"transformation-version": transformationVersion,
+					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
 		},
@@ -56,14 +52,14 @@ var newTests = []struct {
 		eventpkg.SystemEventReceivedData{},
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: transformationVersion,
+			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               eventpkg.SystemEventReceivedData{},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
 					"transformed": true,
-					"transformation-version": transformationVersion,
+					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
 		},
@@ -74,7 +70,7 @@ var newTests = []struct {
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": "`+ transformationVersion +`",
+			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
 			"source": "https://example.com/",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
@@ -82,7 +78,7 @@ var newTests = []struct {
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: transformationVersion,
+			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://example.com/",
 			ContentType:        "text/plain",
 			Data:               "test",
@@ -94,7 +90,7 @@ var newTests = []struct {
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": "`+ transformationVersion +`",
+			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
 			"source": "https://example.com/",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
@@ -102,12 +98,12 @@ var newTests = []struct {
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.deleted"),
-			CloudEventsVersion: transformationVersion,
+			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
 				"eventType":           "user.created",
-				"cloudEventsVersion": transformationVersion,
+				"cloudEventsVersion": eventpkg.TransformationVersion,
 				"source":               "https://example.com/",
 				"eventID":             "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 				"contentType":         "text/plain",
@@ -116,7 +112,7 @@ var newTests = []struct {
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
 					"transformed": true,
-					"transformation-version": transformationVersion,
+					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
 		},
@@ -131,17 +127,17 @@ var newTests = []struct {
 			}`),
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: transformationVersion,
+			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://slsgateway.com#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
 				"eventType":           "user.created",
-				"cloudEventsVersion": transformationVersion,
+				"cloudEventsVersion": eventpkg.TransformationVersion,
 			},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
 					"transformed": true,
-					"transformation-version": transformationVersion,
+					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
 		},
