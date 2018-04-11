@@ -26,6 +26,7 @@ const (
 	mimeJSON           = "application/json"
 	mimeFormMultipart  = "multipart/form-data"
 	mimeFormURLEncoded = "application/x-www-form-urlencoded"
+	TransformationVersion = "0.1"
 )
 
 // Event is a default event structure. All data that passes through the Event Gateway
@@ -44,11 +45,11 @@ type Event struct {
 }
 
 // New return new instance of Event.
-func New(eventType Type, source string, mime string, payload interface{}) *Event {
+func New(eventType Type, mime string, payload interface{}) *Event {
 	event := &Event{
 		EventType:          eventType,
 		CloudEventsVersion: "0.1",
-		Source:             source + "#transformationVersion=0.1",
+		Source:             "https://serverless.com/event-gateway/#transformationVersion=" + TransformationVersion,
 		EventID:            uuid.NewV4().String(),
 		EventTime:          time.Now(),
 		ContentType:        mime,

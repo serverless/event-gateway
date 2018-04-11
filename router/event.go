@@ -54,14 +54,8 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 			return nil, "", err
 		}
 	}
-	var sourceURL string
-	if r.TLS != nil {
-		sourceURL = "https://" + r.Host
-	} else {
-		sourceURL = "http://" + r.Host
-	}
 
-	event := eventpkg.New(eventType, sourceURL, mime, body)
+	event := eventpkg.New(eventType, mime, body)
 	if eventType == eventpkg.TypeHTTP {
 		event.Data = eventpkg.NewHTTPEvent(r, event.Data)
 	}
