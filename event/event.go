@@ -93,14 +93,23 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("eventType", string(e.EventType))
-	enc.AddString("eventTypeVersion", e.EventTypeVersion)
+	if e.EventTypeVersion != "" {
+		enc.AddString("eventTypeVersion", e.EventTypeVersion)
+	}
 	enc.AddString("cloudEventsVersion", e.CloudEventsVersion)
 	enc.AddString("source", e.Source)
 	enc.AddString("eventID", e.EventID)
 	enc.AddString("eventTime", e.EventTime.String())
-	enc.AddString("schemaURL", e.SchemaURL)
-	enc.AddString("contentType", e.ContentType)
-	e.Extensions.MarshalLogObject(enc)
+	if e.SchemaURL != "" {
+		enc.AddString("schemaURL", e.SchemaURL)
+	}
+	if e.ContentType != "" {
+		enc.AddString("contentType", e.ContentType)
+	}
+	if e.Extensions != nil {
+		e.Extensions.MarshalLogObject(enc)
+	}
+
 	payload, _ := json.Marshal(e.Data)
 	enc.AddString("data", string(payload))
 
