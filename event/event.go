@@ -78,12 +78,12 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 
 	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
 	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-	if eventbody, ok := event.Data.([]byte); ok && len(eventbody) > 0 {
+	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {
 		switch {
 		case mime == mimeJSON:
-			json.Unmarshal(eventbody, &event.Data)
+			json.Unmarshal(eventBody, &event.Data)
 		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
-			event.Data = string(eventbody)
+			event.Data = string(eventBody)
 		}
 	}
 
