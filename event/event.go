@@ -38,14 +38,14 @@ const (
 // is formatted to a format defined CloudEvents v0.1 spec.
 type Event struct {
 	EventType          Type                   `json:"eventType" validate:"required"`
-	EventTypeVersion   string                 `json:"eventTypeVersion"`
+	EventTypeVersion   string                 `json:"eventTypeVersion,omitempty"`
 	CloudEventsVersion string                 `json:"cloudEventsVersion" validate:"required"`
 	Source             string                 `json:"source" validate:"url,required"`
 	EventID            string                 `json:"eventID" validate:"required"`
-	EventTime          time.Time              `json:"eventTime"`
-	SchemaURL          string                 `json:"schemaURL"`
-	ContentType        string                 `json:"contentType"`
-	Extensions         zap.MapStringInterface `json:"extensions"`
+	EventTime          time.Time              `json:"eventTime,omitempty"`
+	SchemaURL          string                 `json:"schemaURL,omitempty"`
+	Extensions         zap.MapStringInterface `json:"extensions,omitempty"`
+	ContentType        string                 `json:"contentType,omitempty"`
 	Data               interface{}            `json:"data"`
 }
 
