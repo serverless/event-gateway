@@ -16,11 +16,12 @@ import (
 // Type uniquely identifies an event type.
 type Type string
 
-// TypeInvoke is a special type of event for sync function invocation.
-const TypeInvoke = Type("invoke")
-
-// TypeHTTP is a special type of event for sync http subscriptions.
-const TypeHTTP = Type("http")
+const (
+	// TypeInvoke is a special type of event for sync function invocation.
+	TypeInvoke = Type("invoke")
+	// TypeHTTP is a special type of event for sync http subscriptions.
+	TypeHTTP = Type("http")
+)
 
 // TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
 const (
@@ -68,7 +69,7 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		} else {
 			event.Extensions = zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": TransformationVersion,
 				},
 			}
