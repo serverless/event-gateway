@@ -16,23 +16,19 @@ for invoking function. By default Events API runs on `:4000` port.
 
 ### Event Definition
 
-All data that passes through the Event Gateway is formatted as an Event, based on our default Event schema:
-
-* `event` - `string` - the event name
-* `id` - `string` - the event's instance universally unique ID (provided by the event gateway)
-* `receivedAt` - `number` - the time (milliseconds) when the Event was received by the Event Gateway (provided by the event gateway)
-* `data` - type depends on `dataType` - the event payload
-* `dataType` - `string` - the mime type of `data` payload
+All data that passes through the Event Gateway is formatted as a CloudEvent, based on [CloudEvents v0.1 schema](https://github.com/cloudevents/spec/blob/master/spec.md):
 
 Example:
 
 ```json
 {
-  "event": "myapp.user.created",
-  "id": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
-  "receivedAt": 1500897327098,
+  "eventType": "myapp.user.created",
+  "eventID": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
+  "cloudEventsVersion": "0.1",
+  "source": "https://serverless.com/event-gateway/#transformationVersion=0.1",
+  "eventTime": "1990-12-31T23:59:60Z",
   "data": { "foo": "bar" },
-  "dataType": "application/json"
+  "contentType": "application/json"
 }
 ```
 

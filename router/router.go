@@ -15,7 +15,12 @@ import (
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/httpapi"
+	ihttp "github.com/serverless/event-gateway/internal/http"
 	"github.com/serverless/event-gateway/plugin"
+)
+
+const (
+	mimeJSON = "application/json"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
@@ -87,7 +92,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if event.Type == eventpkg.TypeInvoke {
+			if event.EventType == eventpkg.TypeInvoke {
 				functionID := function.ID(r.Header.Get(headerFunctionID))
 				space := r.Header.Get(headerSpace)
 				if space == "" {
@@ -100,7 +105,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				metricEventsProcessed.WithLabelValues(space, "invoke").Inc()
 			} else if !event.IsSystem() {
-				reportReceivedEvent(event.ID)
+				reportReceivedEvent(event.EventID)
 
 				router.enqueueWork(path, event)
 				w.WriteHeader(http.StatusAccepted)
@@ -447,9 +452,9 @@ func (router *Router) loop() {
 
 // processEvent call all functions subscribed for an event
 func (router *Router) processEvent(e backlogEvent) {
-	reportEventOutOfQueue(e.event.ID)
+	reportEventOutOfQueue(e.event.EventID)
 
-	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.Type)
+	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.EventType)
 	for _, subscriber := range subscribers {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}
@@ -457,11 +462,11 @@ func (router *Router) processEvent(e backlogEvent) {
 	metricEventsProcessed.WithLabelValues("", "custom").Inc()
 }
 
-func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, headers map[string]string) error {
+func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, header http.Header) error {
 	system := eventpkg.New(
 		eventpkg.SystemEventReceivedType,
 		mimeJSON,
-		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: headers},
+		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
 	)
 	router.enqueueWork("/", system)
 	return router.plugins.React(system)
