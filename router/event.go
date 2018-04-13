@@ -42,12 +42,12 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	path := extractPath(r.Host, r.URL.Path)
 	eventType := extractEventType(r)
 
-	mimetype, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	mimeType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
 		if err.Error() != "mime: no media type" {
 			return nil, "", err
 		}
-		mimetype = "application/octet-stream"
+		mimeType = "application/octet-stream"
 	}
 
 	body := []byte{}
@@ -58,7 +58,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 		}
 	}
 
-	event := eventpkg.New(eventType, mime, body)
+	event := eventpkg.New(eventType, mimeType, body)
 	if eventType == eventpkg.TypeHTTP {
 		event.Data = eventpkg.NewHTTPEvent(r, event.Data)
 	}
