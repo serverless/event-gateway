@@ -1,8 +1,6 @@
 package router
 
 import (
-	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -19,12 +17,6 @@ type HTTPResponse struct {
 	Headers    map[string]string `json:"headers"`
 	Body       string            `json:"body"`
 }
-
-const (
-	mimeJSON           = "application/json"
-	mimeFormMultipart  = "multipart/form-data"
-	mimeFormURLEncoded = "application/x-www-form-urlencoded"
-)
 
 func isHTTPEvent(r *http.Request) bool {
 	// is request with custom event
@@ -49,7 +41,6 @@ func isHTTPEvent(r *http.Request) bool {
 func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string, error) {
 	path := extractPath(r.Host, r.URL.Path)
 	eventType := extractEventType(r)
-	headers := transformHeaders(r.Header)
 
 	mimetype, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
@@ -67,35 +58,13 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 		}
 	}
 
-	event := eventpkg.New(eventType, r.Header.Get("Content-Type"), body)
-
-	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
-	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-	if len(body) > 0 {
-		switch {
-		case mimetype == mimeJSON:
-			err := json.Unmarshal(body, &event.Data)
-			if err != nil {
-				return nil, "", errors.New("malformed JSON body")
-			}
-		case mimetype == mimeFormURLEncoded, mimetype == mimeFormMultipart:
-			event.Data = string(body)
-		}
-	}
-
-	if event.Type == eventpkg.TypeHTTP {
-		event.Data = &eventpkg.HTTPEvent{
-			Headers: headers,
-			Query:   r.URL.Query(),
-			Body:    event.Data,
-			Host:    r.Host,
-			Path:    r.URL.Path,
-			Method:  r.Method,
-		}
+	event := eventpkg.New(eventType, mime, body)
+	if eventType == eventpkg.TypeHTTP {
+		event.Data = eventpkg.NewHTTPEvent(r, event.Data)
 	}
 
 	router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
-	err = router.emitSystemEventReceived(path, *event, headers)
+	err = router.emitSystemEventReceived(path, *event, r.Header)
 	if err != nil {
 		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
 			zap.Object("event", event),
@@ -122,18 +91,4 @@ func extractEventType(r *http.Request) eventpkg.Type {
 		eventType = eventpkg.TypeHTTP
 	}
 	return eventType
-}
-
-// transformHeaders takes http.Header and flatten value array (map[string][]string -> map[string]string) so it's easier
-// to access headers by user.
-func transformHeaders(req http.Header) map[string]string {
-	headers := map[string]string{}
-	for key, header := range req {
-		headers[key] = header[0]
-		if len(header) > 1 {
-			headers[key] = strings.Join(header, ", ")
-		}
-	}
-
-	return headers
 }

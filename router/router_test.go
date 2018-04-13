@@ -88,28 +88,13 @@ func TestRouterServeHTTP_InvokeEventDefaultSpace(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 }
 
-func TestRouterServeHTTP_ErrorMalformedCustomEventJSONRequest(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	target := mock.NewMockTargeter(ctrl)
-	router := testrouter(target)
-
-	req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("not json"))
-	req.Header.Set("content-type", "application/json")
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
-
-	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-	assert.Equal(t, `{"errors":[{"message":"malformed JSON body"}]}`+"\n", recorder.Body.String())
-}
-
 func TestRouterServeHTTP_Encoding(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	tests := []map[string]string{
 		{
-			"body": "some=thing",
-			"expected": "c29tZT10aGluZw==",
+			"body":         "some=thing",
+			"expected":     "c29tZT10aGluZw==",
 			"content-type": "",
 		},
 		{
@@ -128,8 +113,8 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 			"content-type": "application/x-www-form-urlencoded",
 		},
 		{
-			"body": "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
-			"expected": "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+			"body":         "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+			"expected":     "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
 			"content-type": "multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
 		},
 	}
