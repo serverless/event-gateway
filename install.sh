@@ -271,7 +271,7 @@ EOF
 OWNER=serverless
 REPO=event-gateway
 BINARY=event-gateway
-FORMAT=tar.gz
+FORMAT=zip
 OS=$(uname_os)
 ARCH=$(uname_arch)
 PREFIX="$OWNER/$REPO"
@@ -298,7 +298,7 @@ echo "$PREFIX: found version ${VERSION} for ${OS}/${ARCH}"
 NAME=${BINARY}_${VERSION}_${OS}_${ARCH}
 TARBALL=${NAME}.${FORMAT}
 TARBALL_URL=${GITHUB_DOWNLOAD}/${VERSION}/${TARBALL}
-CHECKSUM=${BINARY}_checksums.txt
+CHECKSUM=${BINARY}_${VERSION}_checksums.txt
 CHECKSUM_URL=${GITHUB_DOWNLOAD}/${VERSION}/${CHECKSUM}
 
 # Adjust binary name if windows
