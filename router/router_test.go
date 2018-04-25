@@ -91,34 +91,8 @@ func TestRouterServeHTTP_InvokeEventDefaultSpace(t *testing.T) {
 func TestRouterServeHTTP_Encoding(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	tests := []map[string]string{
-		{
-			"body":         "some=thing",
-			"expected":     "c29tZT10aGluZw==",
-			"content-type": "",
-		},
-		{
-			"body": `{"some":"thing"}`,
-			"expected": `{"some":"thing"}`,
-			"content-type": "application/json",
-		},
-		{
-			"body": `{"some":"thing"}`,
-			"expected": `{"some":"thing"}`,
-			"content-type": "application/json; charset=utf-8",
-		},
-		{
-			"body": "some=thing",
-			"expected": "some=thing",
-			"content-type": "application/x-www-form-urlencoded",
-		},
-		{
-			"body":         "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
-			"expected":     "--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
-			"content-type": "multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
-		},
-	}
-	for _, test := range tests {
+
+	for _, testCase := range encodingTests {
 		testListServer := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				testevent := event.Event{
@@ -126,14 +100,7 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 				}
 				json.NewDecoder(r.Body).Decode(&testevent)
 
-				if strings.HasPrefix(test["content-type"], "application/json") {
-					// Marshal body to JSON because it unmarshalled it deeply above when decoding the body
-					data, err := json.Marshal(testevent.Data.(map[string]interface{})["body"])
-					assert.Nil(t, err)
-					assert.Equal(t, test["expected"], string(data))
-				} else {
-					assert.Equal(t, test["expected"], testevent.Data.(map[string]interface{})["body"])
-				}
+				assert.Equal(t, testCase.expectedPayload, testevent.Data.(event.HTTPEvent).Body)
 			}))
 		defer testListServer.Close()
 		target := mock.NewMockTargeter(ctrl)
@@ -150,8 +117,8 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 		target.EXPECT().SubscribersOfEvent(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
 		router := testrouter(target)
 
-		req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader(test["body"]))
-		req.Header.Set("content-type", test["content-type"])
+		req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader(testCase.requestBody))
+		req.Header.Set("content-type", testCase.contentType)
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, req)
 	}
@@ -238,3 +205,30 @@ func testrouter(target router.Targeter) *router.Router {
 	router.StartWorkers()
 	return router
 }
+
+var encodingTests = []struct {
+	requestBody     string
+	contentType     string
+	expectedPayload interface{}
+}{
+	{
+		"some=thing",
+		"",
+		"c29tZT10aGluZw==",
+	}, {
+		`{"some":"thing"}`,
+		"application/json",
+		map[string]interface{}{"some": "thing"},
+	}, {
+		`{"some":"thing"}`,
+		"application/json; charset=utf-8",
+		map[string]interface{}{"some": "thing"},
+	}, {
+		"some=thing",
+		"application/x-www-form-urlencoded",
+		"some=thing",
+	}, {
+		"--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+		"multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
+		"--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
+	}}
