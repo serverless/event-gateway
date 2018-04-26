@@ -93,6 +93,26 @@ var newTests = []struct {
 		},
 	},
 	{
+		// valid CloudEvent with application/cloudevents+json Content-Type
+		eventpkg.Type("user.created"),
+		"application/cloudevents+json",
+		[]byte(`{
+			"eventType": "user.created",
+			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
+			"source": "/mysource",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"
+			}`),
+		eventpkg.Event{
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: eventpkg.TransformationVersion,
+			Source:             "/mysource",
+			ContentType:        "text/plain",
+			Data:               "test",
+		},
+	},
+	{
 		// type mismatch
 		eventpkg.Type("user.deleted"),
 		"application/json",
