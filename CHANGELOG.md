@@ -1,8 +1,12 @@
-0.x.x / xxxx-xx-xx
+0.7.0 / 2018-04-26
 ==================
 
 BACKWARDS INCOMPATIBILITIES:
 
+  * require CloudEvents Source be a URI (#414)
+  * cloudEvents integration (#404)
+  * make sure event body is a string (#393)
+  * cleanup error messages and provide consistency in error reporting (#396)
   * remove unused providers (emulator, weighted) (#387)
   * refactor Prometheus metrics. Less metrics, more labels (#384)
   * use different messages on lambda errors (#381)
@@ -11,11 +15,28 @@ BACKWARDS INCOMPATIBILITIES:
 
 IMPROVEMENTS:
 
+  * update README.md
+  * update README.md
+  * update readme (#406)
+  * add Reliablity Guarantees section in README (#403)
+  * add UpdateSubscription endpoint (#398)
+  * add SQSProvider (#399)
+  * add missing httpapi tests (#401)
+  * add AWS Firehose provider (#394)
+  * improve Provider tests (#397)
+  * add OpenAPI specification. (#395)
+  * add Kinesis provider. (#392)
+  * add codecov integration. (#391)
+  * introduce Providers concept in the codebase. (#389)
   * hide sensitive information in logs (#385)
   * minimalize Dockerfile (#378)
 
 BUG FIXES:
 
+  * fix minor issue with open api spec (#413)
+  * fix handling of mime type (#405)
+  * fix installation script (update artifact format). Closes #409 (#412)
+  * update Docker image in running-locally.md (#386)
   * fix for UpdateFunction (#382)
   * update create subscription docs regarding path param
   * update README with info about Docker image. Closes #325 (#375)
