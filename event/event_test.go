@@ -79,7 +79,7 @@ var newTests = []struct {
 		[]byte(`{
 			"eventType": "user.created",
 			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
-			"source": "https://example.com/",
+			"source": "/mysource",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
@@ -87,7 +87,7 @@ var newTests = []struct {
 		eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
-			Source:             "https://example.com/",
+			Source:             "/mysource",
 			ContentType:        "text/plain",
 			Data:               "test",
 		},

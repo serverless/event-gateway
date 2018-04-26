@@ -40,7 +40,7 @@ type Event struct {
 	EventType          Type                   `json:"eventType" validate:"required"`
 	EventTypeVersion   string                 `json:"eventTypeVersion,omitempty"`
 	CloudEventsVersion string                 `json:"cloudEventsVersion" validate:"required"`
-	Source             string                 `json:"source" validate:"url,required"`
+	Source             string                 `json:"source" validate:"uri,required"`
 	EventID            string                 `json:"eventID" validate:"required"`
 	EventTime          time.Time              `json:"eventTime,omitempty"`
 	SchemaURL          string                 `json:"schemaURL,omitempty"`
