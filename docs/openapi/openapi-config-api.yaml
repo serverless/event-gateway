@@ -192,6 +192,7 @@ paths:
       operationId: "UpdateSubscription"
       parameters:
       - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/SubscriptionID"
       requestBody:
         $ref: "#/components/requestBodies/UpdateSubscription"
       responses:
