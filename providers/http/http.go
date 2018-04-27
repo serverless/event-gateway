@@ -32,7 +32,7 @@ func (h HTTP) Call(payload []byte) ([]byte, error) {
 		Timeout: time.Second * 5,
 	}
 
-	resp, err := client.Post(h.URL, "application/json", bytes.NewReader(payload))
+	resp, err := client.Post(h.URL, "application/cloudevents+json", bytes.NewReader(payload))
 	if err != nil {
 		return nil, &function.ErrFunctionCallFailed{Original: err}
 	}

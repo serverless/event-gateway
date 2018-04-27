@@ -22,7 +22,9 @@ func TestLoad(t *testing.T) {
 }
 
 func TestCall(t *testing.T) {
+	var contentType string
 	echo := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentType = r.Header.Get("Content-Type")
 		payload, _ := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		fmt.Fprint(w, string(payload))
@@ -34,6 +36,7 @@ func TestCall(t *testing.T) {
 	resp, err := provider.Call([]byte("hello"))
 
 	assert.Nil(t, err)
+	assert.Equal(t, "application/cloudevents+json", contentType)
 	assert.Equal(t, "hello", string(resp))
 }
 
