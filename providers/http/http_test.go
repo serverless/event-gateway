@@ -22,9 +22,9 @@ func TestLoad(t *testing.T) {
 }
 
 func TestCall(t *testing.T) {
-    var contentType string
+	var contentType string
 	echo := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	    contentType = r.Header.Get("Content-Type")
+		contentType = r.Header.Get("Content-Type")
 		payload, _ := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		fmt.Fprint(w, string(payload))
