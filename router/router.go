@@ -457,9 +457,8 @@ func (router *Router) processEvent(e backlogEvent) {
 	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.EventType)
 	for _, subscriber := range subscribers {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
+		metricEventsProcessed.WithLabelValues(subscriber.Space, "custom").Inc()
 	}
-
-	metricEventsProcessed.WithLabelValues("", "custom").Inc()
 }
 
 func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, header http.Header) error {
