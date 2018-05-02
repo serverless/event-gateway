@@ -59,7 +59,7 @@ Looking for an example to get started? The easiest way to use the Event Gateway 
 
 ### Hosted version
 
-If you don't want to run the Event Gateway yourself, you can use the hosted version provided by the Serverless team. Please [contact us](mailto:hello@serverless.com) for an invitation to the beta.
+If you don't want to run the Event Gateway yourself, you can use the hosted version provided by the Serverless team. [Sign up here](https://dashboard.serverless.com)!
 
 ### via Docker
 
