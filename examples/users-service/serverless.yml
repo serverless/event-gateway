@@ -6,8 +6,8 @@ provider:
 
 custom:
   eventgateway:
-    space: <your space>
-    apiKey: <your API key>
+    url: <your URL> # e.g. tenant-myapp.slsgateway.com
+    accessKey: <your Access Key>
 
 plugins:
   - "@serverless/serverless-event-gateway-plugin"
