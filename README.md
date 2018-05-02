@@ -25,7 +25,7 @@ yet ready for production applications._
 
 [Website](http://www.serverless.com) • [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/MjI5NzY1ODM2MTc3LTE1MDM0NDIyOTUtMDgxNTcxMTcxNg) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://www.meetup.com/pro/serverless/) • [Twitter](https://twitter.com/goserverless)
 
-![Event Gateway - Build event-driven integrations with lambda, cloud functions, kubernetes](https://s3.amazonaws.com/assets.github.serverless/event-gateway-integrations.png)
+![Event Gateway - Build event-driven integrations with lambda, cloud functions, kubernetes](https://s3.amazonaws.com/assets.github.serverless/event-gateway-integrations-2.png)
 
 ## Contents
 
