@@ -45,16 +45,16 @@ Finally, there are a few other relevant configuration sections of `serverless.ym
 ```yml
 custom:
   eventgateway:
-    space: <your space>
-    apiKey: <your API key>
+    url: <your URL> # e.g. tenant-myapp.slsgateway.com
+    accessKey: <your Access Key>
 
 plugins:
   - "@serverless/serverless-event-gateway-plugin"
 ```
 
-This `serverless-event-gateway-plugin` adds additional functionality to register functions and subscriptions with the Event Gateway. The `eventgateway` section of the `custom` block configures the plugin with your space and api key. You may choose any space you want, as long as it hasn't already been claimed, and it will be available at `https://<space>.slsgateway.com`.
+This `serverless-event-gateway-plugin` adds additional functionality to register functions and subscriptions with the Event Gateway. The `eventgateway` section of the `custom` block configures the plugin with your application URL and access key. [Sign up for both here](https://dashboard.serverless.com).
 
-Once you've entered your space and API key, install your dependencies and deploy:
+Once you've entered your Application URL and Access Key, install your dependencies and deploy:
 
 ```bash
 $ npm install
@@ -74,7 +74,7 @@ Note that we only get a message that an event was emitted. Custom events are pro
 You can check your function logs to make sure everything is working properly:
 
 ```bash
-$ sls logs -f addUserToCRM -t
+$ sls logs -f addUserToCRM
 START RequestId: 7b8800f5-2d34-11e8-8165-171c6f09ec0e Version: $LATEST
 2018-03-21 18:20:07.365 (+00:00)	7b8800f5-2d34-11e8-8165-171c6f09ec0e	Saving user to CRM:
 { company: 'Test Corp, Inc.',
@@ -94,7 +94,7 @@ In the example above, we saw how to set up a consumer of events as well as how t
 
 In this example, let's complete the story by emitting `user.created` events from our Users service. The easiest way to emit an event is to use the [`event-gateway-sdk`](https://github.com/serverless/event-gateway-sdk) for Node.
 
-To use the SDK, you'll create an Event Gateway client configured for your space, then emit an event with the event name and payload to send.
+To use the SDK, you'll create an Event Gateway client configured for your application, then emit an event with the event name and payload to send.
 
 The `emit.js` file shows how you could use the SDK in your application:
 
@@ -102,11 +102,10 @@ The `emit.js` file shows how you could use the SDK in your application:
 // emit.js
 
 const SDK = require('@serverless/event-gateway-sdk');
-const SPACE = 'examplestest';
+const URL = 'tenant-myapp.slsgateway.com'
 
 const eventGateway = new SDK({
-  url: `https://${SPACE}.slsgateway.com`,
-  space: `${SPACE}`
+  url: URL
 })
 
 function createUser(user) {
@@ -135,13 +134,13 @@ createUser(user);
 
 The `createUser` function is similar to one you would have in your application -- save the new user to your database, then emit a `user.created` event that other services can subscribe to.
 
-You can run this file as a test if you like. You'll need to edit the `SPACE` variable to match the space you created in your `serverless.yml`. Then just execute the file and check your function logs:
+You can run this file as a test if you like. You'll need to edit the `APP` variable to match the application you used in your `serverless.yml`. Then just execute the file and check your function logs:
 
 ```bash
 $ node emit.js
 Emitted user.created event!
 
-$ sls logs -f addUserToCRM -t
+$ sls logs -f addUserToCRM
 START RequestId: 5a11a5d8-2d36-11e8-ac4f-eb85ef6fadda Version: $LATEST
 2018-03-21 18:33:29.796 (+00:00)	5a11a5d8-2d36-11e8-ac4f-eb85ef6fadda	Saving user to CRM:
 { company: 'Big Corp, Inc.',

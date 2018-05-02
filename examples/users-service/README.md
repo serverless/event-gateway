@@ -96,26 +96,26 @@ Finally, there are a few other relevant configuration sections of `serverless.ym
 ```yml
 custom:
   eventgateway:
-    space: <your space>
-    apiKey: <your API key>
+    url: <your URL> # e.g. tenant-myapp.slsgateway.com
+    accessKey: <your Access Key>
 
 plugins:
   - "@serverless/serverless-event-gateway-plugin"
 ```
 
-This `serverless-event-gateway-plugin` adds additional functionality to register functions and subscriptions with the Event Gateway. The `eventgateway` section of the `custom` block configures the plugin with your space and api key. You may choose any space you want, as long as it hasn't already been claimed, and it will be available at `https://<space>.slsgateway.com`.
+This `serverless-event-gateway-plugin` adds additional functionality to register functions and subscriptions with the Event Gateway. The `eventgateway` section of the `custom` block configures the plugin with your Application URL and Access Key. You may get this by [signing up here](https://dashboard.serverless.com).
 
-Once you've entered your space and API key, install your dependencies and deploy:
+Once you've entered your Application URL and Access Key, install your dependencies and deploy:
 
 ```bash
 $ npm install
 $ sls deploy
 ```
 
-Now let's give it a try! Using `curl` or in your browser, navigate to the `getUser` endpoint at `https://<space>.slsgateway.com/users/15`:
+Now let's give it a try! Using `curl` or in your browser, navigate to the `getUser` endpoint at `https://<applicationURL>/users/15`:
 
 ```bash
-$ $ curl -X GET https://examplestest.slsgateway.com/users/15 | jq "."
+$ curl -X GET https://tenant-myapp.slsgateway.com/users/15 | jq "."
 {
   "id": "10",
   "name": "Ariel Dach",
@@ -125,4 +125,4 @@ $ $ curl -X GET https://examplestest.slsgateway.com/users/15 | jq "."
 
 It worked! You can try your `POST` and `DELETE` endpoints as well.
 
-You can reuse this same space across multiple services using different endpoint paths to allow for agility across your team.
+You can reuse this same Application URL across multiple services using different endpoint paths to allow for agility across your team.

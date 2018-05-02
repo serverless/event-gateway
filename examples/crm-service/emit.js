@@ -1,9 +1,8 @@
 const SDK = require('@serverless/event-gateway-sdk')
-const SPACE = 'examplestest'
+const URL = 'tenant-myapp.slsgateway.com'
 
 const eventGateway = new SDK({
-  url: `https://${SPACE}.slsgateway.com`,
-  space: `${SPACE}`
+  url: URL
 })
 
 function createUser (user) {

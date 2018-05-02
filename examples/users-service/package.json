@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "@serverless/serverless-event-gateway-plugin": ">=0.4.0"
+    "@serverless/serverless-event-gateway-plugin": ">=0.6.0"
   },
   "dependencies": {
     "faker": "^4.1.0"
