@@ -54,15 +54,6 @@ func FromRequest(r *http.Request) (*Event, error) {
 		event = mapHeadersToEvent(New(eventType, mimeType, body), r.Header)
 	}
 
-	//router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
-	//err = router.emitSystemEventReceived(path, *event, r.Header)
-	//if err != nil {
-	//	router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
-	//		zap.Object("event", event),
-	//		zap.Error(err))
-	//	return nil, "", err
-	//}
-
 	return event, nil
 }
 

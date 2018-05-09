@@ -75,6 +75,15 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
+		err = router.emitSystemEventReceived(path, *event, r.Header)
+		if err != nil {
+			router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+				zap.Object("event", event),
+				zap.Error(err))
+			return
+		}
+
 		router.handleHTTPEvent(event, w, r)
 	} else {
 		cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +99,15 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Header().Set("Content-Type", "application/json")
 				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+				return
+			}
+
+			router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
+			err = router.emitSystemEventReceived(path, *event, r.Header)
+			if err != nil {
+				router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+					zap.Object("event", event),
+					zap.Error(err))
 				return
 			}
 
