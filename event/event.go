@@ -61,19 +61,6 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		Data:               payload,
 	}
 
-	// try to parse as CloudEvent, if not possible, wrap the data in CloudEvents format
-	cloudEvent, err := parseAsCloudEvent(eventType, mime, payload)
-	if err == nil {
-		event = cloudEvent
-	} else {
-		event.Extensions = zap.MapStringInterface{
-			"eventgateway": map[string]interface{}{
-				"transformed":            true,
-				"transformation-version": TransformationVersion,
-			},
-		}
-	}
-
 	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
 	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
 	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {

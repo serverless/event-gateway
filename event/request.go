@@ -35,24 +35,21 @@ func FromRequest(r *http.Request) (*Event, error) {
 
 	var event *Event
 
-	// try to parse as CloudEvent, if not possible, wrap the data in CloudEvents format
-	if eventType == TypeHTTP || eventType == TypeInvoke {
-		// reject if header indicates CloudEvent but the body is not valid CloudEvent
-		switch mimeType {
-		case mimeCloudEventsJSON:
-			event, err = parseAsCloudEvent(eventType, mimeType, body)
-			if err != nil {
-				return event, errors.New("payload is not a valid CloudEvent")
-			}
-		case mimeJSON:
-			event, err = parseAsCloudEvent(eventType, mimeType, body)
-			if err == nil {
-				break
-			}
-			fallthrough
-		default:
-			event = mapHeadersToEvent(New(eventType, mimeType, body), r.Header)
+	switch mimeType {
+	case mimeCloudEventsJSON:
+		event, err = parseAsCloudEvent(eventType, mimeType, body)
+		// reject if HTTP event and header indicates CloudEvent but the body is not valid CloudEvent
+		if err != nil && eventType == TypeHTTP {
+			return event, errors.New("payload is not a valid CloudEvent")
 		}
+	case mimeJSON:
+		event, err = parseAsCloudEvent(eventType, mimeType, body)
+		if err == nil {
+			break
+		}
+		fallthrough
+	default:
+		event = mapHeadersToEvent(New(eventType, mimeType, body), r.Header)
 	}
 
 	//router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
