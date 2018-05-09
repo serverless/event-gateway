@@ -61,18 +61,16 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 		Data:               payload,
 	}
 
-	// it's a custom event, possibly CloudEvent
-	if eventType != TypeHTTP && eventType != TypeInvoke {
-		cloudEvent, err := parseAsCloudEvent(eventType, mime, payload)
-		if err == nil {
-			event = cloudEvent
-		} else {
-			event.Extensions = zap.MapStringInterface{
-				"eventgateway": map[string]interface{}{
-					"transformed":            true,
-					"transformation-version": TransformationVersion,
-				},
-			}
+	// try to parse as CloudEvent, if not possible, wrap the data in CloudEvents format
+	cloudEvent, err := parseAsCloudEvent(eventType, mime, payload)
+	if err == nil {
+		event = cloudEvent
+	} else {
+		event.Extensions = zap.MapStringInterface{
+			"eventgateway": map[string]interface{}{
+				"transformed":            true,
+				"transformation-version": TransformationVersion,
+			},
 		}
 	}
 
@@ -151,5 +149,5 @@ func parseAsCloudEvent(eventType Type, mime string, payload interface{}) (*Event
 }
 
 func isJSONContent(mime string) bool {
-    return (mime == mimeJSON || strings.HasSuffix(mime, "+json"))
+	return mime == mimeJSON || strings.HasSuffix(mime, "+json")
 }

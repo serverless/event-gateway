@@ -60,13 +60,14 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: http.StatusText(http.StatusServiceUnavailable)}}})
 		return
 	}
+	path := extractPath(r.Host, r.URL.EscapedPath())
 
 	// isHTTPEvent checks if a request carries HTTP event. It also accepts pre-flight CORS requests because CORS is
 	// resolved downstream.
 	if isHTTPEvent(r) {
 		metricEventsReceived.WithLabelValues("", "http").Inc()
 
-		event, _, err := router.eventFromRequest(r)
+		event, err := eventpkg.FromRequest(r, path)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("Content-Type", "application/json")
@@ -84,7 +85,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			event, path, err := router.eventFromRequest(r)
+			event, err := eventpkg.FromRequest(r, path)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Header().Set("Content-Type", "application/json")
