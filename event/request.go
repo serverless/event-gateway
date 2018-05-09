@@ -14,7 +14,7 @@ const (
 )
 
 // FromRequest takes an HTTP request and returns an Event along with path
-func FromRequest(r *http.Request, path string) (*Event, error) {
+func FromRequest(r *http.Request) (*Event, error) {
 	eventType := extractEventType(r)
 
 	mimeType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))

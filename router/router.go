@@ -67,7 +67,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if isHTTPEvent(r) {
 		metricEventsReceived.WithLabelValues("", "http").Inc()
 
-		event, err := eventpkg.FromRequest(r, path)
+		event, err := eventpkg.FromRequest(r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("Content-Type", "application/json")
@@ -85,7 +85,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			event, err := eventpkg.FromRequest(r, path)
+			event, err := eventpkg.FromRequest(r)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Header().Set("Content-Type", "application/json")
