@@ -7,6 +7,8 @@ import (
 
 	"errors"
 	"time"
+
+	"github.com/serverless/event-gateway/internal/zap"
 )
 
 const (
@@ -106,6 +108,13 @@ func mapHeadersToEvent(event *Event, headers http.Header) *Event {
 	//		}
 	//	}
 	//}
+
+	event.Extensions = zap.MapStringInterface{
+		"eventgateway": map[string]interface{}{
+			"transformed":            true,
+			"transformation-version": TransformationVersion,
+		},
+	}
 
 	return event
 }
