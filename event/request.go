@@ -8,6 +8,8 @@ import (
 	"errors"
 	"time"
 
+	"strings"
+
 	"github.com/serverless/event-gateway/internal/zap"
 )
 
@@ -90,21 +92,19 @@ func mapHeadersToEvent(event *Event, headers http.Header) *Event {
 	if val := headers.Get("CE-ContentType"); len(val) > 0 {
 		event.ContentType = val
 	}
-	// TBD
-	//for key, allVals := range headers {
-	//	event.Extensions = map[string]interface{}{}
-	//	if strings.HasPrefix(key, "CE-X-") {
-	//		for _, val := range allVals {
-	//
-	//		}
-	//	}
-	//}
-
 	event.Extensions = zap.MapStringInterface{
 		"eventgateway": map[string]interface{}{
 			"transformed":            true,
 			"transformation-version": TransformationVersion,
 		},
+	}
+	for key, allVals := range headers {
+		event.Extensions = map[string]interface{}{}
+		if strings.HasPrefix(key, "CE-X-") {
+			for _, val := range allVals {
+				event.Extensions[key[5:]] = val
+			}
+		}
 	}
 
 	return event
