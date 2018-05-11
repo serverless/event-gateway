@@ -9,7 +9,7 @@ Use the Event Gateway right now, by running the **[Event Gateway Getting Started
 
 Features:
 
-* **Platform agnostic** - All your cloud services are now compatible with one another: share cross-cloud functions and events with AWS Lambda, Microsoft Azure, IBM OpenWhisk and Google Cloud Platform.
+* **Platform agnostic** - All your cloud services are now compatible with one another: share cross-cloud functions and events with AWS Lambda, Microsoft Azure, IBM Cloud and Google Cloud Platform.
 * **Send events from any cloud** - Data streams in your application become events. Centralize events from any cloud provider to get a bird’s eye view of all the data flowing through your cloud.
 * **React to cross-cloud events** - You aren’t locked in to events and functions being on the same provider: Any event, on any cloud, can trigger any function. Set events and functions up like dominoes and watch them fall.
 * **Expose events to your team** - Share events and functions to other parts of the application. Your teammates can find them and utilize them in their own services.
@@ -55,7 +55,7 @@ yet ready for production applications._
 
 ### Getting Started
 
-Looking for an example to get started? The easiest way to use the Event Gateway is with the [`serverless-event-gateway-plugin`](https://github.com/serverless/serverless-event-gateway-plugin) with the Serverless Framework.  Check out the [**Getting Started Example**](https://github.com/serverless/event-gateway-getting-started) to deploy your first service to the Event Gateway.
+Looking for an example to get started? The easiest way to use the Event Gateway is with the [`serverless-event-gateway-plugin`](https://github.com/serverless/serverless-event-gateway-plugin) with the Serverless Framework. Check out the [**Getting Started Example**](https://github.com/serverless/event-gateway-getting-started) to deploy your first service to the Event Gateway.
 
 ## Running the Event Gateway
 
@@ -109,7 +109,7 @@ please check [Running Locally](./docs/running-locally.md) and [Developing](./doc
 Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the
 following function types:
 
-* FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, OpenWhisk Actions)
+* FaaS functions (AWS Lambda, Google Cloud Functions, Azure Functions, IBM Cloud Functions)
 * Connectors (AWS Kinesis, AWS Kinesis Firehose, AWS SQS)
 * HTTP endpoints/Webhook (e.g. POST http://example.com/function)
 
