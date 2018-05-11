@@ -50,14 +50,14 @@ type Event struct {
 }
 
 // New return new instance of Event.
-func New(eventType Type, mime string, payload interface{}) *Event {
+func New(eventType Type, mimeType string, payload interface{}) *Event {
 	event := &Event{
 		EventType:          eventType,
 		CloudEventsVersion: "0.1",
 		Source:             "https://serverless.com/event-gateway/#transformationVersion=" + TransformationVersion,
 		EventID:            uuid.NewV4().String(),
 		EventTime:          time.Now(),
-		ContentType:        mime,
+		ContentType:        mimeType,
 		Data:               payload,
 	}
 
@@ -65,9 +65,9 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
 	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {
 		switch {
-		case isJSONContent(mime):
+		case isJSONContent(mimeType):
 			json.Unmarshal(eventBody, &event.Data)
-		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
+		case strings.HasPrefix(mimeType, mimeFormMultipart), mimeType == mimeFormURLEncoded:
 			event.Data = string(eventBody)
 		}
 	}
