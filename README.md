@@ -36,24 +36,26 @@ yet ready for production applications._
     1.  [Function Discovery](#function-discovery)
     1.  [Subscriptions](#subscriptions)
     1.  [Spaces](#spaces)
-1.  [System Events](#system-events)
-1.  [APIs](#apis)
-1.  [Client SDKs](#sdk)
+1.  [SDKs](#sdks)
 1.  [Versioning](#versioning)
-1.  [Comparison](#comparison)
-1.  [Architecture](#architecture)
-    1.  [System Overview](#system-overview)
-    1.  [Reliability Guarantees](#reliability-guarantees)
-    1.  [Clustering](#clustering)
+1.  [FAQ](#faq)
 1.  [Background](#background)
+1.  [Community](#community)
+
+## Reference
+
+1.  [API](./docs/api.md)
+1.  [Architecture](./docs/architecture.md)
+1.  [Clustering](./docs/clustering.md)
+1.  [System Events and Plugin System](./docs/system-events-and-plugin-system.md)
+1.  [Prometheus Metrics](./docs/prometheus-metrics.md)
+1.  [Reliability Guarantees](./docs/reliability-guarantees)
 
 ## Quick Start
 
 ### Getting Started
 
 Looking for an example to get started? The easiest way to use the Event Gateway is with the [`serverless-event-gateway-plugin`](https://github.com/serverless/serverless-event-gateway-plugin) with the Serverless Framework.  Check out the [**Getting Started Example**](https://github.com/serverless/event-gateway-getting-started) to deploy your first service to the Event Gateway.
-
----
 
 ## Running the Event Gateway
 
@@ -116,7 +118,8 @@ event.
 
 #### Example: Register An AWS Lambda Function
 
-##### curl example
+<details open>
+<summary>curl example</summary>
 
 ```bash
 curl --request POST \
@@ -131,8 +134,10 @@ curl --request POST \
     }
 }'
 ```
+</details>
 
-##### SDK example
+<details>
+<summary>Node.js SDK example</summary>
 
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
@@ -145,10 +150,13 @@ eventGateway.registerFunction({
   }
 })
 ```
+</details>
+
 
 #### Example: Function-To-Function call
 
-##### curl example
+<details open>
+<summary>curl example</summary>
 
 ```bash
 curl --request POST \
@@ -159,7 +167,9 @@ curl --request POST \
   --data '{ "name": "Max" }'
 ```
 
-##### SDK example
+</details>
+<details>
+<summary>Node.js SDK example</summary>
 
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
@@ -168,6 +178,7 @@ eventGateway.invoke({
   data: { name: 'Max' }
 })
 ```
+</details>
 
 ### Subscriptions
 
@@ -183,7 +194,8 @@ path property indicated URL path which Events API will be listening on.
 
 #### Example: Subscribe to an Event
 
-##### curl example
+<details open>
+<summary>curl example</summary>
 
 ```bash
 curl --request POST \
@@ -195,8 +207,9 @@ curl --request POST \
     "path": "/myteam"
   }'
 ```
-
-##### SDK example
+</details>
+<details>
+<summary>Node.js SDK example</summary>
 
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
@@ -206,12 +219,14 @@ eventGateway.subscribe({
   path: '/myteam'
 })
 ```
+</details>
 
 `sendEmail` function will be invoked for every `user.created` event to `<Events API>/myteam` endpoint.
 
 #### Example: Emit an Event
 
-##### curl example
+<details open>
+<summary>curl example</summary>
 
 ```bash
 curl --request POST \
@@ -221,7 +236,9 @@ curl --request POST \
   --data '{ "name": "Max" }'
 ```
 
-##### SDK example
+</details>
+<details>
+<summary>Node.js SDK example</summary>
 
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
@@ -230,6 +247,7 @@ eventGateway.emit({
   data: { name: 'Max' }
 })
 ```
+</details>
 
 #### Sync subscriptions via HTTP event
 
@@ -239,7 +257,8 @@ only one `http` subscription for the same `method` and `path` pair.
 
 #### Example: Subscribe to an "http" Event
 
-##### curl example
+<details open>
+<summary>curl example</summary>
 
 ```bash
 curl --request POST \
@@ -253,7 +272,9 @@ curl --request POST \
   }'
 ```
 
-##### SDK example
+</details>
+<details>
+<summary>Node.js SDK example</summary>
 
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
@@ -264,6 +285,7 @@ eventGateway.subscribe({
   path: '/users'
 })
 ```
+</details>
 
 `listUsers` function will be invoked for every HTTP GET request to `<Events API>/users` endpoint.
 
@@ -286,34 +308,7 @@ Technically speaking Space is a mandatory field ("default" by default) on Functi
 to provide during function registration or subscription creation. Space is a first class concept in Config API. Config
 API can register function in specific space or list all functions or subscriptions from a space.
 
-## System Events
-
-System Events are special type of events emitted by the Event Gateway instance. They are emitted on each stage of event
-processing flow starting from receiving event to function invocation end. Those events are:
-
-* `gateway.event.received` - the event is emitted when an event was received by Events API. Data fields:
-  * `event` - event payload
-  * `path` - Events API path
-  * `headers` - HTTP request headers
-* `gateway.function.invoking` - the event emitted before invoking a function. Data fields:
-  * `event` - event payload
-  * `functionId` - registered function ID
-* `gateway.function.invoked` - the event emitted after successful function invocation. Data fields:
-  * `event` - event payload
-  * `functionId` - registered function ID
-  * `result` - function response
-* `gateway.function.invocationFailed` - the event emitted after failed function invocation. Data fields:
-  * `event` - event payload
-  * `functionId` - registered function ID
-  * `error` - invocation error
-
-## APIs
-
-[API reference](./docs/api.md)
-
-The Event Gateway has two APIs: the Configuration API for registering functions and subscriptions, and the runtime Events API for sending events into the Event Gateway.
-
-## SDK
+## SDKs
 
 * [SDK for Node.js](https://github.com/serverless/event-gateway-sdk)
 
@@ -323,7 +318,7 @@ This project uses [Semantic Versioning 2.0.0](http://semver.org/spec/v2.0.0.html
 right now (v0.X.Y). The public APIs should not be considered stable. Every breaking change will be listed in the
 [release changelog](https://github.com/serverless/event-gateway/releases).
 
-## Comparison
+## FAQ
 
 ### What The Event Gateway is NOT
 
@@ -336,106 +331,6 @@ right now (v0.X.Y). The public APIs should not be considered stable. Every break
 The Event Gateway is NOT a FaaS platform. It integrates with existing FaaS providers (AWS Lambda, Google Cloud Functions,
 Azure Functions, OpenWhisk Actions). The Event Gateway enables building large serverless architectures in a unified way
 across different providers.
-
-## Architecture
-
-### System Overview
-
-```
-                                                    ┌──────────────┐
-                                                    │              │
-                                                    │    Client    │
-                                                    │              │
-                                                    └──────────────┘
-                                                            ▲
-                                                            │
-                                                          Event
-                                                            │
-                                                            ▼
-                              ┌───────────────────────────────────────────────────────────┐
-                              │                                                           │
-                              │                   Event Gateway Cluster                   │
-                              │                                                           │
-                              └───────────────────────────────────────────────────────────┘
-                                                            ▲
-                                                            │
-                                                            │
-                              ┌─────────────────────────────┼─────────────────────────────┐
-                              │                             │                             │
-                              │                             │                             │
-                              ▼                             ▼                             ▼
-                      ┌───────────────┐             ┌───────────────┐             ┌───────────────┐
-                      │  AWS Lambda   │             │ Google Cloud  │             │Azure Function │
-                      │   Function    │             │   Function    │             │               │
-                      │               │             │               │             │    Region:    │
-                      │    Region:    │             │    Region:    │             │    West US    │
-                      │   us-east-1   │             │  us-central1  │             │               │
-                      └───────────────┘             └───────────────┘             └───────────────┘
-```
-
-### Clustering
-
-The Event Gateway instances use a strongly consistent, subscribable DB (initially [etcd](https://coreos.com/etcd),
-with support for Consul, and Zookeeper planned) to store and broadcast configuration. The instances locally
-cache configuration used to drive low-latency event routing. The instance local cache is built asynchronously based on
-events from backing DB.
-
-The Event Gateway is a horizontally scalable system. It can be scaled by adding instances to the cluster. A cluster is
-a group of instances sharing the same database. A cluster can be created in one cloud region, across multiple regions,
-across multiple cloud provider or even in both cloud and on-premise data centers.
-
-The Event Gateway is a stateless service and there is no direct communication between different instances. All
-configuration data is shared using backing DB. If the instance from region 1 needs to call a function from region 2 the
-invocation is not routed through the instance in region 2. The instance from region 1 invokes the function from region 2
-directly.
-
-```
-┌─────────────────────────────────────────────Event Gateway Cluster──────────────────────────────────────────────┐
-│                                                                                                                │
-│                                                                                                                │
-│                                            Cloud Region 1───────┐                                              │
-│                                            │                    │                                              │
-│                                            │   ┌─────────────┐  │                                              │
-│                                            │   │             │  │                                              │
-│                   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ▶│etcd cluster │◀ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                    │
-│                                            │   │             │  │                          │                   │
-│                   │                        │   └─────────────┘  │                                              │
-│                                            │          ▲         │                          │                   │
-│                   │                        │                    │                                              │
-│        Cloud Region 2───────┐              │          │         │               Cloud Regio│ 3───────┐         │
-│        │          │         │              │                    │               │                    │         │
-│        │          ▼         │              │          ▼         │               │          ▼         │         │
-│        │  ┌───────────────┐ │              │  ┌──────────────┐  │               │  ┌──────────────┐  │         │
-│        │  │               │ │              │  │              │  │               │  │              │  │         │
-│        │  │ Event Gateway │ │              │  │Event Gateway │  │               │  │Event Gateway │  │         │
-│        │  │   instance    │◀┼──────────┐   │  │   instance   │◀─┼──────────┐    │  │   instance   │  │         │
-│        │  │               │ │          │   │  │              │  │          │    │  │              │  │         │
-│        │  └───────────────┘ │          │   │  └──────────────┘  │          │    │  └──────────────┘  │         │
-│        │          ▲         │          │   │          ▲         │          │    │          ▲         │         │
-│        │          │         │          │   │          │         │          │    │          │         │         │
-│        │          │         │          │   │          │         │          │    │          │         │         │
-│        │          ▼         │          │   │          ▼         │          │    │          ▼         │         │
-│        │        ┌───┐       │          │   │        ┌───┐       │          │    │        ┌───┐       │         │
-│        │        │ λ ├┐      │          └───┼───────▶│ λ ├┐      │          └────┼───────▶│ λ ├┐      │         │
-│        │        └┬──┘│      │              │        └┬──┘│      │               │        └┬──┘│      │         │
-│        │         └───┘      │              │         └───┘      │               │         └───┘      │         │
-│        └────────────────────┘              └────────────────────┘               └────────────────────┘         │
-│                                                                                                                │
-│                                                                                                                │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-## Reliability Guarantees
-
-### Events are not durable
-
-The event received by Event Gateway is stored only in memory, it's not persisted to disk before processing. This means that in case of hardware failure or software crash the event may not be delivered to the subscriber. For a synchronous subscription (`http` or `invoke` event) it can manifest as error message returned to the requester. For asynchronous custom event with multiple subscribers it means that the event may not be delivered to all of the subscribers.
-
-### Events are delivered _at most once_
-
-Event Gateway attempts delivery fulfillment for an event only once and consequently any event received successfully by the Event Gateway is guaranteed to be received by the subscriber _at most once_. That said, the nature of Event Gateway provider implementation could result in retries under specific circumstances, but these should not cause delivering the same event multiple times. For example, Providers for AWS Services that use the AWS SDK are subject to auto retry logic that's built into the SDK ([AWS documentation on API retries](https://docs.aws.amazon.com/general/latest/gr/api-retries.html)).
-
-AWS Lambda provider uses `RequestResponse` invocation type which means that retry logic for asynchronous AWS events doesn't apply here. Among others it means, that failed deliveries of custom events are not sent to DLQ. Please find more information in [Understanding Retry Behavior](https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html), "Synchronous invocation" section.
 
 ## Background
 
