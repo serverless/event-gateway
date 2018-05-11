@@ -9,6 +9,7 @@ func init() {
 	prometheus.MustRegister(metricSubscriptions)
 
 	prometheus.MustRegister(metricConfigRequests)
+	prometheus.MustRegister(metricConfigRequestDuration)
 }
 
 // Functions
@@ -40,3 +41,12 @@ var metricConfigRequests = prometheus.NewCounterVec(
 		Name:      "requests_total",
 		Help:      "Total of Config API requests.",
 	}, []string{"space", "resource", "operation"})
+
+var metricConfigRequestDuration = prometheus.NewHistogram(
+	prometheus.HistogramOpts{
+		Namespace: "gateway",
+		Subsystem: "config",
+		Name:      "request_duration_seconds",
+		Help:      "Bucketed histogram of request duration of Config API requests",
+		Buckets:   prometheus.ExponentialBuckets(0.0005, 2, 16),
+	})

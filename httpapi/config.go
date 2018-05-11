@@ -6,14 +6,9 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/subscription"
 )
-
-func init() {
-	prometheus.MustRegister(requestDuration)
-}
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
 func StartConfigAPI(functions function.Service, subscriptions subscription.Service, config ServerConfig) {
@@ -43,15 +38,6 @@ func StartConfigAPI(functions function.Service, subscriptions subscription.Servi
 	}()
 }
 
-var requestDuration = prometheus.NewHistogram(
-	prometheus.HistogramOpts{
-		Namespace: "gateway",
-		Subsystem: "config",
-		Name:      "request_duration_seconds",
-		Help:      "Bucketed histogram of request duration of Config API requests",
-		Buckets:   prometheus.ExponentialBuckets(0.0005, 2, 16),
-	})
-
 type metricsReporter struct {
 	Handler http.Handler
 }
@@ -59,5 +45,5 @@ type metricsReporter struct {
 func (m metricsReporter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	m.Handler.ServeHTTP(w, r)
-	requestDuration.Observe(time.Since(start).Seconds())
+	metricConfigRequestDuration.Observe(time.Since(start).Seconds())
 }
