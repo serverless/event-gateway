@@ -49,7 +49,7 @@ yet ready for production applications._
 1.  [Clustering](./docs/clustering.md)
 1.  [System Events and Plugin System](./docs/system-events-and-plugin-system.md)
 1.  [Prometheus Metrics](./docs/prometheus-metrics.md)
-1.  [Reliability Guarantees](./docs/reliability-guarantees)
+1.  [Reliability Guarantees](./docs/reliability-guarantees.md)
 
 ## Quick Start
 
