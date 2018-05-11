@@ -5,7 +5,6 @@ import (
 	"mime"
 	"net/http"
 
-	"errors"
 	"time"
 
 	"strings"
@@ -40,18 +39,11 @@ func FromRequest(r *http.Request) (*Event, error) {
 	var event *Event
 
 	switch mimeType {
-	case mimeCloudEventsJSON:
+	case mimeCloudEventsJSON, mimeJSON:
 		event, err = parseAsCloudEvent(eventType, mimeType, body)
-		// reject if HTTP event and header indicates CloudEvent but the body is not valid CloudEvent
-		if err != nil && eventType == TypeHTTP {
-			return event, errors.New("payload is not a valid CloudEvent")
+		if err != nil {
+			event = New(eventType, mimeType, body)
 		}
-	case mimeJSON:
-		event, err = parseAsCloudEvent(eventType, mimeType, body)
-		if err == nil {
-			break
-		}
-		fallthrough
 	default:
 		event = mapHeadersToEvent(New(eventType, mimeType, body), r.Header)
 	}
@@ -68,6 +60,13 @@ func extractEventType(r *http.Request) Type {
 }
 
 func mapHeadersToEvent(event *Event, headers http.Header) *Event {
+	if len(headers.Get("CE-EventType")) < 1 ||
+		len(headers.Get("CE-CloudEventsVersion")) < 1 ||
+		len(headers.Get("CE-Source")) < 1 ||
+		len(headers.Get("CE-EventID")) < 1 ||
+		len(headers.Get("CE-EventTypeVersion")) < 1 {
+		return event
+	}
 	if val := headers.Get("CE-EventType"); len(val) > 0 {
 		event.EventType = Type(val)
 	}
