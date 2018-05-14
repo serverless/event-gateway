@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"strings"
+
+	validator "gopkg.in/go-playground/validator.v9"
 )
 
 const (
@@ -61,45 +63,34 @@ func extractEventType(r *http.Request) Type {
 }
 
 func mapHeadersToEvent(event *Event, headers http.Header) *Event {
-	if len(headers.Get("CE-EventType")) < 1 ||
-		len(headers.Get("CE-CloudEventsVersion")) < 1 ||
-		len(headers.Get("CE-Source")) < 1 ||
-		len(headers.Get("CE-EventID")) < 1 ||
-		len(headers.Get("CE-EventTypeVersion")) < 1 {
+	he := Event{
+		EventType:          Type(headers.Get("CE-EventType")),
+		CloudEventsVersion: headers.Get("CE-CloudEventsVersion"),
+		Source:             headers.Get("CE-Source"),
+		EventID:            headers.Get("CE-EventID"),
+		EventTypeVersion:   headers.Get("CE-EventTypeVersion"),
+	}
+	err := validator.New().Struct(he)
+	if err != nil {
 		return event
 	}
-	if val := headers.Get("CE-EventType"); len(val) > 0 {
-		event.EventType = Type(val)
-	}
-	if val := headers.Get("CE-EventTypeVersion"); len(val) > 0 {
-		event.EventTypeVersion = val
-	}
-	if val := headers.Get("CE-CloudEventsVersion"); len(val) > 0 {
-		event.CloudEventsVersion = val
-	}
-	if val := headers.Get("CE-Source"); len(val) > 0 {
-		event.Source = val
-	}
-	if val := headers.Get("CE-EventID"); len(val) > 0 {
-		event.EventID = val
-	}
 	if val, err := time.Parse(time.RFC3339, headers.Get("CE-EventTime")); err == nil {
-		event.EventTime = val
+		he.EventTime = val
 	}
 	if val := headers.Get("CE-SchemaURL"); len(val) > 0 {
-		event.SchemaURL = val
+		he.SchemaURL = val
 	}
 	if val := headers.Get("CE-ContentType"); len(val) > 0 {
-		event.ContentType = val
+		he.ContentType = val
 	}
 	for key, allVals := range headers {
-		event.Extensions = map[string]interface{}{}
+		he.Extensions = map[string]interface{}{}
 		if strings.HasPrefix(key, "CE-X-") {
 			for _, val := range allVals {
-				event.Extensions[key[5:]] = val
+				he.Extensions[key[5:]] = val
 			}
 		}
 	}
 
-	return event
+	return &he
 }
