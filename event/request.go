@@ -36,15 +36,15 @@ func FromRequest(r *http.Request) (*Event, error) {
 
 	var event *Event
 
-	switch mimeType {
-	case mimeCloudEventsJSON, mimeJSON:
+	if isJSONContent(mimeType) {
 		event, err = parseAsCloudEvent(eventType, mimeType, body)
 		if err != nil {
 			event = New(eventType, mimeType, body)
 		}
-	default:
+	} else {
 		event = mapHeadersToEvent(New(eventType, mimeType, body), r.Header)
 	}
+
 	if eventType == TypeHTTP {
 		event.Data = NewHTTPEvent(r, event.Data)
 	}
