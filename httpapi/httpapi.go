@@ -30,7 +30,7 @@ type SubscriptionsResponse struct {
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
-	router.Handler("GET", "/metrics", promhttp.Handler())
+	router.Handler("GET", "/v1/metrics", promhttp.Handler())
 
 	router.GET("/v1/spaces/:space/functions", h.listFunctions)
 	router.GET("/v1/spaces/:space/functions/:id", h.getFunction)
