@@ -12,6 +12,7 @@ Features:
 * **Platform agnostic** - All your cloud services are now compatible with one another: share cross-cloud functions and events with AWS Lambda, Microsoft Azure, IBM Cloud and Google Cloud Platform.
 * **Send events from any cloud** - Data streams in your application become events. Centralize events from any cloud provider to get a bird’s eye view of all the data flowing through your cloud.
 * **React to cross-cloud events** - You aren’t locked in to events and functions being on the same provider: Any event, on any cloud, can trigger any function. Set events and functions up like dominoes and watch them fall.
+* **First-class support for CloudEvents** - Emit and react to events in [CloudEvents](https://cloudevents.io/) standard.
 * **Expose events to your team** - Share events and functions to other parts of the application. Your teammates can find them and utilize them in their own services.
 * **Extendable through middleware** - Perform data transforms, authorizations, serializations, and other custom computes straight from the Event Gateway.
 
