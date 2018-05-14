@@ -1,6 +1,7 @@
-# API documentation
+# API
 
-This document contains the API documentation for the Events API and the Configuration API in the Event Gateway. You can also find links to OpenAPI specs for these APIs.
+The Event Gateway has two APIs: the Configuration API for registering functions and subscriptions, and the runtime Events API for sending events into the Event Gateway.
+This document contains the API documentation for both Events and Configuration APIs. You can also find links to OpenAPI specs for these APIs.
 
 ## Contents
 
@@ -462,6 +463,14 @@ JSON object:
   * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
   * `path` - `string` - optional, in case of `http` event, path that accepts requests
   * `cors` - `object` - optional, in case of `http` event, CORS configuration
+
+### Prometheus Metrics
+
+Endpoint exposing [Prometheus metrics](./prometheus-metrics.md).
+
+**Endpoint**
+
+`GET <Configuration API URL>/metrics`
 
 ### Status
 
