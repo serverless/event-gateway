@@ -8,9 +8,9 @@ import (
 
 	"go.uber.org/zap/zapcore"
 
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"github.com/serverless/event-gateway/internal/zap"
-	"gopkg.in/go-playground/validator.v9"
+	validator "gopkg.in/go-playground/validator.v9"
 )
 
 // Type uniquely identifies an event type.
@@ -63,10 +63,13 @@ func New(eventType Type, mimeType string, payload interface{}) *Event {
 
 	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
 	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 && isJSONContent(mimeType) {
-		json.Unmarshal(eventBody, &event.Data)
-	} else {
-		event.Data = string(eventBody)
+	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {
+		switch {
+		case isJSONContent(mimeType):
+			json.Unmarshal(eventBody, &event.Data)
+		case strings.HasPrefix(mimeType, mimeFormMultipart), mimeType == mimeFormURLEncoded:
+			event.Data = string(eventBody)
+		}
 	}
 
 	event.Extensions = zap.MapStringInterface{
