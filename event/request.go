@@ -47,6 +47,9 @@ func FromRequest(r *http.Request) (*Event, error) {
 	default:
 		event = mapHeadersToEvent(New(eventType, mimeType, body), r.Header)
 	}
+	if eventType == TypeHTTP {
+		event.Data = NewHTTPEvent(r, event.Data)
+	}
 
 	return event, nil
 }
