@@ -142,9 +142,9 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	wait(instance.WaitForEndpoint("GET", "/httpresponse"), "timed out waiting for endpoint to be configured!")
 
 	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
-	assert.Equal(t, statusCode, 201)
-	assert.Equal(t, headers.Get("content-type"), "text/html")
-	assert.Equal(t, body, "<head></head>")
+	assert.Equal(t, 201, statusCode)
+	assert.Equal(t, "text/html", headers.Get("content-type"))
+	assert.Equal(t, "<head></head>", body)
 
 	instance.Drain()
 	shutdownGuard.ShutdownAndWait()
