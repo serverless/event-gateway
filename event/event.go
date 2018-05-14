@@ -72,6 +72,13 @@ func New(eventType Type, mimeType string, payload interface{}) *Event {
 		}
 	}
 
+	event.Extensions = zap.MapStringInterface{
+		"eventgateway": map[string]interface{}{
+			"transformed":            true,
+			"transformation-version": TransformationVersion,
+		},
+	}
+
 	return event
 }
 
