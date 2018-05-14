@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	eventpkg "github.com/serverless/event-gateway/event"
-	"github.com/stretchr/testify/assert"
 	"github.com/serverless/event-gateway/internal/zap"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNew(t *testing.T) {
@@ -48,7 +48,7 @@ var newTests = []struct {
 			Data:               []byte("test"),
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
@@ -66,7 +66,7 @@ var newTests = []struct {
 			Data:               eventpkg.SystemEventReceivedData{},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
@@ -78,7 +78,7 @@ var newTests = []struct {
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
 			"source": "/mysource",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
@@ -98,7 +98,7 @@ var newTests = []struct {
 		"application/cloudevents+json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
 			"source": "/mysource",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
@@ -118,7 +118,7 @@ var newTests = []struct {
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
 			"source": "https://example.com/",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
@@ -130,16 +130,16 @@ var newTests = []struct {
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
-				"eventType":           "user.created",
+				"eventType":          "user.created",
 				"cloudEventsVersion": eventpkg.TransformationVersion,
-				"source":               "https://example.com/",
-				"eventID":             "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-				"contentType":         "text/plain",
-				"data":                 "test",
+				"source":             "https://example.com/",
+				"eventID":            "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+				"contentType":        "text/plain",
+				"data":               "test",
 			},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
@@ -159,12 +159,12 @@ var newTests = []struct {
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
-				"eventType":           "user.created",
+				"eventType":          "user.created",
 				"cloudEventsVersion": eventpkg.TransformationVersion,
 			},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
