@@ -113,7 +113,7 @@ func (e Event) IsSystem() bool {
 	return strings.HasPrefix(string(e.EventType), "gateway.")
 }
 
-func parseAsCloudEvent(eventType Type, mime string, payload interface{}) (*Event, error) {
+func parseAsCloudEvent(mime string, payload interface{}) (*Event, error) {
 	if !isJSONContent(mime) {
 		return nil, errors.New("content type is not json")
 	}
@@ -130,10 +130,6 @@ func parseAsCloudEvent(eventType Type, mime string, payload interface{}) (*Event
 		err = validate.Struct(customEvent)
 		if err != nil {
 			return nil, err
-		}
-
-		if eventType != customEvent.EventType {
-			return nil, errors.New("wrong event type")
 		}
 
 		return customEvent, nil
