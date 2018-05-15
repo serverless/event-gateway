@@ -113,7 +113,10 @@ func FromRequest(r *http.Request) (*Event, error) {
 			event = New(eventType, mimeType, body)
 		}
 	} else {
-		event = parseAsCloudEventBinary(New(eventType, mimeType, body), r.Header)
+		event, err = parseAsCloudEventBinary(r.Header, body)
+		if err != nil {
+			event = New(eventType, mimeType, body)
+		}
 	}
 
 	if eventType == TypeHTTP {
@@ -157,18 +160,18 @@ func extractEventType(r *http.Request) Type {
 	return eventType
 }
 
-func parseAsCloudEventBinary(event *Event, headers http.Header) *Event {
+func parseAsCloudEventBinary(headers http.Header, payload interface{}) (*Event, error) {
 	he := Event{
 		EventType:          Type(headers.Get("CE-EventType")),
 		EventTypeVersion:   headers.Get("CE-EventTypeVersion"),
 		CloudEventsVersion: headers.Get("CE-CloudEventsVersion"),
 		Source:             headers.Get("CE-Source"),
 		EventID:            headers.Get("CE-EventID"),
-		Data:               event.Data,
+		Data:               payload,
 	}
 	err := validator.New().Struct(he)
 	if err != nil {
-		return event
+		return nil, err
 	}
 	if val, err := time.Parse(time.RFC3339, headers.Get("CE-EventTime")); err == nil {
 		he.EventTime = val
@@ -188,7 +191,7 @@ func parseAsCloudEventBinary(event *Event, headers http.Header) *Event {
 		}
 	}
 
-	return &he
+	return &he, nil
 }
 
 // IsSystem indicates if the event is a system event.
