@@ -57,7 +57,7 @@ var fromRequestTests = []struct {
 			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "/mysource",
 			ContentType:        "text/plain",
-			Data: &eventpkg.HTTPEvent{
+			Data: &eventpkg.HTTPRequestData{
 				Headers: map[string]string{"Content-Type": "application/cloudevents+json"},
 				Query:   map[string][]string{},
 				Body:    "test",
@@ -83,7 +83,7 @@ var fromRequestTests = []struct {
 			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/octet-stream",
-			Data: &eventpkg.HTTPEvent{
+			Data: &eventpkg.HTTPRequestData{
 				Headers: map[string]string{"Content-Type": ""},
 				Query:   map[string][]string{},
 				Body: []byte(`{

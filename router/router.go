@@ -258,7 +258,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		httpdata := event.Data.(*eventpkg.HTTPEvent)
+		httpdata := event.Data.(*eventpkg.HTTPRequestData)
 		httpdata.Params = params
 		event.Data = httpdata
 		resp, err := router.callFunction(space, *backingFunction, *event)

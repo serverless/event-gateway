@@ -6,8 +6,8 @@ import (
 	ihttp "github.com/serverless/event-gateway/internal/http"
 )
 
-// HTTPEvent is a event schema used for sending events to HTTP subscriptions.
-type HTTPEvent struct {
+// HTTPRequestData is a event schema used for sending events to HTTP subscriptions.
+type HTTPRequestData struct {
 	Headers map[string]string   `json:"headers"`
 	Query   map[string][]string `json:"query"`
 	Body    interface{}         `json:"body"`
@@ -18,10 +18,10 @@ type HTTPEvent struct {
 }
 
 // NewHTTPEvent returns a new instance of HTTPEvent
-func NewHTTPEvent(r *http.Request, eventData interface{}) *HTTPEvent {
+func NewHTTPEvent(r *http.Request, eventData interface{}) *HTTPRequestData {
 	headers := ihttp.FlattenHeader(r.Header)
 
-	return &HTTPEvent{
+	return &HTTPRequestData{
 		Headers: headers,
 		Query:   r.URL.Query(),
 		Body:    eventData,
