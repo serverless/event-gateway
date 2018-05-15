@@ -20,10 +20,10 @@ var flattenHeaderTests = []struct {
 }{
 	{
 		map[string][]string{"CustomHeader": []string{"value"}},
-		map[string]string{"CustomHeader": "value"},
+		map[string]string{"customheader": "value"},
 	},
 	{
 		map[string][]string{"CustomHeader": []string{"value1", "value2"}},
-		map[string]string{"CustomHeader": "value1, value2"},
+		map[string]string{"customheader": "value1, value2"},
 	},
 }
