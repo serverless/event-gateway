@@ -11,9 +11,10 @@ import (
 
 	"go.uber.org/zap/zapcore"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
+	ihttp "github.com/serverless/event-gateway/internal/http"
 	"github.com/serverless/event-gateway/internal/zap"
-	validator "gopkg.in/go-playground/validator.v9"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // Type uniquely identifies an event type.
@@ -182,12 +183,10 @@ func parseAsCloudEventBinary(headers http.Header, payload interface{}) (*Event, 
 	if val := headers.Get("CE-ContentType"); len(val) > 0 {
 		he.ContentType = val
 	}
-	for key, allVals := range headers {
-		he.Extensions = map[string]interface{}{}
-		if strings.HasPrefix(key, "CE-X-") {
-			for _, val := range allVals {
-				he.Extensions[key[5:]] = val
-			}
+	he.Extensions = map[string]interface{}{}
+	for key, val := range ihttp.FlattenHeader(headers) {
+		if strings.HasPrefix(key, "ce-x-") {
+			he.Extensions[strings.TrimLeft(key, "ce-x-")] = val
 		}
 	}
 
