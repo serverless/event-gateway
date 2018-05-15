@@ -290,4 +290,26 @@ var fromRequestTests = []struct {
 			Data:               []byte("hey there"),
 		},
 	},
+	// Valid custom CloudEvent with application/cloudevents+json content-type
+	{
+		contentType: "application/cloudevents+json",
+		body: []byte(`{
+			"eventType": "user.created",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
+			"source": "/mysource",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"
+			}`),
+		headers: map[string]string{
+			"Event": "myevent",
+		},
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: "0.1",
+			Source:             "/mysource",
+			ContentType:        "text/plain",
+			Data:               "test",
+		},
+	},
 }
