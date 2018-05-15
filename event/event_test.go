@@ -312,4 +312,31 @@ var fromRequestTests = []struct {
 			Data:               "test",
 		},
 	},
+	// invalid custom CloudEvent with application/cloudevents+json content-type
+	{
+		contentType: "application/cloudevents+json",
+		body: []byte(`{
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
+			"source": "/mysource",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"
+			}`),
+		headers: map[string]string{
+			"Event": "myevent",
+		},
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.Type("myevent"),
+			CloudEventsVersion: "0.1",
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
+			ContentType:        "application/cloudevents+json",
+			Data: map[string]interface{}{
+				"cloudEventsVersion": "0.1",
+				"source":             "/mysource",
+				"eventID":            "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+				"contentType":        "text/plain",
+				"data":               "test",
+			},
+		},
+	},
 }
