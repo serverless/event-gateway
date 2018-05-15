@@ -151,7 +151,7 @@ var fromRequestTests = []struct {
 }{
 	// Valid CloudEvent with application/json content-type
 	{
-		url:         "https://something.eventgateway.com/myspace",
+		url:         "https://example.com/myspace",
 		contentType: "application/json; charset=utf-8",
 		body: []byte(`{
 			"eventType": "user.created",
@@ -174,7 +174,7 @@ var fromRequestTests = []struct {
 	},
 	// Valid CloudEvent with application/cloudevents+json content-type
 	{
-		url:         "https://something.eventgateway.com/myspace",
+		url:         "https://example.com/myspace",
 		contentType: "application/cloudevents+json",
 		body: []byte(`{
 			"eventType": "user.created",
@@ -197,7 +197,7 @@ var fromRequestTests = []struct {
 	},
 	// invalid CloudEvent
 	{
-		url:         "https://something.eventgateway.com/myspace",
+		url:         "https://example.com/myspace",
 		contentType: "application/cloudevents+json",
 		body: []byte(`{
 			"eventType": 
@@ -223,7 +223,7 @@ var fromRequestTests = []struct {
 	},
 	// Empty content type
 	{
-		url:         "https://something.eventgateway.com/myspace",
+		url:         "https://example.com/myspace",
 		contentType: "",
 		body: []byte(`{
 			"eventType": "user.created",
@@ -251,7 +251,7 @@ var fromRequestTests = []struct {
 	},
 	// CloudEvent from headers
 	{
-		url: "https://something.eventgateway.com/myspace",
+		url: "https://example.com/myspace",
 		headers: map[string]string{
 			"CE-EventType":          "myevent",
 			"CE-EventTypeVersion":   "0.1beta",
