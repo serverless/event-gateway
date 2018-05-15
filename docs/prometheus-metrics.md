@@ -1,6 +1,6 @@
 # Prometheus Metrics
 
-Both Events and Configuration API exposes Prometheus metrics. The metrics are accesible via `/v1/metrics` endpoint.
+Both Events and Configuration API exposes Prometheus metrics. The metrics are accesible via `/v1/metrics` endpoint of Configuration API.
 
 ## Events API Metrics
 
