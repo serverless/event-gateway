@@ -1,6 +1,11 @@
 package event_test
 
 import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"testing"
 
 	eventpkg "github.com/serverless/event-gateway/event"
@@ -27,6 +32,40 @@ func TestNew_Encoding(t *testing.T) {
 		result := eventpkg.New(eventpkg.Type("test.event"), testCase.contentType, testCase.body)
 
 		assert.Equal(t, testCase.expectedBody, result.Data)
+	}
+}
+
+func TestFromRequest(t *testing.T) {
+	for _, testCase := range fromRequestTests {
+		u, err := url.Parse(testCase.url)
+		assert.Nil(t, err)
+
+		h := http.Header{}
+		h.Add("Content-Type", testCase.contentType)
+
+		for key, val := range testCase.headers {
+			h.Add(key, val)
+		}
+
+		e, err := eventpkg.FromRequest(&http.Request{
+			URL:    u,
+			Header: h,
+			Body:   ioutil.NopCloser(bytes.NewReader(testCase.body)),
+		})
+
+		assert.Nil(t, err)
+		assert.Equal(t, testCase.expectedEvent.EventType, e.EventType, "EventType is not equal")
+		assert.Equal(t, testCase.expectedEvent.Source, e.Source, "Source is not equal")
+		assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, e.CloudEventsVersion, "CloudEventsVersion is not equal")
+		assert.Equal(t, testCase.expectedEvent.ContentType, e.ContentType, "ContentType is not equal")
+		if expectedHRD, ok := testCase.expectedEvent.Data.(*eventpkg.HTTPRequestData); ok {
+			actualHRD, ok := e.Data.(*eventpkg.HTTPRequestData)
+			assert.True(t, ok, "actual Event.Data is not HTTPRequestData")
+			for key, _ := range expectedHRD.Headers {
+				assert.Equal(t, expectedHRD.Headers[key], actualHRD.Headers[key], fmt.Sprintf("Expected header %s is not equal", key))
+			}
+			assert.Equal(t, expectedHRD.Body, actualHRD.Body)
+		}
 	}
 }
 
@@ -98,5 +137,144 @@ var encodingTests = []struct {
 		[]byte(`{"hello": "world"}`),
 		"application/json",
 		map[string]interface{}{"hello": "world"},
+	},
+}
+
+var fromRequestTests = []struct {
+	url           string
+	contentType   string
+	headers       map[string]string
+	body          []byte
+	expectedEvent *eventpkg.Event
+}{
+	// Valid CloudEvent with application/json content-type
+	{
+		url:         "https://something.eventgateway.com/myspace",
+		contentType: "application/json; charset=utf-8",
+		body: []byte(`{
+			"eventType": "user.created",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
+			"source": "/mysource",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"
+			}`),
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: eventpkg.TransformationVersion,
+			Source:             "/mysource",
+			ContentType:        "text/plain",
+			Data: &eventpkg.HTTPRequestData{
+				Headers: map[string]string{"Content-Type": "application/json; charset=utf-8"},
+				Body:    "test",
+			},
+		},
+	},
+	// Valid CloudEvent with application/cloudevents+json content-type
+	{
+		url:         "https://something.eventgateway.com/myspace",
+		contentType: "application/cloudevents+json",
+		body: []byte(`{
+			"eventType": "user.created",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
+			"source": "/mysource",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"
+			}`),
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: eventpkg.TransformationVersion,
+			Source:             "/mysource",
+			ContentType:        "text/plain",
+			Data: &eventpkg.HTTPRequestData{
+				Headers: map[string]string{"Content-Type": "application/cloudevents+json"},
+				Body:    "test",
+			},
+		},
+	},
+	// invalid CloudEvent
+	{
+		url:         "https://something.eventgateway.com/myspace",
+		contentType: "application/cloudevents+json",
+		body: []byte(`{
+			"eventType": 
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"
+			}`),
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.Type("http"),
+			CloudEventsVersion: eventpkg.TransformationVersion,
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
+			ContentType:        "application/cloudevents+json",
+			Data: &eventpkg.HTTPRequestData{
+				Headers: map[string]string{"Content-Type": "application/cloudevents+json"},
+				Body: []byte(`{
+			"eventType": 
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"
+			}`),
+			},
+		},
+	},
+	// Empty content type
+	{
+		url:         "https://something.eventgateway.com/myspace",
+		contentType: "",
+		body: []byte(`{
+			"eventType": "user.created",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
+			"source": "/mysource",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"}`),
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.TypeHTTP,
+			CloudEventsVersion: eventpkg.TransformationVersion,
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
+			ContentType:        "application/octet-stream",
+			Data: &eventpkg.HTTPRequestData{
+				Headers: map[string]string{"Content-Type": ""},
+				Body: []byte(`{
+			"eventType": "user.created",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
+			"source": "/mysource",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"}`),
+			},
+		},
+	},
+	// CloudEvent from headers
+	{
+		url:         "https://something.eventgateway.com/myspace",
+		contentType: "application/cloudevents+json",
+		headers: map[string]string{
+			"CE-EventType":          "myevent",
+			"CE-EventTypeVersion":   "0.1beta",
+			"CE-CloudEventsVersion": "0.1",
+			"CE-Source":             "https://example.com",
+			"CE-EventID":            "778d495b-a29e-48f9-a438-a26de1e33515",
+		},
+		body: []byte("hey there"),
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.Type("http"),
+			CloudEventsVersion: eventpkg.TransformationVersion,
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
+			ContentType:        "application/cloudevents+json",
+			Data: &eventpkg.HTTPRequestData{
+				Headers: map[string]string{
+					"Content-Type":          "application/cloudevents+json",
+					"Ce-Eventid":            "778d495b-a29e-48f9-a438-a26de1e33515",
+					"Ce-Eventtype":          "myevent",
+					"Ce-Eventtypeversion":   "0.1beta",
+					"Ce-Cloudeventsversion": "0.1",
+					"Ce-Source":             "https://example.com",
+				},
+				Body: []byte("hey there"),
+			},
+		},
 	},
 }
