@@ -96,11 +96,11 @@ func TestRouterServeHTTP_Encoding(t *testing.T) {
 		testListServer := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				testevent := event.Event{
-					Data: event.HTTPEvent{},
+					Data: event.HTTPRequestData{},
 				}
 				json.NewDecoder(r.Body).Decode(&testevent)
 
-				assert.Equal(t, testCase.expectedPayload, testevent.Data.(event.HTTPEvent).Body)
+				assert.Equal(t, testCase.expectedPayload, testevent.Data.(event.HTTPRequestData).Body)
 			}))
 		defer testListServer.Close()
 		target := mock.NewMockTargeter(ctrl)
