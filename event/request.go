@@ -44,7 +44,7 @@ func FromRequest(r *http.Request) (*Event, error) {
 			event = New(eventType, mimeType, body)
 		}
 	} else {
-		event = mapHeadersToEvent(New(eventType, mimeType, body), r.Header)
+		event = parseAsCloudEventBinary(New(eventType, mimeType, body), r.Header)
 	}
 
 	if eventType == TypeHTTP {
@@ -62,7 +62,7 @@ func extractEventType(r *http.Request) Type {
 	return eventType
 }
 
-func mapHeadersToEvent(event *Event, headers http.Header) *Event {
+func parseAsCloudEventBinary(event *Event, headers http.Header) *Event {
 	he := Event{
 		EventType:          Type(headers.Get("CE-EventType")),
 		CloudEventsVersion: headers.Get("CE-CloudEventsVersion"),
