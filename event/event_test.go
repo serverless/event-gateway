@@ -167,7 +167,7 @@ var fromRequestTests = []struct {
 			Source:             "/mysource",
 			ContentType:        "text/plain",
 			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{"Content-Type": "application/json; charset=utf-8"},
+				Headers: map[string]string{"content-type": "application/json; charset=utf-8"},
 				Body:    "test",
 			},
 		},
@@ -190,7 +190,7 @@ var fromRequestTests = []struct {
 			Source:             "/mysource",
 			ContentType:        "text/plain",
 			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{"Content-Type": "application/cloudevents+json"},
+				Headers: map[string]string{"content-type": "application/cloudevents+json"},
 				Body:    "test",
 			},
 		},
@@ -211,7 +211,7 @@ var fromRequestTests = []struct {
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/cloudevents+json",
 			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{"Content-Type": "application/cloudevents+json"},
+				Headers: map[string]string{"content-type": "application/cloudevents+json"},
 				Body: []byte(`{
 			"eventType": 
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
@@ -238,7 +238,7 @@ var fromRequestTests = []struct {
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/octet-stream",
 			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{"Content-Type": ""},
+				Headers: map[string]string{"content-type": ""},
 				Body: []byte(`{
 			"eventType": "user.created",
 			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
