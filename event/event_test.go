@@ -58,6 +58,8 @@ func TestFromRequest(t *testing.T) {
 		assert.Equal(t, testCase.expectedEvent.Source, e.Source, "Source is not equal")
 		assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, e.CloudEventsVersion, "CloudEventsVersion is not equal")
 		assert.Equal(t, testCase.expectedEvent.ContentType, e.ContentType, "ContentType is not equal")
+		assert.Equal(t, testCase.expectedEvent.SchemaURL, e.SchemaURL, "SchemaURL is not equal")
+		assert.Equal(t, testCase.expectedEvent.Extensions, e.Extensions, "Extensions is not equal")
 		if expectedHRD, ok := testCase.expectedEvent.Data.(*eventpkg.HTTPRequestData); ok {
 			actualHRD, ok := e.Data.(*eventpkg.HTTPRequestData)
 			assert.True(t, ok, "actual Event.Data is not HTTPRequestData")
@@ -219,6 +221,7 @@ var fromRequestTests = []struct {
 			"data": "test"
 			}`),
 			},
+			Extensions: zap.MapStringInterface{"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
 		},
 	},
 	// Empty content type
@@ -247,6 +250,7 @@ var fromRequestTests = []struct {
 			"contentType": "text/plain",
 			"data": "test"}`),
 			},
+			Extensions: zap.MapStringInterface{"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
 		},
 	},
 	// CloudEvent from headers
@@ -258,22 +262,28 @@ var fromRequestTests = []struct {
 			"CE-CloudEventsVersion": "0.1",
 			"CE-Source":             "https://example.com",
 			"CE-EventID":            "778d495b-a29e-48f9-a438-a26de1e33515",
+			"CE-SchemaURL":          "https://example.com",
+			"CE-ContentType":        "text/plain",
+			"CE-X-MyExtension":      "ding",
 		},
 		body: []byte("hey there"),
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.Type("myevent"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://example.com",
+			ContentType:        "text/plain",
+			SchemaURL:          "https://example.com",
 			Data: &eventpkg.HTTPRequestData{
 				Headers: map[string]string{
-					"Ce-Eventid":            "778d495b-a29e-48f9-a438-a26de1e33515",
-					"Ce-Eventtype":          "myevent",
-					"Ce-Eventtypeversion":   "0.1beta",
-					"Ce-Cloudeventsversion": "0.1",
-					"Ce-Source":             "https://example.com",
+					"ce-eventid":            "778d495b-a29e-48f9-a438-a26de1e33515",
+					"ce-eventtype":          "myevent",
+					"ce-eventtypeversion":   "0.1beta",
+					"ce-cloudeventsversion": "0.1",
+					"ce-source":             "https://example.com",
 				},
 				Body: []byte("hey there"),
 			},
+			Extensions: zap.MapStringInterface{"myextension": "ding"},
 		},
 	},
 	// Custom event
@@ -288,6 +298,7 @@ var fromRequestTests = []struct {
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/octet-stream",
 			Data:               []byte("hey there"),
+			Extensions:         zap.MapStringInterface{"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
 		},
 	},
 	// Valid custom CloudEvent with application/cloudevents+json content-type
@@ -337,6 +348,7 @@ var fromRequestTests = []struct {
 				"contentType":        "text/plain",
 				"data":               "test",
 			},
+			Extensions: zap.MapStringInterface{"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
 		},
 	},
 }
