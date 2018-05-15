@@ -65,7 +65,7 @@ func New(eventType Type, mimeType string, payload interface{}) *Event {
 	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
 	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {
 		switch {
-		case isJSONContent(mimeType):
+		case isJSONMimeType(mimeType):
 			json.Unmarshal(eventBody, &event.Data)
 		case strings.HasPrefix(mimeType, mimeFormMultipart), mimeType == mimeFormURLEncoded:
 			event.Data = string(eventBody)
@@ -114,7 +114,7 @@ func (e Event) IsSystem() bool {
 }
 
 func parseAsCloudEvent(mime string, payload interface{}) (*Event, error) {
-	if !isJSONContent(mime) {
+	if !isJSONMimeType(mime) {
 		return nil, errors.New("content type is not json")
 	}
 	body, ok := payload.([]byte)
@@ -138,6 +138,6 @@ func parseAsCloudEvent(mime string, payload interface{}) (*Event, error) {
 	return nil, errors.New("couldn't cast to []byte")
 }
 
-func isJSONContent(mime string) bool {
+func isJSONMimeType(mime string) bool {
 	return mime == mimeJSON || strings.HasSuffix(mime, "+json")
 }

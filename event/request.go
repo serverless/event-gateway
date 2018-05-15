@@ -38,7 +38,7 @@ func FromRequest(r *http.Request) (*Event, error) {
 
 	var event *Event
 
-	if isJSONContent(mimeType) {
+	if isJSONMimeType(mimeType) {
 		event, err = parseAsCloudEvent(mimeType, body)
 		if err != nil {
 			event = New(eventType, mimeType, body)
