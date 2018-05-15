@@ -64,7 +64,7 @@ func TestFromRequest(t *testing.T) {
 			for key, _ := range expectedHRD.Headers {
 				assert.Equal(t, expectedHRD.Headers[key], actualHRD.Headers[key], fmt.Sprintf("Expected header %s is not equal", key))
 			}
-			assert.Equal(t, expectedHRD.Body, actualHRD.Body)
+			assert.Equal(t, expectedHRD.Body, actualHRD.Body, "Body is not equal")
 		}
 	}
 }
