@@ -276,4 +276,18 @@ var fromRequestTests = []struct {
 			},
 		},
 	},
+	// Custom event
+	{
+		headers: map[string]string{
+			"Event": "myevent",
+		},
+		body: []byte("hey there"),
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.Type("myevent"),
+			CloudEventsVersion: "0.1",
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
+			ContentType:        "application/octet-stream",
+			Data:               []byte("hey there"),
+		},
+	},
 }
