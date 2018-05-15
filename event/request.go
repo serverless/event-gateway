@@ -65,10 +65,10 @@ func extractEventType(r *http.Request) Type {
 func parseAsCloudEventBinary(event *Event, headers http.Header) *Event {
 	he := Event{
 		EventType:          Type(headers.Get("CE-EventType")),
+		EventTypeVersion:   headers.Get("CE-EventTypeVersion"),
 		CloudEventsVersion: headers.Get("CE-CloudEventsVersion"),
 		Source:             headers.Get("CE-Source"),
 		EventID:            headers.Get("CE-EventID"),
-		EventTypeVersion:   headers.Get("CE-EventTypeVersion"),
 	}
 	err := validator.New().Struct(he)
 	if err != nil {
