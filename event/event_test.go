@@ -249,24 +249,21 @@ var fromRequestTests = []struct {
 	},
 	// CloudEvent from headers
 	{
-		url:         "https://something.eventgateway.com/myspace",
-		contentType: "application/cloudevents+json",
+		url: "https://something.eventgateway.com/myspace",
 		headers: map[string]string{
 			"CE-EventType":          "myevent",
 			"CE-EventTypeVersion":   "0.1beta",
-			"CE-CloudEventsVersion": "0.1",
+			"CE-CloudEventsVersion": eventpkg.TransformationVersion,
 			"CE-Source":             "https://example.com",
 			"CE-EventID":            "778d495b-a29e-48f9-a438-a26de1e33515",
 		},
 		body: []byte("hey there"),
 		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("http"),
+			EventType:          eventpkg.Type("myevent"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
-			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
-			ContentType:        "application/cloudevents+json",
+			Source:             "https://example.com",
 			Data: &eventpkg.HTTPRequestData{
 				Headers: map[string]string{
-					"Content-Type":          "application/cloudevents+json",
 					"Ce-Eventid":            "778d495b-a29e-48f9-a438-a26de1e33515",
 					"Ce-Eventtype":          "myevent",
 					"Ce-Eventtypeversion":   "0.1beta",
