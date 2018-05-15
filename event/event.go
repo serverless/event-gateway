@@ -164,6 +164,7 @@ func parseAsCloudEventBinary(event *Event, headers http.Header) *Event {
 		CloudEventsVersion: headers.Get("CE-CloudEventsVersion"),
 		Source:             headers.Get("CE-Source"),
 		EventID:            headers.Get("CE-EventID"),
+		Data:               event.Data,
 	}
 	err := validator.New().Struct(he)
 	if err != nil {
