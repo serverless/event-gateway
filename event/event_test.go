@@ -53,7 +53,7 @@ func TestFromRequest(t *testing.T) {
 			Body:   ioutil.NopCloser(bytes.NewReader(testCase.body)),
 		})
 
-		assert.Nil(t, err)
+		assert.Nil(t, err, fmt.Sprintf("event.FromRequest threw an error: %v", err))
 		assert.Equal(t, testCase.expectedEvent.EventType, e.EventType, "EventType is not equal")
 		assert.Equal(t, testCase.expectedEvent.Source, e.Source, "Source is not equal")
 		assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, e.CloudEventsVersion, "CloudEventsVersion is not equal")
