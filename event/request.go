@@ -48,7 +48,7 @@ func FromRequest(r *http.Request) (*Event, error) {
 	}
 
 	if eventType == TypeHTTP {
-		event.Data = NewHTTPEvent(r, event.Data)
+		event.Data = NewHTTPRequestData(r, event.Data)
 	}
 
 	return event, nil

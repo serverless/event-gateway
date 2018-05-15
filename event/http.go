@@ -17,8 +17,8 @@ type HTTPRequestData struct {
 	Params  map[string]string   `json:"params"`
 }
 
-// NewHTTPEvent returns a new instance of HTTPEvent
-func NewHTTPEvent(r *http.Request, eventData interface{}) *HTTPRequestData {
+// NewHTTPRequestData returns a new instance of HTTPRequestData
+func NewHTTPRequestData(r *http.Request, eventData interface{}) *HTTPRequestData {
 	headers := ihttp.FlattenHeader(r.Header)
 
 	return &HTTPRequestData{
