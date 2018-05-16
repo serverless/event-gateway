@@ -65,17 +65,6 @@ func New(eventType Type, mimeType string, payload interface{}) *Event {
 		Data:               payload,
 	}
 
-	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
-	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {
-		switch {
-		case isJSONMimeType(mimeType):
-			json.Unmarshal(eventBody, &event.Data)
-		case strings.HasPrefix(mimeType, mimeFormMultipart), mimeType == mimeFormURLEncoded:
-			event.Data = string(eventBody)
-		}
-	}
-
 	event.Extensions = zap.MapStringInterface{
 		"eventgateway": map[string]interface{}{
 			"transformed":            true,
@@ -115,6 +104,17 @@ func FromRequest(r *http.Request) (*Event, error) {
 	}
 	if err != nil {
 		event = New(eventType, mimeType, body)
+	}
+
+	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
+	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
+	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {
+		switch {
+		case isJSONMimeType(event.ContentType):
+			json.Unmarshal(eventBody, &event.Data)
+		case strings.HasPrefix(mimeType, mimeFormMultipart), mimeType == mimeFormURLEncoded:
+			event.Data = string(eventBody)
+		}
 	}
 
 	if eventType == TypeHTTP {
