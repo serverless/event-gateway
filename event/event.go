@@ -110,14 +110,11 @@ func FromRequest(r *http.Request) (*Event, error) {
 
 	if isJSONMimeType(mimeType) {
 		event, err = parseAsCloudEvent(mimeType, body)
-		if err != nil {
-			event = New(eventType, mimeType, body)
-		}
 	} else {
 		event, err = parseAsCloudEventBinary(r.Header, body)
-		if err != nil {
-			event = New(eventType, mimeType, body)
-		}
+	}
+	if err != nil {
+		event = New(eventType, mimeType, body)
 	}
 
 	if eventType == TypeHTTP {
