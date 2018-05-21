@@ -91,7 +91,6 @@ func main() {
 	service := &eventgateway.Service{
 		FunctionStore:     intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore),
 		SubscriptionStore: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
-		EndpointStore:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
 		Log:               log,
 	}
 

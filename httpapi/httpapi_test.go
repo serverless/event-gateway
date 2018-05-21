@@ -11,9 +11,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/julienschmidt/httprouter"
 	"github.com/serverless/event-gateway/function"
-	"github.com/serverless/event-gateway/subscription"
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/mock"
+	"github.com/serverless/event-gateway/subscription"
 	"github.com/stretchr/testify/assert"
 
 	httpprovider "github.com/serverless/event-gateway/providers/http"
@@ -306,223 +306,125 @@ func TestDeleteFunction_OK(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, resp.Code)
 }
 
-func TestUpdateSubscription_OK(t *testing.T) {
+func TestUpdateSubscription(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	router, _, subscriptions := setup(ctrl)
 
-	returned := &subscription.Subscription{
-		Space:        "default",
-		ID:           subscription.ID("http,GET,%2F"),
-		Event:        "http",
-		FunctionID:   "func",
-		Method:       "GET",
-		Path:         "/",
-		CORS:         &subscription.CORS{
-		    Origins:          []string{"*"},
-		    Methods:          []string{"HEAD", "GET", "POST"},
-		    Headers:          []string{"Origin", "Accept", "Content-Type"},
-		    AllowCredentials: false,
+	updateSub := &subscription.Subscription{
+		Space:      "default",
+		ID:         subscription.ID("testid"),
+		Type:       subscription.TypeSync,
+		EventType:  "http.request",
+		FunctionID: "func",
+		Method:     "GET",
+		Path:       "/",
+		CORS: &subscription.CORS{
+			Origins:          []string{"*"},
+			Methods:          []string{"HEAD", "GET", "POST"},
+			Headers:          []string{"Origin", "Accept", "Content-Type"},
+			AllowCredentials: false,
 		},
 	}
-	subscriptions.EXPECT().UpdateSubscription(subscription.ID("http,GET,%2F"), returned).Return(returned, nil)
+	updatedValue := []byte(`{"space":"default","subscriptionId":"testid","type":"sync",` +
+		`"eventType":"http.request","functionId":"func","method":"GET","path":"/",` +
+		`"cors":{"origins":["*"],"methods":["HEAD","GET","POST"],` +
+		`"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}`)
 
-	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`
-	    {"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/","cors":{"origins":["*"],"methods":["HEAD","GET","POST"],"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}
-		`))
-	req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/http,GET,%2F", payload)
-	router.ServeHTTP(resp, req)
+	t.Run("subscription updated", func(t *testing.T) {
+		subscriptions.EXPECT().UpdateSubscription(subscription.ID("testid"), updateSub).Return(updateSub, nil)
+		resp := httptest.NewRecorder()
+		payload := bytes.NewReader(updatedValue)
+		req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/testid", payload)
 
-	sub := &subscription.Subscription{}
-	json.Unmarshal(resp.Body.Bytes(), sub)
-	assert.Equal(t, http.StatusOK, resp.Code)
-	assert.Equal(t, "default", sub.Space)
-	assert.Equal(t, subscription.ID("http,GET,%2F"), sub.ID)
-}
+		router.ServeHTTP(resp, req)
 
-func TestUpdateSubscription_InvalidJSON(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	router, _, _:= setup(ctrl)
+		sub := &subscription.Subscription{}
+		json.Unmarshal(resp.Body.Bytes(), sub)
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.Equal(t, "default", sub.Space)
+		assert.Equal(t, subscription.ID("testid"), sub.ID)
+	})
 
-	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`{"name":"te`))
-	req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/http,GET,%2F", payload)
-	router.ServeHTTP(resp, req)
+	t.Run("invalid JSON", func(t *testing.T) {
+		resp := httptest.NewRecorder()
+		payload := bytes.NewReader([]byte(`{"name":"te`))
+		req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/testid", payload)
 
-	sub := &subscription.Subscription{}
-	json.Unmarshal(resp.Body.Bytes(), sub)
-	assert.Equal(t, http.StatusBadRequest, resp.Code)
-}
+		router.ServeHTTP(resp, req)
 
-func TestUpdateSubscription_InvalidSubscriptionUpdate(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	router, _, subscriptions := setup(ctrl)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+	})
 
-	input := &subscription.Subscription{
-		Space:        "default",
-		ID:           subscription.ID("http,GET,%2F"),
-		Event:        "http",
-		FunctionID:   "func2",
-		Method:       "GET",
-		Path:         "/",
-		CORS:         &subscription.CORS{
-		    Origins:          []string{"*"},
-		    Methods:          []string{"HEAD", "GET", "POST"},
-		    Headers:          []string{"Origin", "Accept", "Content-Type"},
-		    AllowCredentials: false,
-		},
-	}
-	subscriptions.EXPECT().UpdateSubscription(subscription.ID("http,GET,%2F"), input).Return(nil, &subscription.ErrInvalidSubscriptionUpdate{Field: "FunctionID"})
+	t.Run("invalid subscription payload", func(t *testing.T) {
+		subscriptions.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any()).Return(nil, &subscription.ErrInvalidSubscriptionUpdate{Field: "FunctionID"})
+		resp := httptest.NewRecorder()
+		payload := bytes.NewReader(updatedValue)
+		req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/testid", payload)
 
-	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`
-	    {"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func2","method":"GET","path":"/","cors":{"origins":["*"],"methods":["HEAD","GET","POST"],"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}
-		`))
-	req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/http,GET,%2F", payload)
-	router.ServeHTTP(resp, req)
+		router.ServeHTTP(resp, req)
 
-	httpresp := &httpapi.Response{}
-	json.Unmarshal(resp.Body.Bytes(), httpresp)
-	assert.Equal(t, http.StatusBadRequest, resp.Code)
-	assert.Equal(t, `Invalid update. 'FunctionID' of existing subscription cannot be updated.`, httpresp.Errors[0].Message)
-}
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, `Invalid update. 'FunctionID' of existing subscription cannot be updated.`, httpresp.Errors[0].Message)
+	})
 
-func TestUpdateSubscription_SubscriptionNotFound(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	router, _, subscriptions := setup(ctrl)
+	t.Run("subscription not found", func(t *testing.T) {
+		subscriptions.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any()).Return(nil, &subscription.ErrSubscriptionNotFound{ID: subscription.ID("testid")})
+		resp := httptest.NewRecorder()
+		payload := bytes.NewReader(updatedValue)
+		req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/testid", payload)
 
-	input := &subscription.Subscription{
-		Space:        "default",
-		ID:           subscription.ID("http,GET,%2F"),
-		Event:        "http",
-		FunctionID:   "func",
-		Method:       "GET",
-		Path:         "/",
-		CORS:         &subscription.CORS{
-		    Origins:          []string{"*"},
-		    Methods:          []string{"HEAD", "GET", "POST"},
-		    Headers:          []string{"Origin", "Accept", "Content-Type"},
-		    AllowCredentials: false,
-		},
-	}
-	subscriptions.EXPECT().UpdateSubscription(subscription.ID("http,GET,%2F"), input).Return(nil, &subscription.ErrSubscriptionNotFound{ID: subscription.ID("http,GET,%2F")})
+		router.ServeHTTP(resp, req)
 
-	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`
-	    {"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/","cors":{"origins":["*"],"methods":["HEAD","GET","POST"],"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}
-		`))
-	req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/http,GET,%2F", payload)
-	router.ServeHTTP(resp, req)
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusNotFound, resp.Code)
+		assert.Equal(t, `Subscription "testid" not found.`, httpresp.Errors[0].Message)
+	})
 
-	httpresp := &httpapi.Response{}
-	json.Unmarshal(resp.Body.Bytes(), httpresp)
-	assert.Equal(t, http.StatusNotFound, resp.Code)
-	assert.Equal(t, `Subscription "http,GET,%2F" not found.`, httpresp.Errors[0].Message)
-}
+	t.Run("function not found", func(t *testing.T) {
+		subscriptions.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any()).Return(nil, &function.ErrFunctionNotFound{ID: function.ID("func")})
+		resp := httptest.NewRecorder()
+		payload := bytes.NewReader(updatedValue)
+		req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/testid", payload)
 
-func TestUpdateSubscription_FunctionNotFound(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	router, _, subscriptions := setup(ctrl)
+		router.ServeHTTP(resp, req)
 
-	input := &subscription.Subscription{
-		Space:        "default",
-		ID:           subscription.ID("http,GET,%2F"),
-		Event:        "http",
-		FunctionID:   "func",
-		Method:       "GET",
-		Path:         "/",
-		CORS:         &subscription.CORS{
-		    Origins:          []string{"*"},
-		    Methods:          []string{"HEAD", "GET", "POST"},
-		    Headers:          []string{"Origin", "Accept", "Content-Type"},
-		    AllowCredentials: false,
-		},
-	}
-	subscriptions.EXPECT().UpdateSubscription(subscription.ID("http,GET,%2F"), input).Return(nil, &function.ErrFunctionNotFound{ID: function.ID("func")})
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, `Function "func" not found.`, httpresp.Errors[0].Message)
+	})
 
-	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`
-	    {"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/","cors":{"origins":["*"],"methods":["HEAD","GET","POST"],"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}
-		`))
-	req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/http,GET,%2F", payload)
-	router.ServeHTTP(resp, req)
+	t.Run("validation error", func(t *testing.T) {
+		subscriptions.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any()).Return(nil, &subscription.ErrSubscriptionValidation{Message: ""})
+		resp := httptest.NewRecorder()
+		payload := bytes.NewReader(updatedValue)
+		req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/testid", payload)
 
-	httpresp := &httpapi.Response{}
-	json.Unmarshal(resp.Body.Bytes(), httpresp)
-	assert.Equal(t, http.StatusBadRequest, resp.Code)
-	assert.Equal(t, `Function "func" not found.`, httpresp.Errors[0].Message)
-}
+		router.ServeHTTP(resp, req)
 
-func TestUpdateSubscription_SubscriptionValidationError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	router, _, subscriptions := setup(ctrl)
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Contains(t, httpresp.Errors[0].Message, "Subscription doesn't validate. Validation error")
+	})
 
-	input := &subscription.Subscription{
-		Space:        "default",
-		ID:           subscription.ID("http,GET,%2F"),
-		FunctionID:   "func",
-		Method:       "GET",
-		Path:         "/",
-		CORS:         &subscription.CORS{
-		    Origins:          []string{"*"},
-		    Methods:          []string{"HEAD", "GET", "POST"},
-		    Headers:          []string{"Origin", "Accept", "Content-Type"},
-		    AllowCredentials: false,
-		},
-	}
-	subscriptions.EXPECT().UpdateSubscription(subscription.ID("http,GET,%2F"), input).Return(nil, &subscription.ErrSubscriptionValidation{Message: "" })
+	t.Run("internal error", func(t *testing.T) {
+		subscriptions.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any()).Return(nil, errors.New("processing failed"))
+		resp := httptest.NewRecorder()
+		payload := bytes.NewReader(updatedValue)
+		req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/testid", payload)
 
-	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`
-	    {"space":"default","subscriptionId":"http,GET,%2F","functionId":"func","method":"GET","path":"/","cors":{"origins":["*"],"methods":["HEAD","GET","POST"],"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}
-		`))
-	req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/http,GET,%2F", payload)
-	router.ServeHTTP(resp, req)
+		router.ServeHTTP(resp, req)
 
-	httpresp := &httpapi.Response{}
-	json.Unmarshal(resp.Body.Bytes(), httpresp)
-	assert.Equal(t, http.StatusBadRequest, resp.Code)
-	assert.Contains(t, httpresp.Errors[0].Message, "Subscription doesn't validate. Validation error")
-}
-
-func TestUpdateSubscription_InternalError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	router, _, subscriptions := setup(ctrl)
-
-	input := &subscription.Subscription{
-		Space:        "default",
-		ID:           subscription.ID("http,GET,%2F"),
-		Event:        "http",
-		FunctionID:   "func",
-		Method:       "GET",
-		Path:         "/",
-		CORS:         &subscription.CORS{
-		    Origins:          []string{"*"},
-		    Methods:          []string{"HEAD", "GET", "POST"},
-		    Headers:          []string{"Origin", "Accept", "Content-Type"},
-		    AllowCredentials: false,
-		},
-	}
-	subscriptions.EXPECT().UpdateSubscription(subscription.ID("http,GET,%2F"), input).Return(nil, errors.New("processing failed"))
-
-	resp := httptest.NewRecorder()
-	payload := bytes.NewReader([]byte(`
-	    {"space":"default","subscriptionId":"http,GET,%2F","event":"http","functionId":"func","method":"GET","path":"/","cors":{"origins":["*"],"methods":["HEAD","GET","POST"],"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}
-		`))
-	req, _ := http.NewRequest(http.MethodPut, "/v1/spaces/default/subscriptions/http,GET,%2F", payload)
-	router.ServeHTTP(resp, req)
-
-	httpresp := &httpapi.Response{}
-	json.Unmarshal(resp.Body.Bytes(), httpresp)
-	assert.Equal(t, http.StatusInternalServerError, resp.Code)
-	assert.Equal(t, "processing failed", httpresp.Errors[0].Message)
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, "processing failed", httpresp.Errors[0].Message)
+	})
 }
 
 func setup(ctrl *gomock.Controller) (

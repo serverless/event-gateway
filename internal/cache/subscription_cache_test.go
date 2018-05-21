@@ -14,8 +14,21 @@ import (
 func TestSubscriptionCacheModifiedEvents(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
-	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "space": "space1", "event": "test.event", "functionId": "testfunc1", "path": "/"}`))
-	scache.Modified("testsub2", []byte(`{"subscriptionId":"testsub2", "space": "space1", "event": "test.event", "functionId": "testfunc2", "path": "/"}`))
+	scache.Modified("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"space": "space1",
+		"type": "async",
+		"eventType": "test.event",
+		"functionId": "testfunc1",
+		"path": "/"}`))
+	scache.Modified("testsub2", []byte(`{
+		"subscriptionId":
+		"testsub2",
+		"space": "space1",
+		"type": "async",
+		"eventType": "test.event",
+		"functionId": "testfunc2",
+		"path": "/"}`))
 
 	expected := []libkv.FunctionKey{
 		libkv.FunctionKey{Space: "space1", ID: "testfunc1"},
@@ -23,11 +36,25 @@ func TestSubscriptionCacheModifiedEvents(t *testing.T) {
 	assert.Equal(t, expected, scache.eventToFunctions["/"]["test.event"])
 }
 
-func TestSubscriptionCacheModifiedHTTPSubscription(t *testing.T) {
+func TestSubscriptionCacheModifiedSyncSubscription(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
-	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "space": "default", "event": "http", "functionId": "testfunc1", "path": "/a", "method": "GET"}`))
-	scache.Modified("testsub2", []byte(`{"subscriptionId":"testsub2", "space": "default", "event": "http", "functionId": "testfunc2", "path": "/b", "method": "GET"}`))
+	scache.Modified("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"type":"sync",
+		"space": "default",
+		"event": "http.request",
+		"functionId": "testfunc1",
+		"path": "/a",
+		"method": "GET"}`))
+	scache.Modified("testsub2", []byte(`{
+		"subscriptionId":"testsub2",
+		"type":"sync",
+		"space": "default",
+		"event": "http.request",
+		"functionId": "testfunc2",
+		"path": "/b",
+		"method": "GET"}`))
 
 	space, id, _, _ := scache.endpoints["GET"].Resolve("/a")
 	assert.Equal(t, function.ID("testfunc1"), *id)
@@ -39,14 +66,14 @@ func TestSubscriptionCacheModifiedCORSConfiguration(t *testing.T) {
 
 	scache.Modified("testsub1", []byte(`{
 		"subscriptionId":"testsub1",
-		"event": "http",
+		"type": "sync",
+		"eventType": "http.request",
 		"functionId": "testfunc1",
 		"path": "/a",
 		"method": "GET",
 		"cors": {
 			"origins": ["http://example.com"]
-		}
-	}`))
+		}}`))
 
 	_, _, _, corsConfig := scache.endpoints["GET"].Resolve("/a")
 	assert.Equal(t, &subscription.CORS{Origins: []string{"http://example.com"}}, corsConfig)
@@ -63,9 +90,27 @@ func TestSubscriptionCacheModifiedEventsWrongPayload(t *testing.T) {
 func TestSubscriptionCacheModifiedEventsDeleted(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
-	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "space": "space1", "event": "test.event", "functionId": "testfunc1", "path": "/"}`))
-	scache.Modified("testsub2", []byte(`{"subscriptionId":"testsub2", "space": "space1", "event": "test.event", "functionId": "testfunc2", "path": "/"}`))
-	scache.Deleted("testsub1", []byte(`{"subscriptionId":"testsub1", "space": "space1", "event": "test.event", "functionId": "testfunc1", "path": "/"}`))
+	scache.Modified("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"space": "space1",
+		"type": "async",
+		"eventType": "test.event",
+		"functionId": "testfunc1",
+		"path": "/"}`))
+	scache.Modified("testsub2", []byte(`{
+		"subscriptionId":"testsub2",
+		"space": "space1",
+		"type": "async",
+		"eventType": "test.event",
+		"functionId": "testfunc2",
+		"path": "/"}`))
+	scache.Deleted("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"space": "space1",
+		"type": "async",
+		"eventType": "test.event",
+		"functionId": "testfunc1",
+		"path": "/"}`))
 
 	assert.Equal(t, []libkv.FunctionKey{{Space: "space1", ID: function.ID("testfunc2")}}, scache.eventToFunctions["/"]["test.event"])
 }
@@ -73,8 +118,20 @@ func TestSubscriptionCacheModifiedEventsDeleted(t *testing.T) {
 func TestSubscriptionCacheModifiedHTTPSubscriptionDeleted(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
-	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "event": "http", "functionId": "testfunc1", "path": "/", "method": "GET"}`))
-	scache.Deleted("testsub1", []byte(`{"subscriptionId":"testsub1", "event": "http", "functionId": "testfunc1", "path": "/", "method": "GET"}`))
+	scache.Modified("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"type": "sync",
+		"eventType": "http.request",
+		"functionId": "testfunc1",
+		"path": "/",
+		"method": "GET"}`))
+	scache.Deleted("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"type": "sync",
+		"eventType": "http.request",
+		"functionId": "testfunc1",
+		"path": "/",
+		"method": "GET"}`))
 
 	space, id, _, _ := scache.endpoints["GET"].Resolve("/")
 	assert.Nil(t, id)
@@ -84,8 +141,20 @@ func TestSubscriptionCacheModifiedHTTPSubscriptionDeleted(t *testing.T) {
 func TestSubscriptionCacheModifiedEventsDeletedLast(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
-	scache.Modified("testsub", []byte(`{"subscriptionId":"testsub", "space": "space1", "event": "test.event", "functionId": "testfunc", "path": "/"}`))
-	scache.Deleted("testsub", []byte(`{"subscriptionId":"testsub", "space": "space1", "event": "test.event", "functionId": "testfunc", "path": "/"}`))
+	scache.Modified("testsub", []byte(`{
+		"subscriptionId":"testsub",
+		"space": "space1",
+		"type": "async",
+		"eventType": "test.event",
+		"functionId": "testfunc",
+		"path": "/"}`))
+	scache.Deleted("testsub", []byte(`{
+		"subscriptionId":"testsub",
+		"space": "space1",
+		"type": "async",
+		"eventType": "test.event",
+		"functionId": "testfunc",
+		"path": "/"}`))
 
 	assert.Equal(t, []libkv.FunctionKey(nil), scache.eventToFunctions["/"]["test.event"])
 }
@@ -93,8 +162,20 @@ func TestSubscriptionCacheModifiedEventsDeletedLast(t *testing.T) {
 func TestSubscriptionCacheModifiedInvokable(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
-	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "space": "space1", "event": "invoke", "functionId": "testfunc1", "path": "/"}`))
-	scache.Modified("testsub2", []byte(`{"subscriptionId":"testsub2", "space": "space1", "event": "invoke", "functionId": "testfunc2", "path": "/"}`))
+	scache.Modified("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"space": "space1",
+		"type": "async",
+		"eventType": "invoke",
+		"functionId": "testfunc1",
+		"path": "/"}`))
+	scache.Modified("testsub2", []byte(`{
+		"subscriptionId":"testsub2",
+		"space": "space1",
+		"type": "async",
+		"eventType": "invoke",
+		"functionId": "testfunc2",
+		"path": "/"}`))
 
 	_, exists := scache.invokable["/"][libkv.FunctionKey{Space: "space1", ID: function.ID("testfunc1")}]
 	assert.Equal(t, true, exists)
@@ -105,8 +186,20 @@ func TestSubscriptionCacheModifiedInvokable(t *testing.T) {
 func TestSubscriptionCacheModifiedInvokableDeleted(t *testing.T) {
 	scache := newSubscriptionCache(zap.NewNop())
 
-	scache.Modified("testsub1", []byte(`{"subscriptionId":"testsub1", "space": "space1", "event": "invoke", "functionId": "testfunc1", "path": "/"}`))
-	scache.Deleted("testsub1", []byte(`{"subscriptionId":"testsub1", "space": "space1", "event": "invoke", "functionId": "testfunc1", "path": "/"}`))
+	scache.Modified("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"space": "space1",
+		"type": "sync",
+		"event": "invoke",
+		"functionId": "testfunc1",
+		"path": "/"}`))
+	scache.Deleted("testsub1", []byte(`{
+		"subscriptionId":"testsub1",
+		"space": "space1",
+		"type": "sync",
+		"eventType": "invoke",
+		"functionId": "testfunc1",
+		"path": "/"}`))
 
 	_, exists := scache.invokable["/"][libkv.FunctionKey{Space: "space1", ID: function.ID("testfunc1")}]
 	assert.Equal(t, false, exists)

@@ -11,7 +11,6 @@ import (
 type Service struct {
 	SubscriptionStore store.Store
 	FunctionStore     store.Store
-	EndpointStore     store.Store
 	Log               *zap.Logger
 }
 

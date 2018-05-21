@@ -11,18 +11,36 @@ import (
 type Subscription struct {
 	Space      string      `json:"space" validate:"required,min=3,space"`
 	ID         ID          `json:"subscriptionId"`
-	Event      event.Type  `json:"event" validate:"required,eventtype"`
+	Type       Type        `json:"type" validate:"required,eq=async|eq=sync"`
+	EventType  event.Type  `json:"eventType" validate:"required,eventType"`
 	FunctionID function.ID `json:"functionId" validate:"required"`
+	Path       string      `json:"path,omitempty" validate:"omitempty,urlPath"`
 	Method     string      `json:"method,omitempty" validate:"omitempty,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
-	Path       string      `json:"path,omitempty" validate:"omitempty,urlpath"`
 	CORS       *CORS       `json:"cors,omitempty"`
 }
+
+// ID uniquely identifies a subscription.
+type ID string
+
+// Type of subscription.
+type Type string
+
+const (
+	// TypeSync causes that function invocation result will be returned to the caller.
+	TypeSync = Type("sync")
+	// TypeAsync causes asynchronous event processing.
+	TypeAsync = Type("async")
+)
+
+// Subscriptions is an array of subscriptions.
+type Subscriptions []*Subscription
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (s Subscription) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("space", string(s.Space))
 	enc.AddString("subscriptionId", string(s.ID))
-	enc.AddString("event", string(s.Event))
+	enc.AddString("type", string(s.Type))
+	enc.AddString("eventType", string(s.EventType))
 	enc.AddString("functionId", string(s.FunctionID))
 	if s.Method != "" {
 		enc.AddString("method", string(s.Method))
@@ -36,12 +54,6 @@ func (s Subscription) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 	return nil
 }
-
-// Subscriptions is an array of subscriptions.
-type Subscriptions []*Subscription
-
-// ID uniquely identifies a subscription.
-type ID string
 
 // CORS is used to configure CORS on HTTP subscriptions.
 type CORS struct {

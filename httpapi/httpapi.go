@@ -3,7 +3,6 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -39,10 +38,10 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.DELETE("/v1/spaces/:space/functions/:id", h.deleteFunction)
 
 	router.GET("/v1/spaces/:space/subscriptions", h.listSubscriptions)
-	router.GET("/v1/spaces/:space/subscriptions/*id", h.getSubscription)
+	router.GET("/v1/spaces/:space/subscriptions/:id", h.getSubscription)
 	router.POST("/v1/spaces/:space/subscriptions", h.createSubscription)
-	router.PUT("/v1/spaces/:space/subscriptions/*id", h.updateSubscription)
-	router.DELETE("/v1/spaces/:space/subscriptions/*id", h.deleteSubscription)
+	router.PUT("/v1/spaces/:space/subscriptions/:id", h.updateSubscription)
+	router.DELETE("/v1/spaces/:space/subscriptions/:id", h.deleteSubscription)
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -198,7 +197,7 @@ func (h HTTPAPI) getSubscription(w http.ResponseWriter, r *http.Request, params 
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	fn, err := h.Subscriptions.GetSubscription(space, extractSubscriptionID(r.URL.RawPath))
+	fn, err := h.Subscriptions.GetSubscription(space, subscription.ID(params.ByName("id")))
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -269,7 +268,8 @@ func (h HTTPAPI) updateSubscription(w http.ResponseWriter, r *http.Request, para
 	}
 
 	s.Space = params.ByName("space")
-	s.ID = extractSubscriptionID(r.URL.RawPath)
+	s.ID = subscription.ID(params.ByName("id"))
+
 	output, err := h.Subscriptions.UpdateSubscription(s.ID, s)
 	if err != nil {
 		if _, ok := err.(*subscription.ErrInvalidSubscriptionUpdate); ok {
@@ -298,7 +298,7 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	err := h.Subscriptions.DeleteSubscription(space, extractSubscriptionID(r.URL.RawPath))
+	err := h.Subscriptions.DeleteSubscription(space, subscription.ID(params.ByName("id")))
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -313,11 +313,4 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	}
 
 	metricConfigRequests.WithLabelValues(space, "subscription", "delete").Inc()
-}
-
-// httprouter weirdness: params are based on Request.URL.Path, not Request.URL.RawPath
-func extractSubscriptionID(rawPath string) subscription.ID {
-	segments := strings.Split(rawPath, "/")
-	sid := segments[len(segments)-1]
-	return subscription.ID(sid)
 }
