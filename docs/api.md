@@ -45,7 +45,7 @@ the data block is base64 encoded.
 #### HTTP Request Event
 
 `http.request` event is a built-in type of event occurring for HTTP requests on paths defined in HTTP subscriptions. The
-`data` field of an `http` event has the following structure:
+`data` field of an `http.request` event has the following structure:
 
 * `path` - `string` - request path
 * `method` - `string` - request method
@@ -105,8 +105,7 @@ HTTP subscription response depends on [response object](#respond-to-an-http-even
 
 ##### CORS
 
-By default cross-origin resource sharing (CORS) is disabled for `http` subscriptions. It can be enabled and configured
-per-subscription basis.
+By default cross-origin resource sharing (CORS) is disabled. It can be enabled and configured per-subscription basis.
 
 Event Gateway handles preflight `OPTIONS` requests for you. You don't need to setup subscription for `OPTIONS` method
 because the Event Gateway will respond with all appropriate headers.
