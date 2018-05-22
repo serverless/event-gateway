@@ -59,7 +59,7 @@ func (router *Router) eventFromRequest(r *http.Request) (*eventpkg.Event, string
 	}
 
 	event := eventpkg.New(eventType, mimeType, body)
-	if eventType == eventpkg.TypeHTTP {
+	if eventType == eventpkg.TypeHTTPRequest {
 		event.Data = eventpkg.NewHTTPEvent(r, event.Data)
 	}
 
@@ -88,7 +88,7 @@ func extractPath(host, path string) string {
 func extractEventType(r *http.Request) eventpkg.Type {
 	eventType := eventpkg.Type(r.Header.Get("event"))
 	if eventType == "" {
-		eventType = eventpkg.TypeHTTP
+		eventType = eventpkg.TypeHTTPRequest
 	}
 	return eventType
 }

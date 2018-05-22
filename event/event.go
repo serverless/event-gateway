@@ -19,8 +19,8 @@ type Type string
 const (
 	// TypeInvoke is a special type of event for sync function invocation.
 	TypeInvoke = Type("invoke")
-	// TypeHTTP is a special type of event for sync http subscriptions.
-	TypeHTTP = Type("http")
+	// TypeHTTPRequest is a special type of event http requests that are not CloudEvents.
+	TypeHTTPRequest = Type("http.request")
 )
 
 // TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
@@ -62,7 +62,7 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 	}
 
 	// it's a custom event, possibly CloudEvent
-	if eventType != TypeHTTP && eventType != TypeInvoke {
+	if eventType != TypeHTTPRequest && eventType != TypeInvoke {
 		cloudEvent, err := parseAsCloudEvent(eventType, mime, payload)
 		if err == nil {
 			event = cloudEvent
@@ -151,5 +151,5 @@ func parseAsCloudEvent(eventType Type, mime string, payload interface{}) (*Event
 }
 
 func isJSONContent(mime string) bool {
-    return (mime == mimeJSON || strings.HasSuffix(mime, "+json"))
+	return (mime == mimeJSON || strings.HasSuffix(mime, "+json"))
 }
