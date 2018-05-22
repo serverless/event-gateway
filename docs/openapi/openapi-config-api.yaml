@@ -232,6 +232,11 @@ components:
       type: string
     SubscriptionID:
       type: string
+    SubscriptionType:
+      type: string
+      enum:
+      - async
+      - sync
     ProviderType:
       type: string
       description: "function provider"
@@ -275,10 +280,12 @@ components:
           $ref: '#/components/schemas/SpaceName'
         subscriptionId:
           $ref: '#/components/schemas/SubscriptionID'
+        type:
+          $ref: '#/components/schemas/SubscriptionType'
+        eventType:
+          $ref: '#/components/schemas/EventType'
         functionId:
           $ref: '#/components/schemas/FunctionID'
-        event:
-          $ref: '#/components/schemas/Event'
         path:
           $ref: '#/components/schemas/Path'
         method:
@@ -377,7 +384,7 @@ components:
       type: string
       format: url
       description: "HTTP endpoint URL"
-    Event:
+    EventType:
       type: string
       description: "event type"
     Method:
@@ -481,10 +488,12 @@ components:
           schema:
             type: object
             properties:
+              type:
+                $ref: '#/components/schemas/SubscriptionType'
+              eventType:
+                $ref: '#/components/schemas/EventType'
               functionId:
                 $ref: '#/components/schemas/FunctionID'
-              event:
-                $ref: '#/components/schemas/Event'
               path:
                 $ref: '#/components/schemas/Path'
               method:
@@ -498,10 +507,12 @@ components:
           schema:
             type: object
             properties:
+              type:
+                $ref: '#/components/schemas/SubscriptionType'
+              eventType:
+                $ref: '#/components/schemas/EventType'
               functionId:
                 $ref: '#/components/schemas/FunctionID'
-              event:
-                $ref: '#/components/schemas/Event'
               path:
                 $ref: '#/components/schemas/Path'
               method:
