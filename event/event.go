@@ -13,31 +13,16 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// Type uniquely identifies an event type.
-type Type string
-
-const (
-	// TypeInvoke is a special type of event for sync function invocation.
-	TypeInvoke = Type("invoke")
-	// TypeHTTPRequest is a special type of event http requests that are not CloudEvents.
-	TypeHTTPRequest = Type("http.request")
-)
-
-// TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
+// TransformationVersion is indicative of the revision of how Event Gateway transforms a request
+// into CloudEvents format.
 const (
 	TransformationVersion = "0.1"
-)
-
-const (
-	mimeJSON           = "application/json"
-	mimeFormMultipart  = "multipart/form-data"
-	mimeFormURLEncoded = "application/x-www-form-urlencoded"
 )
 
 // Event is a default event structure. All data that passes through the Event Gateway
 // is formatted to a format defined CloudEvents v0.1 spec.
 type Event struct {
-	EventType          Type                   `json:"eventType" validate:"required"`
+	EventTypeName      TypeName               `json:"eventType" validate:"required"`
 	EventTypeVersion   string                 `json:"eventTypeVersion,omitempty"`
 	CloudEventsVersion string                 `json:"cloudEventsVersion" validate:"required"`
 	Source             string                 `json:"source" validate:"uri,required"`
@@ -50,9 +35,9 @@ type Event struct {
 }
 
 // New return new instance of Event.
-func New(eventType Type, mime string, payload interface{}) *Event {
+func New(eventType TypeName, mime string, payload interface{}) *Event {
 	event := &Event{
-		EventType:          eventType,
+		EventTypeName:      eventType,
 		CloudEventsVersion: "0.1",
 		Source:             "https://serverless.com/event-gateway/#transformationVersion=" + TransformationVersion,
 		EventID:            uuid.NewV4().String(),
@@ -92,7 +77,7 @@ func New(eventType Type, mime string, payload interface{}) *Event {
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("eventType", string(e.EventType))
+	enc.AddString("eventType", string(e.EventTypeName))
 	if e.EventTypeVersion != "" {
 		enc.AddString("eventTypeVersion", e.EventTypeVersion)
 	}
@@ -118,10 +103,16 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 // IsSystem indicates if the event is a system event.
 func (e Event) IsSystem() bool {
-	return strings.HasPrefix(string(e.EventType), "gateway.")
+	return strings.HasPrefix(string(e.EventTypeName), "gateway.")
 }
 
-func parseAsCloudEvent(eventType Type, mime string, payload interface{}) (*Event, error) {
+const (
+	mimeJSON           = "application/json"
+	mimeFormMultipart  = "multipart/form-data"
+	mimeFormURLEncoded = "application/x-www-form-urlencoded"
+)
+
+func parseAsCloudEvent(eventType TypeName, mime string, payload interface{}) (*Event, error) {
 	if !isJSONContent(mime) {
 		return nil, errors.New("content type is not json")
 	}
@@ -140,7 +131,7 @@ func parseAsCloudEvent(eventType Type, mime string, payload interface{}) (*Event
 			return nil, err
 		}
 
-		if eventType != customEvent.EventType {
+		if eventType != customEvent.EventTypeName {
 			return nil, errors.New("wrong event type")
 		}
 

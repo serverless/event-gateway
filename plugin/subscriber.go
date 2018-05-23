@@ -25,7 +25,7 @@ const (
 
 // Subscription use by plugin to indicate which event it want to react to.
 type Subscription struct {
-	EventType eventpkg.Type
+	EventType eventpkg.TypeName
 	Type      Type
 }
 

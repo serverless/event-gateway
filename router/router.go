@@ -92,7 +92,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if event.EventType == eventpkg.TypeInvoke {
+			if event.EventTypeName == eventpkg.TypeInvoke {
 				functionID := function.ID(r.Header.Get(headerFunctionID))
 				space := r.Header.Get(headerSpace)
 				if space == "" {
@@ -195,7 +195,7 @@ func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
 
 // WaitForSubscriber returns a chan that is closed when an event has a subscriber.
 // Primarily for testing purposes.
-func (router *Router) WaitForSubscriber(path string, eventType eventpkg.Type) <-chan struct{} {
+func (router *Router) WaitForSubscriber(path string, eventType eventpkg.TypeName) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
@@ -454,7 +454,7 @@ func (router *Router) loop() {
 func (router *Router) processEvent(e backlogEvent) {
 	reportEventOutOfQueue(e.event.EventID)
 
-	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.EventType)
+	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.EventTypeName)
 	for _, subscriber := range subscribers {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}

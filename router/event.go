@@ -85,8 +85,8 @@ func extractPath(host, path string) string {
 	return extracted
 }
 
-func extractEventType(r *http.Request) eventpkg.Type {
-	eventType := eventpkg.Type(r.Header.Get("event"))
+func extractEventType(r *http.Request) eventpkg.TypeName {
+	eventType := eventpkg.TypeName(r.Header.Get("event"))
 	if eventType == "" {
 		eventType = eventpkg.TypeHTTPRequest
 	}

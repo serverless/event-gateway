@@ -88,7 +88,7 @@ func (m *Manager) Kill() {
 func (m *Manager) React(event *event.Event) error {
 	for _, plugin := range m.Plugins {
 		for _, subscription := range plugin.Subscriptions {
-			if subscription.EventType == event.EventType {
+			if subscription.EventType == event.EventTypeName {
 				err := plugin.Reacter.React(*event)
 				if err != nil {
 					m.Log.Debug("Plugin returned error.",

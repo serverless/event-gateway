@@ -352,7 +352,7 @@ func TestGetSubscription(t *testing.T) {
 
 		assert.Equal(t, subscription.ID("testid"), sub.ID)
 		assert.Equal(t, subscription.TypeAsync, sub.Type)
-		assert.Equal(t, event.Type("test"), sub.EventType)
+		assert.Equal(t, event.TypeName("test"), sub.EventType)
 		assert.Equal(t, function.ID("f1"), sub.FunctionID)
 	})
 

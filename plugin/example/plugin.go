@@ -29,10 +29,10 @@ func (s *Simple) Subscriptions() []plugin.Subscription {
 
 // React is called for every event that plugin subscribed to.
 func (s *Simple) React(instance event.Event) error {
-	switch instance.EventType {
+	switch instance.EventTypeName {
 	case event.SystemEventReceivedType:
 		received := instance.Data.(event.SystemEventReceivedData)
-		log.Printf("received gateway.received.event for event: %q", received.Event.EventType)
+		log.Printf("received gateway.received.event for event: %q", received.Event.EventTypeName)
 		break
 	}
 

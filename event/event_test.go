@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	eventpkg "github.com/serverless/event-gateway/event"
-	"github.com/stretchr/testify/assert"
 	"github.com/serverless/event-gateway/internal/zap"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNew(t *testing.T) {
@@ -13,7 +13,7 @@ func TestNew(t *testing.T) {
 		result := eventpkg.New(testCase.eventType, testCase.mime, testCase.payload)
 
 		assert.NotEqual(t, result.EventID, "")
-		assert.Equal(t, testCase.expectedEvent.EventType, result.EventType)
+		assert.Equal(t, testCase.expectedEvent.EventTypeName, result.EventTypeName)
 		assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, result.CloudEventsVersion)
 		assert.Equal(t, testCase.expectedEvent.Source, result.Source)
 		assert.Equal(t, testCase.expectedEvent.ContentType, result.ContentType)
@@ -24,49 +24,49 @@ func TestNew(t *testing.T) {
 
 func TestNew_Encoding(t *testing.T) {
 	for _, testCase := range encodingTests {
-		result := eventpkg.New(eventpkg.Type("test.event"), testCase.contentType, testCase.body)
+		result := eventpkg.New(eventpkg.TypeName("test.event"), testCase.contentType, testCase.body)
 
 		assert.Equal(t, testCase.expectedBody, result.Data)
 	}
 }
 
 var newTests = []struct {
-	eventType     eventpkg.Type
+	eventType     eventpkg.TypeName
 	mime          string
 	payload       interface{}
 	expectedEvent eventpkg.Event
 }{
 	{ // not CloudEvent
-		eventpkg.Type("user.created"),
+		eventpkg.TypeName("user.created"),
 		"application/json",
 		[]byte("test"),
 		eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventTypeName:      eventpkg.TypeName("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               []byte("test"),
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
 		},
 	},
 	{ // System event
-		eventpkg.Type("user.created"),
+		eventpkg.TypeName("user.created"),
 		"application/json",
 		eventpkg.SystemEventReceivedData{},
 		eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventTypeName:      eventpkg.TypeName("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               eventpkg.SystemEventReceivedData{},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
@@ -74,18 +74,18 @@ var newTests = []struct {
 	},
 	{
 		// valid CloudEvent
-		eventpkg.Type("user.created"),
+		eventpkg.TypeName("user.created"),
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
 			"source": "/mysource",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
 			}`),
 		eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventTypeName:      eventpkg.TypeName("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "/mysource",
 			ContentType:        "text/plain",
@@ -94,18 +94,18 @@ var newTests = []struct {
 	},
 	{
 		// valid CloudEvent with application/cloudevents+json Content-Type
-		eventpkg.Type("user.created"),
+		eventpkg.TypeName("user.created"),
 		"application/cloudevents+json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
 			"source": "/mysource",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
 			}`),
 		eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventTypeName:      eventpkg.TypeName("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "/mysource",
 			ContentType:        "text/plain",
@@ -114,32 +114,32 @@ var newTests = []struct {
 	},
 	{
 		// type mismatch
-		eventpkg.Type("user.deleted"),
+		eventpkg.TypeName("user.deleted"),
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
-			"cloudEventsVersion": "`+ eventpkg.TransformationVersion +`",
+			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
 			"source": "https://example.com/",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
 			}`),
 		eventpkg.Event{
-			EventType:          eventpkg.Type("user.deleted"),
+			EventTypeName:      eventpkg.TypeName("user.deleted"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
-				"eventType":           "user.created",
+				"eventType":          "user.created",
 				"cloudEventsVersion": eventpkg.TransformationVersion,
-				"source":               "https://example.com/",
-				"eventID":             "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-				"contentType":         "text/plain",
-				"data":                 "test",
+				"source":             "https://example.com/",
+				"eventID":            "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+				"contentType":        "text/plain",
+				"data":               "test",
 			},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
@@ -147,24 +147,24 @@ var newTests = []struct {
 	},
 	{
 		// invalid CloudEvent (missing required fields)
-		eventpkg.Type("user.created"),
+		eventpkg.TypeName("user.created"),
 		"application/json",
 		[]byte(`{
 			"eventType": "user.created",
 			"cloudEventsVersion": "0.1"
 			}`),
 		eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventTypeName:      eventpkg.TypeName("user.created"),
 			CloudEventsVersion: eventpkg.TransformationVersion,
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data: map[string]interface{}{
-				"eventType":           "user.created",
+				"eventType":          "user.created",
 				"cloudEventsVersion": eventpkg.TransformationVersion,
 			},
 			Extensions: zap.MapStringInterface{
 				"eventgateway": map[string]interface{}{
-					"transformed": true,
+					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},

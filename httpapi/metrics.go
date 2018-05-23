@@ -5,12 +5,23 @@ import (
 )
 
 func init() {
+	prometheus.MustRegister(metricEventTypes)
 	prometheus.MustRegister(metricFunctions)
 	prometheus.MustRegister(metricSubscriptions)
 
 	prometheus.MustRegister(metricConfigRequests)
 	prometheus.MustRegister(metricConfigRequestDuration)
 }
+
+// Event Types
+
+var metricEventTypes = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Namespace: "gateway",
+		Subsystem: "event-types",
+		Name:      "total",
+		Help:      "Gauge of created event types count.",
+	}, []string{"space"})
 
 // Functions
 

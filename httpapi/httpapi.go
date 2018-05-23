@@ -6,14 +6,21 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/subscription"
 )
 
 // HTTPAPI exposes REST API for configuring EG
 type HTTPAPI struct {
+	EventTypes    event.Service
 	Functions     function.Service
 	Subscriptions subscription.Service
+}
+
+// EventTypesResponse is a HTTPAPI JSON response containing event types.
+type EventTypesResponse struct {
+	EventTypes event.Types `json:"eventTypes"`
 }
 
 // FunctionsResponse is a HTTPAPI JSON response containing functions.
@@ -31,6 +38,11 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	router.Handler("GET", "/v1/metrics", promhttp.Handler())
 
+	router.GET("/v1/spaces/:space/event-types", h.listEventTypes)
+	router.GET("/v1/spaces/:space/event-types/:name", h.getEventType)
+	router.POST("/v1/spaces/:space/event-types", h.createEventType)
+	// router.DELETE("/v1/spaces/:space/event-types/:id", h.deleteEventType)
+
 	router.GET("/v1/spaces/:space/functions", h.listFunctions)
 	router.GET("/v1/spaces/:space/functions/:id", h.getFunction)
 	router.POST("/v1/spaces/:space/functions", h.createFunction)
@@ -42,6 +54,79 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.POST("/v1/spaces/:space/subscriptions", h.createSubscription)
 	router.PUT("/v1/spaces/:space/subscriptions/:id", h.updateSubscription)
 	router.DELETE("/v1/spaces/:space/subscriptions/:id", h.deleteSubscription)
+}
+
+func (h HTTPAPI) getEventType(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	space := params.ByName("space")
+	fn, err := h.EventTypes.GetEventType(space, event.TypeName(params.ByName("name")))
+	if err != nil {
+		if _, ok := err.(*event.ErrEventTypeNotFound); ok {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		encoder.Encode(fn)
+	}
+
+	metricConfigRequests.WithLabelValues(space, "event-type", "get").Inc()
+}
+
+func (h HTTPAPI) listEventTypes(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	space := params.ByName("space")
+	types, err := h.EventTypes.GetEventTypes(space)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		encoder.Encode(&EventTypesResponse{types})
+	}
+
+	metricConfigRequests.WithLabelValues(space, "event-type", "list").Inc()
+}
+
+func (h HTTPAPI) createEventType(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	eventType := &event.Type{}
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(eventType)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		validationErr := function.ErrFunctionValidation{Message: err.Error()}
+		encoder.Encode(&Response{Errors: []Error{{Message: validationErr.Error()}}})
+		return
+	}
+
+	eventType.Space = params.ByName("space")
+	output, err := h.EventTypes.CreateEventType(eventType)
+	if err != nil {
+		if _, ok := err.(*event.ErrEventTypeValidation); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*event.ErrEventTypeAlreadyExists); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		w.WriteHeader(http.StatusCreated)
+		encoder.Encode(output)
+
+		metricEventTypes.WithLabelValues(eventType.Space).Inc()
+	}
+
+	metricConfigRequests.WithLabelValues(eventType.Space, "event-type", "create").Inc()
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

@@ -9,14 +9,14 @@ import (
 
 // Subscription maps event type to a function.
 type Subscription struct {
-	Space      string      `json:"space" validate:"required,min=3,space"`
-	ID         ID          `json:"subscriptionId"`
-	Type       Type        `json:"type" validate:"required,eq=async|eq=sync"`
-	EventType  event.Type  `json:"eventType" validate:"required,eventType"`
-	FunctionID function.ID `json:"functionId" validate:"required"`
-	Path       string      `json:"path" validate:"required,urlPath"`
-	Method     string      `json:"method" validate:"required,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
-	CORS       *CORS       `json:"cors,omitempty"`
+	Space      string         `json:"space" validate:"required,min=3,space"`
+	ID         ID             `json:"subscriptionId"`
+	Type       Type           `json:"type" validate:"required,eq=async|eq=sync"`
+	EventType  event.TypeName `json:"eventType" validate:"required,eventType"`
+	FunctionID function.ID    `json:"functionId" validate:"required"`
+	Path       string         `json:"path" validate:"required,urlPath"`
+	Method     string         `json:"method" validate:"required,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
+	CORS       *CORS          `json:"cors,omitempty"`
 }
 
 // ID uniquely identifies a subscription.

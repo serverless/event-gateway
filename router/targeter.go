@@ -12,7 +12,7 @@ type Targeter interface {
 	HTTPBackingFunction(method, path string) (string, *function.ID, pathtree.Params, *subscription.CORS)
 	InvokableFunction(path string, space string, id function.ID) bool
 	Function(space string, id function.ID) *function.Function
-	SubscribersOfEvent(path string, eventType event.Type) []FunctionInfo
+	SubscribersOfEvent(path string, eventType event.TypeName) []FunctionInfo
 }
 
 // FunctionInfo store info about space and function ID.
