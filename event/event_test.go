@@ -157,8 +157,9 @@ var fromRequestTests = []struct {
 		contentType: "application/json; charset=utf-8",
 		body: []byte(`{
 			"eventType": "user.created",
+			"eventTypeVersion": "0.1beta",
 			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "/mysource",
+			"source": "https://example.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
@@ -180,8 +181,9 @@ var fromRequestTests = []struct {
 		contentType: "application/cloudevents+json",
 		body: []byte(`{
 			"eventType": "user.created",
+			"eventTypeVersion": "0.1beta",
 			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "/mysource",
+			"source": "http://exmple.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
@@ -230,8 +232,9 @@ var fromRequestTests = []struct {
 		contentType: "",
 		body: []byte(`{
 			"eventType": "user.created",
+			"eventTypeVersion": "0.1beta",
 			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "/mysource",
+			"source": "https://example.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"}`),
@@ -245,7 +248,7 @@ var fromRequestTests = []struct {
 				Body: []byte(`{
 			"eventType": "user.created",
 			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "/mysource",
+			"source": "https://example.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"}`),
@@ -306,8 +309,9 @@ var fromRequestTests = []struct {
 		contentType: "application/cloudevents+json",
 		body: []byte(`{
 			"eventType": "user.created",
+			"eventTypeVersion": "0.1beta",
 			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "/mysource",
+			"source": "https://example.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
@@ -328,7 +332,7 @@ var fromRequestTests = []struct {
 		contentType: "application/cloudevents+json",
 		body: []byte(`{
 			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "/mysource",
+			"source": "https://example.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
@@ -343,7 +347,7 @@ var fromRequestTests = []struct {
 			ContentType:        "application/cloudevents+json",
 			Data: map[string]interface{}{
 				"cloudEventsVersion": "0.1",
-				"source":             "/mysource",
+				"source":             "https://example.com",
 				"eventID":            "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 				"contentType":        "text/plain",
 				"data":               "test",
