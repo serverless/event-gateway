@@ -138,7 +138,7 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	postSubscription(testAPIServer.URL+"/v1/spaces/default/subscriptions", &subscription.Subscription{
 		FunctionID: function.ID("httpresponse"),
 		Type:       subscription.TypeSync,
-		EventType:  event.Type("http"),
+		EventType:  event.TypeHTTPRequest,
 		Method:     "GET",
 		Path:       "/httpresponse",
 	})
