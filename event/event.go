@@ -90,7 +90,11 @@ func New(eventType Type, mimeType string, payload interface{}) *Event {
 func FromRequest(r *http.Request) (*Event, error) {
 	eventType := extractEventType(r)
 
-	mimeType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	contentType := r.Header.Get("Content-Type")
+	if len(contentType) < 1 {
+		contentType = r.Header.Get("CE-ContentType")
+	}
+	mimeType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		if err.Error() != "mime: no media type" {
 			return nil, err
