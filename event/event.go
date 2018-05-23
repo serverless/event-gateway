@@ -133,8 +133,7 @@ func FromRequest(r *http.Request) (*Event, error) {
 	}
 
 	if eventType == TypeHTTP {
-		event.ContentType = mimeJSON
-		event.Data = NewHTTPRequestData(r, event.Data)
+		event = New(eventType, mimeJSON, NewHTTPRequestData(r, event))
 	}
 
 	return event, nil
