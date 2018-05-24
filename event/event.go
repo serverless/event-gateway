@@ -22,9 +22,6 @@ import (
 type Type string
 
 const (
-	// TypeInvoke is a special type of event for sync function invocation.
-	TypeInvoke = Type("invoke")
-
 	// TypeHTTP is a special type of event for sync http subscriptions.
 	TypeHTTP = Type("http")
 

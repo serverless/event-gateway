@@ -290,34 +290,6 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	metricEventsProcessed.WithLabelValues(space, "http").Inc()
 }
 
-func (router *Router) handleInvokeEvent(space string, functionID function.ID, path string, event *eventpkg.Event, w http.ResponseWriter) {
-	encoder := json.NewEncoder(w)
-
-	if !router.targetCache.InvokableFunction(path, space, functionID) {
-		w.WriteHeader(http.StatusNotFound)
-		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "function or subscription not found"}}})
-		return
-	}
-
-	resp, err := router.callFunction(space, functionID, *event)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "application/json")
-		message := determineErrorMessage(err)
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: message}}})
-		return
-	}
-
-	_, err = w.Write(resp)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
-		return
-	}
-}
-
 func determineErrorMessage(err error) string {
 	message := "Function call failed. Please check logs."
 	if accessError, ok := err.(*function.ErrFunctionAccessDenied); ok {

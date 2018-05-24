@@ -55,11 +55,6 @@ the data block is base64 encoded.
 * `params` - `object` - matched path parameters
 * `body` - depends on `Content-Type` header - request payload
 
-#### Invoke Event
-
-`invoke` is a built-in event type allowing synchronous invocations. Function will react to this event only if there is a
-subscription created beforehand.
-
 ### Emit a Custom Event
 
 Creating a subscription requires `path` property (by default it's "/"). `path` indicates path under which you can push an
@@ -138,30 +133,6 @@ To respond to an HTTP event a function needs to return object with following fie
 * `body` - `string` - required, response body
 
 Currently, the event gateway supports only string responses.
-
-### Invoking a Registered Function - Sync Function Invocation
-
-**Endpoint**
-
-`POST <Events API URL>/`
-
-**Request Headers**
-
-* `Event` - `string` - `"invoke"`
-* `Function-ID` - `string` - required, ID of a function to call
-* `Space` - `string` - space name, default: `default`
-
-**Request**
-
-arbitrary payload, invoked function receives an event in above schema, where request payload is passed as `data` field
-
-**Response**
-
-Status code:
-
-* `200 OK` with payload returned by invoked function
-* `404 Not Found` if there is no function registered or `invoke` subscription created for requested function
-* `500 Internal Server Error` if the function invocation failed
 
 ### CORS
 

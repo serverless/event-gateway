@@ -153,34 +153,6 @@ eventGateway.registerFunction({
 ```
 </details>
 
-
-#### Example: Function-To-Function call
-
-<details open>
-<summary>curl example</summary>
-
-```bash
-curl --request POST \
-  --url http://localhost:4000/ \
-  --header 'content-type: application/json' \
-  --header 'event: invoke' \
-  --header 'function-id: createUser' \
-  --data '{ "name": "Max" }'
-```
-
-</details>
-<details>
-<summary>Node.js SDK example</summary>
-
-```javascript
-const eventGateway = new EventGateway({ url: 'http://localhost' })
-eventGateway.invoke({
-  functionId: 'createUser',
-  data: { name: 'Max' }
-})
-```
-</details>
-
 ### Subscriptions
 
 Lightweight pub/sub system. Allows functions to asynchronously receive custom events. Instead of rewriting your
