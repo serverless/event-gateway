@@ -61,19 +61,16 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := extractPath(r.Host, r.URL.EscapedPath())
+	event, err := eventpkg.FromRequest(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+		return
+	}
 
-	// isHTTPEvent checks if a request carries HTTP event. It also accepts pre-flight CORS requests because CORS is
-	// resolved downstream.
-	if isHTTPEvent(r) {
+	if event.EventType == eventpkg.TypeHTTP && !isCORSPreflightRequest(r) {
 		metricEventsReceived.WithLabelValues("", "http").Inc()
-
-		event, err := eventpkg.FromRequest(r)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Header().Set("Content-Type", "application/json")
-			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
-			return
-		}
 
 		router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
 		err = router.emitSystemEventReceived(path, *event, r.Header)
@@ -91,14 +88,6 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Header().Set("Content-Type", "application/json")
 				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "custom event can be emitted only with POST method"}}})
-				return
-			}
-
-			event, err := eventpkg.FromRequest(r)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Header().Set("Content-Type", "application/json")
-				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
 				return
 			}
 
