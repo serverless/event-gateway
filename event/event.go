@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode"
 
 	"go.uber.org/zap/zapcore"
 
@@ -21,21 +22,14 @@ import (
 type Type string
 
 const (
-	// TypeInvoke is a special type of event for sync function invocation.
-	TypeInvoke = Type("invoke")
-	// TypeHTTP is a special type of event for sync http subscriptions.
-	TypeHTTP = Type("http")
-)
+	// TypeHTTPRequest is a special type of event for sync http subscriptions.
+	TypeHTTPRequest = Type("http.request")
 
-// TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
-const (
+	// TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
 	TransformationVersion = "0.1"
-)
 
-const (
-	mimeJSON           = "application/json"
-	mimeFormMultipart  = "multipart/form-data"
-	mimeFormURLEncoded = "application/x-www-form-urlencoded"
+	// CloudEventsVersion currently supported by Event Gateway
+	CloudEventsVersion = "0.1"
 )
 
 // Event is a default event structure. All data that passes through the Event Gateway
@@ -57,43 +51,29 @@ type Event struct {
 func New(eventType Type, mimeType string, payload interface{}) *Event {
 	event := &Event{
 		EventType:          eventType,
-		CloudEventsVersion: "0.1",
+		CloudEventsVersion: CloudEventsVersion,
 		Source:             "https://serverless.com/event-gateway/#transformationVersion=" + TransformationVersion,
 		EventID:            uuid.NewV4().String(),
 		EventTime:          time.Now(),
 		ContentType:        mimeType,
 		Data:               payload,
-	}
-
-	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
-	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {
-		switch {
-		case isJSONMimeType(event.ContentType):
-			json.Unmarshal(eventBody, &event.Data)
-		case strings.HasPrefix(mimeType, mimeFormMultipart), mimeType == mimeFormURLEncoded:
-			event.Data = string(eventBody)
-		}
-	}
-
-	event.Extensions = zap.MapStringInterface{
-		"eventgateway": map[string]interface{}{
-			"transformed":            true,
-			"transformation-version": TransformationVersion,
+		Extensions: map[string]interface{}{
+			"eventgateway": map[string]interface{}{
+				"transformed":            true,
+				"transformation-version": TransformationVersion,
+			},
 		},
 	}
 
+	event.enhanceEventData()
 	return event
 }
 
-// FromRequest takes an HTTP request and returns an Event along with path
+// FromRequest takes an HTTP request and returns an Event along with path. Most of the implementation
+// is based on https://github.com/cloudevents/spec/blob/master/http-transport-binding.md.
+// This function also supports legacy mode where event type is sent in Event header.
 func FromRequest(r *http.Request) (*Event, error) {
-	eventType := extractEventType(r)
-
 	contentType := r.Header.Get("Content-Type")
-	if len(contentType) < 1 {
-		contentType = r.Header.Get("CE-ContentType")
-	}
 	mimeType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		if err.Error() != "mime: no media type" {
@@ -101,7 +81,7 @@ func FromRequest(r *http.Request) (*Event, error) {
 		}
 		mimeType = "application/octet-stream"
 	}
-
+	// Read request body
 	body := []byte{}
 	if r.Body != nil {
 		body, err = ioutil.ReadAll(r.Body)
@@ -111,32 +91,32 @@ func FromRequest(r *http.Request) (*Event, error) {
 	}
 
 	var event *Event
-
-	if isJSONMimeType(mimeType) {
+	if mimeType == mimeCloudEventsJSON { // CloudEvents Structured Content Mode
+		return parseAsCloudEvent(mimeType, body)
+	} else if isCloudEventsBinaryContentMode(r.Header) { // CloudEvents Binary Content Mode
+		return parseAsCloudEventBinary(r.Header, body)
+	} else if isLegacyMode(r.Header) && mimeType == mimeJSON { // CloudEvent in Legacy Mode
 		event, err = parseAsCloudEvent(mimeType, body)
-	} else {
-		event, err = parseAsCloudEventBinary(r.Header, body)
-	}
-	if err != nil {
-		event = New(eventType, mimeType, body)
-	}
-
-	// Because event.Data is []bytes here, it will be base64 encoded by default when being sent to remote function,
-	// which is why we change the event.Data type to "string" for forms, so that, it is left intact.
-	if eventBody, ok := event.Data.([]byte); ok && len(eventBody) > 0 {
-		switch {
-		case isJSONMimeType(event.ContentType):
-			json.Unmarshal(eventBody, &event.Data)
-		case strings.HasPrefix(mimeType, mimeFormMultipart), mimeType == mimeFormURLEncoded:
-			event.Data = string(eventBody)
+		if err != nil {
+			return New(Type(r.Header.Get("event")), mimeType, body), nil
 		}
+		return event, err
+	} else if isLegacyMode(r.Header) { // Custom Event in Legacy Mode
+		return New(Type(r.Header.Get("event")), mimeType, body), nil
 	}
 
-	if eventType == TypeHTTP {
-		event = New(eventType, mimeJSON, NewHTTPRequestData(r, event))
-	}
+	return New(TypeHTTPRequest, mimeCloudEventsJSON, NewHTTPRequestData(r, body)), nil
+}
 
-	return event, nil
+// Validate Event struct
+func (e *Event) Validate() error {
+	validate := validator.New()
+	return validate.Struct(e)
+}
+
+// IsSystem indicates if the event is a system event.
+func (e *Event) IsSystem() bool {
+	return strings.HasPrefix(string(e.EventType), "gateway.")
 }
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
@@ -165,76 +145,103 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func extractEventType(r *http.Request) Type {
-	eventType := Type(r.Header.Get("event"))
-	if eventType == "" {
-		eventType = TypeHTTP
+func isLegacyMode(headers http.Header) bool {
+	if headers.Get("Event") != "" {
+		return true
 	}
-	return eventType
+
+	return false
+}
+
+func isCloudEventsBinaryContentMode(headers http.Header) bool {
+	if headers.Get("CE-EventType") != "" &&
+		headers.Get("CE-CloudEventsVersion") != "" &&
+		headers.Get("CE-Source") != "" &&
+		headers.Get("CE-EventID") != "" {
+		return true
+	}
+
+	return false
 }
 
 func parseAsCloudEventBinary(headers http.Header, payload interface{}) (*Event, error) {
-	he := Event{
+	event := &Event{
 		EventType:          Type(headers.Get("CE-EventType")),
 		EventTypeVersion:   headers.Get("CE-EventTypeVersion"),
 		CloudEventsVersion: headers.Get("CE-CloudEventsVersion"),
 		Source:             headers.Get("CE-Source"),
 		EventID:            headers.Get("CE-EventID"),
+		ContentType:        headers.Get("Content-Type"),
 		Data:               payload,
 	}
-	err := validator.New().Struct(he)
+
+	err := event.Validate()
 	if err != nil {
 		return nil, err
 	}
+
 	if val, err := time.Parse(time.RFC3339, headers.Get("CE-EventTime")); err == nil {
-		he.EventTime = val
+		event.EventTime = val
 	}
+
 	if val := headers.Get("CE-SchemaURL"); len(val) > 0 {
-		he.SchemaURL = val
+		event.SchemaURL = val
 	}
-	if val := headers.Get("CE-ContentType"); len(val) > 0 {
-		he.ContentType = val
-	}
-	he.Extensions = map[string]interface{}{}
+
+	event.Extensions = map[string]interface{}{}
 	for key, val := range ihttp.FlattenHeader(headers) {
-		if strings.HasPrefix(key, "ce-x-") {
-			he.Extensions[strings.TrimLeft(key, "ce-x-")] = val
+		if strings.HasPrefix(key, "Ce-X-") {
+			key = strings.TrimLeft(key, "Ce-X-")
+			// Make first character lowercase
+			runes := []rune(key)
+			runes[0] = unicode.ToLower(runes[0])
+			event.Extensions[string(runes)] = val
 		}
 	}
 
-	return &he, nil
-}
-
-// IsSystem indicates if the event is a system event.
-func (e Event) IsSystem() bool {
-	return strings.HasPrefix(string(e.EventType), "gateway.")
+	event.enhanceEventData()
+	return event, nil
 }
 
 func parseAsCloudEvent(mime string, payload interface{}) (*Event, error) {
-	if !isJSONMimeType(mime) {
-		return nil, errors.New("content type is not json")
-	}
 	body, ok := payload.([]byte)
 	if ok {
-		validate := validator.New()
-
-		customEvent := &Event{}
-		err := json.Unmarshal(body, customEvent)
+		event := &Event{}
+		err := json.Unmarshal(body, event)
 		if err != nil {
 			return nil, err
 		}
 
-		err = validate.Struct(customEvent)
+		err = event.Validate()
 		if err != nil {
 			return nil, err
 		}
 
-		return customEvent, nil
+		event.enhanceEventData()
+		return event, nil
 	}
 
 	return nil, errors.New("couldn't cast to []byte")
 }
 
-func isJSONMimeType(mime string) bool {
-	return mime == mimeJSON || strings.HasSuffix(mime, "+json")
+const (
+	mimeJSON            = "application/json"
+	mimeFormMultipart   = "multipart/form-data"
+	mimeFormURLEncoded  = "application/x-www-form-urlencoded"
+	mimeCloudEventsJSON = "application/cloudevents+json"
+)
+
+// Because event.Data is []byte, it will be base64 encoded by default when being sent to remote function,
+// which is why we change the event.Data type to "string" for forms or to map[string]interface{} for JSON
+// so that, it is left intact.
+func (e *Event) enhanceEventData() {
+	contentType := e.ContentType
+	if eventBody, ok := e.Data.([]byte); ok && len(eventBody) > 0 {
+		switch {
+		case contentType == mimeJSON || strings.HasSuffix(contentType, "+json"):
+			json.Unmarshal(eventBody, &e.Data)
+		case strings.HasPrefix(contentType, mimeFormMultipart), contentType == mimeFormURLEncoded:
+			e.Data = string(eventBody)
+		}
+	}
 }

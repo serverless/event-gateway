@@ -2,14 +2,12 @@ package event_test
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"testing"
 
 	eventpkg "github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/internal/zap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,59 +35,48 @@ func TestNew_Encoding(t *testing.T) {
 
 func TestFromRequest(t *testing.T) {
 	for _, testCase := range fromRequestTests {
-		u, err := url.Parse(testCase.url)
-		assert.Nil(t, err)
+		t.Run(testCase.name, func(t *testing.T) {
+			url, _ := url.Parse("http://example.com")
+			received, err := eventpkg.FromRequest(&http.Request{
+				URL:    url,
+				Header: testCase.requestHeaders,
+				Body:   ioutil.NopCloser(bytes.NewReader(testCase.requestBody)),
+			})
 
-		h := http.Header{}
-		h.Add("Content-Type", testCase.contentType)
-
-		for key, val := range testCase.headers {
-			h.Add(key, val)
-		}
-
-		e, err := eventpkg.FromRequest(&http.Request{
-			URL:    u,
-			Header: h,
-			Body:   ioutil.NopCloser(bytes.NewReader(testCase.body)),
-		})
-
-		assert.Nil(t, err, fmt.Sprintf("event.FromRequest threw an error: %v", err))
-		assert.Equal(t, testCase.expectedEvent.EventType, e.EventType, "EventType is not equal")
-		assert.Equal(t, testCase.expectedEvent.Source, e.Source, "Source is not equal")
-		assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, e.CloudEventsVersion, "CloudEventsVersion is not equal")
-		assert.Equal(t, testCase.expectedEvent.ContentType, e.ContentType, "ContentType is not equal")
-		assert.Equal(t, testCase.expectedEvent.SchemaURL, e.SchemaURL, "SchemaURL is not equal")
-		assert.Equal(t, testCase.expectedEvent.Extensions, e.Extensions, "Extensions is not equal")
-		if expectedHRD, ok := testCase.expectedEvent.Data.(*eventpkg.HTTPRequestData); ok {
-			actualHRD, ok := e.Data.(*eventpkg.HTTPRequestData)
-			assert.True(t, ok, "actual Event.Data is not HTTPRequestData")
-			for key, _ := range expectedHRD.Headers {
-				assert.Equal(t, expectedHRD.Headers[key], actualHRD.Headers[key], fmt.Sprintf("Expected header %s is not equal", key))
+			if err != nil {
+				assert.Equal(t, testCase.expectedError, err)
+			} else {
+				assert.Equal(t, testCase.expectedEvent.EventType, received.EventType, "EventType is not equal")
+				assert.Equal(t, testCase.expectedEvent.Source, received.Source, "Source is not equal")
+				assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, received.CloudEventsVersion, "CloudEventsVersion is not equal")
+				assert.Equal(t, testCase.expectedEvent.ContentType, received.ContentType, "ContentType is not equal")
+				assert.Equal(t, testCase.expectedEvent.SchemaURL, received.SchemaURL, "SchemaURL is not equal")
+				assert.Equal(t, testCase.expectedEvent.Extensions, received.Extensions, "Extensions is not equal")
+				assert.EqualValues(t, testCase.expectedEvent.Data, received.Data, "Data is not equal")
 			}
-			assert.Equal(t, expectedHRD.Body, actualHRD.Body, "Body is not equal")
-		} else {
-			assert.Equal(t, testCase.expectedEvent.Data, e.Data, "Event.Data is not equal")
-		}
+		})
 	}
 }
 
 var newTests = []struct {
+	name          string
 	eventType     eventpkg.Type
 	mime          string
 	payload       interface{}
 	expectedEvent eventpkg.Event
 }{
-	{ // not CloudEvent
-		eventpkg.Type("user.created"),
-		"application/json",
-		[]byte("test"),
-		eventpkg.Event{
+	{
+		name:      "not CloudEvent",
+		eventType: eventpkg.Type("user.created"),
+		mime:      "application/json",
+		payload:   []byte("test"),
+		expectedEvent: eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               []byte("test"),
-			Extensions: zap.MapStringInterface{
+			Extensions: map[string]interface{}{
 				"eventgateway": map[string]interface{}{
 					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
@@ -97,17 +84,18 @@ var newTests = []struct {
 			},
 		},
 	},
-	{ // System event
-		eventpkg.Type("user.created"),
-		"application/json",
-		eventpkg.SystemEventReceivedData{},
-		eventpkg.Event{
+	{
+		name:      "system event",
+		eventType: eventpkg.Type("user.created"),
+		mime:      "application/json",
+		payload:   eventpkg.SystemEventReceivedData{},
+		expectedEvent: eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
 			Data:               eventpkg.SystemEventReceivedData{},
-			Extensions: zap.MapStringInterface{
+			Extensions: map[string]interface{}{
 				"eventgateway": map[string]interface{}{
 					"transformed":            true,
 					"transformation-version": eventpkg.TransformationVersion,
@@ -145,21 +133,19 @@ var encodingTests = []struct {
 }
 
 var fromRequestTests = []struct {
-	url           string
-	contentType   string
-	headers       map[string]string
-	body          []byte
-	expectedEvent *eventpkg.Event
+	name           string
+	requestHeaders http.Header
+	requestBody    []byte
+	expectedEvent  *eventpkg.Event
+	expectedError  error
 }{
-	// Valid CloudEvent with application/json content-type
 	{
-		url:         "https://example.com/myspace",
-		contentType: "application/json; charset=utf-8",
-		body: []byte(`{
+		name:           "valid CloudEvent",
+		requestHeaders: http.Header{"Content-Type": []string{"application/cloudevents+json"}},
+		requestBody: []byte(`{
 			"eventType": "user.created",
-			"eventTypeVersion": "0.1beta",
-			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "https://example.com",
+			"cloudEventsVersion": "0.1",
+			"source": "http://example.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
@@ -167,192 +153,128 @@ var fromRequestTests = []struct {
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: "0.1",
-			Source:             "/mysource",
+			Source:             "http://example.com",
 			ContentType:        "text/plain",
-			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{"content-type": "application/json; charset=utf-8"},
-				Body:    "test",
-			},
+			Data:               "test",
 		},
 	},
-	// Valid CloudEvent with application/cloudevents+json content-type
+	// {
+	// 	name:           "error when invalid CloudEvent",
+	// 	requestHeaders: http.Header{"Content-Type": []string{"application/cloudevents+json"}},
+	// 	requestBody:    []byte(`{"eventType": "invalid"}`),
+	// 	expectedEvent: &eventpkg.Event{
+	// 		EventType:          eventpkg.TypeHTTPRequest,
+	// 		CloudEventsVersion: "0.1",
+	// 		Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
+	// 		ContentType:        "application/cloudevents+json",
+	// 		Data: &eventpkg.HTTPRequestData{
+	// 			Headers: map[string]string{"Content-Type": "application/cloudevents+json"},
+	// 			Body:    []byte(`{"eventType": "invalid"}`),
+	// 			Query:   map[string][]string{}},
+	// 		Extensions: map[string]interface{}{
+	// 			"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
+	// 	},
+	// },
 	{
-		url:         "https://example.com/myspace",
-		contentType: "application/cloudevents+json",
-		body: []byte(`{
-			"eventType": "user.created",
-			"eventTypeVersion": "0.1beta",
-			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "http://exmple.com",
-			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-			"contentType": "text/plain",
-			"data": "test"
-			}`),
-		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
-			CloudEventsVersion: "0.1",
-			Source:             "/mysource",
-			ContentType:        "text/plain",
-			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{"content-type": "application/cloudevents+json"},
-				Body:    "test",
-			},
+		name: "valid CloudEvent in binary mode",
+		requestHeaders: http.Header{
+			"Content-Type":          []string{"text/plain"},
+			"Ce-Eventtype":          []string{"myevent"},
+			"Ce-Eventtypeversion":   []string{"0.1beta"},
+			"Ce-Cloudeventsversion": []string{"0.1"},
+			"Ce-Source":             []string{"https://example.com"},
+			"Ce-Eventid":            []string{"778d495b-a29e-48f9-a438-a26de1e33515"},
+			"Ce-Schemaurl":          []string{"https://example.com"},
+			"Ce-X-MyExtension":      []string{"ding"},
 		},
-	},
-	// invalid CloudEvent
-	{
-		url:         "https://example.com/myspace",
-		contentType: "application/cloudevents+json",
-		body: []byte(`{
-			"eventType": 
-			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-			"contentType": "text/plain",
-			"data": "test"
-			}`),
-		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("http"),
-			CloudEventsVersion: "0.1",
-			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
-			ContentType:        "application/cloudevents+json",
-			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{"content-type": "application/cloudevents+json"},
-				Body: []byte(`{
-			"eventType": 
-			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-			"contentType": "text/plain",
-			"data": "test"
-			}`),
-			},
-			Extensions: zap.MapStringInterface{"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
-		},
-	},
-	// Empty content type
-	{
-		url:         "https://example.com/myspace",
-		contentType: "",
-		body: []byte(`{
-			"eventType": "user.created",
-			"eventTypeVersion": "0.1beta",
-			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "https://example.com",
-			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-			"contentType": "text/plain",
-			"data": "test"}`),
-		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.TypeHTTP,
-			CloudEventsVersion: "0.1",
-			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
-			ContentType:        "application/octet-stream",
-			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{"content-type": ""},
-				Body: []byte(`{
-			"eventType": "user.created",
-			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "https://example.com",
-			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-			"contentType": "text/plain",
-			"data": "test"}`),
-			},
-			Extensions: zap.MapStringInterface{"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
-		},
-	},
-	// CloudEvent from headers
-	{
-		url: "https://example.com/myspace",
-		headers: map[string]string{
-			"CE-EventType":          "myevent",
-			"CE-EventTypeVersion":   "0.1beta",
-			"CE-CloudEventsVersion": "0.1",
-			"CE-Source":             "https://example.com",
-			"CE-EventID":            "778d495b-a29e-48f9-a438-a26de1e33515",
-			"CE-SchemaURL":          "https://example.com",
-			"CE-ContentType":        "text/plain",
-			"CE-X-MyExtension":      "ding",
-		},
-		body: []byte("hey there"),
+		requestBody: []byte("hey there"),
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.Type("myevent"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://example.com",
 			ContentType:        "text/plain",
 			SchemaURL:          "https://example.com",
-			Data: &eventpkg.HTTPRequestData{
-				Headers: map[string]string{
-					"ce-eventid":            "778d495b-a29e-48f9-a438-a26de1e33515",
-					"ce-eventtype":          "myevent",
-					"ce-eventtypeversion":   "0.1beta",
-					"ce-cloudeventsversion": "0.1",
-					"ce-source":             "https://example.com",
-				},
-				Body: []byte("hey there"),
-			},
-			Extensions: zap.MapStringInterface{"myextension": "ding"},
+			Data:               []byte("hey there"),
+			Extensions:         map[string]interface{}{"myExtension": "ding"},
 		},
 	},
-	// Custom event
 	{
-		headers: map[string]string{
-			"Event": "myevent",
+		name: "legacy mode event",
+		requestHeaders: http.Header{
+			"Event": []string{"myevent"},
 		},
-		body: []byte("hey there"),
+		requestBody: []byte("hey there"),
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.Type("myevent"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/octet-stream",
 			Data:               []byte("hey there"),
-			Extensions:         zap.MapStringInterface{"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
+			Extensions: map[string]interface{}{
+				"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
 		},
 	},
-	// Valid custom CloudEvent with application/cloudevents+json content-type
 	{
-		contentType: "application/cloudevents+json",
-		body: []byte(`{
+		name: "valid CloudEvent in legacy mode",
+		requestHeaders: http.Header{
+			"Content-Type": []string{"application/json"},
+			"Event":        []string{"user.created"},
+		},
+		requestBody: []byte(`{
 			"eventType": "user.created",
-			"eventTypeVersion": "0.1beta",
-			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "https://example.com",
+			"cloudEventsVersion": "0.1",
+			"source": "http://example.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
 			}`),
-		headers: map[string]string{
-			"Event": "myevent",
-		},
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.Type("user.created"),
 			CloudEventsVersion: "0.1",
-			Source:             "/mysource",
+			Source:             "http://example.com",
 			ContentType:        "text/plain",
 			Data:               "test",
 		},
 	},
-	// invalid custom CloudEvent with application/cloudevents+json content-type
 	{
-		contentType: "application/cloudevents+json",
-		body: []byte(`{
-			"cloudEventsVersion": "` + eventpkg.TransformationVersion + `",
-			"source": "https://example.com",
-			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-			"contentType": "text/plain",
-			"data": "test"
-			}`),
-		headers: map[string]string{
-			"Event": "myevent",
+		name: "invalid CloudEvent in legacy mode",
+		requestHeaders: http.Header{
+			"Content-Type": []string{"application/json"},
+			"Event":        []string{"user.created"},
 		},
+		requestBody: []byte(`{
+			"eventType": "user.created"
+		}`),
 		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("myevent"),
+			EventType:          eventpkg.Type("user.created"),
+			CloudEventsVersion: "0.1",
+			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
+			ContentType:        "application/json",
+			Data:               map[string]interface{}{"eventType": "user.created"},
+			Extensions: map[string]interface{}{
+				"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
+		},
+	},
+	{
+		name: "regular HTTP request",
+		requestHeaders: http.Header{
+			"Content-Type": []string{"application/json"},
+		},
+		requestBody: []byte("hey there"),
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.TypeHTTPRequest,
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/cloudevents+json",
-			Data: map[string]interface{}{
-				"cloudEventsVersion": "0.1",
-				"source":             "https://example.com",
-				"eventID":            "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
-				"contentType":        "text/plain",
-				"data":               "test",
+			Data: &eventpkg.HTTPRequestData{
+				Headers: map[string]string{
+					"Content-Type": "application/json",
+				},
+				Query: map[string][]string{},
+				Body:  []byte("hey there"),
 			},
-			Extensions: zap.MapStringInterface{"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
+			Extensions: map[string]interface{}{
+				"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
 		},
 	},
 }

@@ -11,9 +11,9 @@ import (
 func FlattenHeader(req httppkg.Header) map[string]string {
 	headers := map[string]string{}
 	for key, header := range req {
-		headers[strings.ToLower(key)] = header[0]
+		headers[key] = header[0]
 		if len(header) > 1 {
-			headers[strings.ToLower(key)] = strings.Join(header, ", ")
+			headers[key] = strings.Join(header, ", ")
 		}
 	}
 

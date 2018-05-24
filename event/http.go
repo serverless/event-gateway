@@ -19,10 +19,8 @@ type HTTPRequestData struct {
 
 // NewHTTPRequestData returns a new instance of HTTPRequestData
 func NewHTTPRequestData(r *http.Request, eventData interface{}) *HTTPRequestData {
-	headers := ihttp.FlattenHeader(r.Header)
-
 	return &HTTPRequestData{
-		Headers: headers,
+		Headers: ihttp.FlattenHeader(r.Header),
 		Query:   r.URL.Query(),
 		Body:    eventData,
 		Host:    r.Host,
