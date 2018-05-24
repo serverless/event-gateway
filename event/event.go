@@ -22,11 +22,11 @@ import (
 type Type string
 
 const (
-	// TypeHTTP is a special type of event for sync http subscriptions.
-	TypeHTTP = Type("http")
-
 	// TypeInvoke is a special type of event for sync function invocation.
 	TypeInvoke = Type("invoke")
+
+	// TypeHTTP is a special type of event for sync http subscriptions.
+	TypeHTTP = Type("http")
 
 	// TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
 	TransformationVersion = "0.1"
