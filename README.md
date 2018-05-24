@@ -1,6 +1,6 @@
 ![Event Gateway - React to any event with FaaS function across clouds](https://s3.amazonaws.com/assets.github.serverless/event-gateway-readme-header-v2.gif)
 
-[We're Hiring!](https://serverless.com/company/jobs/) • [Website](https://serverless.com/event-gateway/) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless) 
+[We're Hiring!](https://serverless.com/company/jobs/) • [Website](https://serverless.com/event-gateway/) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless)
 
 The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's
 dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute).
@@ -151,34 +151,6 @@ eventGateway.registerFunction({
     arn: 'xxx',
     region: 'us-west-2'
   }
-})
-```
-</details>
-
-
-#### Example: Function-To-Function call
-
-<details open>
-<summary>curl example</summary>
-
-```bash
-curl --request POST \
-  --url http://localhost:4000/ \
-  --header 'content-type: application/json' \
-  --header 'event: invoke' \
-  --header 'function-id: createUser' \
-  --data '{ "name": "Max" }'
-```
-
-</details>
-<details>
-<summary>Node.js SDK example</summary>
-
-```javascript
-const eventGateway = new EventGateway({ url: 'http://localhost' })
-eventGateway.invoke({
-  functionId: 'createUser',
-  data: { name: 'Max' }
 })
 ```
 </details>
