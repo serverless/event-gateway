@@ -60,17 +60,24 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: http.StatusText(http.StatusServiceUnavailable)}}})
 		return
 	}
+	path := extractPath(r.Host, r.URL.EscapedPath())
+	event, err := eventpkg.FromRequest(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+		return
+	}
 
-	// isHTTPEvent checks if a request carries HTTP event. It also accepts pre-flight CORS requests because CORS is
-	// resolved downstream.
-	if isHTTPEvent(r) {
+	if event.EventType == eventpkg.TypeHTTP && !isCORSPreflightRequest(r) {
 		metricEventsReceived.WithLabelValues("", "http").Inc()
 
-		event, _, err := router.eventFromRequest(r)
+		router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
+		err = router.emitSystemEventReceived(path, *event, r.Header)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Header().Set("Content-Type", "application/json")
-			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+			router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+				zap.Object("event", event),
+				zap.Error(err))
 			return
 		}
 
@@ -84,27 +91,16 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			event, path, err := router.eventFromRequest(r)
+			router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
+			err = router.emitSystemEventReceived(path, *event, r.Header)
 			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Header().Set("Content-Type", "application/json")
-				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+				router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+					zap.Object("event", event),
+					zap.Error(err))
 				return
 			}
 
-			if event.EventType == eventpkg.TypeInvoke {
-				functionID := function.ID(r.Header.Get(headerFunctionID))
-				space := r.Header.Get(headerSpace)
-				if space == "" {
-					space = "default"
-				}
-
-				metricEventsReceived.WithLabelValues(space, "invoke").Inc()
-
-				router.handleInvokeEvent(space, functionID, path, event, w)
-
-				metricEventsProcessed.WithLabelValues(space, "invoke").Inc()
-			} else if !event.IsSystem() {
+			if !event.IsSystem() {
 				reportReceivedEvent(event.EventID)
 
 				router.enqueueWork(path, event)
@@ -239,7 +235,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		httpdata := event.Data.(*eventpkg.HTTPEvent)
+		httpdata := event.Data.(*eventpkg.HTTPRequestData)
 		httpdata.Params = params
 		event.Data = httpdata
 		resp, err := router.callFunction(space, *backingFunction, *event)
