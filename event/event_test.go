@@ -13,15 +13,17 @@ import (
 
 func TestNew(t *testing.T) {
 	for _, testCase := range newTests {
-		result := eventpkg.New(testCase.eventType, testCase.mime, testCase.payload)
+		t.Run(testCase.name, func(t *testing.T) {
+			result := eventpkg.New(testCase.eventType, testCase.mime, testCase.payload)
 
-		assert.NotEqual(t, result.EventID, "")
-		assert.Equal(t, testCase.expectedEvent.EventType, result.EventType)
-		assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, result.CloudEventsVersion)
-		assert.Equal(t, testCase.expectedEvent.Source, result.Source)
-		assert.Equal(t, testCase.expectedEvent.ContentType, result.ContentType)
-		assert.Equal(t, testCase.expectedEvent.Data, result.Data)
-		assert.Equal(t, testCase.expectedEvent.Extensions, result.Extensions)
+			assert.NotEqual(t, result.EventID, "")
+			assert.Equal(t, testCase.expectedEvent.EventType, result.EventType)
+			assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, result.CloudEventsVersion)
+			assert.Equal(t, testCase.expectedEvent.Source, result.Source)
+			assert.Equal(t, testCase.expectedEvent.ContentType, result.ContentType)
+			assert.Equal(t, testCase.expectedEvent.Data, result.Data)
+			assert.Equal(t, testCase.expectedEvent.Extensions, result.Extensions)
+		})
 	}
 }
 
@@ -106,26 +108,31 @@ var newTests = []struct {
 }
 
 var encodingTests = []struct {
+	name         string
 	body         []byte
 	contentType  string
 	expectedBody interface{}
 }{
 	{
+		"unrecogninzed content type",
 		[]byte("some=thing"),
 		"application/octet-stream",
 		[]byte("some=thing"),
 	},
 	{
+		"form content type",
 		[]byte("some=thing"),
 		"application/x-www-form-urlencoded",
 		"some=thing",
 	},
 	{
+		"multipart form content type",
 		[]byte("--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n"),
 		"multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
 		"--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
 	},
 	{
+		"JSON content type",
 		[]byte(`{"hello": "world"}`),
 		"application/json",
 		map[string]interface{}{"hello": "world"},
