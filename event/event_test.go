@@ -158,23 +158,15 @@ var fromRequestTests = []struct {
 			Data:               "test",
 		},
 	},
-	// {
-	// 	name:           "error when invalid CloudEvent",
-	// 	requestHeaders: http.Header{"Content-Type": []string{"application/cloudevents+json"}},
-	// 	requestBody:    []byte(`{"eventType": "invalid"}`),
-	// 	expectedEvent: &eventpkg.Event{
-	// 		EventType:          eventpkg.TypeHTTPRequest,
-	// 		CloudEventsVersion: "0.1",
-	// 		Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
-	// 		ContentType:        "application/cloudevents+json",
-	// 		Data: &eventpkg.HTTPRequestData{
-	// 			Headers: map[string]string{"Content-Type": "application/cloudevents+json"},
-	// 			Body:    []byte(`{"eventType": "invalid"}`),
-	// 			Query:   map[string][]string{}},
-	// 		Extensions: map[string]interface{}{
-	// 			"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
-	// 	},
-	// },
+	{
+		name:           "error if invalid CloudEvent",
+		requestHeaders: http.Header{"Content-Type": []string{"application/cloudevents+json"}},
+		requestBody:    []byte(`{"eventType": "invalid"}`),
+		expectedError: &eventpkg.ErrParsingCloudEvent{
+			Message: "Key: 'Event.CloudEventsVersion' Error:Field validation for 'CloudEventsVersion' failed on the 'required' tag\n" +
+				"Key: 'Event.Source' Error:Field validation for 'Source' failed on the 'uri' tag\n" +
+				"Key: 'Event.EventID' Error:Field validation for 'EventID' failed on the 'required' tag"},
+	},
 	{
 		name: "valid CloudEvent in binary mode",
 		requestHeaders: http.Header{
@@ -197,6 +189,19 @@ var fromRequestTests = []struct {
 			Data:               []byte("hey there"),
 			Extensions:         map[string]interface{}{"myExtension": "ding"},
 		},
+	},
+	{
+		name: "error if invalid CloudEvent in binary mode",
+		requestHeaders: http.Header{
+			"Content-Type":          []string{"text/plain"},
+			"Ce-Eventtype":          []string{"myevent"},
+			"Ce-Cloudeventsversion": []string{"0.1"},
+			"Ce-Source":             []string{"NOT URI"},
+			"Ce-Eventid":            []string{"778d495b-a29e-48f9-a438-a26de1e33515"},
+		},
+		requestBody: []byte(`{"eventType": "invalid"}`),
+		expectedError: &eventpkg.ErrParsingCloudEvent{
+			Message: "Key: 'Event.Source' Error:Field validation for 'Source' failed on the 'uri' tag"},
 	},
 	{
 		name: "legacy mode event",

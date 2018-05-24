@@ -52,42 +52,6 @@ func TestRouterServeHTTP_HTTPEventFunctionNotFound(t *testing.T) {
 	assert.Equal(t, `{"errors":[{"message":"resource not found"}]}`+"\n", recorder.Body.String())
 }
 
-func TestRouterServeHTTP_InvokeEventFunctionNotFound(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().Function("default", function.ID("testfunc")).Return(nil).MaxTimes(1)
-	target.EXPECT().InvokableFunction("/", "default", function.ID("testfunc")).Return(true).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(2)
-	router := testrouter(target)
-
-	req, _ := http.NewRequest(http.MethodPost, "/", nil)
-	req.Header.Set("event", "invoke")
-	req.Header.Set("space", "default")
-	req.Header.Set("function-id", "testfunc")
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
-
-	assert.Equal(t, http.StatusInternalServerError, recorder.Code)
-	assert.Equal(t, `{"errors":[{"message":"Function call failed. Please check logs."}]}`+"\n", recorder.Body.String())
-}
-
-func TestRouterServeHTTP_InvokeEventDefaultSpace(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().Function("default", function.ID("testfunc")).Return(nil).MaxTimes(1)
-	target.EXPECT().InvokableFunction("/", "default", function.ID("testfunc")).Return(true).MaxTimes(1)
-	target.EXPECT().SubscribersOfEvent("/", gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(2)
-	router := testrouter(target)
-
-	req, _ := http.NewRequest(http.MethodPost, "/", nil)
-	req.Header.Set("event", "invoke")
-	req.Header.Set("function-id", "testfunc")
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
-}
-
 func TestRouterServeHTTP_Encoding(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

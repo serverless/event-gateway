@@ -116,7 +116,11 @@ func FromRequest(r *http.Request) (*Event, error) {
 // Validate Event struct
 func (e *Event) Validate() error {
 	validate := validator.New()
-	return validate.Struct(e)
+	err := validate.Struct(e)
+	if err != nil {
+		return &ErrParsingCloudEvent{err.Error()}
+	}
+	return nil
 }
 
 // IsSystem indicates if the event is a system event.
