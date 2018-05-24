@@ -22,8 +22,11 @@ import (
 type Type string
 
 const (
-	// TypeHTTPRequest is a special type of event for sync http subscriptions.
-	TypeHTTPRequest = Type("http.request")
+	// TypeHTTP is a special type of event for sync http subscriptions.
+	TypeHTTP = Type("http")
+
+	// TypeInvoke is a special type of event for sync function invocation.
+	TypeInvoke = Type("invoke")
 
 	// TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
 	TransformationVersion = "0.1"
@@ -95,17 +98,19 @@ func FromRequest(r *http.Request) (*Event, error) {
 		return parseAsCloudEvent(mimeType, body)
 	} else if isCloudEventsBinaryContentMode(r.Header) { // CloudEvents Binary Content Mode
 		return parseAsCloudEventBinary(r.Header, body)
-	} else if isLegacyMode(r.Header) && mimeType == mimeJSON { // CloudEvent in Legacy Mode
-		event, err = parseAsCloudEvent(mimeType, body)
-		if err != nil {
-			return New(Type(r.Header.Get("event")), mimeType, body), nil
+	} else if isLegacyMode(r.Header) {
+		if mimeType == mimeJSON { // CloudEvent in Legacy Mode
+			event, err = parseAsCloudEvent(mimeType, body)
+			if err != nil {
+				return New(Type(r.Header.Get("event")), mimeType, body), nil
+			}
+			return event, err
 		}
-		return event, err
-	} else if isLegacyMode(r.Header) { // Custom Event in Legacy Mode
+
 		return New(Type(r.Header.Get("event")), mimeType, body), nil
 	}
 
-	return New(TypeHTTPRequest, mimeCloudEventsJSON, NewHTTPRequestData(r, body)), nil
+	return New(TypeHTTP, mimeCloudEventsJSON, NewHTTPRequestData(r, body)), nil
 }
 
 // Validate Event struct

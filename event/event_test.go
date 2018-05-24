@@ -262,7 +262,7 @@ var fromRequestTests = []struct {
 		},
 		requestBody: []byte("hey there"),
 		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.TypeHTTPRequest,
+			EventType:          eventpkg.TypeHTTP,
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/cloudevents+json",

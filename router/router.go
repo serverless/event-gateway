@@ -111,19 +111,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if event.EventType == eventpkg.TypeInvoke {
-				functionID := function.ID(r.Header.Get(headerFunctionID))
-				space := r.Header.Get(headerSpace)
-				if space == "" {
-					space = "default"
-				}
-
-				metricEventsReceived.WithLabelValues(space, "invoke").Inc()
-
-				router.handleInvokeEvent(space, functionID, path, event, w)
-
-				metricEventsProcessed.WithLabelValues(space, "invoke").Inc()
-			} else if !event.IsSystem() {
+			if !event.IsSystem() {
 				reportReceivedEvent(event.EventID)
 
 				router.enqueueWork(path, event)
