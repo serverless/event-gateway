@@ -1,6 +1,6 @@
 ![Event Gateway - React to any event with FaaS function across clouds](https://s3.amazonaws.com/assets.github.serverless/event-gateway-readme-header-v2.gif)
 
-[We're Hiring!](https://serverless.com/company/jobs/) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless) 
+[We're Hiring!](https://serverless.com/company/jobs/) • [Website](https://serverless.com/event-gateway/) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless-meetups/main) • [Twitter](https://twitter.com/goserverless) 
 
 The Event Gateway combines both API Gateway and Pub/Sub functionality into a single event-driven experience. It's
 dataflow for event-driven, serverless architectures. It routes Events (data) to Functions (serverless compute).
