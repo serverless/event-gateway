@@ -17,7 +17,7 @@ type ErrEventTypeAlreadyExists struct {
 }
 
 func (e ErrEventTypeAlreadyExists) Error() string {
-	return fmt.Sprintf("Event Type %s already exists.", e.Name)
+	return fmt.Sprintf("Event Type %q already exists.", e.Name)
 }
 
 // ErrEventTypeValidation occurs when event type payload doesn't validate.

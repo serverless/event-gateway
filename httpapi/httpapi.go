@@ -102,7 +102,7 @@ func (h HTTPAPI) createEventType(w http.ResponseWriter, r *http.Request, params 
 	err := dec.Decode(eventType)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		validationErr := function.ErrFunctionValidation{Message: err.Error()}
+		validationErr := event.ErrEventTypeValidation{Message: err.Error()}
 		encoder.Encode(&Response{Errors: []Error{{Message: validationErr.Error()}}})
 		return
 	}
