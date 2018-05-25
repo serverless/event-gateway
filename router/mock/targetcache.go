@@ -5,13 +5,14 @@
 package mock
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	event "github.com/serverless/event-gateway/event"
 	function "github.com/serverless/event-gateway/function"
 	pathtree "github.com/serverless/event-gateway/internal/pathtree"
 	router "github.com/serverless/event-gateway/router"
 	subscription "github.com/serverless/event-gateway/subscription"
-	reflect "reflect"
 )
 
 // MockTargeter is a mock of Targeter interface

@@ -71,6 +71,25 @@ func TestCreateSubscription(t *testing.T) {
 				"\nKey: 'Subscription.FunctionID' Error:Field validation for 'FunctionID' failed on the 'required' tag"})
 	})
 
+	t.Run("validation error: CORS settings for async subscription", func(t *testing.T) {
+		subs := &Service{Log: zap.NewNop()}
+
+		_, err := subs.CreateSubscription(
+			&subscription.Subscription{
+				Type:       subscription.TypeAsync,
+				EventType:  "user.created",
+				FunctionID: "func",
+				Path:       "/",
+				Method:     "GET",
+				CORS: &subscription.CORS{
+					Methods: []string{"GET"},
+				},
+			},
+		)
+
+		assert.Equal(t, err, &subscription.ErrSubscriptionValidation{Message: "CORS can be configured only for sync subscriptions."})
+	})
+
 	t.Run("subscription already exists", func(t *testing.T) {
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&store.KVPair{Value: []byte(`{"subscriptionId":""}`)}, nil)

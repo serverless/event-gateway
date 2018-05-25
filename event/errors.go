@@ -35,3 +35,12 @@ type ErrEventTypeHasSubscriptionsError struct{}
 func (e ErrEventTypeHasSubscriptionsError) Error() string {
 	return fmt.Sprintf("Event type cannot be deleted because there are subscriptions using it.")
 }
+
+// ErrParsingCloudEvent occurs when payload is not valid CloudEvent.
+type ErrParsingCloudEvent struct {
+	Message string
+}
+
+func (e ErrParsingCloudEvent) Error() string {
+	return fmt.Sprintf("CloudEvent doesn't validate: %s", e.Message)
+}

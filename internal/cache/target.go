@@ -37,15 +37,6 @@ func (tc *Target) HTTPBackingFunction(method, path string) (string, *function.ID
 	return root.Resolve(path)
 }
 
-// InvokableFunction returns function ID for handling invoke sync event.
-func (tc *Target) InvokableFunction(path string, space string, id function.ID) bool {
-	tc.subscriptionCache.RLock()
-	defer tc.subscriptionCache.RUnlock()
-
-	_, exists := tc.subscriptionCache.invokable[path][libkv.FunctionKey{Space: space, ID: id}]
-	return exists
-}
-
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
 func (tc *Target) Function(space string, id function.ID) *function.Function {
 	tc.functionCache.RLock()
@@ -54,7 +45,7 @@ func (tc *Target) Function(space string, id function.ID) *function.Function {
 }
 
 // SubscribersOfEvent is used for determining which functions to forward messages to.
-func (tc *Target) SubscribersOfEvent(path string, eventType eventpkg.Type) []router.FunctionInfo {
+func (tc *Target) SubscribersOfEvent(path string, eventType eventpkg.TypeName) []router.FunctionInfo {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 

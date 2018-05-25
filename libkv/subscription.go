@@ -193,6 +193,10 @@ func validateSubscription(sub *subscription.Subscription) error {
 		sub.Method = strings.ToUpper(sub.Method)
 	}
 
+	if sub.Type == subscription.TypeAsync && sub.CORS != nil {
+		return &subscription.ErrSubscriptionValidation{Message: "CORS can be configured only for sync subscriptions."}
+	}
+
 	if sub.CORS != nil {
 		if sub.CORS.Headers == nil {
 			sub.CORS.Headers = []string{"Origin", "Accept", "Content-Type"}
