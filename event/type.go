@@ -1,5 +1,7 @@
 package event
 
+import "go.uber.org/zap/zapcore"
+
 const (
 	// TypeHTTPRequest is a special type of event http requests that are not CloudEvents.
 	TypeHTTPRequest = TypeName("http.request")
@@ -16,3 +18,11 @@ type Type struct {
 
 // Types is an array of subscriptions.
 type Types []*Type
+
+// MarshalLogObject is a part of zapcore.ObjectMarshaler interface
+func (t Type) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("space", string(t.Space))
+	enc.AddString("name", string(t.Name))
+
+	return nil
+}

@@ -342,6 +342,8 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionAlreadyExists); ok {
 			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*event.ErrEventTypeNotFound); ok {
+			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*subscription.ErrSubscriptionValidation); ok {

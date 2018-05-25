@@ -54,6 +54,12 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	instance.StartWorkers()
 
 	expected := "😸"
+	eventType := "smileys"
+
+	// register event type
+	eventTypeName := event.TypeName(eventType)
+	postEventType(testAPIServer.URL+"/v1/spaces/default/eventtypes", &event.Type{Name: eventTypeName})
+	wait(instance.WaitForEventType("default", eventTypeName), "timed out waiting for event type to be configured!")
 
 	// register subscriber function
 	smileyReceived := make(chan struct{})
@@ -88,17 +94,15 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	wait(instance.WaitForFunction("default", subscriberFnID), "timed out waiting for function to be configured!")
 
 	// set up pub/sub
-	eventType := "smileys"
-
 	postSubscription(testAPIServer.URL+"/v1/spaces/default/subscriptions", &subscription.Subscription{
 		FunctionID: subscriberFnID,
 		Type:       subscription.TypeAsync,
 		EventType:  event.TypeName(eventType),
 		Path:       "/",
 	})
+	wait(instance.WaitForAsyncSubscriber("/", event.TypeName(eventType)), "timed out waiting for subscriber to be configured!")
 
-	wait(instance.WaitForSubscriber("/", event.TypeName(eventType)), "timed out waiting for subscriber to be configured!")
-
+	// emit event
 	emit(testRouterServer.URL, eventType, []byte(expected))
 	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")
 
@@ -106,16 +110,14 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	shutdownGuard.ShutdownAndWait()
 }
 
-func TestIntegration_HTTPSubscription(t *testing.T) {
+func TestIntegration_SyncSubscription(t *testing.T) {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.DisableStacktrace = true
 	log, _ := logCfg.Build()
-
 	kv, shutdownGuard := newTestEtcd()
 
 	testAPIServer := newConfigAPIServer(kv, log)
 	defer testAPIServer.Close()
-
 	instance, testRouterServer := newTestRouterServer(kv, log)
 	defer testRouterServer.Close()
 
@@ -124,6 +126,11 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 	}))
 	defer testTargetServer.Close()
 
+	// register event type
+	postEventType(testAPIServer.URL+"/v1/spaces/default/eventtypes", &event.Type{Name: event.TypeHTTPRequest})
+	wait(instance.WaitForEventType("default", event.TypeHTTPRequest), "timed out waiting for event type to be configured!")
+
+	// register subscriber function
 	functionID := function.ID("httpresponse")
 	postFunction(testAPIServer.URL+"/v1/spaces/default/functions",
 		&function.Function{
@@ -135,6 +142,7 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 		})
 	wait(instance.WaitForFunction("default", functionID), "timed out waiting for function to be configured!")
 
+	// set up pub/sub
 	postSubscription(testAPIServer.URL+"/v1/spaces/default/subscriptions", &subscription.Subscription{
 		FunctionID: function.ID("httpresponse"),
 		Type:       subscription.TypeSync,
@@ -142,8 +150,9 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 		Method:     "GET",
 		Path:       "/httpresponse",
 	})
-	wait(instance.WaitForEndpoint("GET", "/httpresponse"), "timed out waiting for endpoint to be configured!")
+	wait(instance.WaitForSyncSubscriber("GET", "/httpresponse"), "timed out waiting for endpoint to be configured!")
 
+	// request function
 	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")
 	assert.Equal(t, 201, statusCode)
 	assert.Equal(t, "text/html", headers.Get("content-type"))
@@ -173,6 +182,12 @@ func emit(url, eventType string, body []byte) {
 		panic(err)
 	}
 	defer resp.Body.Close()
+}
+
+func postEventType(url string, eventType *event.Type) ([]byte, error) {
+	reqBytes := &bytes.Buffer{}
+	json.NewEncoder(reqBytes).Encode(eventType)
+	return post(url, reqBytes)
 }
 
 func postFunction(url string, fn *function.Function) ([]byte, error) {
@@ -223,12 +238,14 @@ func newConfigAPIServer(kvstore store.Store, log *zap.Logger) *httptest.Server {
 	apiRouter := httprouter.New()
 
 	service := &eventgateway.Service{
+		EventTypeStore:    intstore.NewPrefixed("/serverless-event-gateway/eventtypes", kvstore),
 		FunctionStore:     intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore),
 		SubscriptionStore: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
 		Log:               log,
 	}
 
 	ha := &httpapi.HTTPAPI{
+		EventTypes:    service,
 		Functions:     service,
 		Subscriptions: service,
 	}

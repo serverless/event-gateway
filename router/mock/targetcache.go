@@ -37,6 +37,30 @@ func (m *MockTargeter) EXPECT() *MockTargeterMockRecorder {
 	return m.recorder
 }
 
+// AsyncSubscribers mocks base method
+func (m *MockTargeter) AsyncSubscribers(arg0 string, arg1 event.TypeName) []router.FunctionInfo {
+	ret := m.ctrl.Call(m, "AsyncSubscribers", arg0, arg1)
+	ret0, _ := ret[0].([]router.FunctionInfo)
+	return ret0
+}
+
+// AsyncSubscribers indicates an expected call of AsyncSubscribers
+func (mr *MockTargeterMockRecorder) AsyncSubscribers(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsyncSubscribers", reflect.TypeOf((*MockTargeter)(nil).AsyncSubscribers), arg0, arg1)
+}
+
+// EventType mocks base method
+func (m *MockTargeter) EventType(arg0 string, arg1 event.TypeName) *event.Type {
+	ret := m.ctrl.Call(m, "EventType", arg0, arg1)
+	ret0, _ := ret[0].(*event.Type)
+	return ret0
+}
+
+// EventType indicates an expected call of EventType
+func (mr *MockTargeterMockRecorder) EventType(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EventType", reflect.TypeOf((*MockTargeter)(nil).EventType), arg0, arg1)
+}
+
 // Function mocks base method
 func (m *MockTargeter) Function(arg0 string, arg1 function.ID) *function.Function {
 	ret := m.ctrl.Call(m, "Function", arg0, arg1)
@@ -49,9 +73,9 @@ func (mr *MockTargeterMockRecorder) Function(arg0, arg1 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Function", reflect.TypeOf((*MockTargeter)(nil).Function), arg0, arg1)
 }
 
-// HTTPBackingFunction mocks base method
-func (m *MockTargeter) HTTPBackingFunction(arg0, arg1 string) (string, *function.ID, pathtree.Params, *subscription.CORS) {
-	ret := m.ctrl.Call(m, "HTTPBackingFunction", arg0, arg1)
+// SyncSubscriber mocks base method
+func (m *MockTargeter) SyncSubscriber(arg0, arg1 string) (string, *function.ID, pathtree.Params, *subscription.CORS) {
+	ret := m.ctrl.Call(m, "SyncSubscriber", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(*function.ID)
 	ret2, _ := ret[2].(pathtree.Params)
@@ -59,19 +83,7 @@ func (m *MockTargeter) HTTPBackingFunction(arg0, arg1 string) (string, *function
 	return ret0, ret1, ret2, ret3
 }
 
-// HTTPBackingFunction indicates an expected call of HTTPBackingFunction
-func (mr *MockTargeterMockRecorder) HTTPBackingFunction(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HTTPBackingFunction", reflect.TypeOf((*MockTargeter)(nil).HTTPBackingFunction), arg0, arg1)
-}
-
-// SubscribersOfEvent mocks base method
-func (m *MockTargeter) SubscribersOfEvent(arg0 string, arg1 event.TypeName) []router.FunctionInfo {
-	ret := m.ctrl.Call(m, "SubscribersOfEvent", arg0, arg1)
-	ret0, _ := ret[0].([]router.FunctionInfo)
-	return ret0
-}
-
-// SubscribersOfEvent indicates an expected call of SubscribersOfEvent
-func (mr *MockTargeterMockRecorder) SubscribersOfEvent(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribersOfEvent", reflect.TypeOf((*MockTargeter)(nil).SubscribersOfEvent), arg0, arg1)
+// SyncSubscriber indicates an expected call of SyncSubscriber
+func (mr *MockTargeterMockRecorder) SyncSubscriber(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncSubscriber", reflect.TypeOf((*MockTargeter)(nil).SyncSubscriber), arg0, arg1)
 }
