@@ -5,14 +5,13 @@
 package mock
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	event "github.com/serverless/event-gateway/event"
 	function "github.com/serverless/event-gateway/function"
 	pathtree "github.com/serverless/event-gateway/internal/pathtree"
 	router "github.com/serverless/event-gateway/router"
 	subscription "github.com/serverless/event-gateway/subscription"
+	reflect "reflect"
 )
 
 // MockTargeter is a mock of Targeter interface
@@ -65,20 +64,8 @@ func (mr *MockTargeterMockRecorder) HTTPBackingFunction(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HTTPBackingFunction", reflect.TypeOf((*MockTargeter)(nil).HTTPBackingFunction), arg0, arg1)
 }
 
-// InvokableFunction mocks base method
-func (m *MockTargeter) InvokableFunction(arg0, arg1 string, arg2 function.ID) bool {
-	ret := m.ctrl.Call(m, "InvokableFunction", arg0, arg1, arg2)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// InvokableFunction indicates an expected call of InvokableFunction
-func (mr *MockTargeterMockRecorder) InvokableFunction(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvokableFunction", reflect.TypeOf((*MockTargeter)(nil).InvokableFunction), arg0, arg1, arg2)
-}
-
 // SubscribersOfEvent mocks base method
-func (m *MockTargeter) SubscribersOfEvent(arg0 string, arg1 event.Type) []router.FunctionInfo {
+func (m *MockTargeter) SubscribersOfEvent(arg0 string, arg1 event.TypeName) []router.FunctionInfo {
 	ret := m.ctrl.Call(m, "SubscribersOfEvent", arg0, arg1)
 	ret0, _ := ret[0].([]router.FunctionInfo)
 	return ret0
