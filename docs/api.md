@@ -42,10 +42,10 @@ The MIME type of the data block can be specified using the `Content-Type` header
 to. In case of `application/json` type the event gateway passes JSON payload to the target functions. In any other case
 the data block is base64 encoded.
 
-#### HTTP Event
+#### HTTP Request Event
 
-`http` event is a built-in type of event occurring for HTTP requests on paths defined in HTTP subscriptions. The
-`data` field of an `http` event has the following structure:
+`http.request` event is a built-in type of event occurring for HTTP requests on paths defined in HTTP subscriptions. The
+`data` field of an `http.request` event has the following structure:
 
 * `path` - `string` - request path
 * `method` - `string` - request method
@@ -100,7 +100,7 @@ HTTP subscription response depends on [response object](#respond-to-an-http-even
 
 ##### CORS
 
-By default cross-origin resource sharing (CORS) is disabled for `http` subscriptions. It can be enabled and configured
+By default cross-origin resource sharing (CORS) is disabled for `sync` subscriptions. It can be enabled and configured
 per-subscription basis.
 
 Event Gateway handles preflight `OPTIONS` requests for you. You don't need to setup subscription for `OPTIONS` method
@@ -124,7 +124,7 @@ Special type of path parameter is wildcard parameter. It's a path segment prefix
 be specified at the end of the path and will match every character till the end of the path. For examples
 parameter `/users/*userpath` for request path `/users/group1/user1` will match `group1/user1` as a `userpath` parameter.
 
-#### Respond to an HTTP Event
+#### Respond to an HTTP Request Event
 
 To respond to an HTTP event a function needs to return object with following fields:
 
@@ -136,7 +136,7 @@ Currently, the event gateway supports only string responses.
 
 ### CORS
 
-Events API supports CORS requests which means that any origin can emit a custom event. In case of `http` events CORS is
+Events API supports CORS requests which means that any origin can emit a custom event. In case of `sync` subscriptions CORS is
 configured per-subscription basis.
 
 ## Configuration API
@@ -304,11 +304,12 @@ JSON object:
 
 **Request**
 
-* `event` - `string` - event name
+* `type` - `string` - subscription type, `sync` or `async`
+* `eventType` - `string` - event type
 * `functionId` - `string` - ID of function to receive events
 * `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
-* `method` - `string` - required for `http` event, HTTP method that accepts requests
-* `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
+* `method` - `string` - optional, HTTP method that accepts requests, default: `POST`
+* `cors` - `object` - optional, by default CORS is disabled for `sync` subscriptions. When set to empty object CORS configuration will use default values for all fields below. Available fields:
   * `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
   * `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
   * `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
@@ -325,11 +326,12 @@ JSON object:
 
 * `space` - `string` - space name
 * `subscriptionId` - `string` - subscription ID
-* `event` - `string` - event name
+* `type` - `string` - subscription type
+* `eventType` - `string` - event type
 * `functionId` - function ID
-* `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
-* `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
-* `cors` - `object` - optional, in case of `http` event, CORS configuration
+* `method` - `string` - HTTP method that accepts requests
+* `path` - `string` - path that accepts requests, starts with `/`
+* `cors` - `object` - optional, CORS configuration
 
 ---
 
@@ -341,13 +343,14 @@ JSON object:
 
 **Request**
 
-_Note that `event`, `functionId`, `path`, and `method` may not be updated in an UpdateSubscription call._
+_Note that `type`, `eventType`, `functionId`, `path`, and `method` may not be updated in an UpdateSubscription call._
 
-* `event` - `string` - event name
+* `type` - `string` - subscription type, `sync` or `async`
+* `eventType` - `string` - event type
 * `functionId` - `string` - ID of function to receive events
 * `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
-* `method` - `string` - required for `http` event, HTTP method that accepts requests
-* `cors` - `object` - optional, in case of `http` event, By default CORS is disabled. When set to empty object CORS configuration will use default values for all fields below. Available fields:
+* `method` - `string` - optional, HTTP method that accepts requests, default: `POST`
+* `cors` - `object` - optional, by default CORS is disabled for `sync` subscriptions. When set to empty object CORS configuration will use default values for all fields below. Available fields:
   * `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
   * `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
   * `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
@@ -365,11 +368,12 @@ JSON object:
 
 * `space` - `string` - space name
 * `subscriptionId` - `string` - subscription ID
-* `event` - `string` - event name
+* `type` - `string` - subscription type
+* `eventType` - `string` - event type
 * `functionId` - function ID
-* `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
-* `path` - `string` - optional, in case of `http` event, path that accepts requests, starts with `/`
-* `cors` - `object` - optional, in case of `http` event, CORS configuration
+* `method` - `string` - HTTP method that accepts requests
+* `path` - `string` - path that accepts requests, starts with `/`
+* `cors` - `object` - optional, CORS configuration
 
 ---
 
@@ -403,13 +407,14 @@ Status code:
 JSON object:
 
 * `subscriptions` - `array` of `object` - subscriptions
-* `space` - `string` - space name
+  * `space` - `string` - space name
   * `subscriptionId` - `string` - subscription ID
-  * `event` - `string` - event name
+  * `type` - `string` - subscription type
+  * `eventType` - `string` - event type
   * `functionId` - function ID
-  * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
-  * `path` - `string` - optional, in case of `http` event, path that accepts requests
-  * `cors` - `object` - optional, in case of `http` event, CORS configuration
+  * `method` - `string` - HTTP method that accepts requests
+  * `path` - `string` - path that accepts requests, starts with `/`
+  * `cors` - `object` - optional, CORS configuration
 
 #### Get Subscription
 
@@ -426,14 +431,14 @@ Status code:
 
 JSON object:
 
-* `subscriptions` - `array` of `object` - subscriptions
 * `space` - `string` - space name
-  * `subscriptionId` - `string` - subscription ID
-  * `event` - `string` - event name
-  * `functionId` - function ID
-  * `method` - `string` - optional, in case of `http` event, HTTP method that accepts requests
-  * `path` - `string` - optional, in case of `http` event, path that accepts requests
-  * `cors` - `object` - optional, in case of `http` event, CORS configuration
+* `subscriptionId` - `string` - subscription ID
+* `type` - `string` - subscription type
+* `eventType` - `string` - event type
+* `functionId` - function ID
+* `method` - `string` - HTTP method that accepts requests
+* `path` - `string` - path that accepts requests, starts with `/`
+* `cors` - `object` - optional, CORS configuration
 
 ### Prometheus Metrics
 

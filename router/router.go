@@ -69,7 +69,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if event.EventType == eventpkg.TypeHTTP && !isCORSPreflightRequest(r) {
+	if event.EventType == eventpkg.TypeHTTPRequest && !isCORSPreflightRequest(r) {
 		metricEventsReceived.WithLabelValues("", "http").Inc()
 
 		router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))

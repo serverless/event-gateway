@@ -43,7 +43,7 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 	defer c.Unlock()
 	key := libkv.FunctionKey{Space: s.Space, ID: s.FunctionID}
 
-	if s.Event == eventpkg.TypeHTTP {
+	if s.Type == subscription.TypeSync {
 		root := c.endpoints[s.Method]
 		if root == nil {
 			root = pathtree.NewNode()
@@ -55,13 +55,13 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 		}
 	} else {
 		c.createPath(s.Path)
-		ids, exists := c.eventToFunctions[s.Path][s.Event]
+		ids, exists := c.eventToFunctions[s.Path][s.EventType]
 		if exists {
 			ids = append(ids, key)
 		} else {
 			ids = []libkv.FunctionKey{key}
 		}
-		c.eventToFunctions[s.Path][s.Event] = ids
+		c.eventToFunctions[s.Path][s.EventType] = ids
 	}
 }
 
@@ -76,7 +76,7 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 		return
 	}
 
-	if oldSub.Event == eventpkg.TypeHTTP {
+	if oldSub.Type == subscription.TypeSync {
 		c.deleteEndpoint(oldSub)
 	} else {
 		c.deleteSubscription(oldSub)
@@ -102,7 +102,7 @@ func (c *subscriptionCache) deleteEndpoint(sub subscription.Subscription) {
 }
 
 func (c *subscriptionCache) deleteSubscription(sub subscription.Subscription) {
-	ids, exists := c.eventToFunctions[sub.Path][sub.Event]
+	ids, exists := c.eventToFunctions[sub.Path][sub.EventType]
 	if exists {
 		for i, id := range ids {
 			key := libkv.FunctionKey{Space: sub.Space, ID: sub.FunctionID}
@@ -111,10 +111,10 @@ func (c *subscriptionCache) deleteSubscription(sub subscription.Subscription) {
 				break
 			}
 		}
-		c.eventToFunctions[sub.Path][sub.Event] = ids
+		c.eventToFunctions[sub.Path][sub.EventType] = ids
 
 		if len(ids) == 0 {
-			delete(c.eventToFunctions[sub.Path], sub.Event)
+			delete(c.eventToFunctions[sub.Path], sub.EventType)
 		}
 	}
 }

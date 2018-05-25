@@ -175,8 +175,9 @@ curl --request POST \
   --url http://localhost:4001/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
   --data '{
+    "type": "async",
+    "eventType": "user.created",
     "functionId": "sendEmail",
-    "event": "user.created",
     "path": "/myteam"
   }'
 ```
@@ -187,7 +188,8 @@ curl --request POST \
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.subscribe({
-  event: 'user.created',
+  type: 'async',
+  eventType: 'user.created',
   functionId: 'sendEmail',
   path: '/myteam'
 })
@@ -238,8 +240,9 @@ curl --request POST \
   --url http://localhost:4001/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
   --data '{
+    "type": "sync",
+    "eventType": "http.request",
     "functionId": "listUsers",
-    "event": "http",
     "method": "GET",
     "path": "/users"
   }'
@@ -252,8 +255,9 @@ curl --request POST \
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.subscribe({
+  type: 'sync',
+  eventType: 'http.request',
   functionId: 'listUsers',
-  event: 'http',
   method: 'GET',
   path: '/users'
 })

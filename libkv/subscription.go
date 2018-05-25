@@ -2,13 +2,14 @@ package libkv
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"path"
 	"regexp"
 	"strings"
 
-	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	istrings "github.com/serverless/event-gateway/internal/strings"
@@ -19,92 +20,79 @@ import (
 )
 
 // CreateSubscription creates subscription.
-func (service Service) CreateSubscription(s *subscription.Subscription) (*subscription.Subscription, error) {
-	err := validateSubscription(s)
+func (service Service) CreateSubscription(sub *subscription.Subscription) (*subscription.Subscription, error) {
+	err := validateSubscription(sub)
 	if err != nil {
 		return nil, err
 	}
-
-	s.ID = newSubscriptionID(s)
-	_, err = service.SubscriptionStore.Get(subscriptionPath(s.Space, s.ID), &store.ReadOptions{Consistent: true})
+	sub.ID = newSubscriptionID(sub)
+	_, err = service.SubscriptionStore.Get(subscriptionPath(sub.Space, sub.ID), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &subscription.ErrSubscriptionAlreadyExists{
-			ID: s.ID,
+			ID: sub.ID,
 		}
 	}
 
-	if s.Event == event.TypeHTTP {
-		err = service.createEndpoint(s.Space, s.Method, s.Path)
+	if sub.Type == subscription.TypeSync {
+		err = service.checkForPathConflict(sub.Space, sub.Method, sub.Path)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	f, err := service.GetFunction(s.Space, s.FunctionID)
-	if err != nil {
-		return nil, err
-	}
-	if f == nil {
-		return nil, &function.ErrFunctionNotFound{ID: s.FunctionID}
-	}
-
-	buf, err := json.Marshal(s)
+	_, err = service.GetFunction(sub.Space, sub.FunctionID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = service.SubscriptionStore.Put(subscriptionPath(s.Space, s.ID), buf, nil)
+	buf, err := json.Marshal(sub)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Log.Debug("Subscription created.",
-		zap.String("event", string(s.Event)),
-		zap.String("space", s.Space),
-		zap.String("functionId", string(s.FunctionID)))
-	return s, nil
+	err = service.SubscriptionStore.Put(subscriptionPath(sub.Space, sub.ID), buf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	service.Log.Debug("Subscription created.", zap.Object("subscription", sub))
+	return sub, nil
 }
 
 // UpdateSubscription updates subscription.
-func (service Service) UpdateSubscription(id subscription.ID, s *subscription.Subscription) (*subscription.Subscription, error) {
-	err := validateSubscription(s)
+func (service Service) UpdateSubscription(id subscription.ID, newSub *subscription.Subscription) (*subscription.Subscription, error) {
+	err := validateSubscription(newSub)
 	if err != nil {
 		return nil, err
 	}
 
-	sub, err := service.GetSubscription(s.Space, id)
+	oldSub, err := service.GetSubscription(newSub.Space, id)
 	if err != nil {
 		return nil, err
 	}
 
-	err = validateSubscriptionUpdate(s, sub)
-	if err != nil {
-	    return nil, err
-	}
-
-	f, err := service.GetFunction(s.Space, s.FunctionID)
-	if err != nil {
-		return nil, err
-	}
-	if f == nil {
-		return nil, &function.ErrFunctionNotFound{ID: s.FunctionID}
-	}
-
-	buf, err := json.Marshal(s)
+	err = validateSubscriptionUpdate(newSub, oldSub)
 	if err != nil {
 		return nil, err
 	}
 
-	err = service.SubscriptionStore.Put(subscriptionPath(s.Space, s.ID), buf, nil)
+	_, err = service.GetFunction(newSub.Space, newSub.FunctionID)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Log.Debug("Subscription updated.",
-		zap.String("event", string(s.Event)),
-		zap.String("space", s.Space),
-		zap.String("functionId", string(s.FunctionID)))
-	return s, nil
+	buf, err := json.Marshal(newSub)
+	if err != nil {
+		return nil, err
+	}
+
+	err = service.SubscriptionStore.Put(subscriptionPath(newSub.Space, newSub.ID), buf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	service.Log.Debug("Subscription updated.", zap.Object("subscription", newSub))
+	return newSub, nil
 }
 
 // DeleteSubscription deletes subscription.
@@ -119,18 +107,7 @@ func (service Service) DeleteSubscription(space string, id subscription.ID) erro
 		return &subscription.ErrSubscriptionNotFound{ID: sub.ID}
 	}
 
-	if sub.Event == event.TypeHTTP {
-		err = service.deleteEndpoint(space, sub.Method, sub.Path)
-		if err != nil {
-			return err
-		}
-	}
-
-	service.Log.Debug("Subscription deleted.",
-		zap.String("event", string(sub.Event)),
-		zap.String("space", sub.Space),
-		zap.String("functionId", string(sub.FunctionID)))
-
+	service.Log.Debug("Subscription deleted.", zap.Object("subscription", sub))
 	return nil
 }
 
@@ -177,15 +154,8 @@ func (service Service) GetSubscription(space string, id subscription.ID) (*subsc
 	return sub, err
 }
 
-// createEndpoint creates endpoint.
-func (service Service) createEndpoint(space, method, path string) error {
-	e := NewEndpoint(method, path)
-
-	kvs, err := service.EndpointStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
-	// We need to check for not found key as there is no Endpoint cached that creates the directory.
-	if err != nil && err.Error() != "Key not found in store" {
-		return err
-	}
+func (service Service) checkForPathConflict(space, method, path string) error {
+	kvs, err := service.SubscriptionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
 
 	tree := pathtree.NewNode()
 
@@ -196,8 +166,10 @@ func (service Service) createEndpoint(space, method, path string) error {
 			return err
 		}
 
-		// add existing paths to check
-		tree.AddRoute(sub.Path, sub.Space, function.ID(""), nil)
+		if sub.Type == subscription.TypeSync {
+			// add existing paths to check
+			tree.AddRoute(sub.Path, sub.Space, function.ID(""), nil)
+		}
 	}
 
 	err = tree.AddRoute(path, space, function.ID(""), nil)
@@ -205,63 +177,47 @@ func (service Service) createEndpoint(space, method, path string) error {
 		return &subscription.ErrPathConfict{Message: err.Error()}
 	}
 
-	buf, err := json.Marshal(e)
-	if err != nil {
-		return err
-	}
-	err = service.EndpointStore.Put(endpointPath(space, e.ID), buf, nil)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-// deleteEndpoint deletes endpoint.
-func (service Service) deleteEndpoint(space, method, path string) error {
-	err := service.EndpointStore.Delete(endpointPath(space, NewEndpointID(method, path)))
-	if err != nil {
-		return err
-	}
-	return nil
-}
+func validateSubscription(sub *subscription.Subscription) error {
+	sub.Path = istrings.EnsurePrefix(sub.Path, "/")
 
-func validateSubscription(s *subscription.Subscription) error {
-	if s.Space == "" {
-		s.Space = defaultSpace
+	if sub.Space == "" {
+		sub.Space = defaultSpace
 	}
 
-	s.Path = istrings.EnsurePrefix(s.Path, "/")
+	if sub.Method == "" {
+		sub.Method = http.MethodPost
+	} else {
+		sub.Method = strings.ToUpper(sub.Method)
+	}
 
-	if s.Event == event.TypeHTTP {
-		s.Method = strings.ToUpper(s.Method)
+	if sub.Type == subscription.TypeAsync && sub.CORS != nil {
+		return &subscription.ErrSubscriptionValidation{Message: "CORS can be configured only for sync subscriptions."}
+	}
 
-		if s.CORS != nil {
-			if s.CORS.Headers == nil {
-				s.CORS.Headers = []string{"Origin", "Accept", "Content-Type"}
-			}
+	if sub.CORS != nil {
+		if sub.CORS.Headers == nil {
+			sub.CORS.Headers = []string{"Origin", "Accept", "Content-Type"}
+		}
 
-			if s.CORS.Methods == nil {
-				s.CORS.Methods = []string{"HEAD", "GET", "POST"}
-			}
+		if sub.CORS.Methods == nil {
+			sub.CORS.Methods = []string{"HEAD", "GET", "POST"}
+		}
 
-			if s.CORS.Origins == nil {
-				s.CORS.Origins = []string{"*"}
-			}
+		if sub.CORS.Origins == nil {
+			sub.CORS.Origins = []string{"*"}
 		}
 	}
 
 	validate := validator.New()
-	validate.RegisterValidation("urlpath", urlPathValidator)
-	validate.RegisterValidation("eventtype", eventTypeValidator)
+	validate.RegisterValidation("urlPath", urlPathValidator)
+	validate.RegisterValidation("eventType", eventTypeValidator)
 	validate.RegisterValidation("space", spaceValidator)
-	err := validate.Struct(s)
+	err := validate.Struct(sub)
 	if err != nil {
 		return &subscription.ErrSubscriptionValidation{Message: err.Error()}
-	}
-
-	if s.Event == event.TypeHTTP && s.Method == "" {
-		return &subscription.ErrSubscriptionValidation{Message: "Missing required fields (method, path) for HTTP event."}
 	}
 
 	return nil
@@ -318,18 +274,12 @@ func isPathInConflict(existing, new string) bool {
 	return true
 }
 
-func newSubscriptionID(s *subscription.Subscription) subscription.ID {
-	if s.Event == event.TypeHTTP {
-		return subscription.ID(string(s.Event) + "," + s.Method + "," + url.PathEscape(s.Path))
-	}
-	return subscription.ID(string(s.Event) + "," + string(s.FunctionID) + "," + url.PathEscape(s.Path))
+func newSubscriptionID(sub *subscription.Subscription) subscription.ID {
+	raw := string(sub.Type) + "," + string(sub.EventType) + "," + string(sub.FunctionID) + "," + url.PathEscape(sub.Path) + "," + sub.Method
+	return subscription.ID(base64.RawURLEncoding.EncodeToString([]byte(raw)))
 }
 
 func subscriptionPath(space string, id subscription.ID) string {
-	return spacePath(space) + string(id)
-}
-
-func endpointPath(space string, id EndpointID) string {
 	return spacePath(space) + string(id)
 }
 
@@ -344,18 +294,21 @@ func eventTypeValidator(fl validator.FieldLevel) bool {
 }
 
 func validateSubscriptionUpdate(newSub *subscription.Subscription, oldSub *subscription.Subscription) error {
-    if newSub.Event != oldSub.Event {
-        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Event"}
-    }
-    if newSub.FunctionID != oldSub.FunctionID {
-        return &subscription.ErrInvalidSubscriptionUpdate{Field: "FunctionID"}
-    }
-    if newSub.Path != oldSub.Path {
-        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Path"}
-    }
-    if newSub.Method != oldSub.Method {
-        return &subscription.ErrInvalidSubscriptionUpdate{Field: "Method"}
-    }
+	if newSub.Type != oldSub.Type {
+		return &subscription.ErrInvalidSubscriptionUpdate{Field: "Type"}
+	}
+	if newSub.EventType != oldSub.EventType {
+		return &subscription.ErrInvalidSubscriptionUpdate{Field: "EventType"}
+	}
+	if newSub.FunctionID != oldSub.FunctionID {
+		return &subscription.ErrInvalidSubscriptionUpdate{Field: "FunctionID"}
+	}
+	if newSub.Path != oldSub.Path {
+		return &subscription.ErrInvalidSubscriptionUpdate{Field: "Path"}
+	}
+	if newSub.Method != oldSub.Method {
+		return &subscription.ErrInvalidSubscriptionUpdate{Field: "Method"}
+	}
 
-    return nil
+	return nil
 }

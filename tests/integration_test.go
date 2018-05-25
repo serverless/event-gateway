@@ -92,9 +92,11 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 
 	postSubscription(testAPIServer.URL+"/v1/spaces/default/subscriptions", &subscription.Subscription{
 		FunctionID: subscriberFnID,
-		Event:      event.Type(eventType),
+		Type:       subscription.TypeAsync,
+		EventType:  event.Type(eventType),
 		Path:       "/",
 	})
+
 	wait(instance.WaitForSubscriber("/", event.Type(eventType)), "timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
@@ -135,7 +137,8 @@ func TestIntegration_HTTPSubscription(t *testing.T) {
 
 	postSubscription(testAPIServer.URL+"/v1/spaces/default/subscriptions", &subscription.Subscription{
 		FunctionID: function.ID("httpresponse"),
-		Event:      "http",
+		Type:       subscription.TypeSync,
+		EventType:  event.TypeHTTPRequest,
 		Method:     "GET",
 		Path:       "/httpresponse",
 	})
@@ -222,7 +225,6 @@ func newConfigAPIServer(kvstore store.Store, log *zap.Logger) *httptest.Server {
 	service := &eventgateway.Service{
 		FunctionStore:     intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore),
 		SubscriptionStore: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
-		EndpointStore:     intstore.NewPrefixed("/serverless-event-gateway/endpoints", kvstore),
 		Log:               log,
 	}
 

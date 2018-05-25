@@ -22,8 +22,8 @@ import (
 type Type string
 
 const (
-	// TypeHTTP is a special type of event for sync http subscriptions.
-	TypeHTTP = Type("http")
+	// TypeHTTPRequest is a special type of event for sync http subscriptions.
+	TypeHTTPRequest = Type("http.request")
 
 	// TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
 	TransformationVersion = "0.1"
@@ -107,7 +107,7 @@ func FromRequest(r *http.Request) (*Event, error) {
 		return New(Type(r.Header.Get("event")), mimeType, body), nil
 	}
 
-	return New(TypeHTTP, mimeCloudEventsJSON, NewHTTPRequestData(r, body)), nil
+	return New(TypeHTTPRequest, mimeCloudEventsJSON, NewHTTPRequestData(r, body)), nil
 }
 
 // Validate Event struct
