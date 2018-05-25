@@ -38,10 +38,10 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
 	router.Handler("GET", "/v1/metrics", promhttp.Handler())
 
-	router.GET("/v1/spaces/:space/event-types", h.listEventTypes)
-	router.GET("/v1/spaces/:space/event-types/:name", h.getEventType)
-	router.POST("/v1/spaces/:space/event-types", h.createEventType)
-	// router.DELETE("/v1/spaces/:space/event-types/:id", h.deleteEventType)
+	router.GET("/v1/spaces/:space/eventtypes", h.listEventTypes)
+	router.GET("/v1/spaces/:space/eventtypes/:name", h.getEventType)
+	router.POST("/v1/spaces/:space/eventtypes", h.createEventType)
+	router.DELETE("/v1/spaces/:space/eventtypes/:id", h.deleteEventType)
 
 	router.GET("/v1/spaces/:space/functions", h.listFunctions)
 	router.GET("/v1/spaces/:space/functions/:id", h.getFunction)
@@ -74,7 +74,7 @@ func (h HTTPAPI) getEventType(w http.ResponseWriter, r *http.Request, params htt
 		encoder.Encode(fn)
 	}
 
-	metricConfigRequests.WithLabelValues(space, "event-type", "get").Inc()
+	metricConfigRequests.WithLabelValues(space, "eventtype", "get").Inc()
 }
 
 func (h HTTPAPI) listEventTypes(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -90,7 +90,7 @@ func (h HTTPAPI) listEventTypes(w http.ResponseWriter, r *http.Request, params h
 		encoder.Encode(&EventTypesResponse{types})
 	}
 
-	metricConfigRequests.WithLabelValues(space, "event-type", "list").Inc()
+	metricConfigRequests.WithLabelValues(space, "eventtype", "list").Inc()
 }
 
 func (h HTTPAPI) createEventType(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -126,7 +126,32 @@ func (h HTTPAPI) createEventType(w http.ResponseWriter, r *http.Request, params 
 		metricEventTypes.WithLabelValues(eventType.Space).Inc()
 	}
 
-	metricConfigRequests.WithLabelValues(eventType.Space, "event-type", "create").Inc()
+	metricConfigRequests.WithLabelValues(eventType.Space, "eventtype", "create").Inc()
+}
+
+func (h HTTPAPI) deleteEventType(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	space := params.ByName("space")
+	err := h.EventTypes.DeleteEventType(space, event.TypeName(params.ByName("id")))
+	if err != nil {
+		if _, ok := err.(*event.ErrEventTypeNotFound); ok {
+			w.WriteHeader(http.StatusNotFound)
+		} else if _, ok := err.(*event.ErrEventTypeHasSubscriptionsError); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		w.WriteHeader(http.StatusNoContent)
+
+		metricEventTypes.WithLabelValues(space).Dec()
+	}
+
+	metricConfigRequests.WithLabelValues(space, "eventtype", "delete").Inc()
 }
 
 func (h HTTPAPI) getFunction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

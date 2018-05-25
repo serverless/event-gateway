@@ -18,7 +18,7 @@ func init() {
 var metricEventTypes = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Namespace: "gateway",
-		Subsystem: "event_types",
+		Subsystem: "eventtypes",
 		Name:      "total",
 		Help:      "Gauge of created event types count.",
 	}, []string{"space"})
