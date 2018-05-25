@@ -93,11 +93,11 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 	postSubscription(testAPIServer.URL+"/v1/spaces/default/subscriptions", &subscription.Subscription{
 		FunctionID: subscriberFnID,
 		Type:       subscription.TypeAsync,
-		EventType:  event.Type(eventType),
+		EventType:  event.TypeName(eventType),
 		Path:       "/",
 	})
 
-	wait(instance.WaitForSubscriber("/", event.Type(eventType)), "timed out waiting for subscriber to be configured!")
+	wait(instance.WaitForSubscriber("/", event.TypeName(eventType)), "timed out waiting for subscriber to be configured!")
 
 	emit(testRouterServer.URL, eventType, []byte(expected))
 	wait(smileyReceived, "timed out waiting to receive pub/sub event in subscriber!")
