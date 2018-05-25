@@ -1,14 +1,12 @@
 package event
 
-// TypeName uniquely identifies an event type.
-type TypeName string
-
 const (
-	// TypeInvoke is a special type of event for sync function invocation.
-	TypeInvoke = TypeName("invoke")
 	// TypeHTTPRequest is a special type of event http requests that are not CloudEvents.
 	TypeHTTPRequest = TypeName("http.request")
 )
+
+// TypeName uniquely identifies an event type.
+type TypeName string
 
 // Type is a registered event type.
 type Type struct {
