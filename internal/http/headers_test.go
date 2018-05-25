@@ -19,11 +19,11 @@ var flattenHeaderTests = []struct {
 	result map[string]string
 }{
 	{
-		map[string][]string{"CustomHeader": []string{"value"}},
-		map[string]string{"CustomHeader": "value"},
+		map[string][]string{"Custom-Header": []string{"value"}},
+		map[string]string{"Custom-Header": "value"},
 	},
 	{
-		map[string][]string{"CustomHeader": []string{"value1", "value2"}},
-		map[string]string{"CustomHeader": "value1, value2"},
+		map[string][]string{"Custom-Header": []string{"value1", "value2"}},
+		map[string]string{"Custom-Header": "value1, value2"},
 	},
 }

@@ -18,8 +18,6 @@ type subscriptionCache struct {
 	eventToFunctions map[string]map[eventpkg.Type][]libkv.FunctionKey
 	// endpoints maps HTTP method to internal/pathtree. Tree struct which is used for resolving HTTP requests paths.
 	endpoints map[string]*pathtree.Node
-	// invokable stores functions that have invoke subscription
-	invokable map[string]map[libkv.FunctionKey]struct{}
 	log       *zap.Logger
 }
 
@@ -27,7 +25,6 @@ func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	return &subscriptionCache{
 		eventToFunctions: map[string]map[eventpkg.Type][]libkv.FunctionKey{},
 		endpoints:        map[string]*pathtree.Node{},
-		invokable:        map[string]map[libkv.FunctionKey]struct{}{},
 		log:              log,
 	}
 }
@@ -56,15 +53,6 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 		if err != nil {
 			c.log.Error("Could not add path to the tree.", zap.Error(err), zap.String("path", s.Path), zap.String("method", s.Method))
 		}
-	} else if s.EventType == eventpkg.TypeInvoke {
-		fnSet, exists := c.invokable[s.Path]
-		if exists {
-			fnSet[key] = struct{}{}
-		} else {
-			fnSet := map[libkv.FunctionKey]struct{}{}
-			fnSet[key] = struct{}{}
-			c.invokable[s.Path] = fnSet
-		}
 	} else {
 		c.createPath(s.Path)
 		ids, exists := c.eventToFunctions[s.Path][s.EventType]
@@ -90,8 +78,6 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 
 	if oldSub.Type == subscription.TypeSync {
 		c.deleteEndpoint(oldSub)
-	} else if oldSub.EventType == eventpkg.TypeInvoke {
-		c.deleteInvokable(oldSub)
 	} else {
 		c.deleteSubscription(oldSub)
 	}
@@ -112,17 +98,6 @@ func (c *subscriptionCache) deleteEndpoint(sub subscription.Subscription) {
 	err := root.DeleteRoute(sub.Path)
 	if err != nil {
 		c.log.Error("Could not delete path from the tree.", zap.Error(err), zap.String("path", sub.Path), zap.String("method", sub.Method))
-	}
-}
-
-func (c *subscriptionCache) deleteInvokable(sub subscription.Subscription) {
-	fnSet, exists := c.invokable[sub.Path]
-	if exists {
-		delete(fnSet, libkv.FunctionKey{Space: sub.Space, ID: sub.FunctionID})
-
-		if len(fnSet) == 0 {
-			delete(c.invokable, sub.Path)
-		}
 	}
 }
 
