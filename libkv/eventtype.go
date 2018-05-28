@@ -43,9 +43,7 @@ func (service Service) CreateEventType(eventType *event.Type) (*event.Type, erro
 		return nil, err
 	}
 
-	service.Log.Debug("Event Type created.",
-		zap.String("space", eventType.Space),
-		zap.String("name", string(eventType.Name)))
+	service.Log.Debug("Event Type created.", zap.Object("eventType", eventType))
 
 	return eventType, nil
 }
@@ -109,7 +107,7 @@ func (service Service) DeleteEventType(space string, name event.TypeName) error 
 		return &event.ErrEventTypeNotFound{Name: name}
 	}
 
-	service.Log.Debug("Event Type deleted.", zap.String("name", string(name)))
+	service.Log.Debug("Event Type deleted.", zap.String("space", space), zap.String("name", string(name)))
 
 	return nil
 }

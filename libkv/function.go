@@ -44,9 +44,7 @@ func (service Service) RegisterFunction(fn *function.Function) (*function.Functi
 		return nil, err
 	}
 
-	service.Log.Debug("Function registered.",
-		zap.String("space", fn.Space),
-		zap.String("functionId", string(fn.ID)))
+	service.Log.Debug("Function registered.", zap.Object("function", fn))
 
 	return fn, nil
 }
@@ -72,9 +70,7 @@ func (service Service) UpdateFunction(fn *function.Function) (*function.Function
 		return nil, err
 	}
 
-	service.Log.Debug("Function updated.",
-		zap.String("space", fn.Space),
-		zap.String("functionId", string(fn.ID)))
+	service.Log.Debug("Function updated.", zap.Object("function", fn))
 
 	return fn, nil
 }
@@ -138,7 +134,7 @@ func (service Service) DeleteFunction(space string, id function.ID) error {
 		return &function.ErrFunctionNotFound{ID: id}
 	}
 
-	service.Log.Debug("Function deleted.", zap.String("functionId", string(id)))
+	service.Log.Debug("Function deleted.", zap.String("space", space), zap.String("functionId", string(id)))
 
 	return nil
 }
