@@ -114,7 +114,7 @@ func main() {
 		ShutdownGuard: shutdownGuard,
 	})
 
-	httpapi.StartConfigAPI(service, service, httpapi.ServerConfig{
+	httpapi.StartConfigAPI(service, service, service, httpapi.ServerConfig{
 		TLSCrt:        configTLSCrt,
 		TLSKey:        configTLSKey,
 		Port:          *configPort,

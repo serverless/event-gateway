@@ -6,14 +6,16 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/subscription"
 )
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
-func StartConfigAPI(functions function.Service, subscriptions subscription.Service, config ServerConfig) {
+func StartConfigAPI(eventtypes event.Service, functions function.Service, subscriptions subscription.Service, config ServerConfig) {
 	router := httprouter.New()
 	api := &HTTPAPI{
+		EventTypes:    eventtypes,
 		Functions:     functions,
 		Subscriptions: subscriptions,
 	}
