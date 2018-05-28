@@ -3,7 +3,7 @@ package event
 import "go.uber.org/zap/zapcore"
 
 const (
-	// TypeHTTPRequest is a special type of event http requests that are not CloudEvents.
+	// TypeHTTPRequest is a special type of event HTTP requests that are not CloudEvents.
 	TypeHTTPRequest = TypeName("http.request")
 )
 

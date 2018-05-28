@@ -41,7 +41,7 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/spaces/:space/eventtypes", h.listEventTypes)
 	router.GET("/v1/spaces/:space/eventtypes/:name", h.getEventType)
 	router.POST("/v1/spaces/:space/eventtypes", h.createEventType)
-	router.DELETE("/v1/spaces/:space/eventtypes/:id", h.deleteEventType)
+	router.DELETE("/v1/spaces/:space/eventtypes/:name", h.deleteEventType)
 
 	router.GET("/v1/spaces/:space/functions", h.listFunctions)
 	router.GET("/v1/spaces/:space/functions/:id", h.getFunction)
@@ -134,7 +134,7 @@ func (h HTTPAPI) deleteEventType(w http.ResponseWriter, r *http.Request, params 
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	err := h.EventTypes.DeleteEventType(space, event.TypeName(params.ByName("id")))
+	err := h.EventTypes.DeleteEventType(space, event.TypeName(params.ByName("name")))
 	if err != nil {
 		if _, ok := err.(*event.ErrEventTypeNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
