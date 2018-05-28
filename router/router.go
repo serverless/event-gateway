@@ -155,6 +155,23 @@ func (router *Router) Drain() {
 	router.Unlock()
 }
 
+// WaitForEventType returns a chan that is closed when a event type is created.
+// Primarily for testing purposes.
+func (router *Router) WaitForEventType(space string, name eventpkg.TypeName) <-chan struct{} {
+	updatedChan := make(chan struct{})
+	go func() {
+		for {
+			res := router.targetCache.EventType(space, name)
+			if res != nil {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		close(updatedChan)
+	}()
+	return updatedChan
+}
+
 // WaitForFunction returns a chan that is closed when a function is created.
 // Primarily for testing purposes.
 func (router *Router) WaitForFunction(space string, id function.ID) <-chan struct{} {
@@ -172,14 +189,14 @@ func (router *Router) WaitForFunction(space string, id function.ID) <-chan struc
 	return updatedChan
 }
 
-// WaitForEndpoint returns a chan that is closed when an endpoint is created.
+// WaitForAsyncSubscriber returns a chan that is closed when an event has a subscriber.
 // Primarily for testing purposes.
-func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
+func (router *Router) WaitForAsyncSubscriber(path string, eventType eventpkg.TypeName) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			_, res, _, _ := router.targetCache.HTTPBackingFunction(method, path)
-			if res != nil {
+			res := router.targetCache.AsyncSubscribers(path, eventType)
+			if len(res) > 0 {
 				break
 			}
 			time.Sleep(50 * time.Millisecond)
@@ -189,14 +206,14 @@ func (router *Router) WaitForEndpoint(method, path string) <-chan struct{} {
 	return updatedChan
 }
 
-// WaitForSubscriber returns a chan that is closed when an event has a subscriber.
+// WaitForSyncSubscriber returns a chan that is closed when an a sync subscriber is created.
 // Primarily for testing purposes.
-func (router *Router) WaitForSubscriber(path string, eventType eventpkg.Type) <-chan struct{} {
+func (router *Router) WaitForSyncSubscriber(method, path string) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			res := router.targetCache.SubscribersOfEvent(path, eventType)
-			if len(res) > 0 {
+			_, res, _, _ := router.targetCache.SyncSubscriber(method, path)
+			if res != nil {
 				break
 			}
 			time.Sleep(50 * time.Millisecond)
@@ -223,7 +240,7 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
 		reqMethod = r.Header.Get("Access-Control-Request-Method")
 	}
-	space, backingFunction, params, corsConfig := router.targetCache.HTTPBackingFunction(
+	space, backingFunction, params, corsConfig := router.targetCache.SyncSubscriber(
 		strings.ToUpper(reqMethod), extractPath(r.Host, r.URL.EscapedPath()),
 	)
 	if backingFunction == nil {
@@ -422,7 +439,7 @@ func (router *Router) loop() {
 func (router *Router) processEvent(e backlogEvent) {
 	reportEventOutOfQueue(e.event.EventID)
 
-	subscribers := router.targetCache.SubscribersOfEvent(e.path, e.event.EventType)
+	subscribers := router.targetCache.AsyncSubscribers(e.path, e.event.EventType)
 	for _, subscriber := range subscribers {
 		router.callFunction(subscriber.Space, subscriber.ID, e.event)
 	}

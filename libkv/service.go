@@ -9,8 +9,9 @@ import (
 
 // Service implements function.Service and subscription.Service using libkv as a backend.
 type Service struct {
-	SubscriptionStore store.Store
+	EventTypeStore    store.Store
 	FunctionStore     store.Store
+	SubscriptionStore store.Store
 	Log               *zap.Logger
 }
 

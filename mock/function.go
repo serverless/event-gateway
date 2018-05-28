@@ -85,14 +85,14 @@ func (mr *MockFunctionServiceMockRecorder) RegisterFunction(arg0 interface{}) *g
 }
 
 // UpdateFunction mocks base method
-func (m *MockFunctionService) UpdateFunction(arg1 *function.Function) (*function.Function, error) {
-	ret := m.ctrl.Call(m, "UpdateFunction", arg1)
+func (m *MockFunctionService) UpdateFunction(arg0 *function.Function) (*function.Function, error) {
+	ret := m.ctrl.Call(m, "UpdateFunction", arg0)
 	ret0, _ := ret[0].(*function.Function)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateFunction indicates an expected call of UpdateFunction
-func (mr *MockFunctionServiceMockRecorder) UpdateFunction(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFunction", reflect.TypeOf((*MockFunctionService)(nil).UpdateFunction), arg0, arg1)
+func (mr *MockFunctionServiceMockRecorder) UpdateFunction(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFunction", reflect.TypeOf((*MockFunctionService)(nil).UpdateFunction), arg0)
 }

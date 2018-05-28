@@ -29,7 +29,7 @@ func TestNew(t *testing.T) {
 
 func TestNew_Encoding(t *testing.T) {
 	for _, testCase := range encodingTests {
-		result := eventpkg.New(eventpkg.Type("test.event"), testCase.contentType, testCase.body)
+		result := eventpkg.New(eventpkg.TypeName("test.event"), testCase.contentType, testCase.body)
 
 		assert.Equal(t, testCase.expectedBody, result.Data)
 	}
@@ -62,18 +62,18 @@ func TestFromRequest(t *testing.T) {
 
 var newTests = []struct {
 	name          string
-	eventType     eventpkg.Type
+	eventType     eventpkg.TypeName
 	mime          string
 	payload       interface{}
 	expectedEvent eventpkg.Event
 }{
 	{
 		name:      "not CloudEvent",
-		eventType: eventpkg.Type("user.created"),
+		eventType: eventpkg.TypeName("user.created"),
 		mime:      "application/json",
 		payload:   []byte("test"),
 		expectedEvent: eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventType:          eventpkg.TypeName("user.created"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
@@ -88,11 +88,11 @@ var newTests = []struct {
 	},
 	{
 		name:      "system event",
-		eventType: eventpkg.Type("user.created"),
+		eventType: eventpkg.TypeName("user.created"),
 		mime:      "application/json",
 		payload:   eventpkg.SystemEventReceivedData{},
 		expectedEvent: eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventType:          eventpkg.TypeName("user.created"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
@@ -158,7 +158,7 @@ var fromRequestTests = []struct {
 			"data": "test"
 			}`),
 		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventType:          eventpkg.TypeName("user.created"),
 			CloudEventsVersion: "0.1",
 			Source:             "http://example.com",
 			ContentType:        "text/plain",
@@ -188,7 +188,7 @@ var fromRequestTests = []struct {
 		},
 		requestBody: []byte("hey there"),
 		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("myevent"),
+			EventType:          eventpkg.TypeName("myevent"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://example.com",
 			ContentType:        "text/plain",
@@ -217,7 +217,7 @@ var fromRequestTests = []struct {
 		},
 		requestBody: []byte("hey there"),
 		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("myevent"),
+			EventType:          eventpkg.TypeName("myevent"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/octet-stream",
@@ -241,7 +241,7 @@ var fromRequestTests = []struct {
 			"data": "test"
 			}`),
 		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventType:          eventpkg.TypeName("user.created"),
 			CloudEventsVersion: "0.1",
 			Source:             "http://example.com",
 			ContentType:        "text/plain",
@@ -258,7 +258,7 @@ var fromRequestTests = []struct {
 			"eventType": "user.created"
 		}`),
 		expectedEvent: &eventpkg.Event{
-			EventType:          eventpkg.Type("user.created"),
+			EventType:          eventpkg.TypeName("user.created"),
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",

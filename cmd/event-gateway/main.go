@@ -89,6 +89,7 @@ func main() {
 
 	// Implementation of function and subscription services
 	service := &eventgateway.Service{
+		EventTypeStore:    intstore.NewPrefixed("/serverless-event-gateway/eventtypes", kvstore),
 		FunctionStore:     intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore),
 		SubscriptionStore: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
 		Log:               log,
@@ -113,7 +114,7 @@ func main() {
 		ShutdownGuard: shutdownGuard,
 	})
 
-	httpapi.StartConfigAPI(service, service, httpapi.ServerConfig{
+	httpapi.StartConfigAPI(service, service, service, httpapi.ServerConfig{
 		TLSCrt:        configTLSCrt,
 		TLSKey:        configTLSKey,
 		Port:          *configPort,

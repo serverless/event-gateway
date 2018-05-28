@@ -5,10 +5,9 @@
 package mock
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	store "github.com/serverless/libkv/store"
+	reflect "reflect"
 )
 
 // MockStore is a mock of Store interface

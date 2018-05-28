@@ -15,7 +15,7 @@ import (
 type subscriptionCache struct {
 	sync.RWMutex
 	// eventToFunctions maps path and event type to function key (space + function ID)
-	eventToFunctions map[string]map[eventpkg.Type][]libkv.FunctionKey
+	eventToFunctions map[string]map[eventpkg.TypeName][]libkv.FunctionKey
 	// endpoints maps HTTP method to internal/pathtree. Tree struct which is used for resolving HTTP requests paths.
 	endpoints map[string]*pathtree.Node
 	log       *zap.Logger
@@ -23,7 +23,7 @@ type subscriptionCache struct {
 
 func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	return &subscriptionCache{
-		eventToFunctions: map[string]map[eventpkg.Type][]libkv.FunctionKey{},
+		eventToFunctions: map[string]map[eventpkg.TypeName][]libkv.FunctionKey{},
 		endpoints:        map[string]*pathtree.Node{},
 		log:              log,
 	}
@@ -86,7 +86,7 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 func (c *subscriptionCache) createPath(path string) {
 	_, exists := c.eventToFunctions[path]
 	if !exists {
-		c.eventToFunctions[path] = map[eventpkg.Type][]libkv.FunctionKey{}
+		c.eventToFunctions[path] = map[eventpkg.TypeName][]libkv.FunctionKey{}
 	}
 }
 

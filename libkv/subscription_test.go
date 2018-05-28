@@ -25,21 +25,31 @@ func TestCreateSubscription(t *testing.T) {
 			`"type":"async","eventType":"user.created","functionId":"func","path":"/","method":"GET"}`)
 	asyncSub := &subscription.Subscription{
 		Type: subscription.TypeAsync, EventType: "user.created", FunctionID: "func", Path: "/", Method: "GET"}
+	asyncEventPayload := []byte(`{"space":"default","name":"user.created"}`)
+
 	syncKey := "default/c3luYyxodHRwLnJlcXVlc3QsZnVuYywlMkYsUE9TVA"
 	syncValue := []byte(
 		`{"space":"default","subscriptionId":"c3luYyxodHRwLnJlcXVlc3QsZnVuYywlMkYsUE9TVA",` +
 			`"type":"sync","eventType":"http.request","functionId":"func","path":"/","method":"POST"}`)
 	syncSub := &subscription.Subscription{
 		Type: subscription.TypeSync, EventType: "http.request", FunctionID: "func", Path: "/", Method: "POST"}
+	syncEventPayload := []byte(`{"space":"default","name":"http.request"}`)
+
 	funcValue := []byte(`{"functionId":"func","type":"http","provider":{"url": "http://test.com"}}}`)
 
 	t.Run("async subscription created", func(t *testing.T) {
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().Get("default/user.created", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: asyncEventPayload}, nil)
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(asyncKey, &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV sub not found"))
 		subscriptionsDB.EXPECT().Put(asyncKey, asyncValue, nil).Return(nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: funcValue}, nil)
-		subs := &Service{SubscriptionStore: subscriptionsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
+		subs := &Service{
+			EventTypeStore:    eventTypesDB,
+			SubscriptionStore: subscriptionsDB,
+			FunctionStore:     functionsDB,
+			Log:               zap.NewNop()}
 
 		_, err := subs.CreateSubscription(asyncSub)
 
@@ -47,13 +57,19 @@ func TestCreateSubscription(t *testing.T) {
 	})
 
 	t.Run("sync subscription created", func(t *testing.T) {
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().Get("default/http.request", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: syncEventPayload}, nil)
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(syncKey, &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV sub not found"))
 		subscriptionsDB.EXPECT().Put(syncKey, syncValue, nil).Return(nil)
 		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return([]*store.KVPair{}, nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: funcValue}, nil)
-		subs := &Service{SubscriptionStore: subscriptionsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
+		subs := &Service{
+			EventTypeStore:    eventTypesDB,
+			SubscriptionStore: subscriptionsDB,
+			FunctionStore:     functionsDB,
+			Log:               zap.NewNop()}
 
 		_, err := subs.CreateSubscription(syncSub)
 
@@ -121,12 +137,30 @@ func TestCreateSubscription(t *testing.T) {
 			Message: `parameter with different name ("name") already defined: for route: /:id`})
 	})
 
-	t.Run("function KV Get error", func(t *testing.T) {
+	t.Run("event type not found error", func(t *testing.T) {
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("Key not found in store"))
+		subscriptionsDB := mock.NewMockStore(ctrl)
+		subscriptionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("KV sub not found"))
+		subs := &Service{SubscriptionStore: subscriptionsDB, EventTypeStore: eventTypesDB, Log: zap.NewNop()}
+
+		_, err := subs.CreateSubscription(asyncSub)
+
+		assert.Equal(t, err, &event.ErrEventTypeNotFound{Name: "user.created"})
+	})
+
+	t.Run("function not found error", func(t *testing.T) {
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&store.KVPair{Value: asyncEventPayload}, nil)
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("KV sub not found"))
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("Key not found in store"))
-		subs := &Service{SubscriptionStore: subscriptionsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
+		subs := &Service{
+			EventTypeStore:    eventTypesDB,
+			SubscriptionStore: subscriptionsDB,
+			FunctionStore:     functionsDB,
+			Log:               zap.NewNop()}
 
 		_, err := subs.CreateSubscription(asyncSub)
 
@@ -134,6 +168,8 @@ func TestCreateSubscription(t *testing.T) {
 	})
 
 	t.Run("KV Put error", func(t *testing.T) {
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&store.KVPair{Value: asyncEventPayload}, nil)
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("KV sub not found"))
 		subscriptionsDB.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, nil)
@@ -141,7 +177,11 @@ func TestCreateSubscription(t *testing.T) {
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", gomock.Any()).Return(
 			&store.KVPair{Value: []byte(`{"functionId":"func","type":"http","provider":{"url": "http://test.com"}}`)}, nil)
-		subs := &Service{SubscriptionStore: subscriptionsDB, FunctionStore: functionsDB, Log: zap.NewNop()}
+		subs := &Service{
+			EventTypeStore:    eventTypesDB,
+			SubscriptionStore: subscriptionsDB,
+			FunctionStore:     functionsDB,
+			Log:               zap.NewNop()}
 
 		_, err := subs.CreateSubscription(syncSub)
 
@@ -371,7 +411,7 @@ func TestGetSubscription(t *testing.T) {
 
 		assert.Equal(t, subscription.ID("testid"), sub.ID)
 		assert.Equal(t, subscription.TypeAsync, sub.Type)
-		assert.Equal(t, event.Type("test"), sub.EventType)
+		assert.Equal(t, event.TypeName("test"), sub.EventType)
 		assert.Equal(t, function.ID("f1"), sub.FunctionID)
 	})
 

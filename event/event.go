@@ -18,13 +18,7 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-// Type uniquely identifies an event type.
-type Type string
-
 const (
-	// TypeHTTPRequest is a special type of event for sync http subscriptions.
-	TypeHTTPRequest = Type("http.request")
-
 	// TransformationVersion is indicative of the revision of how Event Gateway transforms a request into CloudEvents format.
 	TransformationVersion = "0.1"
 
@@ -35,7 +29,7 @@ const (
 // Event is a default event structure. All data that passes through the Event Gateway
 // is formatted to a format defined CloudEvents v0.1 spec.
 type Event struct {
-	EventType          Type                   `json:"eventType" validate:"required"`
+	EventType          TypeName               `json:"eventType" validate:"required"`
 	EventTypeVersion   string                 `json:"eventTypeVersion,omitempty"`
 	CloudEventsVersion string                 `json:"cloudEventsVersion" validate:"required"`
 	Source             string                 `json:"source" validate:"uri,required"`
@@ -48,7 +42,7 @@ type Event struct {
 }
 
 // New return new instance of Event.
-func New(eventType Type, mimeType string, payload interface{}) *Event {
+func New(eventType TypeName, mimeType string, payload interface{}) *Event {
 	event := &Event{
 		EventType:          eventType,
 		CloudEventsVersion: CloudEventsVersion,
@@ -99,12 +93,12 @@ func FromRequest(r *http.Request) (*Event, error) {
 		if mimeType == mimeJSON { // CloudEvent in Legacy Mode
 			event, err = parseAsCloudEvent(mimeType, body)
 			if err != nil {
-				return New(Type(r.Header.Get("event")), mimeType, body), nil
+				return New(TypeName(r.Header.Get("event")), mimeType, body), nil
 			}
 			return event, err
 		}
 
-		return New(Type(r.Header.Get("event")), mimeType, body), nil
+		return New(TypeName(r.Header.Get("event")), mimeType, body), nil
 	}
 
 	return New(TypeHTTPRequest, mimeCloudEventsJSON, NewHTTPRequestData(r, body)), nil
@@ -172,7 +166,7 @@ func isCloudEventsBinaryContentMode(headers http.Header) bool {
 
 func parseAsCloudEventBinary(headers http.Header, payload interface{}) (*Event, error) {
 	event := &Event{
-		EventType:          Type(headers.Get("CE-EventType")),
+		EventType:          TypeName(headers.Get("CE-EventType")),
 		EventTypeVersion:   headers.Get("CE-EventTypeVersion"),
 		CloudEventsVersion: headers.Get("CE-CloudEventsVersion"),
 		Source:             headers.Get("CE-Source"),

@@ -40,6 +40,11 @@ func (service Service) CreateSubscription(sub *subscription.Subscription) (*subs
 		}
 	}
 
+	_, err = service.GetEventType(sub.Space, sub.EventType)
+	if err != nil {
+		return nil, err
+	}
+
 	_, err = service.GetFunction(sub.Space, sub.FunctionID)
 	if err != nil {
 		return nil, err
