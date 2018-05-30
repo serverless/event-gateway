@@ -8,10 +8,8 @@ import (
 
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
-	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/libkv"
 	"github.com/serverless/event-gateway/router"
-	"github.com/serverless/event-gateway/subscription"
 )
 
 // Target is an implementation of router.Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
@@ -33,16 +31,26 @@ func (tc *Target) EventType(space string, name eventpkg.TypeName) *eventpkg.Type
 
 // SyncSubscriber returns function space and ID for handling sync subscription. It also returns matched URL
 // parameters in case of HTTP subscription containing parameters in path.
-func (tc *Target) SyncSubscriber(method, path string) (string, *function.ID, pathtree.Params, *subscription.CORS) {
+func (tc *Target) SyncSubscriber(method, path string, eventType eventpkg.TypeName) *router.SyncSubscriber {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
 	root := tc.subscriptionCache.endpoints[method]
 	if root == nil {
-		return "", nil, nil, nil
+		return nil
 	}
 
-	return root.Resolve(path)
+	space, functionID, params, cors := root.Resolve(path)
+	if functionID == nil {
+		return nil
+	}
+
+	return &router.SyncSubscriber{
+		Space:      space,
+		FunctionID: *functionID,
+		Params:     params,
+		CORS:       cors,
+	}
 }
 
 // Function takes a function ID and returns a deserialized instance of that function, if it exists
@@ -53,16 +61,19 @@ func (tc *Target) Function(space string, id function.ID) *function.Function {
 }
 
 // AsyncSubscribers is used for determining which functions is async subscribed to the event.
-func (tc *Target) AsyncSubscribers(path string, eventType eventpkg.TypeName) []router.FunctionInfo {
+func (tc *Target) AsyncSubscribers(method, path string, eventType eventpkg.TypeName) []router.AsyncSubscriber {
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
-	keys := tc.subscriptionCache.eventToFunctions[path][eventType]
-	info := []router.FunctionInfo{}
+	keys := tc.subscriptionCache.eventToFunctions[method][path][eventType]
+	subscribers := []router.AsyncSubscriber{}
 	for _, key := range keys {
-		info = append(info, router.FunctionInfo{Space: key.Space, ID: key.ID})
+		subscribers = append(subscribers, router.AsyncSubscriber{
+			Space:      key.Space,
+			FunctionID: key.ID,
+		})
 	}
-	return info
+	return subscribers
 }
 
 // Shutdown causes all state watchers to clean up their state.

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -60,17 +59,17 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: http.StatusText(http.StatusServiceUnavailable)}}})
 		return
 	}
-	path := extractPath(r.Host, r.URL.EscapedPath())
-	event, err := eventpkg.FromRequest(r)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
-		return
-	}
 
-	if event.EventType == eventpkg.TypeHTTPRequest && !isCORSPreflightRequest(r) {
-		metricEventsReceived.WithLabelValues("", "http").Inc()
+	cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
+		event, err := eventpkg.FromRequest(r)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+			return
+		}
+
+		path := extractPath(r.Host, r.URL.EscapedPath())
 
 		router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
 		err = router.emitSystemEventReceived(path, *event, r.Header)
@@ -81,33 +80,18 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		router.handleHTTPEvent(event, w, r)
-	} else {
-		cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodPost {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Header().Set("Content-Type", "application/json")
-				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "custom event can be emitted only with POST method"}}})
-				return
-			}
+		syncSubscriber := router.targetCache.SyncSubscriber(r.Method, path, event.EventType)
+		if syncSubscriber != nil { // There is sync subscriber and possibly async subscribers also
+			router.handleSyncSubscription(path, event, *syncSubscriber, w, r)
+		}
 
-			router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
-			err = router.emitSystemEventReceived(path, *event, r.Header)
-			if err != nil {
-				router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
-					zap.Object("event", event),
-					zap.Error(err))
-				return
-			}
+		if !event.IsSystem() {
+			reportReceivedEvent(event.EventID)
 
-			if !event.IsSystem() {
-				reportReceivedEvent(event.EventID)
-
-				router.enqueueWork(path, event)
-				w.WriteHeader(http.StatusAccepted)
-			}
-		})
-	}
+			router.enqueueWork(r.Method, path, event)
+			w.WriteHeader(http.StatusAccepted)
+		}
+	})
 }
 
 // StartWorkers spins up workerNumber goroutines for processing
@@ -191,11 +175,11 @@ func (router *Router) WaitForFunction(space string, id function.ID) <-chan struc
 
 // WaitForAsyncSubscriber returns a chan that is closed when an event has a subscriber.
 // Primarily for testing purposes.
-func (router *Router) WaitForAsyncSubscriber(path string, eventType eventpkg.TypeName) <-chan struct{} {
+func (router *Router) WaitForAsyncSubscriber(method, path string, eventType eventpkg.TypeName) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			res := router.targetCache.AsyncSubscribers(path, eventType)
+			res := router.targetCache.AsyncSubscribers(method, path, eventType)
 			if len(res) > 0 {
 				break
 			}
@@ -208,12 +192,12 @@ func (router *Router) WaitForAsyncSubscriber(path string, eventType eventpkg.Typ
 
 // WaitForSyncSubscriber returns a chan that is closed when an a sync subscriber is created.
 // Primarily for testing purposes.
-func (router *Router) WaitForSyncSubscriber(method, path string) <-chan struct{} {
+func (router *Router) WaitForSyncSubscriber(method, path string, eventType eventpkg.TypeName) <-chan struct{} {
 	updatedChan := make(chan struct{})
 	go func() {
 		for {
-			_, res, _, _ := router.targetCache.SyncSubscriber(method, path)
-			if res != nil {
+			subscriber := router.targetCache.SyncSubscriber(method, path, eventType)
+			if subscriber != nil {
 				break
 			}
 			time.Sleep(50 * time.Millisecond)
@@ -232,30 +216,33 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
-	encoder := json.NewEncoder(w)
-	reqMethod := r.Method
-
-	// check if CORS pre-flight request
-	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
-		reqMethod = r.Header.Get("Access-Control-Request-Method")
-	}
-	space, backingFunction, params, corsConfig := router.targetCache.SyncSubscriber(
-		strings.ToUpper(reqMethod), extractPath(r.Host, r.URL.EscapedPath()),
-	)
-	if backingFunction == nil {
-		router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
-		w.WriteHeader(http.StatusNotFound)
-		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "resource not found"}}})
+func (router *Router) handleSyncSubscription(path string, event *eventpkg.Event, subscriber SyncSubscriber, w http.ResponseWriter, r *http.Request) {
+	// metrics & logs
+	metricEventsReceived.WithLabelValues(subscriber.Space, string(event.EventType)).Inc()
+	router.log.Debug("Event received.", zap.String("path", path), zap.String("space", subscriber.Space), zap.Object("event", event))
+	err := router.emitSystemEventReceived(path, *event, r.Header)
+	if err != nil {
+		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+			zap.Object("event", event),
+			zap.Error(err))
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		httpdata := event.Data.(*eventpkg.HTTPRequestData)
-		httpdata.Params = params
-		event.Data = httpdata
-		resp, err := router.callFunction(space, *backingFunction, *event)
+	// add params to HTTP Request object
+	httpRequestData := event.Data.(*eventpkg.HTTPRequestData)
+	httpRequestData.Params = subscriber.Params
+	event.Data = httpRequestData
+	router.httpRequestHandler(subscriber.Space, subscriber.FunctionID, event)(w, r)
+
+	metricEventsProcessed.WithLabelValues(subscriber.Space, string(event.EventType)).Inc()
+}
+
+// Return http.HandlerFunc that will call remote function and return response in HTTP response object.
+func (router *Router) httpRequestHandler(space string, backingFunction function.ID, event *eventpkg.Event) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		encoder := json.NewEncoder(w)
+
+		resp, err := router.callFunction(space, backingFunction, *event)
 		if err != nil {
 			message := determineErrorMessage(err)
 
@@ -289,22 +276,6 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 			return
 		}
 	}
-
-	if corsConfig == nil {
-		handler(w, r)
-	} else {
-		corsOptions := cors.Options{
-			AllowedOrigins:     corsConfig.Origins,
-			AllowedHeaders:     corsConfig.Headers,
-			AllowedMethods:     corsConfig.Methods,
-			AllowCredentials:   corsConfig.AllowCredentials,
-			OptionsPassthrough: false,
-		}
-
-		cors.New(corsOptions).ServeHTTP(w, r, handler)
-	}
-
-	metricEventsProcessed.WithLabelValues(space, "http").Inc()
 }
 
 func determineErrorMessage(err error) string {
@@ -330,15 +301,16 @@ func determineErrorMessage(err error) string {
 	return message
 }
 
-func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
+func (router *Router) enqueueWork(method, path string, event *eventpkg.Event) {
 	if event.IsSystem() {
 		router.log.Debug("System event received.", zap.Object("event", event))
 	}
 
 	select {
 	case router.backlog <- backlogEvent{
-		path:  path,
-		event: *event,
+		method: method,
+		path:   path,
+		event:  *event,
 	}:
 		metricBacklog.Inc()
 	default:
@@ -439,9 +411,9 @@ func (router *Router) loop() {
 func (router *Router) processEvent(e backlogEvent) {
 	reportEventOutOfQueue(e.event.EventID)
 
-	subscribers := router.targetCache.AsyncSubscribers(e.path, e.event.EventType)
+	subscribers := router.targetCache.AsyncSubscribers(e.method, e.path, e.event.EventType)
 	for _, subscriber := range subscribers {
-		router.callFunction(subscriber.Space, subscriber.ID, e.event)
+		router.callFunction(subscriber.Space, subscriber.FunctionID, e.event)
 	}
 
 	metricEventsProcessed.WithLabelValues("", "custom").Inc()
@@ -453,7 +425,7 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 		mimeJSON,
 		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
 	)
-	router.enqueueWork("/", system)
+	router.enqueueWork(http.MethodPost, "/", system)
 	return router.plugins.React(system)
 }
 
@@ -463,7 +435,7 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 		mimeJSON,
 		eventpkg.SystemFunctionInvokingData{Space: space, FunctionID: functionID, Event: event},
 	)
-	router.enqueueWork("/", system)
+	router.enqueueWork(http.MethodPost, "/", system)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokingType)).Inc()
 
@@ -475,7 +447,7 @@ func (router *Router) emitSystemFunctionInvoked(space string, functionID functio
 		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
 		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
-	router.enqueueWork("/", system)
+	router.enqueueWork(http.MethodPost, "/", system)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokedType)).Inc()
 
@@ -488,7 +460,7 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 			eventpkg.SystemFunctionInvocationFailedType,
 			mimeJSON,
 			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
-		router.enqueueWork("/", system)
+		router.enqueueWork(http.MethodPost, "/", system)
 
 		metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
 	}
@@ -505,6 +477,7 @@ func (router *Router) isDraining() bool {
 }
 
 type backlogEvent struct {
-	path  string
-	event eventpkg.Event
+	method string
+	path   string
+	event  eventpkg.Event
 }

@@ -13,7 +13,7 @@ type HTTPResponse struct {
 	Body       string            `json:"body"`
 }
 
-func isCORSPreflightRequest(r *http.Request) bool {
+func isCORSPreflightRequestFor(r *http.Request) bool {
 	// is pre-flight CORS request with "event" header
 	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
 		corsReqHeaders := r.Header.Get("Access-Control-Request-Headers")

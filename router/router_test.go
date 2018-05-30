@@ -1,23 +1,17 @@
 package router_test
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"go.uber.org/zap"
 
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/function"
-	"github.com/serverless/event-gateway/internal/pathtree"
 	"github.com/serverless/event-gateway/plugin"
-	httpprovider "github.com/serverless/event-gateway/providers/http"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/router/mock"
-	"github.com/serverless/event-gateway/subscription"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,98 +30,7 @@ func TestRouterServeHTTP_StatusUnavailableWhenDraining(t *testing.T) {
 	assert.Equal(t, `{"errors":[{"message":"Service Unavailable"}]}`+"\n", recorder.Body.String())
 }
 
-func TestRouterServeHTTP_HTTPEventFunctionNotFound(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().SyncSubscriber(http.MethodGet, "/notfound").Return("", nil, pathtree.Params{}, nil).MaxTimes(1)
-	target.EXPECT().AsyncSubscribers("/", event.SystemEventReceivedType).Return([]router.FunctionInfo{}).MaxTimes(1)
-	router := testrouter(target)
-
-	req, _ := http.NewRequest(http.MethodGet, "/notfound", nil)
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
-
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
-	assert.Equal(t, `{"errors":[{"message":"resource not found"}]}`+"\n", recorder.Body.String())
-}
-
-func TestRouterServeHTTP_Encoding(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	for _, testCase := range encodingTests {
-		testListServer := httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				testevent := event.Event{
-					Data: event.HTTPRequestData{},
-				}
-				json.NewDecoder(r.Body).Decode(&testevent)
-
-				assert.Equal(t, testCase.expectedPayload, testevent.Data.(event.HTTPRequestData).Body)
-			}))
-		defer testListServer.Close()
-		target := mock.NewMockTargeter(ctrl)
-		someFunc := function.Function{
-			Space:        "",
-			ID:           "somefunc",
-			ProviderType: httpprovider.Type,
-			Provider: httpprovider.HTTP{
-				URL: testListServer.URL,
-			},
-		}
-		target.EXPECT().SyncSubscriber(http.MethodPost, "/").Return("", &someFunc.ID, pathtree.Params{}, nil)
-		target.EXPECT().Function("", someFunc.ID).Return(&someFunc)
-		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any()).Return([]router.FunctionInfo{}).MaxTimes(3)
-		router := testrouter(target)
-
-		req, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader(testCase.requestBody))
-		req.Header.Set("content-type", testCase.contentType)
-		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, req)
-	}
-}
-
-func TestRouterServeHTTP_ErrorOnCustomEventEmittedWithNonPostMethod(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().AsyncSubscribers("/", event.SystemEventReceivedType).Return([]router.FunctionInfo{}).MaxTimes(1)
-	router := testrouter(target)
-
-	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("event", "user.created")
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
-
-	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-	assert.Equal(t, `{"errors":[{"message":"custom event can be emitted only with POST method"}]}`+"\n", recorder.Body.String())
-}
-
-func TestRouterServeHTTP_AllowCORSPreflightForHTTPEventWhenConfigured(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	target := mock.NewMockTargeter(ctrl)
-	id := function.ID("testid")
-	target.EXPECT().SyncSubscriber(http.MethodGet, "/test").Return("default", &id, pathtree.Params{}, &subscription.CORS{
-		Origins: []string{"http://example.com"},
-		Methods: []string{"GET"},
-	}).MaxTimes(1)
-	target.EXPECT().AsyncSubscribers("/", event.SystemEventReceivedType).Return([]router.FunctionInfo{}).MaxTimes(1)
-	router := testrouter(target)
-
-	req, _ := http.NewRequest(http.MethodOptions, "/test", nil)
-	req.Header.Set("Access-Control-Request-Method", "GET")
-	req.Header.Set("Origin", "http://example.com")
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
-
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	assert.Equal(t, "GET", recorder.Header().Get("Access-Control-Allow-Methods"))
-	assert.Equal(t, "http://example.com", recorder.Header().Get("Access-Control-Allow-Origin"))
-}
-
-func TestRouterServeHTTP_AllowCORSPreflightForCustomEvents(t *testing.T) {
+func TestRouterServeHTTP_AllowCORSPreflight(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
@@ -151,15 +54,15 @@ func TestRouterServeHTTP_ExtractPathFromHostedDomain(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
-	target.EXPECT().SyncSubscriber(http.MethodGet, "/custom/test").Return("", nil, pathtree.Params{}, &subscription.CORS{}).MaxTimes(1)
-	target.EXPECT().AsyncSubscribers("/", event.SystemEventReceivedType).Return([]router.FunctionInfo{}).MaxTimes(1)
+	target.EXPECT().SyncSubscriber(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return(nil).MaxTimes(1)
+	target.EXPECT().AsyncSubscribers(http.MethodPost, "/", event.SystemEventReceivedType).Return([]router.AsyncSubscriber{}).MaxTimes(1)
 	router := testrouter(target)
 
 	req, _ := http.NewRequest(http.MethodGet, "https://custom.slsgateway.com/test", nil)
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, req)
 
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
+	assert.Equal(t, http.StatusAccepted, recorder.Code)
 }
 
 func testrouter(target router.Targeter) *router.Router {
@@ -169,30 +72,3 @@ func testrouter(target router.Targeter) *router.Router {
 	router.StartWorkers()
 	return router
 }
-
-var encodingTests = []struct {
-	requestBody     string
-	contentType     string
-	expectedPayload interface{}
-}{
-	{
-		"some=thing",
-		"",
-		"c29tZT10aGluZw==",
-	}, {
-		`{"some":"thing"}`,
-		"application/json",
-		map[string]interface{}{"some": "thing"},
-	}, {
-		`{"some":"thing"}`,
-		"application/json; charset=utf-8",
-		map[string]interface{}{"some": "thing"},
-	}, {
-		"some=thing",
-		"application/x-www-form-urlencoded",
-		"some=thing",
-	}, {
-		"--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
-		"multipart/form-data; boundary=X-INSOMNIA-BOUNDARY",
-		"--X-INSOMNIA-BOUNDARY\r\nContent-Disposition: form-data; name=\"some\"\r\n\r\nthing\r\n--X-INSOMNIA-BOUNDARY--\r\n",
-	}}

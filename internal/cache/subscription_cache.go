@@ -14,8 +14,8 @@ import (
 
 type subscriptionCache struct {
 	sync.RWMutex
-	// eventToFunctions maps path and event type to function key (space + function ID)
-	eventToFunctions map[string]map[eventpkg.TypeName][]libkv.FunctionKey
+	// eventToFunctions maps method path and event type to function key (space + function ID)
+	eventToFunctions map[string]map[string]map[eventpkg.TypeName][]libkv.FunctionKey
 	// endpoints maps HTTP method to internal/pathtree. Tree struct which is used for resolving HTTP requests paths.
 	endpoints map[string]*pathtree.Node
 	log       *zap.Logger
@@ -23,7 +23,7 @@ type subscriptionCache struct {
 
 func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	return &subscriptionCache{
-		eventToFunctions: map[string]map[eventpkg.TypeName][]libkv.FunctionKey{},
+		eventToFunctions: map[string]map[string]map[eventpkg.TypeName][]libkv.FunctionKey{},
 		endpoints:        map[string]*pathtree.Node{},
 		log:              log,
 	}
@@ -54,14 +54,14 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 			c.log.Error("Could not add path to the tree.", zap.Error(err), zap.String("path", s.Path), zap.String("method", s.Method))
 		}
 	} else {
-		c.createPath(s.Path)
-		ids, exists := c.eventToFunctions[s.Path][s.EventType]
+		c.createMethodPath(s.Method, s.Path)
+		ids, exists := c.eventToFunctions[s.Method][s.Path][s.EventType]
 		if exists {
 			ids = append(ids, key)
 		} else {
 			ids = []libkv.FunctionKey{key}
 		}
-		c.eventToFunctions[s.Path][s.EventType] = ids
+		c.eventToFunctions[s.Method][s.Path][s.EventType] = ids
 	}
 }
 
@@ -83,10 +83,15 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 	}
 }
 
-func (c *subscriptionCache) createPath(path string) {
-	_, exists := c.eventToFunctions[path]
+func (c *subscriptionCache) createMethodPath(method, path string) {
+	_, exists := c.eventToFunctions[method]
 	if !exists {
-		c.eventToFunctions[path] = map[eventpkg.TypeName][]libkv.FunctionKey{}
+		c.eventToFunctions[method] = map[string]map[eventpkg.TypeName][]libkv.FunctionKey{}
+	}
+
+	_, exists = c.eventToFunctions[method][path]
+	if !exists {
+		c.eventToFunctions[method][path] = map[eventpkg.TypeName][]libkv.FunctionKey{}
 	}
 }
 
@@ -102,7 +107,7 @@ func (c *subscriptionCache) deleteEndpoint(sub subscription.Subscription) {
 }
 
 func (c *subscriptionCache) deleteSubscription(sub subscription.Subscription) {
-	ids, exists := c.eventToFunctions[sub.Path][sub.EventType]
+	ids, exists := c.eventToFunctions[sub.Method][sub.Path][sub.EventType]
 	if exists {
 		for i, id := range ids {
 			key := libkv.FunctionKey{Space: sub.Space, ID: sub.FunctionID}
@@ -111,10 +116,10 @@ func (c *subscriptionCache) deleteSubscription(sub subscription.Subscription) {
 				break
 			}
 		}
-		c.eventToFunctions[sub.Path][sub.EventType] = ids
+		c.eventToFunctions[sub.Method][sub.Path][sub.EventType] = ids
 
 		if len(ids) == 0 {
-			delete(c.eventToFunctions[sub.Path], sub.EventType)
+			delete(c.eventToFunctions[sub.Method][sub.Path], sub.EventType)
 		}
 	}
 }

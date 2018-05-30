@@ -11,12 +11,20 @@ import (
 type Targeter interface {
 	Function(space string, id function.ID) *function.Function
 	EventType(space string, name event.TypeName) *event.Type
-	AsyncSubscribers(path string, eventType event.TypeName) []FunctionInfo
-	SyncSubscriber(method, path string) (string, *function.ID, pathtree.Params, *subscription.CORS)
+	AsyncSubscribers(method, path string, eventType event.TypeName) []AsyncSubscriber
+	SyncSubscriber(method, path string, eventType event.TypeName) *SyncSubscriber
 }
 
-// FunctionInfo store info about space and function ID.
-type FunctionInfo struct {
-	Space string
-	ID    function.ID
+// AsyncSubscriber store info about space and function ID.
+type AsyncSubscriber struct {
+	Space      string
+	FunctionID function.ID
+}
+
+// SyncSubscriber store info about space, function ID, path params and CORS configuration for sync subscriptions.
+type SyncSubscriber struct {
+	Space      string
+	FunctionID function.ID
+	Params     pathtree.Params
+	CORS       *subscription.CORS
 }
