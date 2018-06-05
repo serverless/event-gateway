@@ -33,6 +33,13 @@ func (service Service) CreateEventType(eventType *event.Type) (*event.Type, erro
 		return nil, &event.ErrEventTypeAlreadyExists{Name: eventType.Name}
 	}
 
+	if eventType.AuthorizerID != nil {
+		function, _ := service.GetFunction(eventType.Space, *eventType.AuthorizerID)
+		if function == nil {
+			return nil, &event.ErrEventTypeValidation{Message: "Authorizer function doesn't exists."}
+		}
+	}
+
 	byt, err := json.Marshal(eventType)
 	if err != nil {
 		return nil, err
