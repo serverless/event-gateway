@@ -55,6 +55,7 @@ func TestRouterServeHTTP_ExtractPathFromHostedDomain(t *testing.T) {
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
 	target.EXPECT().SyncSubscriber(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return(nil).MaxTimes(1)
+	target.EXPECT().AsyncSubscribers(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return([]router.AsyncSubscriber{}).MaxTimes(1)
 	target.EXPECT().AsyncSubscribers(http.MethodPost, "/", event.SystemEventReceivedType).Return([]router.AsyncSubscriber{}).MaxTimes(1)
 	router := testrouter(target)
 

@@ -17,7 +17,7 @@ type TypeName string
 type Type struct {
 	Space        string       `json:"space" validate:"required,min=3,space"`
 	Name         TypeName     `json:"name" validate:"required"`
-	AuthorizerID *function.ID `json:"authorizerId"`
+	AuthorizerID *function.ID `json:"authorizerId,omitempty"`
 }
 
 // Types is an array of subscriptions.
