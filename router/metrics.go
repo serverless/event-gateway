@@ -61,12 +61,12 @@ var metricProcessingDuration = prometheus.NewHistogram(
 var receivedEventsMutex = sync.Mutex{}
 var receivedEvents = map[string]time.Time{}
 
-func reportReceivedEvent(id string) {
-	metricEventsReceived.WithLabelValues("", "custom").Inc()
-
+func reportEventInTheQueue(id string) {
 	receivedEventsMutex.Lock()
 	defer receivedEventsMutex.Unlock()
-	receivedEvents[id] = time.Now()
+	if _, ok := receivedEvents[id]; !ok {
+		receivedEvents[id] = time.Now()
+	}
 }
 
 func reportEventOutOfQueue(id string) {
