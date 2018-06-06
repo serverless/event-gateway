@@ -101,6 +101,50 @@ func TestRouterServeHTTP(t *testing.T) {
 		assert.Equal(t, http.StatusOK, recorder.Code)
 	})
 
+	t.Run("status code and headers based on HTTP response object", func(t *testing.T) {
+		httpResponseObject := []byte(`{"statusCode": 206, "headers": {"x-custom": "custom value"}}`)
+		fn = &function.Function{
+			Space:        space,
+			ID:           functionID,
+			ProviderType: httpprovider.Type,
+			Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, httpResponseObject).URL},
+		}
+		eventType := &event.Type{Space: space, Name: "http.request"}
+		target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
+		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+		target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
+		target.EXPECT().Function(space, functionID).Return(fn)
+		router := setupTestRouter(target)
+
+		req, _ := http.NewRequest(http.MethodPost, "/", nil)
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		assert.Equal(t, 206, recorder.Code)
+		assert.Equal(t, "custom value", recorder.HeaderMap.Get("x-custom"))
+	})
+
+	t.Run("status Internal Server Error if HTTP response object malformed", func(t *testing.T) {
+		fn = &function.Function{
+			Space:        space,
+			ID:           functionID,
+			ProviderType: httpprovider.Type,
+			Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, []byte("not JSON")).URL},
+		}
+		eventType := &event.Type{Space: space, Name: "http.request"}
+		target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
+		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+		target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
+		target.EXPECT().Function(space, functionID).Return(fn)
+		router := setupTestRouter(target)
+
+		req, _ := http.NewRequest(http.MethodPost, "/", nil)
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+	})
+
 	t.Run("status Forbidden if authorizer returned nil", func(t *testing.T) {
 		authorizerID := function.ID("auth")
 		authorizer := &function.Function{
