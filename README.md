@@ -36,7 +36,6 @@ yet ready for production applications._
 1.  [Components](#components)
     1.  [Function Discovery](#function-discovery)
     1.  [Subscriptions](#subscriptions)
-    1.  [Event Registry](#event-registry)
     1.  [Spaces](#spaces)
 1.  [SDKs](#sdks)
 1.  [Versioning](#versioning)
