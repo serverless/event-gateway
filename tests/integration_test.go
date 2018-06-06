@@ -100,7 +100,7 @@ func TestIntegration_AsyncSubscription(t *testing.T) {
 		EventType:  event.TypeName(eventType),
 		Path:       "/",
 	})
-	wait(instance.WaitForAsyncSubscriber("/", event.TypeName(eventType)), "timed out waiting for subscriber to be configured!")
+	wait(instance.WaitForAsyncSubscriber(http.MethodPost, "/", event.TypeName(eventType)), "timed out waiting for subscriber to be configured!")
 
 	// emit event
 	emit(testRouterServer.URL, eventType, []byte(expected))
@@ -150,7 +150,7 @@ func TestIntegration_SyncSubscription(t *testing.T) {
 		Method:     "GET",
 		Path:       "/httpresponse",
 	})
-	wait(instance.WaitForSyncSubscriber("GET", "/httpresponse"), "timed out waiting for endpoint to be configured!")
+	wait(instance.WaitForSyncSubscriber(http.MethodGet, "/httpresponse", event.TypeHTTPRequest), "timed out waiting for endpoint to be configured!")
 
 	// request function
 	statusCode, headers, body := get(testRouterServer.URL + "/httpresponse")

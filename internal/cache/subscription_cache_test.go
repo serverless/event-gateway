@@ -20,6 +20,7 @@ func TestSubscriptionCacheModifiedEvents(t *testing.T) {
 		"type": "async",
 		"eventType": "test.event",
 		"functionId": "testfunc1",
+		"method": "GET",
 		"path": "/"}`))
 	scache.Modified("testsub2", []byte(`{
 		"subscriptionId":
@@ -28,12 +29,14 @@ func TestSubscriptionCacheModifiedEvents(t *testing.T) {
 		"type": "async",
 		"eventType": "test.event",
 		"functionId": "testfunc2",
+		"method": "GET",
 		"path": "/"}`))
 
 	expected := []libkv.FunctionKey{
 		libkv.FunctionKey{Space: "space1", ID: "testfunc1"},
-		libkv.FunctionKey{Space: "space1", ID: "testfunc2"}}
-	assert.Equal(t, expected, scache.eventToFunctions["/"]["test.event"])
+		libkv.FunctionKey{Space: "space1", ID: "testfunc2"},
+	}
+	assert.Equal(t, expected, scache.eventToFunctions["GET"]["/"]["test.event"])
 }
 
 func TestSubscriptionCacheModifiedSyncSubscription(t *testing.T) {
@@ -84,7 +87,7 @@ func TestSubscriptionCacheModifiedEventsWrongPayload(t *testing.T) {
 
 	scache.Modified("testsub", []byte(`not json`))
 
-	assert.Equal(t, []libkv.FunctionKey(nil), scache.eventToFunctions["/"]["test.event"])
+	assert.Equal(t, []libkv.FunctionKey(nil), scache.eventToFunctions["POST"]["/"]["test.event"])
 }
 
 func TestSubscriptionCacheModifiedEventsDeleted(t *testing.T) {
@@ -96,6 +99,7 @@ func TestSubscriptionCacheModifiedEventsDeleted(t *testing.T) {
 		"type": "async",
 		"eventType": "test.event",
 		"functionId": "testfunc1",
+		"method": "POST",
 		"path": "/"}`))
 	scache.Modified("testsub2", []byte(`{
 		"subscriptionId":"testsub2",
@@ -103,6 +107,7 @@ func TestSubscriptionCacheModifiedEventsDeleted(t *testing.T) {
 		"type": "async",
 		"eventType": "test.event",
 		"functionId": "testfunc2",
+		"method": "POST",
 		"path": "/"}`))
 	scache.Deleted("testsub1", []byte(`{
 		"subscriptionId":"testsub1",
@@ -110,9 +115,10 @@ func TestSubscriptionCacheModifiedEventsDeleted(t *testing.T) {
 		"type": "async",
 		"eventType": "test.event",
 		"functionId": "testfunc1",
+		"method": "POST",
 		"path": "/"}`))
 
-	assert.Equal(t, []libkv.FunctionKey{{Space: "space1", ID: function.ID("testfunc2")}}, scache.eventToFunctions["/"]["test.event"])
+	assert.Equal(t, []libkv.FunctionKey{{Space: "space1", ID: function.ID("testfunc2")}}, scache.eventToFunctions["POST"]["/"]["test.event"])
 }
 
 func TestSubscriptionCacheModifiedHTTPSubscriptionDeleted(t *testing.T) {
@@ -147,6 +153,7 @@ func TestSubscriptionCacheModifiedEventsDeletedLast(t *testing.T) {
 		"type": "async",
 		"eventType": "test.event",
 		"functionId": "testfunc",
+		"method": "POST",
 		"path": "/"}`))
 	scache.Deleted("testsub", []byte(`{
 		"subscriptionId":"testsub",
@@ -154,7 +161,8 @@ func TestSubscriptionCacheModifiedEventsDeletedLast(t *testing.T) {
 		"type": "async",
 		"eventType": "test.event",
 		"functionId": "testfunc",
+		"method": "POST",
 		"path": "/"}`))
 
-	assert.Equal(t, []libkv.FunctionKey(nil), scache.eventToFunctions["/"]["test.event"])
+	assert.Equal(t, []libkv.FunctionKey(nil), scache.eventToFunctions["POST"]["/"]["test.event"])
 }

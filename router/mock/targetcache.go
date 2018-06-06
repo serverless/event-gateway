@@ -8,9 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	event "github.com/serverless/event-gateway/event"
 	function "github.com/serverless/event-gateway/function"
-	pathtree "github.com/serverless/event-gateway/internal/pathtree"
 	router "github.com/serverless/event-gateway/router"
-	subscription "github.com/serverless/event-gateway/subscription"
 	reflect "reflect"
 )
 
@@ -38,15 +36,15 @@ func (m *MockTargeter) EXPECT() *MockTargeterMockRecorder {
 }
 
 // AsyncSubscribers mocks base method
-func (m *MockTargeter) AsyncSubscribers(arg0 string, arg1 event.TypeName) []router.FunctionInfo {
-	ret := m.ctrl.Call(m, "AsyncSubscribers", arg0, arg1)
-	ret0, _ := ret[0].([]router.FunctionInfo)
+func (m *MockTargeter) AsyncSubscribers(arg0, arg1 string, arg2 event.TypeName) []router.AsyncSubscriber {
+	ret := m.ctrl.Call(m, "AsyncSubscribers", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]router.AsyncSubscriber)
 	return ret0
 }
 
 // AsyncSubscribers indicates an expected call of AsyncSubscribers
-func (mr *MockTargeterMockRecorder) AsyncSubscribers(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsyncSubscribers", reflect.TypeOf((*MockTargeter)(nil).AsyncSubscribers), arg0, arg1)
+func (mr *MockTargeterMockRecorder) AsyncSubscribers(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsyncSubscribers", reflect.TypeOf((*MockTargeter)(nil).AsyncSubscribers), arg0, arg1, arg2)
 }
 
 // EventType mocks base method
@@ -74,16 +72,13 @@ func (mr *MockTargeterMockRecorder) Function(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // SyncSubscriber mocks base method
-func (m *MockTargeter) SyncSubscriber(arg0, arg1 string) (string, *function.ID, pathtree.Params, *subscription.CORS) {
-	ret := m.ctrl.Call(m, "SyncSubscriber", arg0, arg1)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(*function.ID)
-	ret2, _ := ret[2].(pathtree.Params)
-	ret3, _ := ret[3].(*subscription.CORS)
-	return ret0, ret1, ret2, ret3
+func (m *MockTargeter) SyncSubscriber(arg0, arg1 string, arg2 event.TypeName) *router.SyncSubscriber {
+	ret := m.ctrl.Call(m, "SyncSubscriber", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*router.SyncSubscriber)
+	return ret0
 }
 
 // SyncSubscriber indicates an expected call of SyncSubscriber
-func (mr *MockTargeterMockRecorder) SyncSubscriber(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncSubscriber", reflect.TypeOf((*MockTargeter)(nil).SyncSubscriber), arg0, arg1)
+func (mr *MockTargeterMockRecorder) SyncSubscriber(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncSubscriber", reflect.TypeOf((*MockTargeter)(nil).SyncSubscriber), arg0, arg1, arg2)
 }

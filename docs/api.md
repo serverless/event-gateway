@@ -93,10 +93,10 @@ arbitrary payload, subscribed function receives an event in [HTTP Event](#http-e
 
 **Response**
 
-HTTP subscription response depends on [response object](#respond-to-an-http-event) returned by the backing function. In case of failure during function invocation following error response are possible:
+HTTP subscription response depends on [response object](#respond-to-an-http-request-event) returned by the backing function. In case of failure during function invocation following error response are possible:
 
 * `404 Not Found` if there is no backing function registered for requested HTTP endpoint
-* `500 Internal Server Error` if the function invocation failed or the backing function didn't return [HTTP response object](#respond-to-an-http-event)
+* `500 Internal Server Error` if the function invocation failed or the backing function didn't return [HTTP response object](#respond-to-an-http-request-event)
 
 ##### CORS
 

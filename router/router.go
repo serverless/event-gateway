@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/rs/cors"
 	"go.uber.org/zap"
@@ -60,17 +60,21 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: http.StatusText(http.StatusServiceUnavailable)}}})
 		return
 	}
-	path := extractPath(r.Host, r.URL.EscapedPath())
-	event, err := eventpkg.FromRequest(r)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
-		return
-	}
 
-	if event.EventType == eventpkg.TypeHTTPRequest && !isCORSPreflightRequest(r) {
-		metricEventsReceived.WithLabelValues("", "http").Inc()
+	cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
+		event, err := eventpkg.FromRequest(r)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: err.Error()}}})
+			return
+		}
+		if event.IsSystem() { // System event can only be emitted from inside EG
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		path := extractPath(r.Host, r.URL.EscapedPath())
 
 		router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
 		err = router.emitSystemEventReceived(path, *event, r.Header)
@@ -81,33 +85,16 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		router.handleHTTPEvent(event, w, r)
-	} else {
-		cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodPost {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Header().Set("Content-Type", "application/json")
-				encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "custom event can be emitted only with POST method"}}})
-				return
-			}
+		syncSubscriber := router.targetCache.SyncSubscriber(r.Method, path, event.EventType)
+		if syncSubscriber != nil { // There is sync subscriber and possibly async subscribers also
+			router.handleSyncSubscription(path, event, *syncSubscriber, w, r)
+		}
 
-			router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
-			err = router.emitSystemEventReceived(path, *event, r.Header)
-			if err != nil {
-				router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
-					zap.Object("event", event),
-					zap.Error(err))
-				return
-			}
-
-			if !event.IsSystem() {
-				reportReceivedEvent(event.EventID)
-
-				router.enqueueWork(path, event)
-				w.WriteHeader(http.StatusAccepted)
-			}
-		})
-	}
+		router.handleAsyncSubscriptions(r.Method, path, event, r)
+		if syncSubscriber == nil {
+			w.WriteHeader(http.StatusAccepted)
+		}
+	})
 }
 
 // StartWorkers spins up workerNumber goroutines for processing
@@ -155,107 +142,47 @@ func (router *Router) Drain() {
 	router.Unlock()
 }
 
-// WaitForEventType returns a chan that is closed when a event type is created.
-// Primarily for testing purposes.
-func (router *Router) WaitForEventType(space string, name eventpkg.TypeName) <-chan struct{} {
-	updatedChan := make(chan struct{})
-	go func() {
-		for {
-			res := router.targetCache.EventType(space, name)
-			if res != nil {
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		close(updatedChan)
-	}()
-	return updatedChan
-}
-
-// WaitForFunction returns a chan that is closed when a function is created.
-// Primarily for testing purposes.
-func (router *Router) WaitForFunction(space string, id function.ID) <-chan struct{} {
-	updatedChan := make(chan struct{})
-	go func() {
-		for {
-			res := router.targetCache.Function(space, id)
-			if res != nil {
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		close(updatedChan)
-	}()
-	return updatedChan
-}
-
-// WaitForAsyncSubscriber returns a chan that is closed when an event has a subscriber.
-// Primarily for testing purposes.
-func (router *Router) WaitForAsyncSubscriber(path string, eventType eventpkg.TypeName) <-chan struct{} {
-	updatedChan := make(chan struct{})
-	go func() {
-		for {
-			res := router.targetCache.AsyncSubscribers(path, eventType)
-			if len(res) > 0 {
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		close(updatedChan)
-	}()
-	return updatedChan
-}
-
-// WaitForSyncSubscriber returns a chan that is closed when an a sync subscriber is created.
-// Primarily for testing purposes.
-func (router *Router) WaitForSyncSubscriber(method, path string) <-chan struct{} {
-	updatedChan := make(chan struct{})
-	go func() {
-		for {
-			_, res, _, _ := router.targetCache.SyncSubscriber(method, path)
-			if res != nil {
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		close(updatedChan)
-	}()
-	return updatedChan
-}
-
-// headerFunctionID is a header name for specifying function id for sync invocation.
-const headerFunctionID = "function-id"
-const headerSpace = "space"
 const hostedDomain = "(eventgateway([a-z-]*)?.io|slsgateway.com)"
 
 var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWriter, r *http.Request) {
-	encoder := json.NewEncoder(w)
-	reqMethod := r.Method
-
-	// check if CORS pre-flight request
-	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
-		reqMethod = r.Header.Get("Access-Control-Request-Method")
-	}
-	space, backingFunction, params, corsConfig := router.targetCache.SyncSubscriber(
-		strings.ToUpper(reqMethod), extractPath(r.Host, r.URL.EscapedPath()),
-	)
-	if backingFunction == nil {
-		router.log.Debug("Function not found for HTTP event.", zap.Object("event", event))
-		w.WriteHeader(http.StatusNotFound)
-		w.Header().Set("Content-Type", "application/json")
-		encoder.Encode(&httpapi.Response{Errors: []httpapi.Error{{Message: "resource not found"}}})
+func (router *Router) handleSyncSubscription(path string, event *eventpkg.Event, subscriber SyncSubscriber, w http.ResponseWriter, r *http.Request) {
+	// metrics & logs
+	metricEventsReceived.WithLabelValues(subscriber.Space, string(event.EventType)).Inc()
+	router.log.Debug("Event received.", zap.String("path", path), zap.String("space", subscriber.Space), zap.Object("event", event))
+	err := router.emitSystemEventReceived(path, *event, r.Header)
+	if err != nil {
+		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
+			zap.Object("event", event),
+			zap.Error(err))
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		httpdata := event.Data.(*eventpkg.HTTPRequestData)
-		httpdata.Params = params
-		event.Data = httpdata
-		resp, err := router.callFunction(space, *backingFunction, *event)
+	err = router.authorizeEventType(subscriber.Space, event, r)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	// add params to HTTP Request object
+	if event.EventType == eventpkg.TypeHTTPRequest {
+		httpRequestData := event.Data.(*eventpkg.HTTPRequestData)
+		httpRequestData.Params = subscriber.Params
+		event.Data = httpRequestData
+	}
+	router.httpRequestHandler(subscriber.Space, subscriber.FunctionID, event)(w, r)
+
+	metricEventsProcessed.WithLabelValues(subscriber.Space, string(event.EventType)).Inc()
+}
+
+// Return http.HandlerFunc that will call remote function and return response in HTTP response object.
+func (router *Router) httpRequestHandler(space string, backingFunction function.ID, event *eventpkg.Event) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		encoder := json.NewEncoder(w)
+
+		resp, err := router.callFunction(space, backingFunction, *event)
 		if err != nil {
 			message := determineErrorMessage(err)
 
@@ -289,56 +216,35 @@ func (router *Router) handleHTTPEvent(event *eventpkg.Event, w http.ResponseWrit
 			return
 		}
 	}
-
-	if corsConfig == nil {
-		handler(w, r)
-	} else {
-		corsOptions := cors.Options{
-			AllowedOrigins:     corsConfig.Origins,
-			AllowedHeaders:     corsConfig.Headers,
-			AllowedMethods:     corsConfig.Methods,
-			AllowCredentials:   corsConfig.AllowCredentials,
-			OptionsPassthrough: false,
-		}
-
-		cors.New(corsOptions).ServeHTTP(w, r, handler)
-	}
-
-	metricEventsProcessed.WithLabelValues(space, "http").Inc()
 }
 
-func determineErrorMessage(err error) string {
-	message := "Function call failed. Please check logs."
-	if accessError, ok := err.(*function.ErrFunctionAccessDenied); ok {
-		if originalErr, ok := accessError.Original.(awserr.Error); ok {
-			switch originalErr.Code() {
-			case "AccessDeniedException":
-				message = "Function call failed with AccessDeniedException. The provided credentials do not" +
-					" have the required IAM permissions to invoke this function. Please attach the" +
-					" lambda:invokeFunction permission to these credentials."
-			case "UnrecognizedClientException":
-				message = "Function call failed with UnrecognizedClientException. The provided credentials" +
-					" are invalid. Please provide valid credentials."
-			case "ExpiredTokenException":
-				message = "Function call failed with ExpiredTokenException. The provided security token for" +
-					" the function has expired. Please provide an updated security token or provide" +
-					" permanent credentials."
-			}
-		}
-	}
-
-	return message
-}
-
-func (router *Router) enqueueWork(path string, event *eventpkg.Event) {
+// handleAsyncSubscriptions fetched events subscribers, runs authorization and enqueues event in the queue
+func (router *Router) handleAsyncSubscriptions(method, path string, event *eventpkg.Event, r *http.Request) {
 	if event.IsSystem() {
 		router.log.Debug("System event received.", zap.Object("event", event))
 	}
 
+	subscribers := router.targetCache.AsyncSubscribers(method, path, event.EventType)
+	for _, subscriber := range subscribers {
+		metricEventsReceived.WithLabelValues(subscriber.Space, "custom").Inc()
+
+		err := router.authorizeEventType(subscriber.Space, event, r)
+		if err == nil {
+			router.enqueueWork(method, path, subscriber.Space, subscriber.FunctionID, *event)
+		}
+	}
+}
+
+func (router *Router) enqueueWork(method, path, space string, functionID function.ID, event eventpkg.Event) {
+	reportEventInTheQueue(event.EventID)
+
 	select {
 	case router.backlog <- backlogEvent{
-		path:  path,
-		event: *event,
+		method:     method,
+		path:       path,
+		space:      space,
+		functionID: functionID,
+		event:      event,
 	}:
 		metricBacklog.Inc()
 	default:
@@ -394,6 +300,75 @@ func (router *Router) callFunction(space string, backingFunctionID function.ID, 
 	return result, err
 }
 
+func (router *Router) authorizeEventType(space string, event *eventpkg.Event, r *http.Request) error {
+	eventType := router.targetCache.EventType(space, event.EventType)
+	if eventType != nil && eventType.AuthorizerID != nil {
+		payload := AuthorizerPayload{
+			Request: *eventpkg.NewHTTPRequestData(r, nil),
+			Event:   *event,
+		}
+		resp, err := router.callAuthorizer(space, *eventType.AuthorizerID, payload)
+		if err != nil {
+			return err
+		}
+
+		authorizerResponse := &AuthorizerResponse{}
+		err = json.Unmarshal(resp, authorizerResponse)
+		if err != nil {
+			router.log.Info("Failed to unmarshal authorizer function response.",
+				zap.ByteString("response", resp),
+				zap.String("space", space),
+				zap.String("authorizerId", string(*eventType.AuthorizerID)),
+				zap.Object("event", event))
+			return err
+		}
+
+		if authorizerResponse.AuthorizationError != nil {
+			router.log.Info("Authorization failed.",
+				zap.String("error", authorizerResponse.AuthorizationError.Message),
+				zap.String("space", space),
+				zap.String("authorizerId", string(*eventType.AuthorizerID)),
+				zap.Object("event", event))
+			return errors.New(authorizerResponse.AuthorizationError.Message)
+		}
+	}
+
+	return nil
+}
+
+// callAuthorizer looks up an authorizer function and calls it.
+func (router *Router) callAuthorizer(space string, backingFunctionID function.ID, payload AuthorizerPayload) ([]byte, error) {
+	router.log.Debug("Invoking authorizer function.",
+		zap.String("space", space),
+		zap.String("functionId", string(backingFunctionID)))
+
+	// Call the target backing function.
+	f := router.targetCache.Function(space, backingFunctionID)
+	if f == nil {
+		return []byte{}, errUnableToLookUpRegisteredFunction
+	}
+
+	callPayload, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := f.Call(callPayload)
+	if err != nil {
+		router.log.Info("Authorizer function invocation failed.",
+			zap.String("space", space),
+			zap.String("functionId", string(backingFunctionID)),
+			zap.Error(err))
+	} else {
+		router.log.Debug("Authorizer function invoked.",
+			zap.String("space", space),
+			zap.String("functionId", string(backingFunctionID)),
+			zap.ByteString("result", result))
+	}
+
+	return result, err
+}
+
 // loop is the main loop for a pub/sub worker goroutine
 func (router *Router) loop() {
 	for {
@@ -439,12 +414,9 @@ func (router *Router) loop() {
 func (router *Router) processEvent(e backlogEvent) {
 	reportEventOutOfQueue(e.event.EventID)
 
-	subscribers := router.targetCache.AsyncSubscribers(e.path, e.event.EventType)
-	for _, subscriber := range subscribers {
-		router.callFunction(subscriber.Space, subscriber.ID, e.event)
-	}
+	router.callFunction(e.space, e.functionID, e.event)
 
-	metricEventsProcessed.WithLabelValues("", "custom").Inc()
+	metricEventsProcessed.WithLabelValues(e.space, "custom").Inc()
 }
 
 func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, header http.Header) error {
@@ -453,7 +425,7 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 		mimeJSON,
 		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
 	)
-	router.enqueueWork("/", system)
+	router.handleAsyncSubscriptions(http.MethodPost, "/", system, nil)
 	return router.plugins.React(system)
 }
 
@@ -463,7 +435,7 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 		mimeJSON,
 		eventpkg.SystemFunctionInvokingData{Space: space, FunctionID: functionID, Event: event},
 	)
-	router.enqueueWork("/", system)
+	router.handleAsyncSubscriptions(http.MethodPost, "/", system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokingType)).Inc()
 
@@ -475,7 +447,7 @@ func (router *Router) emitSystemFunctionInvoked(space string, functionID functio
 		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
 		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
-	router.enqueueWork("/", system)
+	router.handleAsyncSubscriptions(http.MethodPost, "/", system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokedType)).Inc()
 
@@ -488,7 +460,7 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 			eventpkg.SystemFunctionInvocationFailedType,
 			mimeJSON,
 			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
-		router.enqueueWork("/", system)
+		router.handleAsyncSubscriptions(http.MethodPost, "/", system, nil)
 
 		metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
 	}
@@ -504,7 +476,43 @@ func (router *Router) isDraining() bool {
 	return false
 }
 
+func determineErrorMessage(err error) string {
+	message := "Function call failed. Please check logs."
+	if accessError, ok := err.(*function.ErrFunctionAccessDenied); ok {
+		if originalErr, ok := accessError.Original.(awserr.Error); ok {
+			switch originalErr.Code() {
+			case "AccessDeniedException":
+				message = "Function call failed with AccessDeniedException. The provided credentials do not" +
+					" have the required IAM permissions to invoke this function. Please attach the" +
+					" lambda:invokeFunction permission to these credentials."
+			case "UnrecognizedClientException":
+				message = "Function call failed with UnrecognizedClientException. The provided credentials" +
+					" are invalid. Please provide valid credentials."
+			case "ExpiredTokenException":
+				message = "Function call failed with ExpiredTokenException. The provided security token for" +
+					" the function has expired. Please provide an updated security token or provide" +
+					" permanent credentials."
+			}
+		}
+	}
+
+	return message
+}
+
+func extractPath(host, path string) string {
+	extracted := path
+	rxp, _ := regexp.Compile(hostedDomain)
+	if rxp.MatchString(host) {
+		subdomain := strings.Split(host, ".")[0]
+		extracted = "/" + subdomain + path
+	}
+	return extracted
+}
+
 type backlogEvent struct {
-	path  string
-	event eventpkg.Event
+	space      string
+	functionID function.ID
+	method     string
+	path       string
+	event      eventpkg.Event
 }

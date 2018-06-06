@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/event"
+	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/mock"
 	"github.com/serverless/libkv/store"
 	"github.com/stretchr/testify/assert"
@@ -19,6 +20,8 @@ func TestCreateEventType(t *testing.T) {
 	defer ctrl.Finish()
 
 	testEventType := &event.Type{Name: "test.event"}
+	authorizerID := function.ID("auth")
+	testEventTypeWithAuth := &event.Type{Name: "test.event", AuthorizerID: &authorizerID}
 
 	t.Run("event type created", func(t *testing.T) {
 		db := mock.NewMockStore(ctrl)
@@ -51,6 +54,20 @@ func TestCreateEventType(t *testing.T) {
 
 		assert.Equal(t, &event.ErrEventTypeValidation{
 			Message: "Key: 'Type.Name' Error:Field validation for 'Name' failed on the 'required' tag",
+		}, err)
+	})
+
+	t.Run("authorizer function doesn't exists error", func(t *testing.T) {
+		functionsDB := mock.NewMockStore(ctrl)
+		functionsDB.EXPECT().Get("default/auth", gomock.Any()).Return(&store.KVPair{}, nil)
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().Get("default/test.event", gomock.Any()).Return(nil, errors.New("KV type not found"))
+		service := &Service{EventTypeStore: eventTypesDB, FunctionStore: functionsDB, Log: zap.NewNop()}
+
+		_, err := service.CreateEventType(testEventTypeWithAuth)
+
+		assert.Equal(t, &event.ErrEventTypeValidation{
+			Message: "Authorizer function doesn't exists.",
 		}, err)
 	})
 
