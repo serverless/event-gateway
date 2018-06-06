@@ -6,20 +6,60 @@ This document contains the API documentation for both Events and Configuration A
 ## Contents
 
 1.  [Events API](#events-api)
+    1. [Event Registry](#event-registry)
+    1. [Event Definition - CloudEvents](#event-definition---cloudevents)
+        1. [CloudEvents Example](#cloudevents-example)
+    1. [Subscription Types](#subscription-types)
+        1. [`async` subscription](#async-subscription)
+        2. [`sync` subscription](#sync-subscription)
+    1. [Authorization](#authorization)
+        1. [Invocation Payload](#invocation-payload)
+        1. [Invocation Result](#invocation-result)
+    1. [HTTP Request Event](#http-request-event)
+    1. [How To Emit an Event](#how-to-emit-an-event)
+    1. [Legacy Mode](#legacy-mode)
 1.  [Configuration API](#configuration-api)
+    1. [Event Registry](#event-registry)
+        1. [Register Event Type](#register-event-type)
+        1. [Delete Event Type](#delete-event-type)
+        1. [Get Event Types](#get-event-types)
+        1. [Get Event Type](#get-event-type)
+    1. [Function Discovery](#function-discovery)
+        1. [Register Function](#register-function)
+        1. [Update Function](#update-function)
+        1. [Delete Function](#delete-function)
+        1. [Get Functions](#get-functions)
+        1. [Get Function](#get-function)
+    1. [Subscriptions](#subscriptions)
+        1. [Create Subscription](#create-subscription)
+        1. [Update Subscription](#update-subscription)
+        1. [Delete Subscription](#delete-subscription)
+        1. [Get Subscriptions](#get-subscriptions)
+        1. [Get Subscription](#get-subscription)
+    1. [Prometheus Metrics](#prometheus-metrics)
+    1. [Status](#status)
 
 ## Events API
 
 [OpenAPI spec](./openapi/openapi-events-api.yaml)
 
-The Event Gateway exposes an API for emitting events. Events API can be used for emitting custom event, HTTP events and
-for invoking function. By default Events API runs on `:4000` port.
+The Event Gateway exposes an API for emitting events. By default Events API runs on `:4000` port.
 
-### Event Definition
+### Event Registry
 
-All data that passes through the Event Gateway is formatted as a CloudEvent, based on [CloudEvents v0.1 schema](https://github.com/cloudevents/spec/blob/master/spec.md):
+Event Registry is a single source of truth about events occuring in the space. Every event emitted to a space has to have type registered beforehand.
 
-Example:
+### Event Definition - CloudEvents
+
+Event Gateway has first-class support for [CloudEvents](https://cloudevents.io/). It means few things.
+
+First of all, if the event emitted to the Event Gateway is in CloudEvents format, the Event Gateway is able to recognize it and trigger proper subscriptions based on event type specified in the event. Event Gateway supports both Structured Content and Binary Content modes described in [HTTP Transport Binding spec](https://github.com/cloudevents/spec/blob/master/http-transport-binding.md).
+
+Secondly, there is a special, built-in [HTTP Request Event](#http-request-event) type allowing reacting to raw HTTP requests that are not formatted according to CloudEvents spec. This event type can be especially helpful for building REST APIs.
+
+Currently, Event Gateway supports [CloudEvents v0.1 schema](https://github.com/cloudevents/spec/blob/master/spec.md) specification.
+
+#### CloudEvents Example
 
 ```json
 {
@@ -33,19 +73,72 @@ Example:
 }
 ```
 
-When an event occurs, all subscribers are called with the event in above schema as its argument.
+### Subscription Types
 
-#### Event Data Type
+Event Gateway support two subscription types: `async` and `sync`.
 
-The MIME type of the data block can be specified using the `Content-Type` header (by default it's
-`application/octet-stream`). This allows the event gateway to understand how to deserialize the data block if it needs
-to. In case of `application/json` type the event gateway passes JSON payload to the target functions. In any other case
-the data block is base64 encoded.
+#### `async` subscription
 
-#### HTTP Request Event
+`async` subscription implements lightweight pub/sub system. There can be many async subscriptions listening to the same event type, on the same path and HTTP method. The function is asynchronously invoked by the Event Gateway.
 
-`http.request` event is a built-in type of event occurring for HTTP requests on paths defined in HTTP subscriptions. The
-`data` field of an `http.request` event has the following structure:
+#### `sync` subscription
+
+In case of `sync` subscription invoked function can control the HTTP response returned by the Event Gateway. Because of that, there can be only one `sync` subscription for a path, HTTP method, and event type tuple.
+
+Status code, headers and response body can be controlled by returning JSON object with the following fields:
+
+* `statusCode` - `int` - response status code, default: 200
+* `headers` - `object` - response headers
+* `body` - `string` - response body. Currently, the Event Gateway supports only string responses.
+
+If the function invocation failed or the backing function didn't return JSON object in the above format Event Gateway returns `500 Internal Server Error`.
+
+**Path parameters**
+
+The Event Gateway allows creating `sync` subscription with parameterized paths. Every path segment prefixed with `:` is
+treated as a parameter, e.g. `/users/:id`.
+
+The Event Gateway prevents from creating subscriptions in following conflicting situations:
+
+* registering static path when there is parameterized path registered already (`/users/:id` vs. `/users/foo`)
+* registering parameterized path with different parameter name (`/users/:id` vs. `/users/:name`)
+
+Key and value of matched parameters are passed to a function in an [HTTP Request Event](#http-request-event) under `params` field.
+
+**Wildcard parameters**
+
+Special type of path parameter is wildcard parameter. It's a path segment prefixed with `*`. Wildcard parameter can only
+be specified at the end of the path and will match every character till the end of the path. For examples
+parameter `/users/*userpath` for request path `/users/group1/user1` will match `group1/user1` as a `userpath` parameter.
+
+### Authorization
+
+Event Type can define authorizer function that will be called before calling a subscribed function. Authorizer function is a function registered in Function Discovery beforehand.
+
+#### Invocation Payload
+
+The authorizer function is invoked with a special payload. The function has access to the whole request object because different parts of the request can be required for running authorization logic (e.g. API key can be stored in different headers or query params). The invocation payload is a JSON object with the following structure:
+
+- `event` - `object` - event received and parsed by EG
+- `request` - `object` - original HTTP request to the EG, this field is exactly the same as HTTP event, including body, which in case of CloudEvent will be exactly the same as event field
+
+#### Invocation Result
+
+The authorize function is expected to return authorization response JSON object with the following structure:
+
+- `authorization` - `object` - object containing authorization data, required if authorization is successful. Fields:
+  - `principalId` - `string` - required if authorization is successful, the principal user identification associated with the token sent in the request
+  - `context` - `map[string]string` - arbitrary data that will be accessible by the downstream function
+- `error` - `object` - error information, required if authorization is unsuccessful. Fields:
+  - `message` - `string` - authorization error message
+
+If the authorization is successful `error` field has to be null or not defined otherwise Event Gateway treats authorization process as unsuccessful and `403 Forbidden` error is returned to the client assuming that there was sync subscription defined. `authorization` object is attached to CloudEvent Extensions field under `eventgateway.authorization` key.
+
+If Event Gateway will not be able to parse the response from authorizer function or there will be error during invocation authorization process is considered as unsuccessful.
+
+### HTTP Request Event
+
+`http.request` event is a built-in event type that wraps raw HTTP requests. Not all data are events that's why this type of event is especially helpful for building REST APIs or supporting legacy payloads. `http.request` event is a CloudEvent created by Event Gateway where `data` field has the following structure:
 
 * `path` - `string` - request path
 * `method` - `string` - request method
@@ -55,95 +148,127 @@ the data block is base64 encoded.
 * `params` - `object` - matched path parameters
 * `body` - depends on `Content-Type` header - request payload
 
-### Emit a Custom Event
+### How To Emit an Event
 
-Creating a subscription requires `path` property (by default it's "/"). `path` indicates path under which you can push an
-event.
+Creating a subscription requires `path` (default: `/`), `method` (default: `POST`) and `eventType`. `path` indicates path under which you can send the event.
 
 **Endpoint**
 
 `POST <Events API URL>/<Subscription Path>`
 
-**Request Headers**
-
-* `Event` - `string` - required, event name
-* `Content-Type` - `MIME type string` - payload type
-
 **Request**
 
-arbitrary payload, subscribed function receives an event in Event schema
+CloudEvents payload
 
 **Response**
 
 Status code:
 
-* `202 Accepted`
+* `202 Accepted` - if there is no `sync` subscription. Otherwise, status code is controlled by function synchronously subscribed on this endpoint.
 
-### Emit an HTTP Event
+### Legacy Mode
 
-Creating HTTP subscription requires `method` and `path` properties. Those properties are used to listen for HTTP events.
+In legacy mode, Event Gateway is able to recognize event type based on `Event` header. If the event is not formatted according to CloudEvents specification Event Gateway looks for this header and creates CloudEvent internally. In this case, whole request body is put into `data` field.
 
-**Endpoint**
+#### Event Data Type
 
-`<method> <Events API URL>/<path>`
-
-**Request**
-
-arbitrary payload, subscribed function receives an event in [HTTP Event](#http-event) schema.
-
-**Response**
-
-HTTP subscription response depends on [response object](#respond-to-an-http-request-event) returned by the backing function. In case of failure during function invocation following error response are possible:
-
-* `404 Not Found` if there is no backing function registered for requested HTTP endpoint
-* `500 Internal Server Error` if the function invocation failed or the backing function didn't return [HTTP response object](#respond-to-an-http-request-event)
-
-##### CORS
-
-By default cross-origin resource sharing (CORS) is disabled for `sync` subscriptions. It can be enabled and configured
-per-subscription basis.
-
-Event Gateway handles preflight `OPTIONS` requests for you. You don't need to setup subscription for `OPTIONS` method
-because the Event Gateway will respond with all appropriate headers.
-
-#### Path parameters
-
-The Event Gateway allows creating HTTP subscription with parameterized paths. Every path segment prefixed with `:` is
-treated as a parameter, e.g. `/users/:id`.
-
-The Event Gateway prevents from creating subscriptions in following conflicting situations:
-
-* registering static path when there is parameterized path registered already (`/users/:id` vs. `/users/foo`)
-* registering parameterized path with different parameter name (`/users/:id` vs. `/users/:name`)
-
-Key and value of matched parameters are passed to a function in an HTTP Event under `params` field.
-
-##### Wildcard parameters
-
-Special type of path parameter is wildcard parameter. It's a path segment prefixed with `*`. Wildcard parameter can only
-be specified at the end of the path and will match every character till the end of the path. For examples
-parameter `/users/*userpath` for request path `/users/group1/user1` will match `group1/user1` as a `userpath` parameter.
-
-#### Respond to an HTTP Request Event
-
-To respond to an HTTP event a function needs to return object with following fields:
-
-* `statusCode` - `int` - response status code, default: 200
-* `headers` - `object` - response headers
-* `body` - `string` - required, response body
-
-Currently, the event gateway supports only string responses.
-
-### CORS
-
-Events API supports CORS requests which means that any origin can emit a custom event. In case of `sync` subscriptions CORS is
-configured per-subscription basis.
+The MIME type of the data block can be specified using the `Content-Type` header (by default it's
+`application/octet-stream`). This allows the Event Gateway to understand how to deserialize the data block if it needs
+to. In case of `application/json` type the Event Gateway passes JSON payload to the target functions. In any other case
+the data block is base64 encoded.
 
 ## Configuration API
 
 [OpenAPI spec](./openapi/openapi-config-api.yaml)
 
 The Event Gateway exposes a RESTful JSON configuration API. By default Configuration API runs on `:4001` port.
+
+### Event Registry
+
+#### Register Event Type
+
+**Endpoint**
+
+`POST <Configuration API URL>/v1/spaces/<space>/eventtypes`
+
+**Request**
+
+JSON object:
+
+* `name` - `string` - required, event type name
+* `authorizerId` - `string` - authorizer function ID
+
+**Response**
+
+Status code:
+
+* `201 Created` on success
+* `400 Bad Request` on validation error
+
+JSON object:
+
+* `space` - `string` - space name
+* `name` - `string` - event type name
+* `authorizerId` - `string` - authorizer function ID
+
+---
+
+#### Delete Event Type
+
+Delete event type. This operation fails if there is at least one subscription using the event type.
+
+**Endpoint**
+
+`DELETE <Configuration API URL>/v1/spaces/<space>/eventtypes/<event type name>`
+
+**Response**
+
+Status code:
+
+* `204 No Content` on success
+* `400 Bad Request` if there are subscriptions using the event type
+* `404 Not Found` if event type doesn't exist
+
+---
+
+#### Get Event Types
+
+**Endpoint**
+
+`GET <Configuration API URL>/v1/spaces/<space>/eventtypes`
+
+**Response**
+
+Status code:
+
+* `200 OK` on success
+
+JSON object:
+
+* `eventTypes` - `array` of `object` - event types:
+  * `space` - `string` - space name
+  * `name` - `string` - event type name
+  * `authorizerId` - `string` - authorizer function ID
+
+#### Get Event Type
+
+**Endpoint**
+
+`GET <Configuration API URL>/v1/spaces/<space>/eventtypes/<event type name>`
+
+**Response**
+
+Status code:
+
+* `200 OK` on success
+* `404 Not Found` if event type doesn't exist
+
+JSON object:
+
+* `space` - `string` - space name
+* `name` - `string` - event type name
+* `authorizerId` - `string` - authorizer function ID
+
 
 ### Function Discovery
 
