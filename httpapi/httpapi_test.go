@@ -165,6 +165,86 @@ func TestCreateEventType(t *testing.T) {
 	})
 }
 
+func TestUpdateEventType(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, eventTypes, _, _ := setup(ctrl)
+
+	typePayload := []byte(`{"name":"test.event","space":"test1"}`)
+
+	t.Run("event type updated", func(t *testing.T) {
+		eventType := &event.Type{Space: "default", Name: event.TypeName("test.event")}
+		eventTypes.EXPECT().UpdateEventType(eventType).Return(eventType, nil)
+
+		resp := request(router, http.MethodPut, "/v1/spaces/default/eventtypes/test.event", typePayload)
+
+		returnedType := &event.Type{}
+		json.Unmarshal(resp.Body.Bytes(), returnedType)
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+		assert.Equal(t, event.TypeName("test.event"), returnedType.Name)
+		assert.Equal(t, "default", returnedType.Space)
+	})
+
+	t.Run("event type doesn't exists", func(t *testing.T) {
+		eventTypes.EXPECT().UpdateEventType(gomock.Any()).
+			Return(nil, &event.ErrEventTypeNotFound{Name: event.TypeName("test.event")})
+
+		resp := request(router, http.MethodPut, "/v1/spaces/default/eventtypes/test.event", typePayload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusNotFound, resp.Code)
+		assert.Equal(t, `Event Type "test.event" not found.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("authorizer doesn't exists error", func(t *testing.T) {
+		eventTypes.EXPECT().UpdateEventType(gomock.Any()).
+			Return(nil, &event.ErrAuthorizerDoesNotExists{})
+
+		payload := []byte(`{"name":"test"}`)
+		resp := request(router, http.MethodPut, "/v1/spaces/default/eventtypes/test.event", payload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, "Authorizer function doesn't exists.", httpresp.Errors[0].Message)
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		eventTypes.EXPECT().UpdateEventType(gomock.Any()).
+			Return(nil, &event.ErrEventTypeValidation{Message: "some error"})
+
+		payload := []byte(`{"name":"test"}`)
+		resp := request(router, http.MethodPut, "/v1/spaces/default/eventtypes/test.event", payload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, "Event Type doesn't validate. Validation error: some error", httpresp.Errors[0].Message)
+	})
+
+	t.Run("malformed JSON", func(t *testing.T) {
+		resp := request(router, http.MethodPut, "/v1/spaces/default/eventtypes/test.event", []byte("{"))
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, "Event Type doesn't validate. Validation error: unexpected EOF", httpresp.Errors[0].Message)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		eventTypes.EXPECT().UpdateEventType(gomock.Any()).Return(nil, errors.New("processing error"))
+
+		resp := request(router, http.MethodPut, "/v1/spaces/default/eventtypes/test.event", typePayload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, `processing error`, httpresp.Errors[0].Message)
+	})
+}
+
 func TestDeleteEventType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -181,7 +261,7 @@ func TestDeleteEventType(t *testing.T) {
 	})
 
 	t.Run("event type has subscriptions", func(t *testing.T) {
-		eventTypes.EXPECT().DeleteEventType(gomock.Any(), gomock.Any()).Return(&event.ErrEventTypeHasSubscriptionsError{})
+		eventTypes.EXPECT().DeleteEventType(gomock.Any(), gomock.Any()).Return(&event.ErrEventTypeHasSubscriptions{})
 
 		resp := request(router, http.MethodDelete, "/v1/spaces/default/eventtypes/test.event", nil)
 
@@ -191,7 +271,7 @@ func TestDeleteEventType(t *testing.T) {
 		assert.Equal(t, "Event type cannot be deleted because there are subscriptions using it.", httpresp.Errors[0].Message)
 	})
 
-	t.Run("function not found", func(t *testing.T) {
+	t.Run("event type not found", func(t *testing.T) {
 		eventTypes.EXPECT().DeleteEventType(gomock.Any(), gomock.Any()).Return(&event.ErrEventTypeNotFound{Name: event.TypeName("test.event")})
 
 		resp := request(router, http.MethodDelete, "/v1/spaces/default/eventtypes/test.event", nil)
@@ -388,7 +468,7 @@ func TestDeleteFunction(t *testing.T) {
 	})
 
 	t.Run("function has subscriptions", func(t *testing.T) {
-		functions.EXPECT().DeleteFunction(gomock.Any(), gomock.Any()).Return(&function.ErrFunctionHasSubscriptionsError{})
+		functions.EXPECT().DeleteFunction(gomock.Any(), gomock.Any()).Return(&function.ErrFunctionHasSubscriptions{})
 
 		resp := request(router, http.MethodDelete, "/v1/spaces/default/functions/func1", nil)
 
@@ -517,6 +597,44 @@ func TestUpdateSubscription(t *testing.T) {
 		json.Unmarshal(resp.Body.Bytes(), httpresp)
 		assert.Equal(t, http.StatusInternalServerError, resp.Code)
 		assert.Equal(t, "processing failed", httpresp.Errors[0].Message)
+	})
+}
+
+func TestDeleteSubscription(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _, subscriptions := setup(ctrl)
+
+	t.Run("subscription deleted", func(t *testing.T) {
+		subscriptions.EXPECT().DeleteSubscription("default", subscription.ID("testid")).Return(nil)
+
+		resp := request(router, http.MethodDelete, "/v1/spaces/default/subscriptions/testid", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusNoContent, resp.Code)
+	})
+
+	t.Run("subscriptions not found", func(t *testing.T) {
+		subscriptions.EXPECT().DeleteSubscription(gomock.Any(), gomock.Any()).Return(&subscription.ErrSubscriptionNotFound{ID: subscription.ID("testid")})
+
+		resp := request(router, http.MethodDelete, "/v1/spaces/default/subscriptions/testid", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusNotFound, resp.Code)
+		assert.Equal(t, `Subscription "testid" not found.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		subscriptions.EXPECT().DeleteSubscription(gomock.Any(), gomock.Any()).Return(errors.New("internal error"))
+
+		resp := request(router, http.MethodDelete, "/v1/spaces/default/subscriptions/testid", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, "internal error", httpresp.Errors[0].Message)
 	})
 }
 

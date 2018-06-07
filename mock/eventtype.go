@@ -85,14 +85,14 @@ func (mr *MockEventTypeServiceMockRecorder) GetEventTypes(arg0 interface{}) *gom
 }
 
 // UpdateEventType mocks base method
-func (m *MockEventTypeService) UpdateEventType(arg0 event.TypeName, arg1 *event.Type) (*event.Type, error) {
-	ret := m.ctrl.Call(m, "UpdateEventType", arg0, arg1)
+func (m *MockEventTypeService) UpdateEventType(arg0 *event.Type) (*event.Type, error) {
+	ret := m.ctrl.Call(m, "UpdateEventType", arg0)
 	ret0, _ := ret[0].(*event.Type)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateEventType indicates an expected call of UpdateEventType
-func (mr *MockEventTypeServiceMockRecorder) UpdateEventType(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventType", reflect.TypeOf((*MockEventTypeService)(nil).UpdateEventType), arg0, arg1)
+func (mr *MockEventTypeServiceMockRecorder) UpdateEventType(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventType", reflect.TypeOf((*MockEventTypeService)(nil).UpdateEventType), arg0)
 }

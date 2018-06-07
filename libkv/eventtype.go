@@ -24,7 +24,7 @@ func (key EventTypeKey) String() string {
 
 // CreateEventType creates event type in configuration.
 func (service Service) CreateEventType(eventType *event.Type) (*event.Type, error) {
-	if err := service.validateEventType(eventType); err != nil {
+	if err := validateEventType(eventType); err != nil {
 		return nil, err
 	}
 
@@ -36,13 +36,13 @@ func (service Service) CreateEventType(eventType *event.Type) (*event.Type, erro
 	if eventType.AuthorizerID != nil {
 		function, _ := service.GetFunction(eventType.Space, *eventType.AuthorizerID)
 		if function == nil {
-			return nil, &event.ErrEventTypeValidation{Message: "Authorizer function doesn't exists."}
+			return nil, &event.ErrAuthorizerDoesNotExists{}
 		}
 	}
 
 	byt, err := json.Marshal(eventType)
 	if err != nil {
-		return nil, err
+		return nil, &event.ErrEventTypeValidation{Message: err.Error()}
 	}
 
 	err = service.EventTypeStore.Put(EventTypeKey{eventType.Space, eventType.Name}.String(), byt, nil)
@@ -97,6 +97,39 @@ func (service Service) GetEventTypes(space string) (event.Types, error) {
 	return event.Types(types), nil
 }
 
+// UpdateEventType updates subscription.
+func (service Service) UpdateEventType(newEventType *event.Type) (*event.Type, error) {
+	if err := validateEventType(newEventType); err != nil {
+		return nil, err
+	}
+
+	_, err := service.GetEventType(newEventType.Space, newEventType.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	if newEventType.AuthorizerID != nil {
+		function, _ := service.GetFunction(newEventType.Space, *newEventType.AuthorizerID)
+		if function == nil {
+			return nil, &event.ErrAuthorizerDoesNotExists{}
+		}
+	}
+
+	buf, err := json.Marshal(newEventType)
+	if err != nil {
+		return nil, &event.ErrEventTypeValidation{Message: err.Error()}
+	}
+
+	err = service.EventTypeStore.Put(EventTypeKey{newEventType.Space, newEventType.Name}.String(), buf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	service.Log.Debug("Event Type updated.", zap.Object("eventType", newEventType))
+
+	return newEventType, nil
+}
+
 // DeleteEventType deletes event type from the configuration.
 func (service Service) DeleteEventType(space string, name event.TypeName) error {
 	subs, err := service.GetSubscriptions(space)
@@ -105,7 +138,7 @@ func (service Service) DeleteEventType(space string, name event.TypeName) error 
 	}
 	for _, sub := range subs {
 		if name == sub.EventType {
-			return &event.ErrEventTypeHasSubscriptionsError{}
+			return &event.ErrEventTypeHasSubscriptions{}
 		}
 	}
 
@@ -119,7 +152,7 @@ func (service Service) DeleteEventType(space string, name event.TypeName) error 
 	return nil
 }
 
-func (service Service) validateEventType(eventType *event.Type) error {
+func validateEventType(eventType *event.Type) error {
 	if eventType.Space == "" {
 		eventType.Space = defaultSpace
 	}

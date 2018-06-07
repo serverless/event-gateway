@@ -66,9 +66,7 @@ func TestCreateEventType(t *testing.T) {
 
 		_, err := service.CreateEventType(testEventTypeWithAuth)
 
-		assert.Equal(t, &event.ErrEventTypeValidation{
-			Message: "Authorizer function doesn't exists.",
-		}, err)
+		assert.Equal(t, &event.ErrAuthorizerDoesNotExists{}, err)
 	})
 
 	t.Run("KV Put error", func(t *testing.T) {
@@ -163,6 +161,68 @@ func TestGetEventTypes(t *testing.T) {
 	})
 }
 
+func TestUpdateEventType(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	existingEventTypeKV := &store.KVPair{Value: []byte(`{"space":"default","name":"test.event"}`)}
+	authorizerID := function.ID("auth")
+	newEventType := &event.Type{Space: "default", Name: "test.event", AuthorizerID: &authorizerID}
+	newEventTypePayload := []byte(`{"space":"default","name":"test.event","authorizerId":"auth"}`)
+	functionKV := &store.KVPair{
+		Value: []byte(`{"functionId":"f1","type":"http","provider":{"url": "http://test.com"}}}`)}
+
+	t.Run("event type updated", func(t *testing.T) {
+		functionsDB := mock.NewMockStore(ctrl)
+		functionsDB.EXPECT().Get("default/auth", gomock.Any()).Return(functionKV, nil)
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().
+			Get("default/test.event", &store.ReadOptions{Consistent: true}).
+			Return(existingEventTypeKV, nil)
+		eventTypesDB.EXPECT().Put("default/test.event", newEventTypePayload, nil).Return(nil)
+		service := &Service{FunctionStore: functionsDB, EventTypeStore: eventTypesDB, Log: zap.NewNop()}
+
+		_, err := service.UpdateEventType(newEventType)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("event type not found", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("Key not found in store"))
+		service := &Service{EventTypeStore: db, Log: zap.NewNop()}
+
+		_, err := service.UpdateEventType(newEventType)
+
+		assert.Equal(t, &event.ErrEventTypeNotFound{Name: "test.event"}, err)
+	})
+
+	t.Run("authorizer function doesn't exists error", func(t *testing.T) {
+		functionsDB := mock.NewMockStore(ctrl)
+		functionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("Key not found in store"))
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(existingEventTypeKV, nil)
+		service := &Service{EventTypeStore: eventTypesDB, FunctionStore: functionsDB, Log: zap.NewNop()}
+
+		_, err := service.UpdateEventType(newEventType)
+
+		assert.Equal(t, &event.ErrAuthorizerDoesNotExists{}, err)
+	})
+
+	t.Run("KV Put error", func(t *testing.T) {
+		functionsDB := mock.NewMockStore(ctrl)
+		functionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(functionKV, nil)
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(existingEventTypeKV, nil)
+		eventTypesDB.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("KV put error"))
+		service := &Service{FunctionStore: functionsDB, EventTypeStore: eventTypesDB, Log: zap.NewNop()}
+
+		_, err := service.UpdateEventType(newEventType)
+
+		assert.EqualError(t, err, "KV put error")
+	})
+}
+
 func TestDeleteEventType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -201,6 +261,6 @@ func TestDeleteEventType(t *testing.T) {
 
 		err := service.DeleteEventType("default", event.TypeName("test.event"))
 
-		assert.Equal(t, &event.ErrEventTypeHasSubscriptionsError{}, err)
+		assert.Equal(t, &event.ErrEventTypeHasSubscriptions{}, err)
 	})
 }
