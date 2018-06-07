@@ -1,6 +1,8 @@
 package router_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -76,120 +78,172 @@ func TestRouterServeHTTP(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, recorder.Code)
 	})
 
-	space := "default"
-	functionID := function.ID("test")
-	fn := &function.Function{
-		Space:        space,
-		ID:           functionID,
-		ProviderType: httpprovider.Type,
-		Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, []byte("{}")).URL},
-	}
-	subscriber := &router.SyncSubscriber{Space: space, FunctionID: functionID}
-
-	t.Run("call sync subscriber", func(t *testing.T) {
-		eventType := &event.Type{Space: space, Name: "http.request"}
-		target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
-		target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
-		target.EXPECT().Function(space, functionID).Return(fn)
-		router := setupTestRouter(target)
-
-		req, _ := http.NewRequest(http.MethodPost, "/", nil)
-		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, req)
-
-		assert.Equal(t, http.StatusOK, recorder.Code)
-	})
-
-	t.Run("status code and headers based on HTTP response object", func(t *testing.T) {
-		httpResponseObject := []byte(`{"statusCode": 206, "headers": {"x-custom": "custom value"}}`)
-		fn = &function.Function{
+	t.Run("subscriptions handling", func(t *testing.T) {
+		space := "default"
+		functionID := function.ID("test")
+		fn := &function.Function{
 			Space:        space,
 			ID:           functionID,
 			ProviderType: httpprovider.Type,
-			Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, httpResponseObject).URL},
+			Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, []byte("{}")).URL},
 		}
-		eventType := &event.Type{Space: space, Name: "http.request"}
-		target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
-		target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
-		target.EXPECT().Function(space, functionID).Return(fn)
-		router := setupTestRouter(target)
+		subscriber := &router.SyncSubscriber{Space: space, FunctionID: functionID}
 
-		req, _ := http.NewRequest(http.MethodPost, "/", nil)
-		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, req)
+		t.Run("call sync subscriber", func(t *testing.T) {
+			eventType := &event.Type{Space: space, Name: "http.request"}
+			target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
+			target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+			target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
+			target.EXPECT().Function(space, functionID).Return(fn)
+			router := setupTestRouter(target)
 
-		assert.Equal(t, 206, recorder.Code)
-		assert.Equal(t, "custom value", recorder.HeaderMap.Get("x-custom"))
-	})
+			req, _ := http.NewRequest(http.MethodPost, "/", nil)
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, req)
 
-	t.Run("status Internal Server Error if HTTP response object malformed", func(t *testing.T) {
-		fn = &function.Function{
-			Space:        space,
-			ID:           functionID,
-			ProviderType: httpprovider.Type,
-			Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, []byte("not JSON")).URL},
-		}
-		eventType := &event.Type{Space: space, Name: "http.request"}
-		target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
-		target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
-		target.EXPECT().Function(space, functionID).Return(fn)
-		router := setupTestRouter(target)
+			assert.Equal(t, http.StatusOK, recorder.Code)
+		})
 
-		req, _ := http.NewRequest(http.MethodPost, "/", nil)
-		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, req)
+		t.Run("status code and headers based on HTTP response object", func(t *testing.T) {
+			httpResponseObject := []byte(`{"statusCode": 206, "headers": {"x-custom": "custom value"}}`)
+			fn = &function.Function{
+				Space:        space,
+				ID:           functionID,
+				ProviderType: httpprovider.Type,
+				Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, httpResponseObject).URL},
+			}
+			eventType := &event.Type{Space: space, Name: "http.request"}
+			target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
+			target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+			target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
+			target.EXPECT().Function(space, functionID).Return(fn)
+			router := setupTestRouter(target)
 
-		assert.Equal(t, http.StatusInternalServerError, recorder.Code)
-	})
+			req, _ := http.NewRequest(http.MethodPost, "/", nil)
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, req)
 
-	t.Run("status Forbidden if authorizer returned nil", func(t *testing.T) {
-		authorizerID := function.ID("auth")
-		authorizer := &function.Function{
-			Space:        space,
-			ID:           authorizerID,
-			ProviderType: httpprovider.Type,
-			// function returning nil is not valid authorizer
-			Provider: &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, nil).URL},
-		}
-		eventType := &event.Type{Space: space, Name: "http.request", AuthorizerID: &authorizerID}
-		target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
-		target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
-		target.EXPECT().Function(space, authorizerID).Return(authorizer)
-		router := setupTestRouter(target)
+			assert.Equal(t, 206, recorder.Code)
+			assert.Equal(t, "custom value", recorder.HeaderMap.Get("x-custom"))
+		})
 
-		req, _ := http.NewRequest(http.MethodPost, "/", nil)
-		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, req)
+		t.Run("status Internal Server Error if HTTP response object malformed", func(t *testing.T) {
+			fn = &function.Function{
+				Space:        space,
+				ID:           functionID,
+				ProviderType: httpprovider.Type,
+				Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, []byte("not JSON")).URL},
+			}
+			eventType := &event.Type{Space: space, Name: "http.request"}
+			target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
+			target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+			target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
+			target.EXPECT().Function(space, functionID).Return(fn)
+			router := setupTestRouter(target)
 
-		assert.Equal(t, http.StatusForbidden, recorder.Code)
-	})
+			req, _ := http.NewRequest(http.MethodPost, "/", nil)
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, req)
 
-	t.Run("status Forbidden if authorizer returned error", func(t *testing.T) {
-		authorizerID := function.ID("auth")
-		authorizer := &function.Function{
-			Space:        space,
-			ID:           authorizerID,
-			ProviderType: httpprovider.Type,
-			// function returning nil is not valid authorizer
-			Provider: &httpprovider.HTTP{
-				URL: testHTTPFunction(http.StatusOK, []byte(`{"error":{"message": "failed"}}`)).URL},
-		}
-		eventType := &event.Type{Space: space, Name: "http.request", AuthorizerID: &authorizerID}
-		target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
-		target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
-		target.EXPECT().Function(space, authorizerID).Return(authorizer)
-		router := setupTestRouter(target)
+			assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+		})
 
-		req, _ := http.NewRequest(http.MethodPost, "/", nil)
-		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, req)
+		t.Run("with authorizer", func(t *testing.T) {
+			authorizerID := function.ID("auth")
+			authorizer := &function.Function{
+				Space:        space,
+				ID:           authorizerID,
+				ProviderType: httpprovider.Type,
+				// function returning nil is not valid authorizer
+				Provider: &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, nil).URL},
+			}
+			eventType := &event.Type{Space: space, Name: "http.request", AuthorizerID: &authorizerID}
 
-		assert.Equal(t, http.StatusForbidden, recorder.Code)
+			t.Run("status Forbidden if authorizer returned nil", func(t *testing.T) {
+				target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
+				target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+				target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
+				target.EXPECT().Function(space, authorizerID).Return(authorizer)
+				router := setupTestRouter(target)
+
+				req, _ := http.NewRequest(http.MethodPost, "/", nil)
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+
+				assert.Equal(t, http.StatusForbidden, recorder.Code)
+			})
+
+			t.Run("status Forbidden if authorizer returned error", func(t *testing.T) {
+				authorizer.Provider = &httpprovider.HTTP{
+					URL: testHTTPFunction(http.StatusOK, []byte(`{"error":{"message": "failed"}}`)).URL}
+				target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
+				target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+				target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
+				target.EXPECT().Function(space, authorizerID).Return(authorizer)
+				router := setupTestRouter(target)
+
+				req, _ := http.NewRequest(http.MethodPost, "/", nil)
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+
+				assert.Equal(t, http.StatusForbidden, recorder.Code)
+			})
+
+			t.Run("include authorizer result in event extensions for event created by EG", func(t *testing.T) {
+				targetFunction := httptest.NewServer(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						cloudEvent := &event.Event{}
+						dec := json.NewDecoder(r.Body)
+						dec.Decode(cloudEvent)
+
+						assert.Equal(t, "testid", cloudEvent.Extensions["eventgateway"].(map[string]interface{})["authorization"].(map[string]interface{})["principalId"])
+					}))
+
+				fn.Provider = &httpprovider.HTTP{
+					URL: targetFunction.URL}
+				authorizer.Provider = &httpprovider.HTTP{
+					URL: testHTTPFunction(http.StatusOK, []byte(`{"authorization":{"principalId": "testid"}}`)).URL}
+				target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
+				target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+				target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
+				target.EXPECT().Function(space, authorizerID).Return(authorizer)
+				target.EXPECT().Function(space, functionID).Return(fn)
+				router := setupTestRouter(target)
+
+				req, _ := http.NewRequest(http.MethodPost, "/", nil)
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+			})
+
+			t.Run("include authorizer result in custom event extensions", func(t *testing.T) {
+				targetFunction := httptest.NewServer(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						cloudEvent := &event.Event{}
+						dec := json.NewDecoder(r.Body)
+						dec.Decode(cloudEvent)
+
+						assert.Equal(t, "testid", cloudEvent.Extensions["eventgateway"].(map[string]interface{})["authorization"].(map[string]interface{})["principalId"])
+					}))
+
+				fn.Provider = &httpprovider.HTTP{
+					URL: targetFunction.URL}
+				authorizer.Provider = &httpprovider.HTTP{
+					URL: testHTTPFunction(http.StatusOK, []byte(`{"authorization":{"principalId": "testid"}}`)).URL}
+				eventType := &event.Type{Space: space, Name: "test.event", AuthorizerID: &authorizerID}
+				target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
+				target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
+				target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
+				target.EXPECT().Function(space, authorizerID).Return(authorizer)
+				target.EXPECT().Function(space, functionID).Return(fn)
+				router := setupTestRouter(target)
+
+				req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewReader(
+					[]byte(`{"eventId":"test","eventType":"test.event","eventTypeVersion":"0.1","cloudEventsVersion":"0.1","source":"/"}`)))
+				req.Header.Set("content-type", "application/cloudevents+json")
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+			})
+		})
 	})
 }
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/jinzhu/copier"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 
@@ -87,10 +88,10 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		syncSubscriber := router.targetCache.SyncSubscriber(r.Method, path, event.EventType)
 		if syncSubscriber != nil { // There is sync subscriber and possibly async subscribers also
-			router.handleSyncSubscription(path, event, *syncSubscriber, w, r)
+			router.handleSyncSubscription(path, *event, *syncSubscriber, w, r)
 		}
 
-		router.handleAsyncSubscriptions(r.Method, path, event, r)
+		router.handleAsyncSubscriptions(r.Method, path, *event, r)
 		if syncSubscriber == nil {
 			w.WriteHeader(http.StatusAccepted)
 		}
@@ -148,11 +149,11 @@ var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
 
-func (router *Router) handleSyncSubscription(path string, event *eventpkg.Event, subscriber SyncSubscriber, w http.ResponseWriter, r *http.Request) {
+func (router *Router) handleSyncSubscription(path string, event eventpkg.Event, subscriber SyncSubscriber, w http.ResponseWriter, r *http.Request) {
 	// metrics & logs
 	metricEventsReceived.WithLabelValues(subscriber.Space, string(event.EventType)).Inc()
 	router.log.Debug("Event received.", zap.String("path", path), zap.String("space", subscriber.Space), zap.Object("event", event))
-	err := router.emitSystemEventReceived(path, *event, r.Header)
+	err := router.emitSystemEventReceived(path, event, r.Header)
 	if err != nil {
 		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
 			zap.Object("event", event),
@@ -160,7 +161,7 @@ func (router *Router) handleSyncSubscription(path string, event *eventpkg.Event,
 		return
 	}
 
-	err = router.authorizeEventType(subscriber.Space, event, r)
+	err = router.authorizeEventType(subscriber.Space, &event, r)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		return
@@ -172,7 +173,7 @@ func (router *Router) handleSyncSubscription(path string, event *eventpkg.Event,
 		httpRequestData.Params = subscriber.Params
 		event.Data = httpRequestData
 	}
-	router.httpRequestHandler(subscriber.Space, subscriber.FunctionID, event)(w, r)
+	router.httpRequestHandler(subscriber.Space, subscriber.FunctionID, &event)(w, r)
 
 	metricEventsProcessed.WithLabelValues(subscriber.Space, string(event.EventType)).Inc()
 }
@@ -219,7 +220,7 @@ func (router *Router) httpRequestHandler(space string, backingFunction function.
 }
 
 // handleAsyncSubscriptions fetched events subscribers, runs authorization and enqueues event in the queue
-func (router *Router) handleAsyncSubscriptions(method, path string, event *eventpkg.Event, r *http.Request) {
+func (router *Router) handleAsyncSubscriptions(method, path string, event eventpkg.Event, r *http.Request) {
 	if event.IsSystem() {
 		router.log.Debug("System event received.", zap.Object("event", event))
 	}
@@ -228,9 +229,11 @@ func (router *Router) handleAsyncSubscriptions(method, path string, event *event
 	for _, subscriber := range subscribers {
 		metricEventsReceived.WithLabelValues(subscriber.Space, "custom").Inc()
 
-		err := router.authorizeEventType(subscriber.Space, event, r)
+		subEvent := eventpkg.Event{}
+		copier.Copy(&subEvent, &event)
+		err := router.authorizeEventType(subscriber.Space, &subEvent, r)
 		if err == nil {
-			router.enqueueWork(method, path, subscriber.Space, subscriber.FunctionID, *event)
+			router.enqueueWork(method, path, subscriber.Space, subscriber.FunctionID, subEvent)
 		}
 	}
 }
@@ -331,6 +334,16 @@ func (router *Router) authorizeEventType(space string, event *eventpkg.Event, r 
 				zap.Object("event", event))
 			return errors.New(authorizerResponse.AuthorizationError.Message)
 		}
+
+		if egExternsions, ok := event.Extensions["eventgateway"]; ok {
+			egExternsions.(map[string]interface{})["authorization"] = authorizerResponse.Authorization
+		} else {
+			event.Extensions = map[string]interface{}{
+				"eventgateway": map[string]interface{}{
+					"authorization": authorizerResponse.Authorization,
+				},
+			}
+		}
 	}
 
 	return nil
@@ -425,7 +438,7 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 		mimeJSON,
 		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
 	)
-	router.handleAsyncSubscriptions(http.MethodPost, "/", system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
 	return router.plugins.React(system)
 }
 
@@ -435,7 +448,7 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 		mimeJSON,
 		eventpkg.SystemFunctionInvokingData{Space: space, FunctionID: functionID, Event: event},
 	)
-	router.handleAsyncSubscriptions(http.MethodPost, "/", system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokingType)).Inc()
 
@@ -447,7 +460,7 @@ func (router *Router) emitSystemFunctionInvoked(space string, functionID functio
 		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
 		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
-	router.handleAsyncSubscriptions(http.MethodPost, "/", system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokedType)).Inc()
 
@@ -460,7 +473,7 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 			eventpkg.SystemFunctionInvocationFailedType,
 			mimeJSON,
 			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
-		router.handleAsyncSubscriptions(http.MethodPost, "/", system, nil)
+		router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
 
 		metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
 	}
