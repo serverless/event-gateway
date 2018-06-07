@@ -13,6 +13,7 @@ This document contains the API documentation for both Events and Configuration A
 1.  [Configuration API](#configuration-api)
     1. [Event Types](#event-types)
         1. [Register Event Type](#register-event-type)
+        1. [Update Event Type](#update-event-type)
         1. [Delete Event Type](#delete-event-type)
         1. [Get Event Types](#get-event-types)
         1. [Get Event Type](#get-event-type)
@@ -125,6 +126,34 @@ Status code:
 
 * `201 Created` on success
 * `400 Bad Request` on validation error
+
+JSON object:
+
+* `space` - `string` - space name
+* `name` - `string` - event type name
+* `authorizerId` - `string` - authorizer function ID
+
+---
+
+#### Update Event Type
+
+**Endpoint**
+
+`PUT <Configuration API URL>/v1/spaces/<space>/eventtypes/<event type name>`
+
+**Request**
+
+JSON object:
+
+* `authorizerId` - `string` - authorizer function ID
+
+**Response**
+
+Status code:
+
+* `200 OK` on success
+* `400 Bad Request` on validation error or if the authorizer function doesn't exist
+* `404 Not Found` if event type doesn't exist
 
 JSON object:
 

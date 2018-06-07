@@ -86,6 +86,29 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         500:
           $ref: '#/components/responses/Error'
+    put:
+      summary: "Update event type"
+      tags:
+      - "event type"
+      operationId: "UpdateEventType"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/EventTypeName"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateEventType"
+      responses:
+        200:
+          description: "event type updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventType"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
     delete:
       summary: "Delete event type"
       tags:
@@ -571,6 +594,15 @@ components:
             properties:
               name:
                 $ref: '#/components/schemas/EventTypeName'
+              authorizerId:
+                $ref: '#/components/schemas/FunctionID'
+    UpdateEventType:
+      description: "event type update request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
               authorizerId:
                 $ref: '#/components/schemas/FunctionID'
     CreateFunction:
