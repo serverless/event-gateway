@@ -3,7 +3,7 @@
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/json/jsonutil","private/protocol/jsonrpc","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restjson","private/protocol/xml/xmlutil","service/lambda","service/sts"]
+  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/json/jsonutil","private/protocol/jsonrpc","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restjson","private/protocol/xml/xmlutil","service/firehose","service/firehose/firehoseiface","service/kinesis","service/kinesis/kinesisiface","service/lambda","service/lambda/lambdaiface","service/sqs","service/sqs/sqsiface","service/sts"]
   revision = "d05c000e0b41647375a4093373eb1301e02c8a4e"
   version = "v1.10.22"
 
@@ -115,6 +115,12 @@
   packages = ["runtime","runtime/internal","utilities"]
   revision = "18d159699f2e83fc5bb9ef2f79465ca3f3122676"
   version = "v1.2.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/jinzhu/copier"
+  packages = ["."]
+  revision = "7e38e58719c33e0d44d585c4ab477a30f8cb82dd"
 
 [[projects]]
   branch = "master"
@@ -257,6 +263,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1df318290105d69ef5af96a69c5e35d34ff3b5dcc7b19280a96f138d175eee9a"
+  inputs-digest = "40303385e38e32716a606f65ba02c55615db5dbbf68100052f8265e835747293"
   solver-name = "gps-cdcl"
   solver-version = 1

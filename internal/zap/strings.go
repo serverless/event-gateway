@@ -2,6 +2,7 @@ package zap
 
 import (
 	"encoding/json"
+
 	"go.uber.org/zap/zapcore"
 )
 
@@ -23,7 +24,7 @@ type MapStringInterface map[string]interface{}
 func (msi MapStringInterface) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	for key, val := range msi {
 		v, err := json.Marshal(val)
-		if err != nil {
+		if err == nil {
 			enc.AddString(key, string(v))
 		} else {
 			return err
