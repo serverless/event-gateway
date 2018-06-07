@@ -19,12 +19,12 @@ This document contains the API documentation for both Events and Configuration A
     1. [How To Emit an Event](#how-to-emit-an-event)
     1. [Legacy Mode](#legacy-mode)
 1.  [Configuration API](#configuration-api)
-    1. [Event Registry](#event-registry)
+    1. [Event Types](#event-types)
         1. [Register Event Type](#register-event-type)
         1. [Delete Event Type](#delete-event-type)
         1. [Get Event Types](#get-event-types)
         1. [Get Event Type](#get-event-type)
-    1. [Function Discovery](#function-discovery)
+    1. [Functions](#functions)
         1. [Register Function](#register-function)
         1. [Update Function](#update-function)
         1. [Delete Function](#delete-function)
@@ -75,7 +75,7 @@ Currently, Event Gateway supports [CloudEvents v0.1 schema](https://github.com/c
 
 ### Subscription Types
 
-Event Gateway support two subscription types: `async` and `sync`.
+Event Gateway supports two subscription types: `async` and `sync`.
 
 #### `async` subscription
 
@@ -113,7 +113,7 @@ parameter `/users/*userpath` for request path `/users/group1/user1` will match `
 
 ### Authorization
 
-Event Type can define authorizer function that will be called before calling a subscribed function. Authorizer function is a function registered in Function Discovery beforehand.
+Event Type can define authorizer function that will be called before calling a subscribed function. Authorizer function is a function registered in Event Gateway beforehand.
 
 #### Invocation Payload
 
@@ -168,6 +168,8 @@ Status code:
 
 ### Legacy Mode
 
+*Legacy mode is deprecated and will be removed in upcoming releases.*
+
 In legacy mode, Event Gateway is able to recognize event type based on `Event` header. If the event is not formatted according to CloudEvents specification Event Gateway looks for this header and creates CloudEvent internally. In this case, whole request body is put into `data` field.
 
 #### Event Data Type
@@ -183,7 +185,7 @@ the data block is base64 encoded.
 
 The Event Gateway exposes a RESTful JSON configuration API. By default Configuration API runs on `:4001` port.
 
-### Event Registry
+### Event Types
 
 #### Register Event Type
 
@@ -270,7 +272,7 @@ JSON object:
 * `authorizerId` - `string` - authorizer function ID
 
 
-### Function Discovery
+### Functions
 
 #### Register Function
 
