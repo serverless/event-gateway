@@ -19,7 +19,7 @@ This document contains the API documentation for both Events and Configuration A
     1. [How To Emit an Event](#how-to-emit-an-event)
     1. [Legacy Mode](#legacy-mode)
 1.  [Configuration API](#configuration-api)
-    1. [Event Types](#event-types-2)
+    1. [Event Types](#event-types-1)
         1. [Register Event Type](#register-event-type)
         1. [Delete Event Type](#delete-event-type)
         1. [Get Event Types](#get-event-types)
