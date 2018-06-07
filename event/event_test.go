@@ -80,7 +80,7 @@ var newTests = []struct {
 			Data:               []byte("test"),
 			Extensions: map[string]interface{}{
 				"eventgateway": map[string]interface{}{
-					"transformed":            true,
+					"transformed":            "true",
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
@@ -99,7 +99,7 @@ var newTests = []struct {
 			Data:               eventpkg.SystemEventReceivedData{},
 			Extensions: map[string]interface{}{
 				"eventgateway": map[string]interface{}{
-					"transformed":            true,
+					"transformed":            "true",
 					"transformation-version": eventpkg.TransformationVersion,
 				},
 			},
@@ -223,7 +223,7 @@ var fromRequestTests = []struct {
 			ContentType:        "application/octet-stream",
 			Data:               []byte("hey there"),
 			Extensions: map[string]interface{}{
-				"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
+				"eventgateway": map[string]interface{}{"transformed": "true", "transformation-version": "0.1"}},
 		},
 	},
 	{
@@ -264,7 +264,7 @@ var fromRequestTests = []struct {
 			ContentType:        "application/json",
 			Data:               map[string]interface{}{"eventType": "user.created"},
 			Extensions: map[string]interface{}{
-				"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
+				"eventgateway": map[string]interface{}{"transformed": "true", "transformation-version": "0.1"}},
 		},
 	},
 	{
@@ -286,7 +286,7 @@ var fromRequestTests = []struct {
 				Body:  []byte("hey there"),
 			},
 			Extensions: map[string]interface{}{
-				"eventgateway": map[string]interface{}{"transformed": true, "transformation-version": "0.1"}},
+				"eventgateway": map[string]interface{}{"transformed": "true", "transformation-version": "0.1"}},
 		},
 	},
 }

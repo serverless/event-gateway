@@ -53,7 +53,7 @@ func New(eventType TypeName, mimeType string, payload interface{}) *Event {
 		Data:               payload,
 		Extensions: map[string]interface{}{
 			"eventgateway": map[string]interface{}{
-				"transformed":            true,
+				"transformed":            "true",
 				"transformation-version": TransformationVersion,
 			},
 		},
@@ -136,7 +136,7 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		enc.AddString("contentType", e.ContentType)
 	}
 	if e.Extensions != nil {
-		e.Extensions.MarshalLogObject(enc)
+		enc.AddObject("extensions", e.Extensions)
 	}
 
 	payload, _ := json.Marshal(e.Data)

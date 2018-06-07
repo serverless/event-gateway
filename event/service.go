@@ -5,5 +5,6 @@ type Service interface {
 	CreateEventType(eventType *Type) (*Type, error)
 	GetEventType(space string, name TypeName) (*Type, error)
 	GetEventTypes(space string) (Types, error)
+	UpdateEventType(newEventType *Type) (*Type, error)
 	DeleteEventType(space string, name TypeName) error
 }

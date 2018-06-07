@@ -25,7 +25,7 @@ func (key FunctionKey) String() string {
 
 // RegisterFunction registers function in configuration.
 func (service Service) RegisterFunction(fn *function.Function) (*function.Function, error) {
-	if err := service.validateFunction(fn); err != nil {
+	if err := validateFunction(fn); err != nil {
 		return nil, err
 	}
 
@@ -51,7 +51,7 @@ func (service Service) RegisterFunction(fn *function.Function) (*function.Functi
 
 // UpdateFunction updates function configuration.
 func (service Service) UpdateFunction(fn *function.Function) (*function.Function, error) {
-	if err := service.validateFunction(fn); err != nil {
+	if err := validateFunction(fn); err != nil {
 		return nil, err
 	}
 
@@ -125,7 +125,7 @@ func (service Service) DeleteFunction(space string, id function.ID) error {
 	}
 	for _, sub := range subs {
 		if id == sub.FunctionID {
-			return &function.ErrFunctionHasSubscriptionsError{}
+			return &function.ErrFunctionHasSubscriptions{}
 		}
 	}
 
@@ -139,7 +139,7 @@ func (service Service) DeleteFunction(space string, id function.ID) error {
 	return nil
 }
 
-func (service Service) validateFunction(fn *function.Function) error {
+func validateFunction(fn *function.Function) error {
 	if fn.Space == "" {
 		fn.Space = defaultSpace
 	}

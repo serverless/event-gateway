@@ -67,9 +67,9 @@ func (e ErrFunctionError) Error() string {
 	return fmt.Sprintf("Function call failed because of runtime error. Error: %s", e.Original)
 }
 
-// ErrFunctionHasSubscriptionsError occurs when function with subscription is being deleted.
-type ErrFunctionHasSubscriptionsError struct{}
+// ErrFunctionHasSubscriptions occurs when function with subscription is being deleted.
+type ErrFunctionHasSubscriptions struct{}
 
-func (e ErrFunctionHasSubscriptionsError) Error() string {
+func (e ErrFunctionHasSubscriptions) Error() string {
 	return fmt.Sprintf("Function cannot be deleted because it's subscribed to a least one event.")
 }

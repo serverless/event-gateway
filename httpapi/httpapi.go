@@ -41,6 +41,7 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/spaces/:space/eventtypes", h.listEventTypes)
 	router.GET("/v1/spaces/:space/eventtypes/:name", h.getEventType)
 	router.POST("/v1/spaces/:space/eventtypes", h.createEventType)
+	router.PUT("/v1/spaces/:space/eventtypes/:name", h.updateEventType)
 	router.DELETE("/v1/spaces/:space/eventtypes/:name", h.deleteEventType)
 
 	router.GET("/v1/spaces/:space/functions", h.listFunctions)
@@ -129,6 +130,43 @@ func (h HTTPAPI) createEventType(w http.ResponseWriter, r *http.Request, params 
 	metricConfigRequests.WithLabelValues(eventType.Space, "eventtype", "create").Inc()
 }
 
+func (h HTTPAPI) updateEventType(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	eventType := &event.Type{}
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(eventType)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		validationErr := event.ErrEventTypeValidation{Message: err.Error()}
+		encoder.Encode(&Response{Errors: []Error{{Message: validationErr.Error()}}})
+		return
+	}
+
+	eventType.Space = params.ByName("space")
+	eventType.Name = event.TypeName(params.ByName("name"))
+	output, err := h.EventTypes.UpdateEventType(eventType)
+	if err != nil {
+		if _, ok := err.(*event.ErrEventTypeNotFound); ok {
+			w.WriteHeader(http.StatusNotFound)
+		} else if _, ok := err.(*event.ErrEventTypeValidation); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*event.ErrAuthorizerDoesNotExists); ok {
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		w.WriteHeader(http.StatusOK)
+		encoder.Encode(output)
+	}
+
+	metricConfigRequests.WithLabelValues(eventType.Space, "eventtype", "update").Inc()
+}
+
 func (h HTTPAPI) deleteEventType(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
@@ -138,7 +176,7 @@ func (h HTTPAPI) deleteEventType(w http.ResponseWriter, r *http.Request, params 
 	if err != nil {
 		if _, ok := err.(*event.ErrEventTypeNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
-		} else if _, ok := err.(*event.ErrEventTypeHasSubscriptionsError); ok {
+		} else if _, ok := err.(*event.ErrEventTypeHasSubscriptions); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -270,7 +308,7 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionNotFound); ok {
 			w.WriteHeader(http.StatusNotFound)
-		} else if _, ok := err.(*function.ErrFunctionHasSubscriptionsError); ok {
+		} else if _, ok := err.(*function.ErrFunctionHasSubscriptions); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)

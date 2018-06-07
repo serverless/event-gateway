@@ -29,11 +29,18 @@ func (e ErrEventTypeValidation) Error() string {
 	return fmt.Sprintf("Event Type doesn't validate. Validation error: %s", e.Message)
 }
 
-// ErrEventTypeHasSubscriptionsError occurs when there are subscription for the event type.
-type ErrEventTypeHasSubscriptionsError struct{}
+// ErrEventTypeHasSubscriptions occurs when there are subscription for the event type.
+type ErrEventTypeHasSubscriptions struct{}
 
-func (e ErrEventTypeHasSubscriptionsError) Error() string {
+func (e ErrEventTypeHasSubscriptions) Error() string {
 	return fmt.Sprintf("Event type cannot be deleted because there are subscriptions using it.")
+}
+
+// ErrAuthorizerDoesNotExists occurs when there authorizer function doesn't exists.
+type ErrAuthorizerDoesNotExists struct{}
+
+func (e ErrAuthorizerDoesNotExists) Error() string {
+	return fmt.Sprintf("Authorizer function doesn't exists.")
 }
 
 // ErrParsingCloudEvent occurs when payload is not valid CloudEvent.
