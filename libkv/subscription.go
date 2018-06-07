@@ -66,8 +66,7 @@ func (service Service) CreateSubscription(sub *subscription.Subscription) (*subs
 
 // UpdateSubscription updates subscription.
 func (service Service) UpdateSubscription(id subscription.ID, newSub *subscription.Subscription) (*subscription.Subscription, error) {
-	err := validateSubscription(newSub)
-	if err != nil {
+	if err := validateSubscription(newSub); err != nil {
 		return nil, err
 	}
 
@@ -88,7 +87,7 @@ func (service Service) UpdateSubscription(id subscription.ID, newSub *subscripti
 
 	buf, err := json.Marshal(newSub)
 	if err != nil {
-		return nil, err
+		return nil, &subscription.ErrSubscriptionValidation{Message: err.Error()}
 	}
 
 	err = service.SubscriptionStore.Put(subscriptionPath(newSub.Space, newSub.ID), buf, nil)

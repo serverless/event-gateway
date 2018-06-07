@@ -275,39 +275,33 @@ func TestDeleteFunction_SubscriptionExists(t *testing.T) {
 
 	err := service.DeleteFunction("default", function.ID("testid"))
 
-	assert.Equal(t, err, &function.ErrFunctionHasSubscriptionsError{})
+	assert.Equal(t, err, &function.ErrFunctionHasSubscriptions{})
 }
 
 func TestValidateFunction_MissingID(t *testing.T) {
-	service := &Service{Log: zap.NewNop()}
-
-	err := service.validateFunction(&function.Function{})
+	err := validateFunction(&function.Function{})
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{
 		Message: "Key: 'Function.ID' Error:Field validation for 'ID' failed on the 'required' tag"})
 }
 
 func TestValidateFunction_SpaceInvalid(t *testing.T) {
-	service := &Service{Log: zap.NewNop()}
-
 	fn := &function.Function{
 		ID:    "id",
 		Space: "///"}
-	err := service.validateFunction(fn)
+	err := validateFunction(fn)
 
 	assert.Equal(t, err, &function.ErrFunctionValidation{
 		Message: "Key: 'Function.Space' Error:Field validation for 'Space' failed on the 'space' tag"})
 }
 
 func TestValidateFunction_SetDefaultSpace(t *testing.T) {
-	service := &Service{Log: zap.NewNop()}
-
 	fn := &function.Function{
 		ID:           "id",
 		ProviderType: http.Type,
 		Provider:     http.HTTP{URL: "http://example.com"},
 	}
-	service.validateFunction(fn)
+	validateFunction(fn)
 
 	assert.Equal(t, "default", fn.Space)
 }
