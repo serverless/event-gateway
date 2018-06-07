@@ -18,12 +18,12 @@ servers:
       default: v1
 
 tags:
+- name: "event type"
+  description: "Operations about event types"
 - name: "function"
   description: "Operations about functions"
 - name: "subscription"
   description: "Operations about subscriptions"
-- name: "event type"
-  description: "Operations about event types"
 
 paths:
   /spaces/{spaceName}/eventtypes:
@@ -566,6 +566,8 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - name
             properties:
               name:
                 $ref: '#/components/schemas/EventTypeName'
@@ -577,6 +579,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - functionId
+              - type
+              - provider
             properties:
               functionId:
                 $ref: '#/components/schemas/FunctionID'
@@ -601,6 +607,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - type
+              - eventType
+              - functionId
             properties:
               type:
                 $ref: '#/components/schemas/SubscriptionType'
@@ -664,4 +674,3 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Errors'
-

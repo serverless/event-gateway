@@ -41,8 +41,6 @@ This document contains the API documentation for both Events and Configuration A
 
 ## Events API
 
-[OpenAPI spec](./openapi/openapi-events-api.yaml)
-
 The Event Gateway exposes an API for emitting events. By default Events API runs on `:4000` port.
 
 ### Event Types
