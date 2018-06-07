@@ -34,9 +34,11 @@ yet ready for production applications._
 1.  [Running the Event Gateway](#running-the-event-gateway)
 1.  [Motivation](#motivation)
 1.  [Components](#components)
+    1.  [Event Registry](#event-registry)
     1.  [Function Discovery](#function-discovery)
     1.  [Subscriptions](#subscriptions)
     1.  [Spaces](#spaces)
+1.  [CloudEvents Support](#cloudevents-support)
 1.  [SDKs](#sdks)
 1.  [Versioning](#versioning)
 1.  [FAQ](#faq)
@@ -46,6 +48,8 @@ yet ready for production applications._
 ## Reference
 
 1.  [API](./docs/api.md)
+1.  [Event Types](./docs/event-types.md)
+1.  [Subscription Types](./docs/subscription-types.md)
 1.  [Architecture](./docs/architecture.md)
 1.  [Clustering](./docs/clustering.md)
 1.  [System Events and Plugin System](./docs/system-events-and-plugin-system.md)
@@ -105,6 +109,12 @@ please check [Running Locally](./docs/running-locally.md) and [Developing](./doc
 
 ## Components
 
+### Event Registry
+
+Event Registry is a single source of truth about events occuring in the space. Every event emitted to a space has to have event
+type registered beforehand. Event Registry also provides a way to authorize incoming events. Please check
+[Event Types](./docs/event-types.md) reference for more information.
+
 ### Function Discovery
 
 Discover and call serverless functions from anything that can reach the Event Gateway. Function Discovery supports the
@@ -162,8 +172,11 @@ teams, eliminates effort spent redeploying functions, and allows you to easily s
 HTTP services, even different cloud providers. Functions may be registered as subscribers to a custom event.
 When an event occurs, all subscribers are called asynchronously with the event as its argument.
 
-Creating a subscription requires providing ID of registered function, an event type and a path (`/` by default). The
-path property indicated URL path which Events API will be listening on.
+Creating a subscription requires providing ID of registered function, an event type, an HTTP method (`POST` by default),
+and a path (`/` by default). The method and path properties defines HTTP endpoint which Events API will be listening on.
+
+Event Gateway supports two subscription types: `async` and `sync`. Please check [Subscription Types](./docs/subscription-types.md)
+reference for more information.
 
 #### Example: Subscribe to an Event
 
@@ -207,8 +220,15 @@ eventGateway.subscribe({
 curl --request POST \
   --url http://localhost:4000/ \
   --header 'content-type: application/json' \
-  --header 'event: user.created' \
-  --data '{ "name": "Max" }'
+  --data '{
+    "eventType": "myapp.user.created",
+    "eventID": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
+    "cloudEventsVersion": "0.1",
+    "source": "/myapp/services/users",
+    "eventTime": "1990-12-31T23:59:60Z",
+    "data": { "userID": "123" },
+    "contentType": "application/json"
+  }'
 ```
 
 </details>
@@ -218,19 +238,21 @@ curl --request POST \
 ```javascript
 const eventGateway = new EventGateway({ url: 'http://localhost' })
 eventGateway.emit({
-  event: 'user.created',
-  data: { name: 'Max' }
+  "eventType": "myapp.user.created",
+  "eventID": "66dfc31d-6844-42fd-b1a7-a489a49f65f3",
+  "cloudEventsVersion": "0.1",
+  "source": "/myapp/services/users",
+  "eventTime": "1990-12-31T23:59:60Z",
+  "data": { "userID": "123" },
+  "contentType": "application/json"
 })
 ```
 </details>
 
-#### Sync subscriptions via HTTP event
+#### Example: Subscribe to an `http.request` Event
 
-Custom event subscriptions are asynchronous. There is a special `http` event type for creating synchronous
-subscriptions. `http` event is an HTTP request received to specified path and for specified HTTP method. There can be
-only one `http` subscription for the same `method` and `path` pair.
-
-#### Example: Subscribe to an "http" Event
+Not all data are events that's why Event Gateway has a special, built-in [`http.request` event type](./docs/api.md#http-request-event) that enables subscribing to
+raw HTTP requests.
 
 <details open>
 <summary>curl example</summary>
@@ -284,6 +306,16 @@ This is how Spaces fit different needs depending on use-case:
 Technically speaking Space is a mandatory field ("default" by default) on Function or Subscription object that user has
 to provide during function registration or subscription creation. Space is a first class concept in Config API. Config
 API can register function in specific space or list all functions or subscriptions from a space.
+
+## CloudEvents Support
+
+Event Gateway has the first-class support for [CloudEvents](https://cloudevents.io/). It means few things.
+
+First of all, if the event emitted to the Event Gateway is in CloudEvents format, the Event Gateway is able to recognize it and trigger proper subscriptions based on event type specified in the event. Event Gateway supports both Structured Content and Binary Content modes described in [HTTP Transport Binding spec](https://github.com/cloudevents/spec/blob/master/http-transport-binding.md).
+
+Secondly, there is a special, built-in [HTTP Request Event](./docs/api.md#http-request-event) type allowing reacting to raw HTTP requests that are not formatted according to CloudEvents spec. This event type can be especially helpful for building REST APIs.
+
+Currently, Event Gateway supports [CloudEvents v0.1 schema](https://github.com/cloudevents/spec/blob/master/spec.md) specification.
 
 ## SDKs
 
