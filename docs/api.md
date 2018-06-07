@@ -6,7 +6,7 @@ This document contains the API documentation for both Events and Configuration A
 ## Contents
 
 1.  [Events API](#events-api)
-    1. [Event Registry](#event-registry)
+    1. [Event Types](#event-types)
     1. [Event Definition - CloudEvents](#event-definition---cloudevents)
         1. [CloudEvents Example](#cloudevents-example)
     1. [Subscription Types](#subscription-types)
@@ -19,7 +19,7 @@ This document contains the API documentation for both Events and Configuration A
     1. [How To Emit an Event](#how-to-emit-an-event)
     1. [Legacy Mode](#legacy-mode)
 1.  [Configuration API](#configuration-api)
-    1. [Event Types](#event-types)
+    1. [Event Types](#event-types-2)
         1. [Register Event Type](#register-event-type)
         1. [Delete Event Type](#delete-event-type)
         1. [Get Event Types](#get-event-types)
@@ -45,7 +45,7 @@ This document contains the API documentation for both Events and Configuration A
 
 The Event Gateway exposes an API for emitting events. By default Events API runs on `:4000` port.
 
-### Event Registry
+### Event Types
 
 Event Registry is a single source of truth about events occuring in the space. Every event emitted to a space has to have type registered beforehand.
 
