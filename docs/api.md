@@ -37,7 +37,9 @@ The Event Gateway exposes an API for emitting events. By default Events API runs
 
 ### Event Definition
 
-All data that passes through the Event Gateway is formatted as a CloudEvent, based on [CloudEvents v0.1 schema](https://github.com/cloudevents/spec/blob/master/spec.md):
+All data that passes through the Event Gateway is formatted as a CloudEvent, based on [CloudEvents v0.1 schema](https://github.com/cloudevents/spec/blob/master/spec.md).
+
+Example:
 
 ```json
 {
