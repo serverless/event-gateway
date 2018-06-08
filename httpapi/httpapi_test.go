@@ -514,17 +514,9 @@ func TestUpdateSubscription(t *testing.T) {
 		FunctionID: "func",
 		Method:     "GET",
 		Path:       "/",
-		CORS: &subscription.CORS{
-			Origins:          []string{"*"},
-			Methods:          []string{"HEAD", "GET", "POST"},
-			Headers:          []string{"Origin", "Accept", "Content-Type"},
-			AllowCredentials: false,
-		},
 	}
 	updatedValue := []byte(`{"space":"default","subscriptionId":"testid","type":"sync",` +
-		`"eventType":"http.request","functionId":"func","method":"GET","path":"/",` +
-		`"cors":{"origins":["*"],"methods":["HEAD","GET","POST"],` +
-		`"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}`)
+		`"eventType":"http.request","functionId":"func","method":"GET","path":"/"}`)
 
 	t.Run("subscription updated", func(t *testing.T) {
 		subscriptions.EXPECT().UpdateSubscription(subscription.ID("testid"), updateSub).Return(updateSub, nil)

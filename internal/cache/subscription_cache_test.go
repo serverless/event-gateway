@@ -5,7 +5,6 @@ import (
 
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/libkv"
-	"github.com/serverless/event-gateway/subscription"
 	"github.com/stretchr/testify/assert"
 
 	"go.uber.org/zap"
@@ -59,27 +58,9 @@ func TestSubscriptionCacheModifiedSyncSubscription(t *testing.T) {
 		"path": "/b",
 		"method": "GET"}`))
 
-	space, id, _, _ := scache.endpoints["GET"].Resolve("/a")
+	space, id, _ := scache.endpoints["GET"].Resolve("/a")
 	assert.Equal(t, function.ID("testfunc1"), *id)
 	assert.Equal(t, "default", space)
-}
-
-func TestSubscriptionCacheModifiedCORSConfiguration(t *testing.T) {
-	scache := newSubscriptionCache(zap.NewNop())
-
-	scache.Modified("testsub1", []byte(`{
-		"subscriptionId":"testsub1",
-		"type": "sync",
-		"eventType": "http.request",
-		"functionId": "testfunc1",
-		"path": "/a",
-		"method": "GET",
-		"cors": {
-			"origins": ["http://example.com"]
-		}}`))
-
-	_, _, _, corsConfig := scache.endpoints["GET"].Resolve("/a")
-	assert.Equal(t, &subscription.CORS{Origins: []string{"http://example.com"}}, corsConfig)
 }
 
 func TestSubscriptionCacheModifiedEventsWrongPayload(t *testing.T) {
@@ -139,7 +120,7 @@ func TestSubscriptionCacheModifiedHTTPSubscriptionDeleted(t *testing.T) {
 		"path": "/",
 		"method": "GET"}`))
 
-	space, id, _, _ := scache.endpoints["GET"].Resolve("/")
+	space, id, _ := scache.endpoints["GET"].Resolve("/")
 	assert.Nil(t, id)
 	assert.Equal(t, "", space)
 }

@@ -290,8 +290,6 @@ components:
           $ref: '#/components/schemas/Path'
         method:
           $ref: '#/components/schemas/Method'
-        cors:
-          $ref: '#/components/schemas/CORS'
     Subscriptions:
       type: object
       properties:
@@ -400,32 +398,6 @@ components:
       properties:
         message:
           type: string
-    CORS:
-      type: object
-      description: "(only for HTTP event) CORS configuration for HTTP event subscription"
-      default: null
-      properties:
-        origins:
-          type: array
-          description: "list of allowed origins. An origin may contain a wildcard (*) to replace 0 or more characters (i.e.: http://*.domain.com)"
-          items:
-            type: string
-          default: ["*"]
-        methods:
-          type: array
-          description: "list of allowed methods"
-          items:
-            type: string
-          default: ["HEAD", "GET", "POST"]
-        headers:
-          type: array
-          description: "list of allowed headers"
-          items:
-            type: string
-          default: ["Origin", "Accept", "Content-Type"]
-        allowCredentials:
-          type: boolean
-          default: false
     Errors:
       type: object
       description: "error response object"
@@ -498,8 +470,6 @@ components:
                 $ref: '#/components/schemas/Path'
               method:
                 $ref: '#/components/schemas/Method'
-              cors:
-                $ref: '#/components/schemas/CORS'
     UpdateSubscription:
       description: "subscription update request body"
       content:
@@ -517,8 +487,6 @@ components:
                 $ref: '#/components/schemas/Path'
               method:
                 $ref: '#/components/schemas/Method'
-              cors:
-                $ref: '#/components/schemas/CORS'
   responses:
     Error:
       description: "internal server error"

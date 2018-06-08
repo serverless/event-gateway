@@ -98,14 +98,6 @@ HTTP subscription response depends on [response object](#respond-to-an-http-requ
 * `404 Not Found` if there is no backing function registered for requested HTTP endpoint
 * `500 Internal Server Error` if the function invocation failed or the backing function didn't return [HTTP response object](#respond-to-an-http-request-event)
 
-##### CORS
-
-By default cross-origin resource sharing (CORS) is disabled for `sync` subscriptions. It can be enabled and configured
-per-subscription basis.
-
-Event Gateway handles preflight `OPTIONS` requests for you. You don't need to setup subscription for `OPTIONS` method
-because the Event Gateway will respond with all appropriate headers.
-
 #### Path parameters
 
 The Event Gateway allows creating HTTP subscription with parameterized paths. Every path segment prefixed with `:` is
@@ -133,11 +125,6 @@ To respond to an HTTP event a function needs to return object with following fie
 * `body` - `string` - required, response body
 
 Currently, the event gateway supports only string responses.
-
-### CORS
-
-Events API supports CORS requests which means that any origin can emit a custom event. In case of `sync` subscriptions CORS is
-configured per-subscription basis.
 
 ## Configuration API
 
@@ -309,11 +296,6 @@ JSON object:
 * `functionId` - `string` - ID of function to receive events
 * `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
 * `method` - `string` - optional, HTTP method that accepts requests, default: `POST`
-* `cors` - `object` - optional, by default CORS is disabled for `sync` subscriptions. When set to empty object CORS configuration will use default values for all fields below. Available fields:
-  * `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
-  * `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
-  * `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
-  * `allowCredentials` - `bool` - default: false
 
 **Response**
 
@@ -331,7 +313,6 @@ JSON object:
 * `functionId` - function ID
 * `method` - `string` - HTTP method that accepts requests
 * `path` - `string` - path that accepts requests, starts with `/`
-* `cors` - `object` - optional, CORS configuration
 
 ---
 
@@ -350,11 +331,6 @@ _Note that `type`, `eventType`, `functionId`, `path`, and `method` may not be up
 * `functionId` - `string` - ID of function to receive events
 * `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
 * `method` - `string` - optional, HTTP method that accepts requests, default: `POST`
-* `cors` - `object` - optional, by default CORS is disabled for `sync` subscriptions. When set to empty object CORS configuration will use default values for all fields below. Available fields:
-  * `origins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
-  * `methods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
-  * `headers` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
-  * `allowCredentials` - `bool` - default: false
 
 **Response**
 
@@ -373,7 +349,6 @@ JSON object:
 * `functionId` - function ID
 * `method` - `string` - HTTP method that accepts requests
 * `path` - `string` - path that accepts requests, starts with `/`
-* `cors` - `object` - optional, CORS configuration
 
 ---
 
@@ -414,7 +389,6 @@ JSON object:
   * `functionId` - function ID
   * `method` - `string` - HTTP method that accepts requests
   * `path` - `string` - path that accepts requests, starts with `/`
-  * `cors` - `object` - optional, CORS configuration
 
 #### Get Subscription
 
@@ -438,7 +412,6 @@ JSON object:
 * `functionId` - function ID
 * `method` - `string` - HTTP method that accepts requests
 * `path` - `string` - path that accepts requests, starts with `/`
-* `cors` - `object` - optional, CORS configuration
 
 ### Prometheus Metrics
 
