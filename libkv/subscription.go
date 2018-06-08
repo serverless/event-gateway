@@ -55,7 +55,7 @@ func (service Service) CreateSubscription(sub *subscription.Subscription) (*subs
 		return nil, err
 	}
 
-	err = service.SubscriptionStore.Put(subscriptionPath(sub.Space, sub.ID), buf, nil)
+	_, _, err = service.SubscriptionStore.AtomicPut(subscriptionPath(sub.Space, sub.ID), buf, nil, nil)
 	if err != nil {
 		return nil, err
 	}
