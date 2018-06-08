@@ -45,7 +45,7 @@ func (service Service) CreateEventType(eventType *event.Type) (*event.Type, erro
 		return nil, &event.ErrEventTypeValidation{Message: err.Error()}
 	}
 
-	err = service.EventTypeStore.Put(EventTypeKey{eventType.Space, eventType.Name}.String(), byt, nil)
+	_, _, err = service.EventTypeStore.AtomicPut(EventTypeKey{eventType.Space, eventType.Name}.String(), byt, nil, nil)
 	if err != nil {
 		return nil, err
 	}

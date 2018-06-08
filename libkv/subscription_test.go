@@ -42,7 +42,7 @@ func TestCreateSubscription(t *testing.T) {
 		eventTypesDB.EXPECT().Get("default/user.created", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: asyncEventPayload}, nil)
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(asyncKey, &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV sub not found"))
-		subscriptionsDB.EXPECT().Put(asyncKey, asyncValue, nil).Return(nil)
+		subscriptionsDB.EXPECT().AtomicPut(asyncKey, asyncValue, nil, nil).Return(true, nil, nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: funcValue}, nil)
 		subs := &Service{
@@ -61,7 +61,7 @@ func TestCreateSubscription(t *testing.T) {
 		eventTypesDB.EXPECT().Get("default/http.request", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: syncEventPayload}, nil)
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(syncKey, &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV sub not found"))
-		subscriptionsDB.EXPECT().Put(syncKey, syncValue, nil).Return(nil)
+		subscriptionsDB.EXPECT().AtomicPut(syncKey, syncValue, nil, nil).Return(true, nil, nil)
 		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return([]*store.KVPair{}, nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: funcValue}, nil)
@@ -173,7 +173,7 @@ func TestCreateSubscription(t *testing.T) {
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("KV sub not found"))
 		subscriptionsDB.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, nil)
-		subscriptionsDB.EXPECT().Put(gomock.Any(), gomock.Any(), nil).Return(errors.New("KV Put err"))
+		subscriptionsDB.EXPECT().AtomicPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil, errors.New("KV Put err"))
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", gomock.Any()).Return(
 			&store.KVPair{Value: []byte(`{"functionId":"func","type":"http","provider":{"url": "http://test.com"}}`)}, nil)

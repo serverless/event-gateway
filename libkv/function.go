@@ -39,7 +39,7 @@ func (service Service) RegisterFunction(fn *function.Function) (*function.Functi
 		return nil, err
 	}
 
-	err = service.FunctionStore.Put(FunctionKey{fn.Space, fn.ID}.String(), byt, nil)
+	_, _, err = service.FunctionStore.AtomicPut(FunctionKey{fn.Space, fn.ID}.String(), byt, nil, nil)
 	if err != nil {
 		return nil, err
 	}
