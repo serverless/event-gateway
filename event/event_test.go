@@ -268,22 +268,24 @@ var fromRequestTests = []struct {
 		},
 	},
 	{
-		name: "regular HTTP request",
+		name: "regular HTTP JSON request",
 		requestHeaders: http.Header{
 			"Content-Type": []string{"application/json"},
 		},
-		requestBody: []byte("hey there"),
+		requestBody: []byte(`{"key": "value"}`),
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.TypeHTTPRequest,
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
-			ContentType:        "application/cloudevents+json",
+			ContentType:        "application/json",
 			Data: &eventpkg.HTTPRequestData{
 				Headers: map[string]string{
 					"Content-Type": "application/json",
 				},
 				Query: map[string][]string{},
-				Body:  []byte("hey there"),
+				Body: map[string]interface{}{
+					"key": "value",
+				},
 			},
 			Extensions: map[string]interface{}{
 				"eventgateway": map[string]interface{}{"transformed": "true", "transformation-version": "0.1"}},
