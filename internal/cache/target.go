@@ -40,7 +40,7 @@ func (tc *Target) SyncSubscriber(method, path string, eventType eventpkg.TypeNam
 		return nil
 	}
 
-	space, functionID, params, cors := root.Resolve(path)
+	space, functionID, params := root.Resolve(path)
 	if functionID == nil {
 		return nil
 	}
@@ -49,7 +49,6 @@ func (tc *Target) SyncSubscriber(method, path string, eventType eventpkg.TypeNam
 		Space:      space,
 		FunctionID: *functionID,
 		Params:     params,
-		CORS:       cors,
 	}
 }
 

@@ -87,25 +87,6 @@ func TestCreateSubscription(t *testing.T) {
 				"\nKey: 'Subscription.FunctionID' Error:Field validation for 'FunctionID' failed on the 'required' tag"})
 	})
 
-	t.Run("validation error: CORS settings for async subscription", func(t *testing.T) {
-		subs := &Service{Log: zap.NewNop()}
-
-		_, err := subs.CreateSubscription(
-			&subscription.Subscription{
-				Type:       subscription.TypeAsync,
-				EventType:  "user.created",
-				FunctionID: "func",
-				Path:       "/",
-				Method:     "GET",
-				CORS: &subscription.CORS{
-					Methods: []string{"GET"},
-				},
-			},
-		)
-
-		assert.Equal(t, err, &subscription.ErrSubscriptionValidation{Message: "CORS can be configured only for sync subscriptions."})
-	})
-
 	t.Run("subscription already exists", func(t *testing.T) {
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&store.KVPair{Value: []byte(`{"subscriptionId":""}`)}, nil)
@@ -207,9 +188,7 @@ func TestUpdateSubscription(t *testing.T) {
 			syncKey,
 			[]byte(
 				`{"space":"default","subscriptionId":"c3luYyxodHRwLnJlcXVlc3QsZnVuYywlMkYsUE9TVA","type":"sync",`+
-					`"eventType":"http.request","functionId":"func","path":"/","method":"POST",`+
-					`"cors":{"origins":["*"],"methods":["HEAD","GET","POST"],`+
-					`"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}`),
+					`"eventType":"http.request","functionId":"func","path":"/","method":"POST"}`),
 			nil).Return(nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: funcValue}, nil)
@@ -224,7 +203,7 @@ func TestUpdateSubscription(t *testing.T) {
 				FunctionID: "func",
 				Path:       "/",
 				Method:     "POST",
-				CORS:       &subscription.CORS{Origins: []string{"*"}}})
+			})
 
 		assert.Nil(t, err)
 	})
