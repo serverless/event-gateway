@@ -59,7 +59,7 @@ func New(eventType TypeName, mimeType string, payload interface{}) *Event {
 		},
 	}
 
-	event.enhanceEventData()
+	event.Data = normalizePayload(event.Data, event.ContentType)
 	return event
 }
 
@@ -101,7 +101,7 @@ func FromRequest(r *http.Request) (*Event, error) {
 		return New(TypeName(r.Header.Get("event")), mimeType, body), nil
 	}
 
-	return New(TypeHTTPRequest, mimeCloudEventsJSON, NewHTTPRequestData(r, body)), nil
+	return New(TypeHTTPRequest, mimeJSON, NewHTTPRequestData(r, body)), nil
 }
 
 // Validate Event struct
@@ -199,7 +199,7 @@ func parseAsCloudEventBinary(headers http.Header, payload interface{}) (*Event, 
 		}
 	}
 
-	event.enhanceEventData()
+	event.Data = normalizePayload(event.Data, event.ContentType)
 	return event, nil
 }
 
@@ -217,7 +217,7 @@ func parseAsCloudEvent(mime string, payload interface{}) (*Event, error) {
 			return nil, err
 		}
 
-		event.enhanceEventData()
+		event.Data = normalizePayload(event.Data, event.ContentType)
 		return event, nil
 	}
 
@@ -231,17 +231,23 @@ const (
 	mimeCloudEventsJSON = "application/cloudevents+json"
 )
 
-// Because event.Data is []byte, it will be base64 encoded by default when being sent to remote function,
-// which is why we change the event.Data type to "string" for forms or to map[string]interface{} for JSON
-// so that, it is left intact.
-func (e *Event) enhanceEventData() {
-	contentType := e.ContentType
-	if eventBody, ok := e.Data.([]byte); ok && len(eventBody) > 0 {
+// normalizePayload takes anything, checks if it's []byte array and depending on provided mime
+// type converts it to either string or map[string]interface to avoid having base64 string after
+// JSON marshaling.
+func normalizePayload(payload interface{}, mime string) interface{} {
+	if bytePayload, ok := payload.([]byte); ok && len(bytePayload) > 0 {
 		switch {
-		case contentType == mimeJSON || strings.HasSuffix(contentType, "+json"):
-			json.Unmarshal(eventBody, &e.Data)
-		case strings.HasPrefix(contentType, mimeFormMultipart), contentType == mimeFormURLEncoded:
-			e.Data = string(eventBody)
+		case mime == mimeJSON || strings.HasSuffix(mime, "+json"):
+			var result map[string]interface{}
+			err := json.Unmarshal(bytePayload, &result)
+			if err != nil {
+				return payload
+			}
+			return result
+		case strings.HasPrefix(mime, mimeFormMultipart), mime == mimeFormURLEncoded:
+			return string(bytePayload)
 		}
 	}
+
+	return payload
 }
