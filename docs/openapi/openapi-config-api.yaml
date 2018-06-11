@@ -18,12 +18,115 @@ servers:
       default: v1
 
 tags:
+- name: "event type"
+  description: "Operations about event types"
 - name: "function"
   description: "Operations about functions"
 - name: "subscription"
   description: "Operations about subscriptions"
 
 paths:
+  /spaces/{spaceName}/eventtypes:
+    summary: "Operations about event types"
+    get:
+      summary: "List event types"
+      tags:
+      - "event type"
+      operationId: "ListEventTypes"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      responses:
+        200:
+          description: "event types returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventTypes"
+        500:
+          $ref: '#/components/responses/Error'
+    post:
+      summary: "Register event type"
+      tags:
+      - "event type"
+      operationId: "CreateEventType"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateEventType"
+      responses:
+        201:
+          description: "event type registered"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventType"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        500:
+          $ref: '#/components/responses/Error'
+
+  /spaces/{spaceName}/eventtypes/{eventTypeName}:
+    summary: "Operations about single event type"
+    get:
+      summary: "Get event type"
+      tags:
+      - "event type"
+      operationId: "GetEventType"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/EventTypeName"
+      responses:
+        200:
+          description: "event type returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventType"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+    put:
+      summary: "Update event type"
+      tags:
+      - "event type"
+      operationId: "UpdateEventType"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/EventTypeName"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateEventType"
+      responses:
+        200:
+          description: "event type updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventType"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: "Delete event type"
+      tags:
+      - "event type"
+      operationId: "DeleteEventType"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/EventTypeName"
+      responses:
+        204:
+          description: "event type deleted"
+        400:
+          $ref: '#/components/responses/EventTypeHasSubscriptionsError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+
   /spaces/{spaceName}/functions:
     summary: "Operations about functions"
     get:
@@ -255,6 +358,15 @@ components:
       - $ref: '#/components/schemas/AWSLambda'
       - $ref: '#/components/schemas/AWSSQS'
       - $ref: '#/components/schemas/HTTP'
+    EventType:
+      type: object
+      properties:
+        space:
+          $ref: '#/components/schemas/SpaceName'
+        name:
+          $ref: '#/components/schemas/EventTypeName'
+        authorizerId:
+          $ref: '#/components/schemas/FunctionID'
     Function:
       type: object
       properties:
@@ -266,6 +378,13 @@ components:
           $ref: '#/components/schemas/ProviderType'
         provider:
           $ref: '#/components/schemas/Provider'
+    EventTypes:
+      type: object
+      properties:
+        eventTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventType'
     Functions:
       type: object
       properties:
@@ -382,7 +501,7 @@ components:
       type: string
       format: url
       description: "HTTP endpoint URL"
-    EventType:
+    EventTypeName:
       type: string
       description: "event type"
     Method:
@@ -414,6 +533,13 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/SpaceName"
+    EventTypeName:
+      in: "path"
+      name: "eventTypeName"
+      description: "event type name"
+      required: true
+      schema:
+        $ref: "#/components/schemas/EventTypeName"
     FunctionID:
       in: "path"
       name: "functionId"
@@ -429,12 +555,38 @@ components:
       schema:
         $ref: "#/components/schemas/SubscriptionID"
   requestBodies:
+    CreateEventType:
+      description: "event type create request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                $ref: '#/components/schemas/EventTypeName'
+              authorizerId:
+                $ref: '#/components/schemas/FunctionID'
+    UpdateEventType:
+      description: "event type update request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              authorizerId:
+                $ref: '#/components/schemas/FunctionID'
     CreateFunction:
       description: "function create request body"
       content:
         application/json:
           schema:
             type: object
+            required:
+              - functionId
+              - type
+              - provider
             properties:
               functionId:
                 $ref: '#/components/schemas/FunctionID'
@@ -459,6 +611,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - type
+              - eventType
+              - functionId
             properties:
               type:
                 $ref: '#/components/schemas/SubscriptionType'
@@ -508,6 +664,12 @@ components:
             $ref: '#/components/schemas/Errors'
     FunctionHasSubscriptionsError:
       description: "function is subscribed to at least one event"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+    EventTypeHasSubscriptionsError:
+      description: "there are subscriptions using the event type"
       content:
         application/json:
           schema:
