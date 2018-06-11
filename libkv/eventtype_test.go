@@ -29,7 +29,7 @@ func TestCreateEventType(t *testing.T) {
 			Get("default/test.event", &store.ReadOptions{Consistent: true}).
 			Return(nil, errors.New("KV type not found"))
 		payload := []byte(`{"space":"default","name":"test.event"}`)
-		db.EXPECT().Put("default/test.event", payload, nil).Return(nil)
+		db.EXPECT().AtomicPut("default/test.event", payload, nil, nil).Return(true, nil, nil)
 		service := &Service{EventTypeStore: db, Log: zap.NewNop()}
 
 		_, err := service.CreateEventType(testEventType)
@@ -72,7 +72,7 @@ func TestCreateEventType(t *testing.T) {
 	t.Run("KV Put error", func(t *testing.T) {
 		db := mock.NewMockStore(ctrl)
 		db.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("KV type not found"))
-		db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("KV put error"))
+		db.EXPECT().AtomicPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil, errors.New("KV put error"))
 		service := &Service{EventTypeStore: db, Log: zap.NewNop()}
 
 		_, err := service.CreateEventType(testEventType)

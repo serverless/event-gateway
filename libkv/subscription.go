@@ -55,7 +55,7 @@ func (service Service) CreateSubscription(sub *subscription.Subscription) (*subs
 		return nil, err
 	}
 
-	err = service.SubscriptionStore.Put(subscriptionPath(sub.Space, sub.ID), buf, nil)
+	_, _, err = service.SubscriptionStore.AtomicPut(subscriptionPath(sub.Space, sub.ID), buf, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -172,11 +172,11 @@ func (service Service) checkForPathConflict(space, method, path string) error {
 
 		if sub.Type == subscription.TypeSync {
 			// add existing paths to check
-			tree.AddRoute(sub.Path, sub.Space, function.ID(""), nil)
+			tree.AddRoute(sub.Path, sub.Space, function.ID(""))
 		}
 	}
 
-	err = tree.AddRoute(path, space, function.ID(""), nil)
+	err = tree.AddRoute(path, space, function.ID(""))
 	if err != nil {
 		return &subscription.ErrPathConfict{Message: err.Error()}
 	}
@@ -195,24 +195,6 @@ func validateSubscription(sub *subscription.Subscription) error {
 		sub.Method = http.MethodPost
 	} else {
 		sub.Method = strings.ToUpper(sub.Method)
-	}
-
-	if sub.Type == subscription.TypeAsync && sub.CORS != nil {
-		return &subscription.ErrSubscriptionValidation{Message: "CORS can be configured only for sync subscriptions."}
-	}
-
-	if sub.CORS != nil {
-		if sub.CORS.Headers == nil {
-			sub.CORS.Headers = []string{"Origin", "Accept", "Content-Type"}
-		}
-
-		if sub.CORS.Methods == nil {
-			sub.CORS.Methods = []string{"HEAD", "GET", "POST"}
-		}
-
-		if sub.CORS.Origins == nil {
-			sub.CORS.Origins = []string{"*"}
-		}
 	}
 
 	validate := validator.New()

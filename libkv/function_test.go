@@ -19,289 +19,251 @@ func TestRegisterFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV func not found"))
-	payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
-	db.EXPECT().Put("default/testid", payload, nil).Return(nil)
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
-
-	_, err := service.RegisterFunction(
-		&function.Function{
-			ID:           "testid",
-			ProviderType: http.Type,
-			Provider:     &http.HTTP{URL: "http://example.com"},
-		},
-	)
-
-	assert.Nil(t, err)
-}
-
-func TestRegisterFunction_AlreadyExistsError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, nil)
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
-
 	fn := &function.Function{
 		ID:           "testid",
 		ProviderType: http.Type,
 		Provider:     &http.HTTP{URL: "http://example.com"},
 	}
-	_, err := service.RegisterFunction(fn)
 
-	assert.Equal(t, err, &function.ErrFunctionAlreadyRegistered{ID: "testid"})
-}
+	t.Run("function registered", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV func not found"))
+		payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
+		db.EXPECT().AtomicPut("default/testid", payload, nil, nil).Return(true, nil, nil)
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-func TestRegisterFunction_PutError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+		_, err := service.RegisterFunction(fn)
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV func not found"))
-	payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
-	db.EXPECT().Put("default/testid", payload, nil).Return(errors.New("KV put error"))
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
+		assert.Nil(t, err)
+	})
 
-	fn := &function.Function{
-		ID:           "testid",
-		ProviderType: http.Type,
-		Provider:     &http.HTTP{URL: "http://example.com"},
-	}
-	_, err := service.RegisterFunction(fn)
+	t.Run("function already exists", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, nil)
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	assert.EqualError(t, err, "KV put error")
+		_, err := service.RegisterFunction(fn)
+
+		assert.Equal(t, err, &function.ErrFunctionAlreadyRegistered{ID: "testid"})
+	})
+
+	t.Run("KV Put error", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV func not found"))
+		db.EXPECT().AtomicPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil, errors.New("KV put error"))
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
+
+		_, err := service.RegisterFunction(fn)
+
+		assert.EqualError(t, err, "KV put error")
+	})
 }
 
 func TestUpdateFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
 	returned := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
-	db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: returned}, nil)
 	payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example1.com"}}`)
-	db.EXPECT().Put("default/testid", payload, nil).Return(nil)
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
-
-	fn := &function.Function{
-		ID:           "testid",
-		Space:        "default",
-		ProviderType: http.Type,
-		Provider:     &http.HTTP{URL: "http://example1.com"},
-	}
-	_, err := service.UpdateFunction(fn)
-
-	assert.Nil(t, err)
-}
-
-func TestUpdateFunction_NotFoundError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV not found"))
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
-
 	fn := &function.Function{
 		ID:           "testid",
 		Space:        "default",
 		ProviderType: http.Type,
 		Provider:     &http.HTTP{URL: "http://example.com"},
 	}
-	_, err := service.UpdateFunction(fn)
 
-	assert.Equal(t, err, &function.ErrFunctionNotFound{ID: "testid"})
-}
+	t.Run("function updated", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: returned}, nil)
+		db.EXPECT().Put("default/testid", payload, nil).Return(nil)
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-func TestUpdateFunction_PutError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+		fn = &function.Function{
+			ID:           "testid",
+			Space:        "default",
+			ProviderType: http.Type,
+			Provider:     &http.HTTP{URL: "http://example1.com"},
+		}
+		_, err := service.UpdateFunction(fn)
 
-	db := mock.NewMockStore(ctrl)
-	returned := []byte(`
-		{"functionId":"testid", "space": "default", "type": "http", "provider": {"url":"http://example.com"}}
-		`)
-	db.EXPECT().Get("default/testid", gomock.Any()).Return(&store.KVPair{Value: returned}, nil)
-	payload := []byte(`{"space":"default","functionId":"testid","type":"http","provider":{"url":"http://example.com"}}`)
-	db.EXPECT().Put("default/testid", payload, nil).Return(errors.New("KV put error"))
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
+		assert.Nil(t, err)
+	})
 
-	fn := &function.Function{
-		ID:           "testid",
-		Space:        "default",
-		ProviderType: http.Type,
-		Provider:     &http.HTTP{URL: "http://example.com"},
-	}
-	_, err := service.UpdateFunction(fn)
+	t.Run("function not found", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV not found"))
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	assert.EqualError(t, err, "KV put error")
+		_, err := service.UpdateFunction(fn)
+
+		assert.Equal(t, err, &function.ErrFunctionNotFound{ID: "testid"})
+	})
+
+	t.Run("KV Put error", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get("default/testid", gomock.Any()).Return(&store.KVPair{Value: returned}, nil)
+		db.EXPECT().Put("default/testid", payload, nil).Return(errors.New("KV put error"))
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
+
+		_, err := service.UpdateFunction(fn)
+
+		assert.EqualError(t, err, "KV put error")
+	})
 }
 
 func TestGetFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db := mock.NewMockStore(ctrl)
-	returned := []byte(`{"functionId":"f1","type":"http","provider":{"url": "http://test.com"}}}`)
-	db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: returned}, nil)
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
+	t.Run("function returned", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		returned := []byte(`{"functionId":"f1","type":"http","provider":{"url": "http://test.com"}}}`)
+		db.EXPECT().Get("default/testid", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: returned}, nil)
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	f, _ := service.GetFunction("default", function.ID("testid"))
+		f, _ := service.GetFunction("default", function.ID("testid"))
 
-	assert.Equal(t, &function.Function{
-		ID:           function.ID("f1"),
-		ProviderType: http.Type,
-		Provider:     &http.HTTP{URL: "http://test.com"},
-	}, f)
-}
+		assert.Equal(t, &function.Function{
+			ID:           function.ID("f1"),
+			ProviderType: http.Type,
+			Provider:     &http.HTTP{URL: "http://test.com"},
+		}, f)
+	})
 
-func TestGetFunction_NotFound(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Run("function not found", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("Key not found in store"))
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("Key not found in store"))
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
+		_, err := service.GetFunction("default", function.ID("testid"))
 
-	_, err := service.GetFunction("default", function.ID("testid"))
+		assert.Equal(t, err, &function.ErrFunctionNotFound{ID: "testid"})
+	})
 
-	assert.Equal(t, err, &function.ErrFunctionNotFound{ID: "testid"})
-}
+	t.Run("KV Get error", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV get err"))
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-func TestGetFunction_GetError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+		_, err := service.GetFunction("default", function.ID("testid"))
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, errors.New("KV get err"))
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
-
-	_, err := service.GetFunction("default", function.ID("testid"))
-
-	assert.EqualError(t, err, "KV get err")
+		assert.EqualError(t, err, "KV get err")
+	})
 }
 
 func TestGetFunctions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	kvs := []*store.KVPair{
-		&store.KVPair{Value: []byte(`{"functionId":"f1","type":"http","provider":{"url": "http://test.com"}}}`)},
-	}
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
+	t.Run("list returned", func(t *testing.T) {
+		kvs := []*store.KVPair{
+			&store.KVPair{Value: []byte(`{"functionId":"f1","type":"http","provider":{"url": "http://test.com"}}}`)},
+		}
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	list, err := service.GetFunctions("default")
+		list, err := service.GetFunctions("default")
 
-	assert.Nil(t, err)
-	assert.Equal(t, function.Functions{{
-		ID:           function.ID("f1"),
-		ProviderType: http.Type,
-		Provider:     &http.HTTP{URL: "http://test.com"},
-	}}, list)
-}
+		assert.Nil(t, err)
+		assert.Equal(t, function.Functions{{
+			ID:           function.ID("f1"),
+			ProviderType: http.Type,
+			Provider:     &http.HTTP{URL: "http://test.com"},
+		}}, list)
+	})
 
-func TestGetFunctions_ListError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Run("KV List error", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List("default/", gomock.Any()).Return([]*store.KVPair{}, errors.New("KV list err"))
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().List("default/", gomock.Any()).Return([]*store.KVPair{}, errors.New("KV list err"))
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
+		_, err := service.GetFunctions("default")
 
-	_, err := service.GetFunctions("default")
+		assert.EqualError(t, err, "KV list err")
+	})
 
-	assert.EqualError(t, err, "KV list err")
-}
+	t.Run("KV key not found", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List("default/", gomock.Any()).Return([]*store.KVPair{}, errors.New("Key not found in store"))
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-func TestGetFunctions_ListKeyNotFoundError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+		list, _ := service.GetFunctions("default")
 
-	db := mock.NewMockStore(ctrl)
-	db.EXPECT().List("default/", gomock.Any()).Return([]*store.KVPair{}, errors.New("Key not found in store"))
-	service := &Service{FunctionStore: db, Log: zap.NewNop()}
-
-	list, _ := service.GetFunctions("default")
-
-	assert.Equal(t, function.Functions{}, list)
+		assert.Equal(t, function.Functions{}, list)
+	})
 }
 
 func TestDeleteFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	kvs := []*store.KVPair{}
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
-	functionsDB := mock.NewMockStore(ctrl)
-	functionsDB.EXPECT().Delete("default/testid").Return(nil)
-	service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+	t.Run("function deleted", func(t *testing.T) {
+		kvs := []*store.KVPair{}
+		subscriptionsDB := mock.NewMockStore(ctrl)
+		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		functionsDB := mock.NewMockStore(ctrl)
+		functionsDB.EXPECT().Delete("default/testid").Return(nil)
+		service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
-	err := service.DeleteFunction("default", function.ID("testid"))
+		err := service.DeleteFunction("default", function.ID("testid"))
 
-	assert.Nil(t, err)
+		assert.Nil(t, err)
+	})
+
+	t.Run("function not found", func(t *testing.T) {
+		kvs := []*store.KVPair{}
+		subscriptionsDB := mock.NewMockStore(ctrl)
+		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		functionsDB := mock.NewMockStore(ctrl)
+		functionsDB.EXPECT().Delete("default/testid").Return(errors.New("KV func not found"))
+		service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+
+		err := service.DeleteFunction("default", function.ID("testid"))
+
+		assert.EqualError(t, err, `Function "testid" not found.`)
+	})
+
+	t.Run("function has subscriptions", func(t *testing.T) {
+		kvs := []*store.KVPair{
+			{Value: []byte(`{"subscriptionId":"s1","default":"default","event":"test","functionId":"testid"}`)}}
+		subscriptionsDB := mock.NewMockStore(ctrl)
+		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		functionsDB := mock.NewMockStore(ctrl)
+		service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+
+		err := service.DeleteFunction("default", function.ID("testid"))
+
+		assert.Equal(t, err, &function.ErrFunctionHasSubscriptions{})
+	})
 }
 
-func TestDeleteFunction_NotFound(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func TestValidateFunction(t *testing.T) {
+	t.Run("missing ID", func(t *testing.T) {
+		err := validateFunction(&function.Function{})
 
-	kvs := []*store.KVPair{}
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
-	functionsDB := mock.NewMockStore(ctrl)
-	functionsDB.EXPECT().Delete("default/testid").Return(errors.New("KV func not found"))
-	service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+		assert.Equal(t, err, &function.ErrFunctionValidation{
+			Message: "Key: 'Function.ID' Error:Field validation for 'ID' failed on the 'required' tag"})
+	})
 
-	err := service.DeleteFunction("default", function.ID("testid"))
+	t.Run("invalid space", func(t *testing.T) {
+		fn := &function.Function{
+			ID:    "id",
+			Space: "///"}
+		err := validateFunction(fn)
 
-	assert.EqualError(t, err, `Function "testid" not found.`)
-}
+		assert.Equal(t, err, &function.ErrFunctionValidation{
+			Message: "Key: 'Function.Space' Error:Field validation for 'Space' failed on the 'space' tag"})
+	})
 
-func TestDeleteFunction_SubscriptionExists(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Run("set default space", func(t *testing.T) {
+		fn := &function.Function{
+			ID:           "id",
+			ProviderType: http.Type,
+			Provider:     http.HTTP{URL: "http://example.com"},
+		}
+		validateFunction(fn)
 
-	kvs := []*store.KVPair{
-		{Value: []byte(`{"subscriptionId":"s1","default":"default","event":"test","functionId":"testid"}`)}}
-	subscriptionsDB := mock.NewMockStore(ctrl)
-	subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
-	functionsDB := mock.NewMockStore(ctrl)
-	service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
-
-	err := service.DeleteFunction("default", function.ID("testid"))
-
-	assert.Equal(t, err, &function.ErrFunctionHasSubscriptions{})
-}
-
-func TestValidateFunction_MissingID(t *testing.T) {
-	err := validateFunction(&function.Function{})
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{
-		Message: "Key: 'Function.ID' Error:Field validation for 'ID' failed on the 'required' tag"})
-}
-
-func TestValidateFunction_SpaceInvalid(t *testing.T) {
-	fn := &function.Function{
-		ID:    "id",
-		Space: "///"}
-	err := validateFunction(fn)
-
-	assert.Equal(t, err, &function.ErrFunctionValidation{
-		Message: "Key: 'Function.Space' Error:Field validation for 'Space' failed on the 'space' tag"})
-}
-
-func TestValidateFunction_SetDefaultSpace(t *testing.T) {
-	fn := &function.Function{
-		ID:           "id",
-		ProviderType: http.Type,
-		Provider:     http.HTTP{URL: "http://example.com"},
-	}
-	validateFunction(fn)
-
-	assert.Equal(t, "default", fn.Space)
+		assert.Equal(t, "default", fn.Space)
+	})
 }

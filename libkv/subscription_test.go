@@ -42,7 +42,7 @@ func TestCreateSubscription(t *testing.T) {
 		eventTypesDB.EXPECT().Get("default/user.created", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: asyncEventPayload}, nil)
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(asyncKey, &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV sub not found"))
-		subscriptionsDB.EXPECT().Put(asyncKey, asyncValue, nil).Return(nil)
+		subscriptionsDB.EXPECT().AtomicPut(asyncKey, asyncValue, nil, nil).Return(true, nil, nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: funcValue}, nil)
 		subs := &Service{
@@ -61,7 +61,7 @@ func TestCreateSubscription(t *testing.T) {
 		eventTypesDB.EXPECT().Get("default/http.request", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: syncEventPayload}, nil)
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(syncKey, &store.ReadOptions{Consistent: true}).Return(nil, errors.New("KV sub not found"))
-		subscriptionsDB.EXPECT().Put(syncKey, syncValue, nil).Return(nil)
+		subscriptionsDB.EXPECT().AtomicPut(syncKey, syncValue, nil, nil).Return(true, nil, nil)
 		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return([]*store.KVPair{}, nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: funcValue}, nil)
@@ -85,25 +85,6 @@ func TestCreateSubscription(t *testing.T) {
 			Message: "Key: 'Subscription.Type' Error:Field validation for 'Type' failed on the 'required' tag" +
 				"\nKey: 'Subscription.EventType' Error:Field validation for 'EventType' failed on the 'required' tag" +
 				"\nKey: 'Subscription.FunctionID' Error:Field validation for 'FunctionID' failed on the 'required' tag"})
-	})
-
-	t.Run("validation error: CORS settings for async subscription", func(t *testing.T) {
-		subs := &Service{Log: zap.NewNop()}
-
-		_, err := subs.CreateSubscription(
-			&subscription.Subscription{
-				Type:       subscription.TypeAsync,
-				EventType:  "user.created",
-				FunctionID: "func",
-				Path:       "/",
-				Method:     "GET",
-				CORS: &subscription.CORS{
-					Methods: []string{"GET"},
-				},
-			},
-		)
-
-		assert.Equal(t, err, &subscription.ErrSubscriptionValidation{Message: "CORS can be configured only for sync subscriptions."})
 	})
 
 	t.Run("subscription already exists", func(t *testing.T) {
@@ -173,7 +154,7 @@ func TestCreateSubscription(t *testing.T) {
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("KV sub not found"))
 		subscriptionsDB.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, nil)
-		subscriptionsDB.EXPECT().Put(gomock.Any(), gomock.Any(), nil).Return(errors.New("KV Put err"))
+		subscriptionsDB.EXPECT().AtomicPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil, errors.New("KV Put err"))
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", gomock.Any()).Return(
 			&store.KVPair{Value: []byte(`{"functionId":"func","type":"http","provider":{"url": "http://test.com"}}`)}, nil)
@@ -207,9 +188,7 @@ func TestUpdateSubscription(t *testing.T) {
 			syncKey,
 			[]byte(
 				`{"space":"default","subscriptionId":"c3luYyxodHRwLnJlcXVlc3QsZnVuYywlMkYsUE9TVA","type":"sync",`+
-					`"eventType":"http.request","functionId":"func","path":"/","method":"POST",`+
-					`"cors":{"origins":["*"],"methods":["HEAD","GET","POST"],`+
-					`"headers":["Origin","Accept","Content-Type"],"allowCredentials":false}}`),
+					`"eventType":"http.request","functionId":"func","path":"/","method":"POST"}`),
 			nil).Return(nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Get("default/func", &store.ReadOptions{Consistent: true}).Return(&store.KVPair{Value: funcValue}, nil)
@@ -224,7 +203,7 @@ func TestUpdateSubscription(t *testing.T) {
 				FunctionID: "func",
 				Path:       "/",
 				Method:     "POST",
-				CORS:       &subscription.CORS{Origins: []string{"*"}}})
+			})
 
 		assert.Nil(t, err)
 	})
