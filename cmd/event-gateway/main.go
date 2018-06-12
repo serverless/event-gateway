@@ -92,6 +92,7 @@ func main() {
 		EventTypeStore:    intstore.NewPrefixed("/serverless-event-gateway/eventtypes", kvstore),
 		FunctionStore:     intstore.NewPrefixed("/serverless-event-gateway/functions", kvstore),
 		SubscriptionStore: intstore.NewPrefixed("/serverless-event-gateway/subscriptions", kvstore),
+		CORSStore:         intstore.NewPrefixed("/serverless-event-gateway/cors", kvstore),
 		Log:               log,
 	}
 
@@ -114,7 +115,7 @@ func main() {
 		ShutdownGuard: shutdownGuard,
 	})
 
-	httpapi.StartConfigAPI(service, service, service, httpapi.ServerConfig{
+	httpapi.StartConfigAPI(service, service, service, service, httpapi.ServerConfig{
 		TLSCrt:        configTLSCrt,
 		TLSKey:        configTLSKey,
 		Port:          *configPort,
