@@ -22,7 +22,7 @@ func TestCreateCORS(t *testing.T) {
 	testCORSConfig := &cors.CORS{
 		ID:             testID,
 		Method:         http.MethodGet,
-		Path:           "/path",
+		Path:           "/hello",
 		AllowedHeaders: []string{"content-type"},
 		AllowedMethods: []string{"GET"},
 		AllowedOrigins: []string{"*"},
@@ -34,7 +34,8 @@ func TestCreateCORS(t *testing.T) {
 			Get(`default/GET%2Fhello`, &store.ReadOptions{Consistent: true}).
 			Return(nil, errors.New("KV type not found"))
 		payload := []byte(
-			`{"space":"default","corsId":"GET%2Fhello","method":"GET","path":"/path","allowedOrigins":["*"],"allowedMethods":["GET"],"allowedHeaders":["content-type"],"allowCredentials":false}`)
+			`{"space":"default","corsId":"GET%2Fhello","method":"GET","path":"/hello","allowedOrigins":["*"],` +
+				`"allowedMethods":["GET"],"allowedHeaders":["content-type"],"allowCredentials":false}`)
 		db.EXPECT().Put(`default/GET%2Fhello`, payload, nil).Return(nil)
 		service := &Service{CORSStore: db, Log: zap.NewNop()}
 

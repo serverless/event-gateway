@@ -737,7 +737,7 @@ func TestCreateCORS(t *testing.T) {
 		corses.EXPECT().CreateCORS(gomock.Any()).
 			Return(nil, &cors.ErrCORSValidation{Message: "wrong allowCredentials"})
 
-		payload := []byte(`{"allowedOrigins":["*"],"allowedMethods":["NOPE"],` +
+		payload = []byte(`{"allowedOrigins":["*"],"allowedMethods":["NOPE"],` +
 			`"allowedHeaders":["content-type"],"allowCredentials": false}`)
 		resp := request(router, http.MethodPost, "/v1/spaces/default/cors", payload)
 
