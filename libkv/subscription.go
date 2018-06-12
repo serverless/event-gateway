@@ -172,11 +172,11 @@ func (service Service) checkForPathConflict(space, method, path string) error {
 
 		if sub.Type == subscription.TypeSync {
 			// add existing paths to check
-			tree.AddRoute(sub.Path, sub.Space, function.ID(""))
+			tree.AddRoute(sub.Path, FunctionKey{Space: sub.Space, ID: function.ID("")})
 		}
 	}
 
-	err = tree.AddRoute(path, space, function.ID(""))
+	err = tree.AddRoute(path, FunctionKey{Space: space, ID: function.ID("")})
 	if err != nil {
 		return &subscription.ErrPathConfict{Message: err.Error()}
 	}

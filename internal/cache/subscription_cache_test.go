@@ -58,9 +58,10 @@ func TestSubscriptionCacheModifiedSyncSubscription(t *testing.T) {
 		"path": "/b",
 		"method": "GET"}`))
 
-	space, id, _ := scache.endpoints["GET"].Resolve("/a")
-	assert.Equal(t, function.ID("testfunc1"), *id)
-	assert.Equal(t, "default", space)
+	value, _ := scache.endpoints["GET"].Resolve("/a")
+	key := value.(libkv.FunctionKey)
+	assert.Equal(t, function.ID("testfunc1"), key.ID)
+	assert.Equal(t, "default", key.Space)
 }
 
 func TestSubscriptionCacheModifiedEventsWrongPayload(t *testing.T) {
@@ -120,9 +121,8 @@ func TestSubscriptionCacheModifiedHTTPSubscriptionDeleted(t *testing.T) {
 		"path": "/",
 		"method": "GET"}`))
 
-	space, id, _ := scache.endpoints["GET"].Resolve("/")
-	assert.Nil(t, id)
-	assert.Equal(t, "", space)
+	value, _ := scache.endpoints["GET"].Resolve("/")
+	assert.Nil(t, value)
 }
 
 func TestSubscriptionCacheModifiedEventsDeletedLast(t *testing.T) {
