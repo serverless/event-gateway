@@ -18,12 +18,6 @@ func TestCORSCacheModifiedEvents(t *testing.T) {
 		"method": "GET",
 		"path": "/test",
 		"allowedOrigins": ["*"]}`))
-	// ccache.Modified("GET%2Ftest1", []byte(`{
-	// 	"corsId":"GET%2Ftest1",
-	// 	"space": "default",
-	// 	"method": "GET",
-	// 	"path": "/test1",
-	// 	"allowedOrigins": ["*"]}`))
 
 	value, _ := ccache.endpoints["GET"].Resolve("/test")
 	config := value.(cors.CORS)
