@@ -165,6 +165,42 @@ func TestUpdateCORS(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
+	t.Run("disallow updating method field", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get(gomock.Any(), gomock.Any()).Return(existingCORSKV, nil)
+		service := &Service{CORSStore: db, Log: zap.NewNop()}
+
+		_, err := service.UpdateCORS(&cors.CORS{
+			Space:          "default",
+			ID:             cors.ID("GET%2Fhello"),
+			Method:         "PUT",
+			Path:           "/hello",
+			AllowedHeaders: []string{"content-type"},
+			AllowedMethods: []string{"GET"},
+			AllowedOrigins: []string{"http://example.com"},
+		})
+
+		assert.Equal(t, &cors.ErrInvalidCORSUpdate{Field: "Method"}, err)
+	})
+
+	t.Run("disallow updating path field", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get(gomock.Any(), gomock.Any()).Return(existingCORSKV, nil)
+		service := &Service{CORSStore: db, Log: zap.NewNop()}
+
+		_, err := service.UpdateCORS(&cors.CORS{
+			Space:          "default",
+			ID:             cors.ID("GET%2Fhello"),
+			Method:         "GET",
+			Path:           "/hello1",
+			AllowedHeaders: []string{"content-type"},
+			AllowedMethods: []string{"GET"},
+			AllowedOrigins: []string{"http://example.com"},
+		})
+
+		assert.Equal(t, &cors.ErrInvalidCORSUpdate{Field: "Path"}, err)
+	})
+
 	t.Run("CORS config not found", func(t *testing.T) {
 		db := mock.NewMockStore(ctrl)
 		db.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("Key not found in store"))

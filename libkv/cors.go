@@ -76,7 +76,12 @@ func (service Service) UpdateCORS(config *cors.CORS) (*cors.CORS, error) {
 		return nil, err
 	}
 
-	_, err := service.GetCORS(config.Space, config.ID)
+	oldConfig, err := service.GetCORS(config.Space, config.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = validateCORSUpdate(config, oldConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +123,17 @@ func validateCORS(config *cors.CORS) error {
 	err := validate.Struct(config)
 	if err != nil {
 		return &cors.ErrCORSValidation{Message: err.Error()}
+	}
+
+	return nil
+}
+
+func validateCORSUpdate(new *cors.CORS, old *cors.CORS) error {
+	if new.Method != old.Method {
+		return &cors.ErrInvalidCORSUpdate{Field: "Method"}
+	}
+	if new.Path != old.Path {
+		return &cors.ErrInvalidCORSUpdate{Field: "Path"}
 	}
 
 	return nil

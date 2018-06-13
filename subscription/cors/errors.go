@@ -30,3 +30,12 @@ type ErrCORSValidation struct {
 func (e ErrCORSValidation) Error() string {
 	return fmt.Sprintf("CORS configuration doesn't validate. Validation error: %s", e.Message)
 }
+
+// ErrInvalidCORSUpdate occurs when a client tries to update a CORS config in a way that changes the CORS ID.
+type ErrInvalidCORSUpdate struct {
+	Field string
+}
+
+func (e ErrInvalidCORSUpdate) Error() string {
+	return fmt.Sprintf("Invalid update. '%v' of existing CORS configuration cannot be updated.", e.Field)
+}
