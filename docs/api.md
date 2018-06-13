@@ -9,6 +9,7 @@ This document contains the API documentation for both Events and Configuration A
     1. [Event Definition](#event-definition)
     1. [How To Emit an Event](#how-to-emit-an-event)
     1. [HTTP Request Event](#http-request-event)
+    1. [CORS](#cors)
     1. [Legacy Mode](#legacy-mode)
 1.  [Configuration API](#configuration-api)
     1. [Event Types](#event-types)
@@ -29,6 +30,11 @@ This document contains the API documentation for both Events and Configuration A
         1. [Delete Subscription](#delete-subscription)
         1. [Get Subscriptions](#get-subscriptions)
         1. [Get Subscription](#get-subscription)
+    1. [CORS](#cors-1)
+        1. [Create CORS Configuration](#create-cors-configuration)
+        1. [Update CORS Configuration](#update-cors-configuration)
+        1. [Delete CORS Configuration](#delete-cors-configuration)
+        1. [Get CORS Configuration](#get-cors-configuration)
     1. [Prometheus Metrics](#prometheus-metrics)
     1. [Status](#status)
 
@@ -85,6 +91,14 @@ CloudEvent created by Event Gateway where `data` field has the following structu
 * `query` - `object` - query parameters
 * `params` - `object` - matched path parameters
 * `body` - depends on `Content-Type` header - request payload
+
+### CORS
+
+By default cross-origin resource sharing (CORS) is disabled. CORS is configured per-method/path basis using
+[CORS Configuration API](#cors-1).
+
+Event Gateway handles preflight `OPTIONS` requests for you. You don't need to setup subscription for `OPTIONS` method
+because the Event Gateway will respond with all appropriate headers.
 
 ### Legacy Mode
 
@@ -199,6 +213,8 @@ JSON object:
   * `space` - `string` - space name
   * `name` - `string` - event type name
   * `authorizerId` - `string` - authorizer function ID
+
+---
 
 #### Get Event Type
 
@@ -350,6 +366,8 @@ JSON object:
   * `functionId` - `string` - function ID
   * `provider` - `object` - provider specific information about a function
 
+---
+
 #### Get Function
 
 **Endpoint**
@@ -478,6 +496,8 @@ JSON object:
   * `method` - `string` - HTTP method that accepts requests
   * `path` - `string` - path that accepts requests, starts with `/`
 
+---
+
 #### Get Subscription
 
 **Endpoint**
@@ -500,6 +520,120 @@ JSON object:
 * `functionId` - function ID
 * `method` - `string` - HTTP method that accepts requests
 * `path` - `string` - path that accepts requests, starts with `/`
+
+### CORS
+
+#### Create CORS Configuration
+
+**Endpoint**
+
+`POST <Configuration API URL>/v1/spaces/<space>/cors`
+
+**Request**
+
+* `method` - `string` - endpoint method
+* `path` - `string` - endpoint path
+* `allowedOrigins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
+* `allowedMethods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
+* `allowedHeaders` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
+* `allowCredentials` - `bool` - allow credentials, default: false
+
+**Response**
+
+Status code:
+
+* `201 Created` on success
+* `400 Bad Request` on validation error
+
+JSON object:
+
+* `space` - `string` - space name
+* `corsId` - `string` - CORS configuration ID
+* `method` - `string` - endpoint method
+* `path` - `string` - endpoint path
+* `allowedOrigins` - `array` of `string` - list of allowed origins
+* `allowedMethods` - `array` of `string` - list of allowed methods
+* `allowedHeaders` - `array` of `string` - list of allowed headers
+* `allowCredentials` - `boolean` - allow credentials
+
+---
+
+#### Update CORS Configuration
+
+**Endpoint**
+
+`PUT <Configuration API URL>/v1/spaces/<space>/cors/<CORS ID>`
+
+**Request**
+
+_Note that `method`, and `path` may not be updated in an UpdateCORS call._
+
+* `method` - `string` - endpoint method
+* `path` - `string` - endpoint path
+* `allowedOrigins` - `array` of `string` - list of allowed origins
+* `allowedMethods` - `array` of `string` - list of allowed methods
+* `allowedHeaders` - `array` of `string` - list of allowed headers
+* `allowCredentials` - `boolean` - allow credentials
+
+**Response**
+
+Status code:
+
+* `200 Created` on success
+* `400 Bad Request` on validation error
+* `404 Not Found` if CORS configuration doesn't exist
+
+JSON object:
+
+* `space` - `string` - space name
+* `corsId` - `string` - CORS configuration ID
+* `method` - `string` - endpoint method
+* `path` - `string` - endpoint path
+* `allowedOrigins` - `array` of `string` - allowed origins
+* `allowedMethods` - `array` of `string` - allowed methods
+* `allowedHeaders` - `array` of `string` - allowed headers
+* `allowCredentials` - `boolean` - allow credentials
+
+---
+
+#### Delete CORS Configuration
+
+**Endpoint**
+
+`DELETE <Configuration API URL>/v1/spaces/<space>/cors/<CORS ID>`
+
+**Response**
+
+Status code:
+
+* `204 No Content` on success
+* `404 Not Found` if CORS configuration doesn't exist
+
+---
+
+#### Get CORS Configuration
+
+**Endpoint**
+
+`GET <Configuration API URL>/v1/spaces/<space>/cors/<CORS ID>`
+
+**Response**
+
+Status code:
+
+* `200 OK` on success
+* `404 NotFound` if CORS configuration doesn't exist
+
+JSON object:
+
+* `space` - `string` - space name
+* `corsId` - `string` - CORS configuration ID
+* `method` - `string` - endpoint method
+* `path` - `string` - endpoint path
+* `allowedOrigins` - `array` of `string` - allowed origins
+* `allowedMethods` - `array` of `string` - allowed methods
+* `allowedHeaders` - `array` of `string` - allowed headers
+* `allowCredentials` - `boolean` - allow credentials
 
 ### Prometheus Metrics
 

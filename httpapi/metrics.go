@@ -8,6 +8,7 @@ func init() {
 	prometheus.MustRegister(metricEventTypes)
 	prometheus.MustRegister(metricFunctions)
 	prometheus.MustRegister(metricSubscriptions)
+	prometheus.MustRegister(metricCORS)
 
 	prometheus.MustRegister(metricConfigRequests)
 	prometheus.MustRegister(metricConfigRequestDuration)
@@ -41,6 +42,16 @@ var metricSubscriptions = prometheus.NewGaugeVec(
 		Subsystem: "subscriptions",
 		Name:      "total",
 		Help:      "Gauge of created subscriptions count.",
+	}, []string{"space"})
+
+// CORS
+
+var metricCORS = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Namespace: "gateway",
+		Subsystem: "cors",
+		Name:      "total",
+		Help:      "Gauge of created CORS configurations count.",
 	}, []string{"space"})
 
 // Config API

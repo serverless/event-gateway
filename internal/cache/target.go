@@ -10,6 +10,7 @@ import (
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/libkv"
 	"github.com/serverless/event-gateway/router"
+	"github.com/serverless/event-gateway/subscription/cors"
 )
 
 // Target is an implementation of router.Targeter using the docker/libkv library for watching data in etcd, zookeeper, and
@@ -20,6 +21,7 @@ type Target struct {
 	eventTypeCache    *eventTypeCache
 	functionCache     *functionCache
 	subscriptionCache *subscriptionCache
+	corsCache         *corsCache
 }
 
 // EventType takes a event type name and returns a deserialized instance of event type, if it exists
@@ -40,14 +42,15 @@ func (tc *Target) SyncSubscriber(method, path string, eventType eventpkg.TypeNam
 		return nil
 	}
 
-	space, functionID, params := root.Resolve(path)
-	if functionID == nil {
+	value, params := root.Resolve(path)
+	if value == nil {
 		return nil
 	}
 
+	key := value.(libkv.FunctionKey)
 	return &router.SyncSubscriber{
-		Space:      space,
-		FunctionID: *functionID,
+		Space:      key.Space,
+		FunctionID: key.ID,
 		Params:     params,
 	}
 }
@@ -75,6 +78,25 @@ func (tc *Target) AsyncSubscribers(method, path string, eventType eventpkg.TypeN
 	return subscribers
 }
 
+// CORS returns CORS configuration for method and path pair
+func (tc *Target) CORS(method, path string) *cors.CORS {
+	tc.corsCache.RLock()
+	defer tc.corsCache.RUnlock()
+
+	root := tc.corsCache.endpoints[method]
+	if root == nil {
+		return nil
+	}
+
+	value, _ := root.Resolve(path)
+	if value == nil {
+		return nil
+	}
+
+	config := value.(cors.CORS)
+	return &config
+}
+
 // Shutdown causes all state watchers to clean up their state.
 func (tc *Target) Shutdown() {
 	close(tc.shutdown)
@@ -90,6 +112,7 @@ func NewTarget(path string, kvstore store.Store, log *zap.Logger) *Target {
 	eventTypePathWatcher := NewWatcher(path+"eventtypes", kvstore, log)
 	functionPathWatcher := NewWatcher(path+"functions", kvstore, log)
 	subscriptionPathWatcher := NewWatcher(path+"subscriptions", kvstore, log)
+	corsPathWatcher := NewWatcher(path+"cors", kvstore, log)
 
 	// serves lookups for event types
 	eventTypeCache := newEventTypeCache(log)
@@ -97,12 +120,15 @@ func NewTarget(path string, kvstore store.Store, log *zap.Logger) *Target {
 	functionCache := newFunctionCache(log)
 	// serves lookups for which functions are subscribed to an event
 	subscriptionCache := newSubscriptionCache(log)
+	// serves lookups for cors configuration
+	corsCache := newCORSCache(log)
 
 	// start reacting to changes
 	shutdown := make(chan struct{})
 	eventTypePathWatcher.React(eventTypeCache, shutdown)
 	functionPathWatcher.React(functionCache, shutdown)
 	subscriptionPathWatcher.React(subscriptionCache, shutdown)
+	corsPathWatcher.React(corsCache, shutdown)
 
 	return &Target{
 		log:               log,
@@ -110,5 +136,6 @@ func NewTarget(path string, kvstore store.Store, log *zap.Logger) *Target {
 		eventTypeCache:    eventTypeCache,
 		functionCache:     functionCache,
 		subscriptionCache: subscriptionCache,
+		corsCache:         corsCache,
 	}
 }

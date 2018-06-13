@@ -49,7 +49,7 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 			root = pathtree.NewNode()
 			c.endpoints[s.Method] = root
 		}
-		err := root.AddRoute(s.Path, s.Space, s.FunctionID)
+		err := root.AddRoute(s.Path, libkv.FunctionKey{Space: s.Space, ID: s.FunctionID})
 		if err != nil {
 			c.log.Error("Could not add path to the tree.", zap.Error(err), zap.String("path", s.Path), zap.String("method", s.Method))
 		}

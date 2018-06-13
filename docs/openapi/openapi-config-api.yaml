@@ -24,6 +24,8 @@ tags:
   description: "Operations about functions"
 - name: "subscription"
   description: "Operations about subscriptions"
+- name: "cors"
+  description: "Operations about CORS"
 
 paths:
   /spaces/{spaceName}/eventtypes:
@@ -327,6 +329,89 @@ paths:
         500:
           $ref: '#/components/responses/Error'
 
+  /spaces/{spaceName}/cors:
+    summary: "Operations about CORS configuration"
+    post:
+      summary: "Create CORS configuration"
+      tags:
+      - "cors"
+      operationId: "CreateCORS"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateCORS"
+      responses:
+        201:
+          description: "CORS configuration created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CORS"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        500:
+          $ref: '#/components/responses/Error'
+
+  /spaces/{spaceName}/cors/{corsId}:
+    summary: "Operations about single CORS configuration"
+    get:
+      summary: "Get CORS configuration"
+      tags:
+      - "cors"
+      operationId: "GetCORS"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/CORSID"
+      responses:
+        200:
+          description: "CORS configuration returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CORS"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+    put:
+      summary: "Update CORS configuration"
+      tags:
+      - "cors"
+      operationId: "UpdateCORS"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/CORSID"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateCORS"
+      responses:
+        200:
+          description: "CORS configuration updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CORS"
+        400:
+          $ref: '#/components/responses/ValidationError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: "Delete CORS configuration"
+      tags:
+      - "cors"
+      operationId: "DeleteCORS"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/CORSID"
+      responses:
+        204:
+          description: "CORS configuration deleted"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/Error'
+
 components:
   schemas:
     SpaceName:
@@ -334,6 +419,8 @@ components:
     FunctionID:
       type: string
     SubscriptionID:
+      type: string
+    CORSID:
       type: string
     SubscriptionType:
       type: string
@@ -416,6 +503,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Subscription'
+    CORS:
+      type: object
+      properties:
+        space:
+          $ref: '#/components/schemas/SpaceName'
+        corsId:
+          $ref: '#/components/schemas/CORSID'
+        method:
+          $ref: '#/components/schemas/Method'
+        path:
+          $ref: '#/components/schemas/Path'
+        allowedOrigins:
+          $ref: '#/components/schemas/AllowedOrigins'
+        allowedMethods:
+          $ref: '#/components/schemas/AllowedMethods'
+        allowedHeaders:
+          $ref: '#/components/schemas/AllowedHeaders'
+        allowCredentials:
+          $ref: '#/components/schemas/AllowCredentials'
     AWSFirehose:
       type: object
       properties:
@@ -511,6 +617,20 @@ components:
       type: string
       description: "URL path under which events (HTTP requests) are accepted"
       default: "/"
+    AllowedOrigins:
+      type: array
+      items:
+        type: string
+    AllowedMethods:
+      type: array
+      items:
+        type: string
+    AllowedHeaders:
+      type: array
+      items:
+        type: string
+    AllowCredentials:
+      type: boolean
     Error:
       type: object
       description: "response error object"
@@ -554,6 +674,13 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/SubscriptionID"
+    CORSID:
+      in: "path"
+      name: "corsId"
+      description: "CORS configuration identifier"
+      required: true
+      schema:
+        $ref: "#/components/schemas/CORSID"
   requestBodies:
     CreateEventType:
       description: "event type create request body"
@@ -643,6 +770,44 @@ components:
                 $ref: '#/components/schemas/Path'
               method:
                 $ref: '#/components/schemas/Method'
+    CreateCORS:
+      description: "CORS configuration create request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              method:
+                $ref: '#/components/schemas/Method'
+              path:
+                $ref: '#/components/schemas/Path'
+              allowedOrigins:
+                $ref: '#/components/schemas/AllowedOrigins'
+              allowedMethods:
+                $ref: '#/components/schemas/AllowedMethods'
+              allowedHeaders:
+                $ref: '#/components/schemas/AllowedHeaders'
+              allowCredentials:
+                $ref: '#/components/schemas/AllowCredentials'
+    UpdateCORS:
+      description: "CORS configuration update request body"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              method:
+                $ref: '#/components/schemas/Method'
+              path:
+                $ref: '#/components/schemas/Path'
+              allowedOrigins:
+                $ref: '#/components/schemas/AllowedOrigins'
+              allowedMethods:
+                $ref: '#/components/schemas/AllowedMethods'
+              allowedHeaders:
+                $ref: '#/components/schemas/AllowedHeaders'
+              allowCredentials:
+                $ref: '#/components/schemas/AllowCredentials'
   responses:
     Error:
       description: "internal server error"

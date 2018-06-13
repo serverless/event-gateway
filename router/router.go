@@ -62,7 +62,14 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cors.AllowAll().ServeHTTP(w, r, func(w http.ResponseWriter, r *http.Request) {
+	reqMethod := r.Method
+	// check if CORS pre-flight request
+	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+		reqMethod = r.Header.Get("Access-Control-Request-Method")
+	}
+	path := extractPath(r.Host, r.URL.EscapedPath())
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		event, err := eventpkg.FromRequest(r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -74,8 +81,6 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-
-		path := extractPath(r.Host, r.URL.EscapedPath())
 
 		router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
 		err = router.emitSystemEventReceived(path, *event, r.Header)
@@ -95,7 +100,22 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if syncSubscriber == nil {
 			w.WriteHeader(http.StatusAccepted)
 		}
-	})
+	}
+
+	corsConfig := router.targetCache.CORS(reqMethod, path)
+	if corsConfig != nil {
+		corsOptions := cors.Options{
+			AllowedOrigins:     corsConfig.AllowedOrigins,
+			AllowedHeaders:     corsConfig.AllowedHeaders,
+			AllowedMethods:     corsConfig.AllowedMethods,
+			AllowCredentials:   corsConfig.AllowCredentials,
+			OptionsPassthrough: false,
+		}
+
+		cors.New(corsOptions).ServeHTTP(w, r, handler)
+	} else {
+		handler(w, r)
+	}
 }
 
 // StartWorkers spins up workerNumber goroutines for processing

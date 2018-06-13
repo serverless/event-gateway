@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/serverless/event-gateway/function"
 )
 
 // Node is a data structure, inspired by prefix tree, used for routing HTTP requests in the Event Gateway. It's used for creating tree structure
@@ -13,12 +11,12 @@ import (
 type Node struct {
 	segment     string
 	children    map[string]*Node
-	space       string
-	functionID  *function.ID
 	parameter   string
 	isStatic    bool
 	isParameter bool
 	isWildcard  bool
+
+	value interface{}
 }
 
 // NewNode creates new Node.
@@ -33,10 +31,9 @@ type Params map[string]string
 
 // AddRoute adds route to the tree. This function will panic in case of adding conflicting parameterized paths.
 // nolint: gocyclo
-func (n *Node) AddRoute(route string, space string, functionID function.ID) error {
+func (n *Node) AddRoute(route string, value interface{}) error {
 	if route == "/" {
-		n.space = space
-		n.functionID = &functionID
+		n.value = value
 		return nil
 	}
 
@@ -57,8 +54,7 @@ func (n *Node) AddRoute(route string, space string, functionID function.ID) erro
 				// empty children, create node and go to the next segment
 				currentNode.children[segment] = createNode(segment)
 				if i == len(segments)-1 {
-					currentNode.children[segment].space = space
-					currentNode.children[segment].functionID = &functionID
+					currentNode.children[segment].value = value
 					return nil
 				}
 				currentNode = currentNode.children[segment]
@@ -87,11 +83,11 @@ func (n *Node) AddRoute(route string, space string, functionID function.ID) erro
 		}
 
 		if i == len(segments)-1 {
-			if currentNode.children[segment].functionID != nil {
+
+			if currentNode.children[segment].value != nil {
 				return fmt.Errorf("route %s conflicts with existing route", route)
 			}
-			currentNode.children[segment].space = space
-			currentNode.children[segment].functionID = &functionID
+			currentNode.children[segment].value = value
 			return nil
 		}
 		currentNode = currentNode.children[segment]
@@ -103,8 +99,7 @@ func (n *Node) AddRoute(route string, space string, functionID function.ID) erro
 // DeleteRoute deletes route from the tree. This function will panic in case of removing non-existing node.
 func (n *Node) DeleteRoute(route string) error {
 	if route == "/" {
-		n.space = ""
-		n.functionID = nil
+		n.value = nil
 		return nil
 	}
 
@@ -121,8 +116,7 @@ func (n *Node) DeleteRoute(route string) error {
 			if len(currentNode.children[segment].children) == 0 {
 				delete(currentNode.children, segment)
 			} else {
-				currentNode.children[segment].space = ""
-				currentNode.children[segment].functionID = nil
+				currentNode.children[segment].value = nil
 			}
 
 			return nil
@@ -136,12 +130,12 @@ func (n *Node) DeleteRoute(route string) error {
 
 // Resolve takes request URL path and traverse the tree trying find corresponding route.
 // nolint: gocyclo
-func (n *Node) Resolve(path string) (string, *function.ID, Params) {
+func (n *Node) Resolve(path string) (interface{}, Params) {
 	if path == "/" {
-		if n.functionID != nil {
-			return n.space, n.functionID, nil
+		if n.value != nil {
+			return n.value, nil
 		}
-		return "", nil, nil
+		return nil, nil
 	}
 
 	segments := toSegments(path)
@@ -155,7 +149,7 @@ func (n *Node) Resolve(path string) (string, *function.ID, Params) {
 			// look for param
 			child, exists = first(currentNode.children)
 			if !exists || !(child.isParameter || child.isWildcard) {
-				return "", nil, nil
+				return nil, nil
 			}
 		}
 		currentNode = child
@@ -167,15 +161,15 @@ func (n *Node) Resolve(path string) (string, *function.ID, Params) {
 		if currentNode.isWildcard {
 			// add missing parts
 			params[currentNode.parameter] = strings.Join(segments[i:], "/")
-			return currentNode.space, currentNode.functionID, params
+			return currentNode.value, params
 		}
 
 		if i == len(segments)-1 {
-			return currentNode.space, currentNode.functionID, params
+			return currentNode.value, params
 		}
 	}
 
-	return "", nil, nil
+	return nil, nil
 }
 
 func toSegments(route string) []string {

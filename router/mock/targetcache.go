@@ -9,6 +9,7 @@ import (
 	event "github.com/serverless/event-gateway/event"
 	function "github.com/serverless/event-gateway/function"
 	router "github.com/serverless/event-gateway/router"
+	cors "github.com/serverless/event-gateway/subscription/cors"
 	reflect "reflect"
 )
 
@@ -45,6 +46,18 @@ func (m *MockTargeter) AsyncSubscribers(arg0, arg1 string, arg2 event.TypeName) 
 // AsyncSubscribers indicates an expected call of AsyncSubscribers
 func (mr *MockTargeterMockRecorder) AsyncSubscribers(arg0, arg1, arg2 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsyncSubscribers", reflect.TypeOf((*MockTargeter)(nil).AsyncSubscribers), arg0, arg1, arg2)
+}
+
+// CORS mocks base method
+func (m *MockTargeter) CORS(arg0, arg1 string) *cors.CORS {
+	ret := m.ctrl.Call(m, "CORS", arg0, arg1)
+	ret0, _ := ret[0].(*cors.CORS)
+	return ret0
+}
+
+// CORS indicates an expected call of CORS
+func (mr *MockTargeterMockRecorder) CORS(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CORS", reflect.TypeOf((*MockTargeter)(nil).CORS), arg0, arg1)
 }
 
 // EventType mocks base method

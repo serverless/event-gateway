@@ -15,6 +15,7 @@ import (
 	"github.com/serverless/event-gateway/plugin"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/router/mock"
+	"github.com/serverless/event-gateway/subscription/cors"
 	"github.com/stretchr/testify/assert"
 
 	httpprovider "github.com/serverless/event-gateway/providers/http"
@@ -37,24 +38,31 @@ func TestRouterServeHTTP(t *testing.T) {
 		assert.Equal(t, `{"errors":[{"message":"Service Unavailable"}]}`+"\n", recorder.Body.String())
 	})
 
-	t.Run("allow CORS preflight", func(t *testing.T) {
-		router := setupTestRouter(target)
+	t.Run("allow CORS preflight when configured", func(t *testing.T) {
+		config := &cors.CORS{
+			AllowedOrigins: []string{"http://example.com"},
+			AllowedMethods: []string{"PUT"},
+			AllowedHeaders: []string{"*"},
+		}
+		target.EXPECT().CORS(http.MethodPut, "/").Return(config)
+		routera := setupTestRouter(target)
 
 		req, _ := http.NewRequest(http.MethodOptions, "/", nil)
-		req.Header.Set("Access-Control-Request-Method", "POST")
-		req.Header.Set("Access-Control-Request-Headers", "event")
+		req.Header.Set("Access-Control-Request-Method", "PUT")
+		req.Header.Set("Access-Control-Request-Headers", "x-api-key")
 		req.Header.Set("Origin", "http://example.com")
 		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, req)
+		routera.ServeHTTP(recorder, req)
 
 		assert.Equal(t, http.StatusOK, recorder.Code)
-		assert.Equal(t, "true", recorder.Header().Get("Access-Control-Allow-Credentials"))
-		assert.Equal(t, "Event", recorder.Header().Get("Access-Control-Allow-Headers"))
-		assert.Equal(t, "POST", recorder.Header().Get("Access-Control-Allow-Methods"))
+		assert.Equal(t, "", recorder.Header().Get("Access-Control-Allow-Credentials"))
+		assert.Equal(t, "X-Api-Key", recorder.Header().Get("Access-Control-Allow-Headers"))
+		assert.Equal(t, "PUT", recorder.Header().Get("Access-Control-Allow-Methods"))
 		assert.Equal(t, "http://example.com", recorder.Header().Get("Access-Control-Allow-Origin"))
 	})
 
 	t.Run("extract path from hosted domain", func(t *testing.T) {
+		target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 		target.EXPECT().SyncSubscriber(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return(nil).MaxTimes(1)
 		target.EXPECT().AsyncSubscribers(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return([]router.AsyncSubscriber{}).MaxTimes(1)
 		target.EXPECT().AsyncSubscribers(http.MethodPost, "/", event.SystemEventReceivedType).Return([]router.AsyncSubscriber{}).MaxTimes(1)
@@ -68,6 +76,7 @@ func TestRouterServeHTTP(t *testing.T) {
 	})
 
 	t.Run("reject if system event", func(t *testing.T) {
+		target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 		router := setupTestRouter(target)
 
 		req, _ := http.NewRequest(http.MethodPost, "/", nil)
@@ -91,6 +100,7 @@ func TestRouterServeHTTP(t *testing.T) {
 
 		t.Run("call sync subscriber", func(t *testing.T) {
 			eventType := &event.Type{Space: space, Name: "http.request"}
+			target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 			target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
 			target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
 			target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
@@ -113,6 +123,7 @@ func TestRouterServeHTTP(t *testing.T) {
 				Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, httpResponseObject).URL},
 			}
 			eventType := &event.Type{Space: space, Name: "http.request"}
+			target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 			target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
 			target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
 			target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
@@ -135,6 +146,7 @@ func TestRouterServeHTTP(t *testing.T) {
 				Provider:     &httpprovider.HTTP{URL: testHTTPFunction(http.StatusOK, []byte("not JSON")).URL},
 			}
 			eventType := &event.Type{Space: space, Name: "http.request"}
+			target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 			target.EXPECT().SyncSubscriber(http.MethodPost, "/", event.TypeHTTPRequest).Return(subscriber).MaxTimes(1)
 			target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
 			target.EXPECT().EventType(space, event.TypeHTTPRequest).Return(eventType)
@@ -160,6 +172,7 @@ func TestRouterServeHTTP(t *testing.T) {
 			eventType := &event.Type{Space: space, Name: "http.request", AuthorizerID: &authorizerID}
 
 			t.Run("status Forbidden if authorizer returned nil", func(t *testing.T) {
+				target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 				target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
 				target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
 				target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
@@ -176,6 +189,7 @@ func TestRouterServeHTTP(t *testing.T) {
 			t.Run("status Forbidden if authorizer returned error", func(t *testing.T) {
 				authorizer.Provider = &httpprovider.HTTP{
 					URL: testHTTPFunction(http.StatusOK, []byte(`{"error":{"message": "failed"}}`)).URL}
+				target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 				target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
 				target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
 				target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
@@ -203,6 +217,7 @@ func TestRouterServeHTTP(t *testing.T) {
 					URL: targetFunction.URL}
 				authorizer.Provider = &httpprovider.HTTP{
 					URL: testHTTPFunction(http.StatusOK, []byte(`{"authorization":{"principalId": "testid"}}`)).URL}
+				target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 				target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
 				target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
 				target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)
@@ -230,6 +245,7 @@ func TestRouterServeHTTP(t *testing.T) {
 				authorizer.Provider = &httpprovider.HTTP{
 					URL: testHTTPFunction(http.StatusOK, []byte(`{"authorization":{"principalId": "testid"}}`)).URL}
 				eventType := &event.Type{Space: space, Name: "test.event", AuthorizerID: &authorizerID}
+				target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 				target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(subscriber).MaxTimes(1)
 				target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), gomock.Any()).Return([]router.AsyncSubscriber{}).AnyTimes()
 				target.EXPECT().EventType(gomock.Any(), gomock.Any()).Return(eventType)

@@ -9,15 +9,17 @@ import (
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/subscription"
+	"github.com/serverless/event-gateway/subscription/cors"
 )
 
 // StartConfigAPI creates a new configuration API server and listens for requests.
-func StartConfigAPI(eventtypes event.Service, functions function.Service, subscriptions subscription.Service, config ServerConfig) {
+func StartConfigAPI(eventtypes event.Service, functions function.Service, subscriptions subscription.Service, corses cors.Service, config ServerConfig) {
 	router := httprouter.New()
 	api := &HTTPAPI{
 		EventTypes:    eventtypes,
 		Functions:     functions,
 		Subscriptions: subscriptions,
+		CORSes:        corses,
 	}
 	api.RegisterRoutes(router)
 

@@ -15,6 +15,7 @@ import (
 	"github.com/serverless/event-gateway/httpapi"
 	"github.com/serverless/event-gateway/mock"
 	"github.com/serverless/event-gateway/subscription"
+	"github.com/serverless/event-gateway/subscription/cors"
 	"github.com/stretchr/testify/assert"
 
 	httpprovider "github.com/serverless/event-gateway/providers/http"
@@ -23,7 +24,7 @@ import (
 func TestGetEventType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, eventTypes, _, _ := setup(ctrl)
+	router, eventTypes, _, _, _ := setup(ctrl)
 
 	t.Run("event type returned", func(t *testing.T) {
 		returnedType := &event.Type{
@@ -68,7 +69,7 @@ func TestGetEventType(t *testing.T) {
 func TestGetEventTypes(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, eventTypes, _, _ := setup(ctrl)
+	router, eventTypes, _, _, _ := setup(ctrl)
 
 	t.Run("event types returned", func(t *testing.T) {
 		returnedList := event.Types{{
@@ -101,7 +102,7 @@ func TestGetEventTypes(t *testing.T) {
 func TestCreateEventType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, eventTypes, _, _ := setup(ctrl)
+	router, eventTypes, _, _, _ := setup(ctrl)
 
 	typePayload := []byte(`{"name":"test.event","space":"test1"}`)
 
@@ -168,7 +169,7 @@ func TestCreateEventType(t *testing.T) {
 func TestUpdateEventType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, eventTypes, _, _ := setup(ctrl)
+	router, eventTypes, _, _, _ := setup(ctrl)
 
 	typePayload := []byte(`{"name":"test.event","space":"test1"}`)
 
@@ -248,7 +249,7 @@ func TestUpdateEventType(t *testing.T) {
 func TestDeleteEventType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, eventTypes, _, _ := setup(ctrl)
+	router, eventTypes, _, _, _ := setup(ctrl)
 
 	t.Run("event type deleted", func(t *testing.T) {
 		eventTypes.EXPECT().DeleteEventType("default", event.TypeName("test.event")).Return(nil)
@@ -297,7 +298,7 @@ func TestDeleteEventType(t *testing.T) {
 func TestGetFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, _, functions, _ := setup(ctrl)
+	router, _, functions, _, _ := setup(ctrl)
 
 	t.Run("function returned", func(t *testing.T) {
 		returnedFn := &function.Function{
@@ -346,7 +347,7 @@ func TestGetFunction(t *testing.T) {
 func TestGetFunctions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, _, functions, _ := setup(ctrl)
+	router, _, functions, _, _ := setup(ctrl)
 
 	t.Run("functions returned", func(t *testing.T) {
 		returnedList := function.Functions{{
@@ -381,7 +382,7 @@ func TestGetFunctions(t *testing.T) {
 func TestRegisterFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, _, functions, _ := setup(ctrl)
+	router, _, functions, _, _ := setup(ctrl)
 
 	fnPayload := []byte(`{"functionId":"func1","space":"test1","type":"http","provider":{"url":"http://example.com"}}`)
 
@@ -455,7 +456,7 @@ func TestRegisterFunction(t *testing.T) {
 func TestDeleteFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, _, functions, _ := setup(ctrl)
+	router, _, functions, _, _ := setup(ctrl)
 
 	t.Run("function deleted", func(t *testing.T) {
 		functions.EXPECT().DeleteFunction("default", function.ID("func1")).Return(nil)
@@ -504,7 +505,7 @@ func TestDeleteFunction(t *testing.T) {
 func TestUpdateSubscription(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, _, _, subscriptions := setup(ctrl)
+	router, _, _, subscriptions, _ := setup(ctrl)
 
 	updateSub := &subscription.Subscription{
 		Space:      "default",
@@ -595,7 +596,7 @@ func TestUpdateSubscription(t *testing.T) {
 func TestDeleteSubscription(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	router, _, _, subscriptions := setup(ctrl)
+	router, _, _, subscriptions, _ := setup(ctrl)
 
 	t.Run("subscription deleted", func(t *testing.T) {
 		subscriptions.EXPECT().DeleteSubscription("default", subscription.ID("testid")).Return(nil)
@@ -630,6 +631,248 @@ func TestDeleteSubscription(t *testing.T) {
 	})
 }
 
+func TestGetCORS(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _, _, corses := setup(ctrl)
+
+	t.Run("CORS config returned", func(t *testing.T) {
+		returnedConfig := &cors.CORS{
+			Space:          "default",
+			ID:             cors.ID("GET%2Fhello"),
+			Method:         http.MethodGet,
+			Path:           "/hello",
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{"GET"},
+			AllowedHeaders: []string{"content-type"},
+		}
+		corses.EXPECT().GetCORS("default", cors.ID("GET%2Fhello")).Return(returnedConfig, nil)
+
+		resp := request(router, http.MethodGet, "/v1/spaces/default/cors/GET%2Fhello", nil)
+
+		config := &cors.CORS{}
+		json.Unmarshal(resp.Body.Bytes(), config)
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.Equal(t, "default", config.Space)
+		assert.Equal(t, cors.ID("GET%2Fhello"), config.ID)
+		assert.Equal(t, http.MethodGet, config.Method)
+		assert.Equal(t, "/hello", config.Path)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		returnedErr := &cors.ErrCORSNotFound{ID: cors.ID("GET%2Fhello")}
+		corses.EXPECT().GetCORS(gomock.Any(), gomock.Any()).Return(nil, returnedErr)
+
+		resp := request(router, http.MethodGet, "/v1/spaces/default/cors/GET%2Fhello", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusNotFound, resp.Code)
+		assert.Equal(t, `CORS configuration "GET%2Fhello" not found.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		corses.EXPECT().GetCORS(gomock.Any(), gomock.Any()).Return(nil, errors.New("processing failed"))
+
+		resp := request(router, http.MethodGet, "/v1/spaces/default/cors/GET%2Fhello", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, "processing failed", httpresp.Errors[0].Message)
+	})
+}
+
+func TestCreateCORS(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _, _, corses := setup(ctrl)
+
+	config := &cors.CORS{
+		Space:          "default",
+		Method:         http.MethodGet,
+		Path:           "/hello",
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET"},
+		AllowedHeaders: []string{"content-type"},
+	}
+	payload := []byte(`{"method":"GET","path":"/hello","allowedOrigins":["*"],"allowedMethods":["GET"],` +
+		`"allowedHeaders":["content-type"],"allowCredentials":false}`)
+	createdConfig := &cors.CORS{
+		Space:          "default",
+		ID:             cors.ID("GET%2Fhello"),
+		Method:         http.MethodGet,
+		Path:           "/hello",
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET"},
+		AllowedHeaders: []string{"content-type"},
+	}
+
+	t.Run("CORS config created", func(t *testing.T) {
+		corses.EXPECT().CreateCORS(config).Return(createdConfig, nil)
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/cors", payload)
+
+		configReturned := &cors.CORS{}
+		json.Unmarshal(resp.Body.Bytes(), configReturned)
+		assert.Equal(t, http.StatusCreated, resp.Code)
+		assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+		assert.Equal(t, cors.ID("GET%2Fhello"), configReturned.ID)
+		assert.Equal(t, "default", configReturned.Space)
+	})
+
+	t.Run("CORS config already exists", func(t *testing.T) {
+		corses.EXPECT().CreateCORS(gomock.Any()).
+			Return(nil, &cors.ErrCORSAlreadyExists{ID: cors.ID("GET%2Fhello")})
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/cors", payload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, `CORS configuration "GET%2Fhello" already exists.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		corses.EXPECT().CreateCORS(gomock.Any()).
+			Return(nil, &cors.ErrCORSValidation{Message: "wrong allowCredentials"})
+
+		payload = []byte(`{"allowedOrigins":["*"],"allowedMethods":["NOPE"],` +
+			`"allowedHeaders":["content-type"],"allowCredentials": false}`)
+		resp := request(router, http.MethodPost, "/v1/spaces/default/cors", payload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, "CORS configuration doesn't validate. Validation error: wrong allowCredentials", httpresp.Errors[0].Message)
+	})
+
+	t.Run("malformed JSON", func(t *testing.T) {
+		resp := request(router, http.MethodPost, "/v1/spaces/default/cors", []byte(`{`))
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, "CORS configuration doesn't validate. Validation error: unexpected EOF", httpresp.Errors[0].Message)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		corses.EXPECT().CreateCORS(gomock.Any()).Return(nil, errors.New("processing error"))
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/cors", payload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, `processing error`, httpresp.Errors[0].Message)
+	})
+}
+
+func TestUpdateCORS(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _, _, corses := setup(ctrl)
+
+	updateCORS := &cors.CORS{
+		Space:          "default",
+		ID:             cors.ID("GET%2Fhello"),
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET"},
+		AllowedHeaders: []string{"content-type"},
+	}
+	updatedValue := []byte(`{"allowedOrigins":["*"],"allowedMethods":["GET"],` +
+		`"allowedHeaders":["content-type"],"allowCredentials":false}`)
+
+	t.Run("CORS updated", func(t *testing.T) {
+		corses.EXPECT().UpdateCORS(updateCORS).Return(updateCORS, nil)
+
+		resp := request(router, http.MethodPut, `/v1/spaces/default/cors/GET%2Fhello`, updatedValue)
+
+		config := &cors.CORS{}
+		json.Unmarshal(resp.Body.Bytes(), config)
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.Equal(t, "default", config.Space)
+		assert.Equal(t, cors.ID(`GET%2Fhello`), config.ID)
+	})
+
+	t.Run("invalid JSON", func(t *testing.T) {
+		resp := request(router, http.MethodPut, "/v1/spaces/default/cors/GET%2Fhello", []byte(`{"space":"te`))
+
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+
+	t.Run("CORS config not found", func(t *testing.T) {
+		corses.EXPECT().UpdateCORS(gomock.Any()).Return(nil, &cors.ErrCORSNotFound{ID: cors.ID("GET%2Fhello")})
+
+		resp := request(router, http.MethodPut, "/v1/spaces/default/cors/GET%2Fhello", updatedValue)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusNotFound, resp.Code)
+		assert.Equal(t, `CORS configuration "GET%2Fhello" not found.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		corses.EXPECT().UpdateCORS(gomock.Any()).Return(nil, &cors.ErrCORSValidation{Message: ""})
+
+		resp := request(router, http.MethodPut, "/v1/spaces/default/cors/GET%2Fhello", updatedValue)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Contains(t, httpresp.Errors[0].Message, "CORS configuration doesn't validate. Validation error")
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		corses.EXPECT().UpdateCORS(gomock.Any()).Return(nil, errors.New("processing failed"))
+
+		resp := request(router, http.MethodPut, "/v1/spaces/default/cors/GET%2Fhello", updatedValue)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, "processing failed", httpresp.Errors[0].Message)
+	})
+}
+
+func TestDeleteCORS(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _, _, corses := setup(ctrl)
+
+	t.Run("CORS deleted", func(t *testing.T) {
+		corses.EXPECT().DeleteCORS("default", cors.ID("GET%2Fhello")).Return(nil)
+
+		resp := request(router, http.MethodDelete, "/v1/spaces/default/cors/GET%2Fhello", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusNoContent, resp.Code)
+	})
+
+	t.Run("CORS not found", func(t *testing.T) {
+		corses.EXPECT().DeleteCORS(gomock.Any(), gomock.Any()).Return(&cors.ErrCORSNotFound{ID: cors.ID("GET%2Fhello1")})
+
+		resp := request(router, http.MethodDelete, "/v1/spaces/default/cors/GET%2Fhello1", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusNotFound, resp.Code)
+		assert.Equal(t, `CORS configuration "GET%2Fhello1" not found.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		corses.EXPECT().DeleteCORS(gomock.Any(), gomock.Any()).Return(errors.New("internal error"))
+
+		resp := request(router, http.MethodDelete, "/v1/spaces/default/cors/GET%2Fhello", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, "internal error", httpresp.Errors[0].Message)
+	})
+}
+
 func request(router *httprouter.Router, method string, url string, payload []byte) *httptest.ResponseRecorder {
 	resp := httptest.NewRecorder()
 	body := bytes.NewReader(payload)
@@ -644,18 +887,21 @@ func setup(ctrl *gomock.Controller) (
 	*mock.MockEventTypeService,
 	*mock.MockFunctionService,
 	*mock.MockSubscriptionService,
+	*mock.MockCORSService,
 ) {
 	router := httprouter.New()
 	eventTypes := mock.NewMockEventTypeService(ctrl)
 	functions := mock.NewMockFunctionService(ctrl)
 	subscriptions := mock.NewMockSubscriptionService(ctrl)
+	cors := mock.NewMockCORSService(ctrl)
 
 	httpapi := &httpapi.HTTPAPI{
 		EventTypes:    eventTypes,
 		Functions:     functions,
 		Subscriptions: subscriptions,
+		CORSes:        cors,
 	}
 	httpapi.RegisterRoutes(router)
 
-	return router, eventTypes, functions, subscriptions
+	return router, eventTypes, functions, subscriptions, cors
 }
