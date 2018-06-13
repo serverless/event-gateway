@@ -1,3 +1,42 @@
+
+0.8.0 / 2018-06-13
+==================
+
+BACKWARDS INCOMPATIBILITIES:
+
+  * Remove CORS configuration from subscription (#458)
+  * Refactored Subscription model (#429)
+  * Remove invoke functionality (#432)
+  * Remove duplicated links in the README (#431)
+  * HTTP CloudEvent coercion (#421)
+  * Move Promethues metrics endpoint under /v1/ prefix. Closes #423 (#426)
+  * Handle +json Content-Type in accordance with RFC6839 (#416)
+  * Use Content-Type application/cloudevents+json for http provider (#415)
+
+
+IMPROVEMENTS:
+
+  * Add CORS Config API (#460)
+  * Update docs about event types, events api authorization (#454)
+  * Switch to AtomicPut in Create methods (#457)
+  * Include authorization result in the event extensions (#456)
+  * Add endpoint for updating event type (#455)
+  * Event Type Authorizer (#441)
+  * Event types (#433)
+  * Add Links to ReadMe (#430)
+  * Update Prometheus docs
+  * Cleanup README and documentation. Add docs for Prometheus Metrics. (#422)
+  * Move metric definition to the same file as other metrics (#424)
+  * Update examples (#420)
+  * Update README.md (#419)
+
+BUG FIXES:
+
+  * Fix payload normalization in http.request events. Closes #434 (#459)
+  * Remove duplicated links in the README (#431)
+  * Disable TravisCI notifications (#417)
+
+
 0.7.0 / 2018-04-26
 ==================
 
