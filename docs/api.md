@@ -13,7 +13,7 @@ This document contains the API documentation for both Events and Configuration A
     1. [Legacy Mode](#legacy-mode)
 1.  [Configuration API](#configuration-api)
     1. [Event Types](#event-types)
-        1. [Register Event Type](#register-event-type)
+        1. [Crate Event Type](#create-event-type)
         1. [Update Event Type](#update-event-type)
         1. [Delete Event Type](#delete-event-type)
         1. [Get Event Types](#get-event-types)
@@ -121,7 +121,7 @@ The Event Gateway exposes a RESTful JSON configuration API. By default Configura
 
 ### Event Types
 
-#### Register Event Type
+#### Create Event Type
 
 **Endpoint**
 

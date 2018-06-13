@@ -47,7 +47,7 @@ paths:
         500:
           $ref: '#/components/responses/Error'
     post:
-      summary: "Register event type"
+      summary: "Create event type"
       tags:
       - "event type"
       operationId: "CreateEventType"
@@ -57,7 +57,7 @@ paths:
         $ref: "#/components/requestBodies/CreateEventType"
       responses:
         201:
-          description: "event type registered"
+          description: "event type created"
           content:
             application/json:
               schema:
