@@ -44,6 +44,24 @@ func TestCreateCORS(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
+	t.Run("CORS config created with default values", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("KV type not found"))
+		db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		service := &Service{CORSStore: db, Log: zap.NewNop()}
+
+		created, _ := service.CreateCORS(&cors.CORS{
+			ID:     testID,
+			Method: http.MethodGet,
+			Path:   "/hello",
+		})
+
+		assert.Equal(t, []string{"*"}, created.AllowedOrigins)
+		assert.Equal(t, []string{"Origin", "Accept", "Content-Type"}, created.AllowedHeaders)
+		assert.Equal(t, []string{"HEAD", "GET", "POST"}, created.AllowedMethods)
+		assert.Equal(t, false, created.AllowCredentials)
+	})
+
 	t.Run("CORS configuration for specified method and path already exists", func(t *testing.T) {
 		db := mock.NewMockStore(ctrl)
 		db.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
@@ -58,14 +76,14 @@ func TestCreateCORS(t *testing.T) {
 		service := &Service{Log: zap.NewNop()}
 
 		_, err := service.CreateCORS(&cors.CORS{
-			Method:         http.MethodGet,
+			Method:         "NOT",
 			Path:           "/hello",
 			AllowedHeaders: []string{"content-type"},
 			AllowedMethods: []string{"GET"},
 		})
 
 		assert.Equal(t, &cors.ErrCORSValidation{
-			Message: "Key: 'CORS.AllowedOrigins' Error:Field validation for 'AllowedOrigins' failed on the 'min' tag",
+			Message: "Key: 'CORS.Method' Error:Field validation for 'Method' failed on the 'eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS' tag",
 		}, err)
 	})
 

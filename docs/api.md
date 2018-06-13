@@ -533,10 +533,10 @@ JSON object:
 
 * `method` - `string` - endpoint method
 * `path` - `string` - endpoint path
-* `allowedOrigins` - `array` of `string` - allowed origins
-* `allowedMethods` - `array` of `string` - allowed methods
-* `allowedHeaders` - `array` of `string` - allowed headers
-* `allowCredentials` - `boolean` - allow credentials
+* `allowedOrigins` - `array` of `string` - list of allowed origins. An origin may contain a wildcard (\*) to replace 0 or more characters (i.e.: http://\*.domain.com), default: `*`
+* `allowedMethods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
+* `allowedHeaders` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
+* `allowCredentials` - `bool` - allow credentials, default: false
 
 **Response**
 
@@ -551,9 +551,9 @@ JSON object:
 * `corsId` - `string` - CORS configuration ID
 * `method` - `string` - endpoint method
 * `path` - `string` - endpoint path
-* `allowedOrigins` - `array` of `string` - allowed origins
-* `allowedMethods` - `array` of `string` - allowed methods
-* `allowedHeaders` - `array` of `string` - allowed headers
+* `allowedOrigins` - `array` of `string` - list of allowed origins
+* `allowedMethods` - `array` of `string` - list of allowed methods
+* `allowedHeaders` - `array` of `string` - list of allowed headers
 * `allowCredentials` - `boolean` - allow credentials
 
 ---
@@ -570,9 +570,9 @@ _Note that `method`, and `path` may not be updated in an UpdateCORS call._
 
 * `method` - `string` - endpoint method
 * `path` - `string` - endpoint path
-* `allowedOrigins` - `array` of `string` - allowed origins
-* `allowedMethods` - `array` of `string` - allowed methods
-* `allowedHeaders` - `array` of `string` - allowed headers
+* `allowedOrigins` - `array` of `string` - list of allowed origins
+* `allowedMethods` - `array` of `string` - list of allowed methods
+* `allowedHeaders` - `array` of `string` - list of allowed headers
 * `allowCredentials` - `boolean` - allow credentials
 
 **Response**

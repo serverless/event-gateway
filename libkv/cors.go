@@ -117,6 +117,18 @@ func validateCORS(config *cors.CORS) error {
 		config.Space = defaultSpace
 	}
 
+	if len(config.AllowedOrigins) == 0 {
+		config.AllowedOrigins = []string{"*"}
+	}
+
+	if len(config.AllowedMethods) == 0 {
+		config.AllowedMethods = []string{"HEAD", "GET", "POST"}
+	}
+
+	if len(config.AllowedHeaders) == 0 {
+		config.AllowedHeaders = []string{"Origin", "Accept", "Content-Type"}
+	}
+
 	validate := validator.New()
 	validate.RegisterValidation("space", spaceValidator)
 	validate.RegisterValidation("path", pathValidator)
