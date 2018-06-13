@@ -9,6 +9,7 @@ This document contains the API documentation for both Events and Configuration A
     1. [Event Definition](#event-definition)
     1. [How To Emit an Event](#how-to-emit-an-event)
     1. [HTTP Request Event](#http-request-event)
+    1. [CORS](#cors)
     1. [Legacy Mode](#legacy-mode)
 1.  [Configuration API](#configuration-api)
     1. [Event Types](#event-types)
@@ -29,7 +30,7 @@ This document contains the API documentation for both Events and Configuration A
         1. [Delete Subscription](#delete-subscription)
         1. [Get Subscriptions](#get-subscriptions)
         1. [Get Subscription](#get-subscription)
-    1. [CORS](#cors)
+    1. [CORS](#cors-1)
         1. [Create CORS Configuration](#create-cors-configuration)
         1. [Update CORS Configuration](#update-cors-configuration)
         1. [Delete CORS Configuration](#delete-cors-configuration)
@@ -90,6 +91,14 @@ CloudEvent created by Event Gateway where `data` field has the following structu
 * `query` - `object` - query parameters
 * `params` - `object` - matched path parameters
 * `body` - depends on `Content-Type` header - request payload
+
+### CORS
+
+By default cross-origin resource sharing (CORS) is disabled. CORS is configured per-method/path basis using
+[CORS Configuration API](#cors-1).
+
+Event Gateway handles preflight `OPTIONS` requests for you. You don't need to setup subscription for `OPTIONS` method
+because the Event Gateway will respond with all appropriate headers.
 
 ### Legacy Mode
 
