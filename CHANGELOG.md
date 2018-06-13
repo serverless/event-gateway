@@ -7,12 +7,10 @@ BACKWARDS INCOMPATIBILITIES:
   * Remove CORS configuration from subscription (#458)
   * Refactored Subscription model (#429)
   * Remove invoke functionality (#432)
-  * Remove duplicated links in the README (#431)
   * HTTP CloudEvent coercion (#421)
   * Move Promethues metrics endpoint under /v1/ prefix. Closes #423 (#426)
   * Handle +json Content-Type in accordance with RFC6839 (#416)
   * Use Content-Type application/cloudevents+json for http provider (#415)
-
 
 IMPROVEMENTS:
 
