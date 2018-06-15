@@ -16,24 +16,25 @@ This document contains the API documentation for both Events and Configuration A
         1. [Crate Event Type](#create-event-type)
         1. [Update Event Type](#update-event-type)
         1. [Delete Event Type](#delete-event-type)
-        1. [Get Event Types](#get-event-types)
+        1. [List Event Types](#list-event-types)
         1. [Get Event Type](#get-event-type)
     1. [Functions](#functions)
         1. [Register Function](#register-function)
         1. [Update Function](#update-function)
         1. [Delete Function](#delete-function)
-        1. [Get Functions](#get-functions)
+        1. [List Functions](#list-functions)
         1. [Get Function](#get-function)
     1. [Subscriptions](#subscriptions)
         1. [Create Subscription](#create-subscription)
         1. [Update Subscription](#update-subscription)
         1. [Delete Subscription](#delete-subscription)
-        1. [Get Subscriptions](#get-subscriptions)
+        1. [List Subscriptions](#list-subscriptions)
         1. [Get Subscription](#get-subscription)
     1. [CORS](#cors-1)
         1. [Create CORS Configuration](#create-cors-configuration)
         1. [Update CORS Configuration](#update-cors-configuration)
         1. [Delete CORS Configuration](#delete-cors-configuration)
+        1. [List CORS Configurations](#list-cors-configurations)
         1. [Get CORS Configuration](#get-cors-configuration)
     1. [Prometheus Metrics](#prometheus-metrics)
     1. [Status](#status)
@@ -195,7 +196,7 @@ Status code:
 
 ---
 
-#### Get Event Types
+#### List Event Types
 
 **Endpoint**
 
@@ -347,7 +348,7 @@ Status code:
 
 ---
 
-#### Get Functions
+#### List Functions
 
 **Endpoint**
 
@@ -473,7 +474,7 @@ Status code:
 
 ---
 
-#### Get Subscriptions
+#### List Subscriptions
 
 **Endpoint**
 
@@ -608,6 +609,32 @@ Status code:
 
 * `204 No Content` on success
 * `404 Not Found` if CORS configuration doesn't exist
+
+---
+
+#### List CORS Configurations
+
+**Endpoint**
+
+`GET <Configuration API URL>/v1/spaces/<space>/cors`
+
+**Response**
+
+Status code:
+
+* `200 OK` on success
+
+JSON object:
+
+* `cors` - `array` of `object` - CORS configurations
+  * `space` - `string` - space name
+  * `corsId` - `string` - CORS configuration ID
+  * `method` - `string` - endpoint method
+  * `path` - `string` - endpoint path
+  * `allowedOrigins` - `array` of `string` - allowed origins
+  * `allowedMethods` - `array` of `string` - allowed methods
+  * `allowedHeaders` - `array` of `string` - allowed headers
+  * `allowCredentials` - `boolean` - allow credentials
 
 ---
 

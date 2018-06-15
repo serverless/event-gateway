@@ -683,6 +683,39 @@ func TestGetCORS(t *testing.T) {
 	})
 }
 
+func TestGetCORSes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _, _, corses := setup(ctrl)
+
+	t.Run("CORS configurations returned", func(t *testing.T) {
+		returnedList := cors.CORSes{{
+			Space: "default",
+			ID:    cors.ID("GET%2Fhello"),
+		}}
+		corses.EXPECT().GetCORSes("default").Return(returnedList, nil)
+
+		resp := request(router, http.MethodGet, "/v1/spaces/default/cors", nil)
+
+		configs := &httpapi.CORSResponse{}
+		json.Unmarshal(resp.Body.Bytes(), configs)
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.Equal(t, "default", configs.CORSes[0].Space)
+		assert.Equal(t, cors.ID("GET%2Fhello"), configs.CORSes[0].ID)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		corses.EXPECT().GetCORSes(gomock.Any()).Return(nil, errors.New("processing failed"))
+
+		resp := request(router, http.MethodGet, "/v1/spaces/default/cors", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, "processing failed", httpresp.Errors[0].Message)
+	})
+}
+
 func TestCreateCORS(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
