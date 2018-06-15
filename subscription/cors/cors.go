@@ -20,6 +20,9 @@ type CORS struct {
 	AllowCredentials bool     `json:"allowCredentials"`
 }
 
+// CORSes is an array of CORS configurations.
+type CORSes []*CORS
+
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface
 func (c CORS) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("space", string(c.Space))

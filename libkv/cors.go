@@ -70,6 +70,29 @@ func (service Service) GetCORS(space string, id cors.ID) (*cors.CORS, error) {
 	return &config, nil
 }
 
+// GetCORSes returns an array of all CORS configuration in the space.
+func (service Service) GetCORSes(space string) (cors.CORSes, error) {
+	configs := []*cors.CORS{}
+
+	kvs, err := service.CORSStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
+	if err != nil && err.Error() != errKeyNotFound {
+		return nil, err
+	}
+
+	for _, kv := range kvs {
+		config := &cors.CORS{}
+		dec := json.NewDecoder(bytes.NewReader(kv.Value))
+		err = dec.Decode(config)
+		if err != nil {
+			return nil, err
+		}
+
+		configs = append(configs, config)
+	}
+
+	return cors.CORSes(configs), nil
+}
+
 // UpdateCORS updates CORS configuration.
 func (service Service) UpdateCORS(config *cors.CORS) (*cors.CORS, error) {
 	if err := validateCORS(config); err != nil {

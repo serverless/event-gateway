@@ -150,6 +150,46 @@ func TestGetCORS(t *testing.T) {
 	})
 }
 
+func TestGetCORSes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	testConfig := &cors.CORS{Space: "default", ID: "GET%2Fhello"}
+	testPayload := []byte(`{"space":"default","corsId":"GET%2Fhello"}}`)
+
+	t.Run("configurations returned", func(t *testing.T) {
+		kvs := []*store.KVPair{&store.KVPair{Value: testPayload}}
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		service := &Service{CORSStore: db, Log: zap.NewNop()}
+
+		list, err := service.GetCORSes("default")
+
+		assert.Nil(t, err)
+		assert.Equal(t, cors.CORSes{testConfig}, list)
+	})
+
+	t.Run("KV List error", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, errors.New("KV list err"))
+		service := &Service{CORSStore: db, Log: zap.NewNop()}
+
+		_, err := service.GetCORSes("default")
+
+		assert.EqualError(t, err, "KV list err")
+	})
+
+	t.Run("KV List directory not found", func(t *testing.T) {
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, errors.New("Key not found in store"))
+		service := &Service{CORSStore: db, Log: zap.NewNop()}
+
+		list, _ := service.GetCORSes("default")
+
+		assert.Equal(t, cors.CORSes{}, list)
+	})
+}
+
 func TestUpdateCORS(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

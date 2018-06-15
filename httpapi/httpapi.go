@@ -36,6 +36,11 @@ type SubscriptionsResponse struct {
 	Subscriptions subscription.Subscriptions `json:"subscriptions"`
 }
 
+// CORSResponse is a HTTPAPI JSON response containing cors configuration.
+type CORSResponse struct {
+	CORSes cors.CORSes `json:"cors"`
+}
+
 // RegisterRoutes register HTTP API routes
 func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/v1/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {})
@@ -59,6 +64,7 @@ func (h HTTPAPI) RegisterRoutes(router *httprouter.Router) {
 	router.PUT("/v1/spaces/:space/subscriptions/:id", h.updateSubscription)
 	router.DELETE("/v1/spaces/:space/subscriptions/:id", h.deleteSubscription)
 
+	router.GET("/v1/spaces/:space/cors", h.listCORS)
 	router.GET("/v1/spaces/:space/cors/*id", h.getCORS)
 	router.POST("/v1/spaces/:space/cors", h.createCORS)
 	router.PUT("/v1/spaces/:space/cors/*id", h.updateCORS)
@@ -471,6 +477,22 @@ func (h HTTPAPI) deleteSubscription(w http.ResponseWriter, r *http.Request, para
 	}
 
 	metricConfigRequests.WithLabelValues(space, "subscription", "delete").Inc()
+}
+
+func (h HTTPAPI) listCORS(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+
+	space := params.ByName("space")
+	configs, err := h.CORSes.GetCORSes(space)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
+	} else {
+		encoder.Encode(&CORSResponse{configs})
+	}
+
+	metricConfigRequests.WithLabelValues(space, "cors", "list").Inc()
 }
 
 func (h HTTPAPI) getCORS(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
