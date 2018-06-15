@@ -1,4 +1,14 @@
 
+0.8.1 / 2018-06-15
+==================
+
+IMPROVEMENTS:
+
+  * Add list CORS configurations endpoint (#463)
+  * Update Configuration API version
+  * Update Slack invite link and meetups link (#462)
+  * Update docs of Create Event Type function
+
 0.8.0 / 2018-06-13
 ==================
 
