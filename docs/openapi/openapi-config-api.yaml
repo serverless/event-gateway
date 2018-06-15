@@ -331,6 +331,22 @@ paths:
 
   /spaces/{spaceName}/cors:
     summary: "Operations about CORS configuration"
+    get:
+      summary: "List CORS configurations"
+      tags:
+      - "cors"
+      operationId: "ListCORS"
+      parameters:
+      - $ref: "#/components/parameters/Space"
+      responses:
+        200:
+          description: "CORS configurations returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CORSes"
+        500:
+          $ref: '#/components/responses/Error'
     post:
       summary: "Create CORS configuration"
       tags:
@@ -522,6 +538,13 @@ components:
           $ref: '#/components/schemas/AllowedHeaders'
         allowCredentials:
           $ref: '#/components/schemas/AllowCredentials'
+    CORSes:
+      type: object
+      properties:
+        cors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CORS'
     AWSFirehose:
       type: object
       properties:
