@@ -128,7 +128,7 @@ func TestCreateEventType(t *testing.T) {
 
 		httpresp := &httpapi.Response{}
 		json.Unmarshal(resp.Body.Bytes(), httpresp)
-		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, http.StatusConflict, resp.Code)
 		assert.Equal(t, `Event Type "test.event" already exists.`, httpresp.Errors[0].Message)
 	})
 
@@ -415,7 +415,7 @@ func TestRegisterFunction(t *testing.T) {
 
 		httpresp := &httpapi.Response{}
 		json.Unmarshal(resp.Body.Bytes(), httpresp)
-		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, http.StatusConflict, resp.Code)
 		assert.Equal(t, `Function "func1" already registered.`, httpresp.Errors[0].Message)
 	})
 
@@ -762,7 +762,7 @@ func TestCreateCORS(t *testing.T) {
 
 		httpresp := &httpapi.Response{}
 		json.Unmarshal(resp.Body.Bytes(), httpresp)
-		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, http.StatusConflict, resp.Code)
 		assert.Equal(t, `CORS configuration "GET%2Fhello" already exists.`, httpresp.Errors[0].Message)
 	})
 

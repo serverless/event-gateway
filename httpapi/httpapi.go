@@ -128,7 +128,7 @@ func (h HTTPAPI) createEventType(w http.ResponseWriter, r *http.Request, params 
 		if _, ok := err.(*event.ErrEventTypeValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*event.ErrEventTypeAlreadyExists); ok {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusConflict)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -263,7 +263,7 @@ func (h HTTPAPI) createFunction(w http.ResponseWriter, r *http.Request, params h
 		if _, ok := err.(*function.ErrFunctionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*function.ErrFunctionAlreadyRegistered); ok {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusConflict)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -393,7 +393,7 @@ func (h HTTPAPI) createSubscription(w http.ResponseWriter, r *http.Request, para
 	output, err := h.Subscriptions.CreateSubscription(s)
 	if err != nil {
 		if _, ok := err.(*subscription.ErrSubscriptionAlreadyExists); ok {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusConflict)
 		} else if _, ok := err.(*event.ErrEventTypeNotFound); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else if _, ok := err.(*function.ErrFunctionNotFound); ok {
@@ -534,7 +534,7 @@ func (h HTTPAPI) createCORS(w http.ResponseWriter, r *http.Request, params httpr
 	output, err := h.CORSes.CreateCORS(config)
 	if err != nil {
 		if _, ok := err.(*cors.ErrCORSAlreadyExists); ok {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusConflict)
 		} else if _, ok := err.(*cors.ErrCORSValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
