@@ -151,7 +151,7 @@ func TestGetFunction(t *testing.T) {
 	})
 }
 
-func TestGetFunctions(t *testing.T) {
+func TestListFunctions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

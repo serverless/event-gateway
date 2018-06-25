@@ -15,6 +15,8 @@ type Subscription struct {
 	FunctionID function.ID    `json:"functionId" validate:"required"`
 	Path       string         `json:"path" validate:"required,urlPath"`
 	Method     string         `json:"method" validate:"required,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
+
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ID uniquely identifies a subscription.

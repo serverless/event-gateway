@@ -18,6 +18,8 @@ type CORS struct {
 	AllowedMethods   []string `json:"allowedMethods" validate:"min=1"`
 	AllowedHeaders   []string `json:"allowedHeaders" validate:"min=1"`
 	AllowCredentials bool     `json:"allowCredentials"`
+
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CORSes is an array of CORS configurations.

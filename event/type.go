@@ -18,6 +18,8 @@ type Type struct {
 	Space        string       `json:"space" validate:"required,min=3,space"`
 	Name         TypeName     `json:"name" validate:"required"`
 	AuthorizerID *function.ID `json:"authorizerId,omitempty"`
+
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // Types is an array of subscriptions.

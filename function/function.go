@@ -17,6 +17,8 @@ type Function struct {
 	ProviderType   ProviderType     `json:"type"`
 	ProviderConfig *json.RawMessage `json:"provider"`
 	Provider       Provider         `json:"-" validate:"-"`
+
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // Functions is an array of functions.
