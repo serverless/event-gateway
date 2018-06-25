@@ -15,7 +15,7 @@ import (
 	_ "github.com/serverless/event-gateway/providers/http"
 )
 
-func TestRegisterFunction(t *testing.T) {
+func TestCreateFunction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -32,7 +32,7 @@ func TestRegisterFunction(t *testing.T) {
 		db.EXPECT().AtomicPut("default/testid", payload, nil, nil).Return(true, nil, nil)
 		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-		_, err := service.RegisterFunction(fn)
+		_, err := service.CreateFunction(fn)
 
 		assert.Nil(t, err)
 	})
@@ -42,7 +42,7 @@ func TestRegisterFunction(t *testing.T) {
 		db.EXPECT().Get("default/testid", gomock.Any()).Return(nil, nil)
 		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-		_, err := service.RegisterFunction(fn)
+		_, err := service.CreateFunction(fn)
 
 		assert.Equal(t, err, &function.ErrFunctionAlreadyRegistered{ID: "testid"})
 	})
@@ -53,7 +53,7 @@ func TestRegisterFunction(t *testing.T) {
 		db.EXPECT().AtomicPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil, errors.New("KV put error"))
 		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-		_, err := service.RegisterFunction(fn)
+		_, err := service.CreateFunction(fn)
 
 		assert.EqualError(t, err, "KV put error")
 	})
@@ -163,7 +163,7 @@ func TestGetFunctions(t *testing.T) {
 		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-		list, err := service.GetFunctions("default")
+		list, err := service.ListFunctions("default")
 
 		assert.Nil(t, err)
 		assert.Equal(t, function.Functions{{
@@ -178,7 +178,7 @@ func TestGetFunctions(t *testing.T) {
 		db.EXPECT().List("default/", gomock.Any()).Return([]*store.KVPair{}, errors.New("KV list err"))
 		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-		_, err := service.GetFunctions("default")
+		_, err := service.ListFunctions("default")
 
 		assert.EqualError(t, err, "KV list err")
 	})
@@ -188,7 +188,7 @@ func TestGetFunctions(t *testing.T) {
 		db.EXPECT().List("default/", gomock.Any()).Return([]*store.KVPair{}, errors.New("Key not found in store"))
 		service := &Service{FunctionStore: db, Log: zap.NewNop()}
 
-		list, _ := service.GetFunctions("default")
+		list, _ := service.ListFunctions("default")
 
 		assert.Equal(t, function.Functions{}, list)
 	})

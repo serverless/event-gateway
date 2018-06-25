@@ -115,8 +115,8 @@ func (service Service) DeleteSubscription(space string, id subscription.ID) erro
 	return nil
 }
 
-// GetSubscriptions returns array of all Subscription.
-func (service Service) GetSubscriptions(space string) (subscription.Subscriptions, error) {
+// ListSubscriptions returns array of all Subscription.
+func (service Service) ListSubscriptions(space string) (subscription.Subscriptions, error) {
 	subs := []*subscription.Subscription{}
 
 	kvs, err := service.SubscriptionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})

@@ -23,8 +23,8 @@ func (key FunctionKey) String() string {
 	return key.Space + "/" + string(key.ID)
 }
 
-// RegisterFunction registers function in configuration.
-func (service Service) RegisterFunction(fn *function.Function) (*function.Function, error) {
+// CreateFunction registers function in configuration.
+func (service Service) CreateFunction(fn *function.Function) (*function.Function, error) {
 	if err := validateFunction(fn); err != nil {
 		return nil, err
 	}
@@ -94,8 +94,8 @@ func (service Service) GetFunction(space string, id function.ID) (*function.Func
 	return &fn, nil
 }
 
-// GetFunctions returns an array of all functions in the space.
-func (service Service) GetFunctions(space string) (function.Functions, error) {
+// ListFunctions returns an array of all functions in the space.
+func (service Service) ListFunctions(space string) (function.Functions, error) {
 	fns := []*function.Function{}
 
 	kvs, err := service.FunctionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
@@ -119,7 +119,7 @@ func (service Service) GetFunctions(space string) (function.Functions, error) {
 
 // DeleteFunction deletes function from the registry.
 func (service Service) DeleteFunction(space string, id function.ID) error {
-	subs, err := service.GetSubscriptions(space)
+	subs, err := service.ListSubscriptions(space)
 	if err != nil {
 		return err
 	}

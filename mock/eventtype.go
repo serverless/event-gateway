@@ -71,17 +71,17 @@ func (mr *MockEventTypeServiceMockRecorder) GetEventType(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventType", reflect.TypeOf((*MockEventTypeService)(nil).GetEventType), arg0, arg1)
 }
 
-// GetEventTypes mocks base method
-func (m *MockEventTypeService) GetEventTypes(arg0 string) (event.Types, error) {
-	ret := m.ctrl.Call(m, "GetEventTypes", arg0)
+// ListEventTypes mocks base method
+func (m *MockEventTypeService) ListEventTypes(arg0 string) (event.Types, error) {
+	ret := m.ctrl.Call(m, "ListEventTypes", arg0)
 	ret0, _ := ret[0].(event.Types)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetEventTypes indicates an expected call of GetEventTypes
-func (mr *MockEventTypeServiceMockRecorder) GetEventTypes(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventTypes", reflect.TypeOf((*MockEventTypeService)(nil).GetEventTypes), arg0)
+// ListEventTypes indicates an expected call of ListEventTypes
+func (mr *MockEventTypeServiceMockRecorder) ListEventTypes(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEventTypes", reflect.TypeOf((*MockEventTypeService)(nil).ListEventTypes), arg0)
 }
 
 // UpdateEventType mocks base method
