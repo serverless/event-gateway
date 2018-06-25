@@ -76,7 +76,7 @@ func TestGetEventTypes(t *testing.T) {
 			Space: "default",
 			Name:  event.TypeName("test.event"),
 		}}
-		eventTypes.EXPECT().GetEventTypes("default").Return(returnedList, nil)
+		eventTypes.EXPECT().ListEventTypes("default").Return(returnedList, nil)
 
 		resp := request(router, http.MethodGet, "/v1/spaces/default/eventtypes", nil)
 
@@ -88,7 +88,7 @@ func TestGetEventTypes(t *testing.T) {
 	})
 
 	t.Run("internal error", func(t *testing.T) {
-		eventTypes.EXPECT().GetEventTypes(gomock.Any()).Return(nil, errors.New("processing failed"))
+		eventTypes.EXPECT().ListEventTypes(gomock.Any()).Return(nil, errors.New("processing failed"))
 
 		resp := request(router, http.MethodGet, "/v1/spaces/default/eventtypes", nil)
 
@@ -356,7 +356,7 @@ func TestGetFunctions(t *testing.T) {
 			ProviderType: httpprovider.Type,
 			Provider:     &httpprovider.HTTP{},
 		}}
-		functions.EXPECT().GetFunctions("default").Return(returnedList, nil)
+		functions.EXPECT().ListFunctions("default").Return(returnedList, nil)
 
 		resp := request(router, http.MethodGet, "/v1/spaces/default/functions", nil)
 
@@ -368,7 +368,7 @@ func TestGetFunctions(t *testing.T) {
 	})
 
 	t.Run("internal error", func(t *testing.T) {
-		functions.EXPECT().GetFunctions(gomock.Any()).Return(nil, errors.New("processing failed"))
+		functions.EXPECT().ListFunctions(gomock.Any()).Return(nil, errors.New("processing failed"))
 
 		resp := request(router, http.MethodGet, "/v1/spaces/default/functions", nil)
 
@@ -395,7 +395,7 @@ func TestRegisterFunction(t *testing.T) {
 				URL: "http://example.com",
 			},
 		}
-		functions.EXPECT().RegisterFunction(fn).Return(fn, nil)
+		functions.EXPECT().CreateFunction(fn).Return(fn, nil)
 
 		resp := request(router, http.MethodPost, "/v1/spaces/test1/functions", fnPayload)
 
@@ -408,7 +408,7 @@ func TestRegisterFunction(t *testing.T) {
 	})
 
 	t.Run("function already exists", func(t *testing.T) {
-		functions.EXPECT().RegisterFunction(gomock.Any()).
+		functions.EXPECT().CreateFunction(gomock.Any()).
 			Return(nil, &function.ErrFunctionAlreadyRegistered{ID: function.ID("func1")})
 
 		resp := request(router, http.MethodPost, "/v1/spaces/default/functions", fnPayload)
@@ -420,7 +420,7 @@ func TestRegisterFunction(t *testing.T) {
 	})
 
 	t.Run("validation error", func(t *testing.T) {
-		functions.EXPECT().RegisterFunction(gomock.Any()).
+		functions.EXPECT().CreateFunction(gomock.Any()).
 			Return(nil, &function.ErrFunctionValidation{Message: "wrong function ID format"})
 
 		payload := []byte(`{"functionID":"/","type":"http","provider":{"url":"http://test.com"}}}`)
@@ -442,7 +442,7 @@ func TestRegisterFunction(t *testing.T) {
 	})
 
 	t.Run("internal error", func(t *testing.T) {
-		functions.EXPECT().RegisterFunction(gomock.Any()).Return(nil, errors.New("processing error"))
+		functions.EXPECT().CreateFunction(gomock.Any()).Return(nil, errors.New("processing error"))
 
 		resp := request(router, http.MethodPost, "/v1/spaces/default/functions", fnPayload)
 
@@ -693,7 +693,7 @@ func TestGetCORSes(t *testing.T) {
 			Space: "default",
 			ID:    cors.ID("GET%2Fhello"),
 		}}
-		corses.EXPECT().GetCORSes("default").Return(returnedList, nil)
+		corses.EXPECT().ListCORS("default").Return(returnedList, nil)
 
 		resp := request(router, http.MethodGet, "/v1/spaces/default/cors", nil)
 
@@ -705,7 +705,7 @@ func TestGetCORSes(t *testing.T) {
 	})
 
 	t.Run("internal error", func(t *testing.T) {
-		corses.EXPECT().GetCORSes(gomock.Any()).Return(nil, errors.New("processing failed"))
+		corses.EXPECT().ListCORS(gomock.Any()).Return(nil, errors.New("processing failed"))
 
 		resp := request(router, http.MethodGet, "/v1/spaces/default/cors", nil)
 

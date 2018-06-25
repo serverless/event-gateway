@@ -74,8 +74,8 @@ func (service Service) GetEventType(space string, name event.TypeName) (*event.T
 	return &eventType, nil
 }
 
-// GetEventTypes returns an array of all event types in the space.
-func (service Service) GetEventTypes(space string) (event.Types, error) {
+// ListEventTypes returns an array of all event types in the space.
+func (service Service) ListEventTypes(space string) (event.Types, error) {
 	types := []*event.Type{}
 
 	kvs, err := service.EventTypeStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
@@ -132,7 +132,7 @@ func (service Service) UpdateEventType(newEventType *event.Type) (*event.Type, e
 
 // DeleteEventType deletes event type from the configuration.
 func (service Service) DeleteEventType(space string, name event.TypeName) error {
-	subs, err := service.GetSubscriptions(space)
+	subs, err := service.ListSubscriptions(space)
 	if err != nil {
 		return err
 	}

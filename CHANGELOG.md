@@ -1,4 +1,12 @@
 
+0.8.2 / 2018-06-25
+==================
+
+BUG FIXES:
+
+  * Fix creating sync subscription for the same path and different methods. Closes #467 (#468)
+
+
 0.8.1 / 2018-06-15
 ==================
 

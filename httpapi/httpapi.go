@@ -97,7 +97,7 @@ func (h HTTPAPI) listEventTypes(w http.ResponseWriter, r *http.Request, params h
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	types, err := h.EventTypes.GetEventTypes(space)
+	types, err := h.EventTypes.ListEventTypes(space)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
@@ -232,7 +232,7 @@ func (h HTTPAPI) listFunctions(w http.ResponseWriter, r *http.Request, params ht
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	fns, err := h.Functions.GetFunctions(space)
+	fns, err := h.Functions.ListFunctions(space)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
@@ -258,7 +258,7 @@ func (h HTTPAPI) createFunction(w http.ResponseWriter, r *http.Request, params h
 	}
 
 	fn.Space = params.ByName("space")
-	output, err := h.Functions.RegisterFunction(fn)
+	output, err := h.Functions.CreateFunction(fn)
 	if err != nil {
 		if _, ok := err.(*function.ErrFunctionValidation); ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -343,7 +343,7 @@ func (h HTTPAPI) listSubscriptions(w http.ResponseWriter, r *http.Request, param
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	subs, err := h.Subscriptions.GetSubscriptions(space)
+	subs, err := h.Subscriptions.ListSubscriptions(space)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
@@ -484,7 +484,7 @@ func (h HTTPAPI) listCORS(w http.ResponseWriter, r *http.Request, params httprou
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	configs, err := h.CORSes.GetCORSes(space)
+	configs, err := h.CORSes.ListCORS(space)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})

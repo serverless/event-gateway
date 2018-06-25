@@ -121,7 +121,7 @@ func TestGetEventType(t *testing.T) {
 	})
 }
 
-func TestGetEventTypes(t *testing.T) {
+func TestListEventTypes(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -134,7 +134,7 @@ func TestGetEventTypes(t *testing.T) {
 		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 		service := &Service{EventTypeStore: db, Log: zap.NewNop()}
 
-		list, err := service.GetEventTypes("default")
+		list, err := service.ListEventTypes("default")
 
 		assert.Nil(t, err)
 		assert.Equal(t, event.Types{testEventType}, list)
@@ -145,7 +145,7 @@ func TestGetEventTypes(t *testing.T) {
 		db.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, errors.New("KV list err"))
 		service := &Service{EventTypeStore: db, Log: zap.NewNop()}
 
-		_, err := service.GetEventTypes("default")
+		_, err := service.ListEventTypes("default")
 
 		assert.EqualError(t, err, "KV list err")
 	})
@@ -155,7 +155,7 @@ func TestGetEventTypes(t *testing.T) {
 		db.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, errors.New("Key not found in store"))
 		service := &Service{EventTypeStore: db, Log: zap.NewNop()}
 
-		list, _ := service.GetEventTypes("default")
+		list, _ := service.ListEventTypes("default")
 
 		assert.Equal(t, event.Types{}, list)
 	})

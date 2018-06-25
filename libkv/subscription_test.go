@@ -334,7 +334,7 @@ func TestDeleteSubscription(t *testing.T) {
 	})
 }
 
-func TestGetSubscriptions_OK(t *testing.T) {
+func TestListSubscriptions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -347,7 +347,7 @@ func TestGetSubscriptions_OK(t *testing.T) {
 		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 		subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
-		list, _ := subs.GetSubscriptions("default")
+		list, _ := subs.ListSubscriptions("default")
 
 		assert.Equal(t, subscription.Subscriptions{
 			{
@@ -370,7 +370,7 @@ func TestGetSubscriptions_OK(t *testing.T) {
 		subscriptionsDB.EXPECT().List("default/", gomock.Any()).Return(nil, errors.New("KV error"))
 		subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 
-		_, err := subs.GetSubscriptions("default")
+		_, err := subs.ListSubscriptions("default")
 
 		assert.EqualError(t, err, "KV error")
 	})

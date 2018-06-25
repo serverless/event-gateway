@@ -150,7 +150,7 @@ func TestGetCORS(t *testing.T) {
 	})
 }
 
-func TestGetCORSes(t *testing.T) {
+func TestListCORS(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -163,7 +163,7 @@ func TestGetCORSes(t *testing.T) {
 		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 		service := &Service{CORSStore: db, Log: zap.NewNop()}
 
-		list, err := service.GetCORSes("default")
+		list, err := service.ListCORS("default")
 
 		assert.Nil(t, err)
 		assert.Equal(t, cors.CORSes{testConfig}, list)
@@ -174,7 +174,7 @@ func TestGetCORSes(t *testing.T) {
 		db.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, errors.New("KV list err"))
 		service := &Service{CORSStore: db, Log: zap.NewNop()}
 
-		_, err := service.GetCORSes("default")
+		_, err := service.ListCORS("default")
 
 		assert.EqualError(t, err, "KV list err")
 	})
@@ -184,7 +184,7 @@ func TestGetCORSes(t *testing.T) {
 		db.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{}, errors.New("Key not found in store"))
 		service := &Service{CORSStore: db, Log: zap.NewNop()}
 
-		list, _ := service.GetCORSes("default")
+		list, _ := service.ListCORS("default")
 
 		assert.Equal(t, cors.CORSes{}, list)
 	})

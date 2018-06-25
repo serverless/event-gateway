@@ -70,8 +70,8 @@ func (service Service) GetCORS(space string, id cors.ID) (*cors.CORS, error) {
 	return &config, nil
 }
 
-// GetCORSes returns an array of all CORS configuration in the space.
-func (service Service) GetCORSes(space string) (cors.CORSes, error) {
+// ListCORS returns an array of all CORS configuration in the space.
+func (service Service) ListCORS(space string) (cors.CORSes, error) {
 	configs := []*cors.CORS{}
 
 	kvs, err := service.CORSStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
