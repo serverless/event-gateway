@@ -71,17 +71,17 @@ func (mr *MockCORSServiceMockRecorder) GetCORS(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCORS", reflect.TypeOf((*MockCORSService)(nil).GetCORS), arg0, arg1)
 }
 
-// GetCORSes mocks base method
-func (m *MockCORSService) GetCORSes(arg0 string) (cors.CORSes, error) {
-	ret := m.ctrl.Call(m, "GetCORSes", arg0)
+// ListCORS mocks base method
+func (m *MockCORSService) ListCORS(arg0 string) (cors.CORSes, error) {
+	ret := m.ctrl.Call(m, "ListCORS", arg0)
 	ret0, _ := ret[0].(cors.CORSes)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetCORSes indicates an expected call of GetCORSes
-func (mr *MockCORSServiceMockRecorder) GetCORSes(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCORSes", reflect.TypeOf((*MockCORSService)(nil).GetCORSes), arg0)
+// ListCORS indicates an expected call of ListCORS
+func (mr *MockCORSServiceMockRecorder) ListCORS(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCORS", reflect.TypeOf((*MockCORSService)(nil).ListCORS), arg0)
 }
 
 // UpdateCORS mocks base method

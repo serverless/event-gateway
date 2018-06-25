@@ -33,6 +33,19 @@ func (m *MockFunctionService) EXPECT() *MockFunctionServiceMockRecorder {
 	return m.recorder
 }
 
+// CreateFunction mocks base method
+func (m *MockFunctionService) CreateFunction(arg0 *function.Function) (*function.Function, error) {
+	ret := m.ctrl.Call(m, "CreateFunction", arg0)
+	ret0, _ := ret[0].(*function.Function)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateFunction indicates an expected call of CreateFunction
+func (mr *MockFunctionServiceMockRecorder) CreateFunction(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFunction", reflect.TypeOf((*MockFunctionService)(nil).CreateFunction), arg0)
+}
+
 // DeleteFunction mocks base method
 func (m *MockFunctionService) DeleteFunction(arg0 string, arg1 function.ID) error {
 	ret := m.ctrl.Call(m, "DeleteFunction", arg0, arg1)
@@ -58,30 +71,17 @@ func (mr *MockFunctionServiceMockRecorder) GetFunction(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFunction", reflect.TypeOf((*MockFunctionService)(nil).GetFunction), arg0, arg1)
 }
 
-// GetFunctions mocks base method
-func (m *MockFunctionService) GetFunctions(arg0 string) (function.Functions, error) {
-	ret := m.ctrl.Call(m, "GetFunctions", arg0)
+// ListFunctions mocks base method
+func (m *MockFunctionService) ListFunctions(arg0 string) (function.Functions, error) {
+	ret := m.ctrl.Call(m, "ListFunctions", arg0)
 	ret0, _ := ret[0].(function.Functions)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetFunctions indicates an expected call of GetFunctions
-func (mr *MockFunctionServiceMockRecorder) GetFunctions(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFunctions", reflect.TypeOf((*MockFunctionService)(nil).GetFunctions), arg0)
-}
-
-// RegisterFunction mocks base method
-func (m *MockFunctionService) RegisterFunction(arg0 *function.Function) (*function.Function, error) {
-	ret := m.ctrl.Call(m, "RegisterFunction", arg0)
-	ret0, _ := ret[0].(*function.Function)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RegisterFunction indicates an expected call of RegisterFunction
-func (mr *MockFunctionServiceMockRecorder) RegisterFunction(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterFunction", reflect.TypeOf((*MockFunctionService)(nil).RegisterFunction), arg0)
+// ListFunctions indicates an expected call of ListFunctions
+func (mr *MockFunctionServiceMockRecorder) ListFunctions(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFunctions", reflect.TypeOf((*MockFunctionService)(nil).ListFunctions), arg0)
 }
 
 // UpdateFunction mocks base method

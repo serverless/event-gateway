@@ -4,7 +4,7 @@ vendor
 *.swp
 *.swo
 *.db
-default.etcd/
+default.etcd*
 coverage.txt
 profile.out
 tests/testing.etcd*
