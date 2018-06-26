@@ -13,6 +13,7 @@ import (
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/httpapi"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/event-gateway/mock"
 	"github.com/serverless/event-gateway/subscription"
 	"github.com/serverless/event-gateway/subscription/cors"
@@ -66,19 +67,19 @@ func TestGetEventType(t *testing.T) {
 	})
 }
 
-func TestGetEventTypes(t *testing.T) {
+func TestListEventTypes(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	router, eventTypes, _, _, _ := setup(ctrl)
 
-	t.Run("event types returned", func(t *testing.T) {
+	t.Run("list returned", func(t *testing.T) {
 		returnedList := event.Types{{
 			Space: "default",
 			Name:  event.TypeName("test.event"),
 		}}
-		eventTypes.EXPECT().ListEventTypes("default").Return(returnedList, nil)
+		eventTypes.EXPECT().ListEventTypes("default", metadata.Filter{Key: "key1", Value: "val1"}).Return(returnedList, nil)
 
-		resp := request(router, http.MethodGet, "/v1/spaces/default/eventtypes", nil)
+		resp := request(router, http.MethodGet, "/v1/spaces/default/eventtypes?metadata.key1=val1", nil)
 
 		types := &httpapi.EventTypesResponse{}
 		json.Unmarshal(resp.Body.Bytes(), types)
@@ -344,21 +345,21 @@ func TestGetFunction(t *testing.T) {
 	})
 }
 
-func TestGetFunctions(t *testing.T) {
+func TestListFunctions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	router, _, functions, _, _ := setup(ctrl)
 
-	t.Run("functions returned", func(t *testing.T) {
+	t.Run("list returned", func(t *testing.T) {
 		returnedList := function.Functions{{
 			ID:           function.ID("func1"),
 			Space:        "default",
 			ProviderType: httpprovider.Type,
 			Provider:     &httpprovider.HTTP{},
 		}}
-		functions.EXPECT().ListFunctions("default").Return(returnedList, nil)
+		functions.EXPECT().ListFunctions("default", metadata.Filter{Key: "key1", Value: "val1"}).Return(returnedList, nil)
 
-		resp := request(router, http.MethodGet, "/v1/spaces/default/functions", nil)
+		resp := request(router, http.MethodGet, "/v1/spaces/default/functions?metadata.key1=val1", nil)
 
 		fns := &httpapi.FunctionsResponse{}
 		json.Unmarshal(resp.Body.Bytes(), fns)
@@ -683,7 +684,7 @@ func TestGetCORS(t *testing.T) {
 	})
 }
 
-func TestGetCORSes(t *testing.T) {
+func TestListCORS(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	router, _, _, _, corses := setup(ctrl)
@@ -693,9 +694,9 @@ func TestGetCORSes(t *testing.T) {
 			Space: "default",
 			ID:    cors.ID("GET%2Fhello"),
 		}}
-		corses.EXPECT().ListCORS("default").Return(returnedList, nil)
+		corses.EXPECT().ListCORS("default", metadata.Filter{Key: "key1", Value: "val1"}).Return(returnedList, nil)
 
-		resp := request(router, http.MethodGet, "/v1/spaces/default/cors", nil)
+		resp := request(router, http.MethodGet, "/v1/spaces/default/cors?metadata.key1=val1", nil)
 
 		configs := &httpapi.CORSResponse{}
 		json.Unmarshal(resp.Body.Bytes(), configs)

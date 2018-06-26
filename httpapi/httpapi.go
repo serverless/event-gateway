@@ -3,12 +3,14 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/event-gateway/subscription"
 	"github.com/serverless/event-gateway/subscription/cors"
 )
@@ -97,7 +99,8 @@ func (h HTTPAPI) listEventTypes(w http.ResponseWriter, r *http.Request, params h
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	types, err := h.EventTypes.ListEventTypes(space)
+	filters := extractMetadataFilters(r.URL.Query())
+	types, err := h.EventTypes.ListEventTypes(space, filters...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
@@ -232,7 +235,8 @@ func (h HTTPAPI) listFunctions(w http.ResponseWriter, r *http.Request, params ht
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	fns, err := h.Functions.ListFunctions(space)
+	filters := extractMetadataFilters(r.URL.Query())
+	fns, err := h.Functions.ListFunctions(space, filters...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
@@ -343,7 +347,8 @@ func (h HTTPAPI) listSubscriptions(w http.ResponseWriter, r *http.Request, param
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	subs, err := h.Subscriptions.ListSubscriptions(space)
+	filters := extractMetadataFilters(r.URL.Query())
+	subs, err := h.Subscriptions.ListSubscriptions(space, filters...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
@@ -484,7 +489,8 @@ func (h HTTPAPI) listCORS(w http.ResponseWriter, r *http.Request, params httprou
 	encoder := json.NewEncoder(w)
 
 	space := params.ByName("space")
-	configs, err := h.CORSes.ListCORS(space)
+	filters := extractMetadataFilters(r.URL.Query())
+	configs, err := h.CORSes.ListCORS(space, filters...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
@@ -615,4 +621,15 @@ func extractCORSID(rawPath string) cors.ID {
 	segments := strings.Split(rawPath, "/")
 	id := segments[len(segments)-1]
 	return cors.ID(id)
+}
+
+func extractMetadataFilters(query url.Values) (filters []metadata.Filter) {
+	prefix := "metadata."
+
+	for key, value := range query {
+		if strings.HasPrefix(key, prefix) {
+			filters = append(filters, metadata.Filter{Key: strings.TrimPrefix(key, prefix), Value: value[0]})
+		}
+	}
+	return
 }
