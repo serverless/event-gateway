@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/serverless/event-gateway/metadata"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -18,7 +19,7 @@ type Function struct {
 	ProviderConfig *json.RawMessage `json:"provider"`
 	Provider       Provider         `json:"-" validate:"-"`
 
-	Metadata map[string]string `json:"metadata,omitempty"`
+	Metadata *metadata.Metadata `json:"metadata,omitempty"`
 }
 
 // Functions is an array of functions.

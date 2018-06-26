@@ -2,6 +2,7 @@ package event
 
 import (
 	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/metadata"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -19,7 +20,7 @@ type Type struct {
 	Name         TypeName     `json:"name" validate:"required"`
 	AuthorizerID *function.ID `json:"authorizerId,omitempty"`
 
-	Metadata map[string]string `json:"metadata,omitempty"`
+	Metadata *metadata.Metadata `json:"metadata,omitempty"`
 }
 
 // Types is an array of subscriptions.

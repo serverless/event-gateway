@@ -2,6 +2,7 @@ package cors
 
 import (
 	"github.com/serverless/event-gateway/internal/zap"
+	"github.com/serverless/event-gateway/metadata"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -19,7 +20,7 @@ type CORS struct {
 	AllowedHeaders   []string `json:"allowedHeaders" validate:"min=1"`
 	AllowCredentials bool     `json:"allowCredentials"`
 
-	Metadata map[string]string `json:"metadata,omitempty"`
+	Metadata *metadata.Metadata `json:"metadata,omitempty"`
 }
 
 // CORSes is an array of CORS configurations.
