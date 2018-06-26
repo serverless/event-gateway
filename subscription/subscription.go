@@ -17,7 +17,7 @@ type Subscription struct {
 	Path       string         `json:"path" validate:"required,urlPath"`
 	Method     string         `json:"method" validate:"required,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
 
-	Metadata *metadata.Metadata `json:"metadata,omitempty"`
+	Metadata metadata.Metadata `json:"metadata,omitempty"`
 }
 
 // ID uniquely identifies a subscription.

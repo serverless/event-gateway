@@ -13,6 +13,7 @@ import (
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	istrings "github.com/serverless/event-gateway/internal/strings"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/event-gateway/subscription"
 	"github.com/serverless/libkv/store"
 	"go.uber.org/zap"
@@ -116,7 +117,7 @@ func (service Service) DeleteSubscription(space string, id subscription.ID) erro
 }
 
 // ListSubscriptions returns array of all Subscription.
-func (service Service) ListSubscriptions(space string) (subscription.Subscriptions, error) {
+func (service Service) ListSubscriptions(space string, filters ...metadata.Filter) (subscription.Subscriptions, error) {
 	subs := []*subscription.Subscription{}
 
 	kvs, err := service.SubscriptionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
@@ -132,6 +133,9 @@ func (service Service) ListSubscriptions(space string) (subscription.Subscriptio
 			return nil, err
 		}
 
+		if !s.Metadata.Check(filters...) {
+			continue
+		}
 		subs = append(subs, s)
 	}
 

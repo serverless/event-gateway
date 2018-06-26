@@ -19,7 +19,7 @@ type Function struct {
 	ProviderConfig *json.RawMessage `json:"provider"`
 	Provider       Provider         `json:"-" validate:"-"`
 
-	Metadata *metadata.Metadata `json:"metadata,omitempty"`
+	Metadata metadata.Metadata `json:"metadata,omitempty"`
 }
 
 // Functions is an array of functions.
@@ -56,6 +56,7 @@ func (f *Function) MarshalJSON() ([]byte, error) {
 		ID:             f.ID,
 		ProviderType:   f.ProviderType,
 		ProviderConfig: &rawConfig,
+		Metadata:       f.Metadata,
 	}
 
 	return json.Marshal(fn)
@@ -77,6 +78,7 @@ func (f *Function) UnmarshalJSON(data []byte) error {
 
 	f.ID = rawFunction.ID
 	f.Space = rawFunction.Space
+	f.Metadata = rawFunction.Metadata
 	f.ProviderType = rawFunction.ProviderType
 
 	if loader, ok := providers[rawFunction.ProviderType]; ok {

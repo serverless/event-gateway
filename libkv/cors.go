@@ -10,6 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/event-gateway/subscription/cors"
 	"github.com/serverless/libkv/store"
 )
@@ -71,7 +72,7 @@ func (service Service) GetCORS(space string, id cors.ID) (*cors.CORS, error) {
 }
 
 // ListCORS returns an array of all CORS configuration in the space.
-func (service Service) ListCORS(space string) (cors.CORSes, error) {
+func (service Service) ListCORS(space string, filters ...metadata.Filter) (cors.CORSes, error) {
 	configs := []*cors.CORS{}
 
 	kvs, err := service.CORSStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
@@ -87,6 +88,9 @@ func (service Service) ListCORS(space string) (cors.CORSes, error) {
 			return nil, err
 		}
 
+		if !config.Metadata.Check(filters...) {
+			continue
+		}
 		configs = append(configs, config)
 	}
 

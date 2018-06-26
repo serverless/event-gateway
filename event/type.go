@@ -20,7 +20,7 @@ type Type struct {
 	Name         TypeName     `json:"name" validate:"required"`
 	AuthorizerID *function.ID `json:"authorizerId,omitempty"`
 
-	Metadata *metadata.Metadata `json:"metadata,omitempty"`
+	Metadata metadata.Metadata `json:"metadata,omitempty"`
 }
 
 // Types is an array of subscriptions.

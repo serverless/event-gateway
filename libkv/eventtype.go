@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/event"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/libkv/store"
 )
 
@@ -75,7 +76,7 @@ func (service Service) GetEventType(space string, name event.TypeName) (*event.T
 }
 
 // ListEventTypes returns an array of all event types in the space.
-func (service Service) ListEventTypes(space string) (event.Types, error) {
+func (service Service) ListEventTypes(space string, filters ...metadata.Filter) (event.Types, error) {
 	types := []*event.Type{}
 
 	kvs, err := service.EventTypeStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
@@ -91,6 +92,9 @@ func (service Service) ListEventTypes(space string) (event.Types, error) {
 			return nil, err
 		}
 
+		if !eventType.Metadata.Check(filters...) {
+			continue
+		}
 		types = append(types, eventType)
 	}
 

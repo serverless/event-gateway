@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/event-gateway/mock"
 	"github.com/serverless/event-gateway/providers/http"
 	"github.com/serverless/libkv/store"
@@ -170,6 +171,26 @@ func TestListFunctions(t *testing.T) {
 			ID:           function.ID("f1"),
 			ProviderType: http.Type,
 			Provider:     &http.HTTP{URL: "http://test.com"},
+		}}, list)
+	})
+
+	t.Run("filtered list returned", func(t *testing.T) {
+		kvs := []*store.KVPair{
+			&store.KVPair{Value: []byte(`{"functionId":"f1","type":"http","provider":{"url": "http://test.com"},"metadata":{"key1":"val1"}}`)},
+			&store.KVPair{Value: []byte(`{"functionId":"f2","type":"http","provider":{"url": "http://test.com"}}`)},
+		}
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		service := &Service{FunctionStore: db, Log: zap.NewNop()}
+
+		list, err := service.ListFunctions("default", metadata.Filter{Key: "key1", Value: "val1"})
+
+		assert.Nil(t, err)
+		assert.Equal(t, function.Functions{{
+			ID:           function.ID("f1"),
+			ProviderType: http.Type,
+			Provider:     &http.HTTP{URL: "http://test.com"},
+			Metadata:     metadata.Metadata{"key1": "val1"},
 		}}, list)
 	})
 
