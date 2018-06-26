@@ -7,6 +7,7 @@ package mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	event "github.com/serverless/event-gateway/event"
+	metadata "github.com/serverless/event-gateway/metadata"
 	reflect "reflect"
 )
 
@@ -72,16 +73,21 @@ func (mr *MockEventTypeServiceMockRecorder) GetEventType(arg0, arg1 interface{})
 }
 
 // ListEventTypes mocks base method
-func (m *MockEventTypeService) ListEventTypes(arg0 string) (event.Types, error) {
-	ret := m.ctrl.Call(m, "ListEventTypes", arg0)
+func (m *MockEventTypeService) ListEventTypes(arg0 string, arg1 ...metadata.Filter) (event.Types, error) {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListEventTypes", varargs...)
 	ret0, _ := ret[0].(event.Types)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListEventTypes indicates an expected call of ListEventTypes
-func (mr *MockEventTypeServiceMockRecorder) ListEventTypes(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEventTypes", reflect.TypeOf((*MockEventTypeService)(nil).ListEventTypes), arg0)
+func (mr *MockEventTypeServiceMockRecorder) ListEventTypes(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEventTypes", reflect.TypeOf((*MockEventTypeService)(nil).ListEventTypes), varargs...)
 }
 
 // UpdateEventType mocks base method

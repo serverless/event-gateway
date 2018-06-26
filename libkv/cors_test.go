@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/event-gateway/mock"
 	_ "github.com/serverless/event-gateway/providers/http"
 	"github.com/serverless/event-gateway/subscription/cors"
@@ -155,9 +156,9 @@ func TestListCORS(t *testing.T) {
 	defer ctrl.Finish()
 
 	testConfig := &cors.CORS{Space: "default", ID: "GET%2Fhello"}
-	testPayload := []byte(`{"space":"default","corsId":"GET%2Fhello"}}`)
+	testPayload := []byte(`{"space":"default","corsId":"GET%2Fhello"}`)
 
-	t.Run("configurations returned", func(t *testing.T) {
+	t.Run("list returned", func(t *testing.T) {
 		kvs := []*store.KVPair{&store.KVPair{Value: testPayload}}
 		db := mock.NewMockStore(ctrl)
 		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
@@ -167,6 +168,22 @@ func TestListCORS(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, cors.CORSes{testConfig}, list)
+	})
+
+	t.Run("filtered list returned", func(t *testing.T) {
+		kvs := []*store.KVPair{&store.KVPair{Value: []byte(`{"space":"default","corsId":"GET%2Fhello","metadata":{"key1":"val1"}}`)}}
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		service := &Service{CORSStore: db, Log: zap.NewNop()}
+
+		list, err := service.ListCORS("default", metadata.Filter{Key: "key1", Value: "val1"})
+
+		assert.Nil(t, err)
+		assert.Equal(t, cors.CORSes{&cors.CORS{
+			Space:    "default",
+			ID:       "GET%2Fhello",
+			Metadata: metadata.Metadata{"key1": "val1"},
+		}}, list)
 	})
 
 	t.Run("KV List error", func(t *testing.T) {

@@ -3,6 +3,7 @@ package subscription
 import (
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/metadata"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -15,6 +16,8 @@ type Subscription struct {
 	FunctionID function.ID    `json:"functionId" validate:"required"`
 	Path       string         `json:"path" validate:"required,urlPath"`
 	Method     string         `json:"method" validate:"required,eq=GET|eq=POST|eq=DELETE|eq=PUT|eq=PATCH|eq=HEAD|eq=OPTIONS"`
+
+	Metadata metadata.Metadata `json:"metadata,omitempty"`
 }
 
 // ID uniquely identifies a subscription.

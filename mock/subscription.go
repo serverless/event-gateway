@@ -6,6 +6,7 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	metadata "github.com/serverless/event-gateway/metadata"
 	subscription "github.com/serverless/event-gateway/subscription"
 	reflect "reflect"
 )
@@ -72,16 +73,21 @@ func (mr *MockSubscriptionServiceMockRecorder) GetSubscription(arg0, arg1 interf
 }
 
 // ListSubscriptions mocks base method
-func (m *MockSubscriptionService) ListSubscriptions(arg0 string) (subscription.Subscriptions, error) {
-	ret := m.ctrl.Call(m, "ListSubscriptions", arg0)
+func (m *MockSubscriptionService) ListSubscriptions(arg0 string, arg1 ...metadata.Filter) (subscription.Subscriptions, error) {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListSubscriptions", varargs...)
 	ret0, _ := ret[0].(subscription.Subscriptions)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListSubscriptions indicates an expected call of ListSubscriptions
-func (mr *MockSubscriptionServiceMockRecorder) ListSubscriptions(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSubscriptions", reflect.TypeOf((*MockSubscriptionService)(nil).ListSubscriptions), arg0)
+func (mr *MockSubscriptionServiceMockRecorder) ListSubscriptions(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSubscriptions", reflect.TypeOf((*MockSubscriptionService)(nil).ListSubscriptions), varargs...)
 }
 
 // UpdateSubscription mocks base method

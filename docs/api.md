@@ -134,6 +134,7 @@ JSON object:
 
 * `name` - `string` - required, event type name
 * `authorizerId` - `string` - authorizer function ID
+* `metadata` - `object` - arbitrary metadata
 
 **Response**
 
@@ -147,6 +148,7 @@ JSON object:
 * `space` - `string` - space name
 * `name` - `string` - event type name
 * `authorizerId` - `string` - authorizer function ID
+* `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -161,6 +163,7 @@ JSON object:
 JSON object:
 
 * `authorizerId` - `string` - authorizer function ID
+* `metadata` - `object` - arbitrary metadata
 
 **Response**
 
@@ -175,6 +178,7 @@ JSON object:
 * `space` - `string` - space name
 * `name` - `string` - event type name
 * `authorizerId` - `string` - authorizer function ID
+* `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -202,6 +206,10 @@ Status code:
 
 `GET <Configuration API URL>/v1/spaces/<space>/eventtypes`
 
+**Query Parameters**
+
+Endpoint allows filtering list of returned object with filters passed as query parameters. Currently, filters can only use metadata properties e.g. `metadata.service=usersService`.
+
 **Response**
 
 Status code:
@@ -214,6 +222,7 @@ JSON object:
   * `space` - `string` - space name
   * `name` - `string` - event type name
   * `authorizerId` - `string` - authorizer function ID
+  * `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -235,6 +244,7 @@ JSON object:
 * `space` - `string` - space name
 * `name` - `string` - event type name
 * `authorizerId` - `string` - authorizer function ID
+* `metadata` - `object` - arbitrary metadata
 
 
 ### Functions
@@ -278,6 +288,7 @@ JSON object:
     * `awsAccessKeyId` - `string` - optional, AWS API key ID. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
     * `awsSecretAccessKey` - `string` - optional, AWS API access key. By default credentials from the [environment](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) are used.
     * `awsSessionToken` - `string` - optional, AWS session token
+* `metadata` - `object` - arbitrary metadata
 
 **Response**
 
@@ -291,6 +302,7 @@ JSON object:
 * `space` - `string` - space name
 * `functionId` - `string` - function ID
 * `provider` - `object` - provider specific information about a function
+* `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -314,6 +326,7 @@ JSON object:
     * `awsSessionToken` - `string` - optional, AWS session token
   * for HTTP function:
     * `url` - `string` - required, the URL of an http or https remote endpoint
+* `metadata` - `object` - arbitrary metadata
 
 **Response**
 
@@ -328,6 +341,7 @@ JSON object:
 * `space` - `string` - space name
 * `functionId` - `string` - function ID
 * `provider` - `object` - provider specific information about a function
+* `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -354,6 +368,10 @@ Status code:
 
 `GET <Configuration API URL>/v1/spaces/<space>/functions`
 
+**Query Parameters**
+
+Endpoint allows filtering list of returned object with filters passed as query parameters. Currently, filters can only use metadata properties e.g. `metadata.service=usersService`.
+
 **Response**
 
 Status code:
@@ -366,6 +384,7 @@ JSON object:
   * `space` - `string` - space name
   * `functionId` - `string` - function ID
   * `provider` - `object` - provider specific information about a function
+  * `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -387,6 +406,7 @@ JSON object:
 * `space` - `string` - space name
 * `functionId` - `string` - function ID
 * `provider` - `object` - provider specific information about a function
+* `metadata` - `object` - arbitrary metadata
 
 ### Subscriptions
 
@@ -403,6 +423,7 @@ JSON object:
 * `functionId` - `string` - ID of function to receive events
 * `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
 * `method` - `string` - optional, HTTP method that accepts requests, default: `POST`
+* `metadata` - `object` - arbitrary metadata
 
 **Response**
 
@@ -420,6 +441,7 @@ JSON object:
 * `functionId` - function ID
 * `method` - `string` - HTTP method that accepts requests
 * `path` - `string` - path that accepts requests, starts with `/`
+* `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -438,6 +460,7 @@ _Note that `type`, `eventType`, `functionId`, `path`, and `method` may not be up
 * `functionId` - `string` - ID of function to receive events
 * `path` - `string` - optional, URL path under which events (HTTP requests) are accepted, default: `/`
 * `method` - `string` - optional, HTTP method that accepts requests, default: `POST`
+* `metadata` - `object` - arbitrary metadata
 
 **Response**
 
@@ -456,6 +479,7 @@ JSON object:
 * `functionId` - function ID
 * `method` - `string` - HTTP method that accepts requests
 * `path` - `string` - path that accepts requests, starts with `/`
+* `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -480,6 +504,10 @@ Status code:
 
 `GET <Configuration API URL>/v1/spaces/<space>/subscriptions`
 
+**Query Parameters**
+
+Endpoint allows filtering list of returned object with filters passed as query parameters. Currently, filters can only use metadata properties e.g. `metadata.service=usersService`.
+
 **Response**
 
 Status code:
@@ -496,6 +524,7 @@ JSON object:
   * `functionId` - function ID
   * `method` - `string` - HTTP method that accepts requests
   * `path` - `string` - path that accepts requests, starts with `/`
+  * `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -521,6 +550,7 @@ JSON object:
 * `functionId` - function ID
 * `method` - `string` - HTTP method that accepts requests
 * `path` - `string` - path that accepts requests, starts with `/`
+* `metadata` - `object` - arbitrary metadata
 
 ### CORS
 
@@ -538,6 +568,7 @@ JSON object:
 * `allowedMethods` - `array` of `string` - list of allowed methods, default: `HEAD`, `GET`, `POST`
 * `allowedHeaders` - `array` of `string` - list of allowed headers, default: `Origin`, `Accept`, `Content-Type`
 * `allowCredentials` - `bool` - allow credentials, default: false
+* `metadata` - `object` - arbitrary metadata
 
 **Response**
 
@@ -556,6 +587,7 @@ JSON object:
 * `allowedMethods` - `array` of `string` - list of allowed methods
 * `allowedHeaders` - `array` of `string` - list of allowed headers
 * `allowCredentials` - `boolean` - allow credentials
+* `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -575,6 +607,7 @@ _Note that `method`, and `path` may not be updated in an UpdateCORS call._
 * `allowedMethods` - `array` of `string` - list of allowed methods
 * `allowedHeaders` - `array` of `string` - list of allowed headers
 * `allowCredentials` - `boolean` - allow credentials
+* `metadata` - `object` - arbitrary metadata
 
 **Response**
 
@@ -594,6 +627,7 @@ JSON object:
 * `allowedMethods` - `array` of `string` - allowed methods
 * `allowedHeaders` - `array` of `string` - allowed headers
 * `allowCredentials` - `boolean` - allow credentials
+* `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -618,6 +652,10 @@ Status code:
 
 `GET <Configuration API URL>/v1/spaces/<space>/cors`
 
+**Query Parameters**
+
+Endpoint allows filtering list of returned object with filters passed as query parameters. Currently, filters can only use metadata properties e.g. `metadata.service=usersService`.
+
 **Response**
 
 Status code:
@@ -635,6 +673,7 @@ JSON object:
   * `allowedMethods` - `array` of `string` - allowed methods
   * `allowedHeaders` - `array` of `string` - allowed headers
   * `allowCredentials` - `boolean` - allow credentials
+  * `metadata` - `object` - arbitrary metadata
 
 ---
 
@@ -661,6 +700,7 @@ JSON object:
 * `allowedMethods` - `array` of `string` - allowed methods
 * `allowedHeaders` - `array` of `string` - allowed headers
 * `allowCredentials` - `boolean` - allow credentials
+* `metadata` - `object` - arbitrary metadata
 
 ### Prometheus Metrics
 

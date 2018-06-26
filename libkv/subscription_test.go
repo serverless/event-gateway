@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/event-gateway/mock"
 	"github.com/serverless/event-gateway/subscription"
 	"github.com/serverless/libkv/store"
@@ -362,6 +363,27 @@ func TestListSubscriptions(t *testing.T) {
 				Type:       subscription.TypeAsync,
 				EventType:  "test",
 				FunctionID: function.ID("f2")},
+		}, list)
+	})
+
+	t.Run("filtered list returned", func(t *testing.T) {
+		kvs := []*store.KVPair{
+			{Value: []byte(`{"subscriptionId":"s1","space":"default","type":"async","eventType":"test","functionId":"f1","metadata":{"key1":"val1"}}`)},
+			{Value: []byte(`{"subscriptionId":"s2","space":"default","type":"async","eventType":"test","functionId":"f2"}`)},
+		}
+		subscriptionsDB := mock.NewMockStore(ctrl)
+		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+
+		list, _ := subs.ListSubscriptions("default", metadata.Filter{Key: "key1", Value: "val1"})
+
+		assert.EqualValues(t, subscription.Subscriptions{{
+			ID:         subscription.ID("s1"),
+			Space:      "default",
+			Type:       subscription.TypeAsync,
+			EventType:  "test",
+			FunctionID: function.ID("f1"),
+			Metadata:   metadata.Metadata{"key1": "val1"}},
 		}, list)
 	})
 
