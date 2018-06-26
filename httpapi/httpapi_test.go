@@ -503,6 +503,44 @@ func TestDeleteFunction(t *testing.T) {
 	})
 }
 
+func TestListSubscriptions(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _, subscriptions, _ := setup(ctrl)
+
+	t.Run("list returned", func(t *testing.T) {
+		returnedList := subscription.Subscriptions{{
+			Space:      "default",
+			ID:         subscription.ID("testid"),
+			Type:       subscription.TypeSync,
+			EventType:  "http.request",
+			FunctionID: "func",
+			Method:     "GET",
+			Path:       "/",
+		}}
+		subscriptions.EXPECT().ListSubscriptions("default", metadata.Filter{Key: "key1", Value: "val1"}).Return(returnedList, nil)
+
+		resp := request(router, http.MethodGet, "/v1/spaces/default/subscriptions?metadata.key1=val1", nil)
+
+		subs := &httpapi.SubscriptionsResponse{}
+		json.Unmarshal(resp.Body.Bytes(), subs)
+		assert.Equal(t, http.StatusOK, resp.Code)
+		assert.Equal(t, "default", subs.Subscriptions[0].Space)
+		assert.Equal(t, subscription.ID("testid"), subs.Subscriptions[0].ID)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		subscriptions.EXPECT().ListSubscriptions(gomock.Any()).Return(nil, errors.New("processing failed"))
+
+		resp := request(router, http.MethodGet, "/v1/spaces/default/subscriptions", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, "processing failed", httpresp.Errors[0].Message)
+	})
+}
+
 func TestUpdateSubscription(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
