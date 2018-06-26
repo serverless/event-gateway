@@ -37,6 +37,7 @@ paths:
       operationId: "ListEventTypes"
       parameters:
       - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/Filters"
       responses:
         200:
           description: "event types returned"
@@ -138,6 +139,7 @@ paths:
       operationId: "ListFunctions"
       parameters:
       - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/Filters"
       responses:
         200:
           description: "functions returned"
@@ -239,6 +241,7 @@ paths:
       operationId: "ListSubscriptions"
       parameters:
       - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/Filters"
       responses:
         200:
           description: "subscriptions returned"
@@ -338,6 +341,7 @@ paths:
       operationId: "ListCORS"
       parameters:
       - $ref: "#/components/parameters/Space"
+      - $ref: "#/components/parameters/Filters"
       responses:
         200:
           description: "CORS configurations returned"
@@ -704,6 +708,17 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/CORSID"
+    Filters:
+      in: "query"
+      name: "filters"
+      description: filter out returned list of objects. Currently, filters can only use metadata properties e.g. `metadata.service=usersService`.
+      style: form
+      example:
+        "metadata.service": usersService
+      schema:
+        type: object
+        additionalProperties:
+          type: string
   requestBodies:
     CreateEventType:
       description: "event type create request body"

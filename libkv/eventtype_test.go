@@ -7,6 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/event-gateway/mock"
 	"github.com/serverless/libkv/store"
 	"github.com/stretchr/testify/assert"
@@ -126,9 +127,9 @@ func TestListEventTypes(t *testing.T) {
 	defer ctrl.Finish()
 
 	testEventType := &event.Type{Space: "default", Name: "test.event"}
-	testPayload := []byte(`{"space":"default","name":"test.event"}}`)
+	testPayload := []byte(`{"space":"default","name":"test.event"}`)
 
-	t.Run("event types returned", func(t *testing.T) {
+	t.Run("list returned", func(t *testing.T) {
 		kvs := []*store.KVPair{&store.KVPair{Value: testPayload}}
 		db := mock.NewMockStore(ctrl)
 		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
@@ -138,6 +139,25 @@ func TestListEventTypes(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, event.Types{testEventType}, list)
+	})
+
+	t.Run("filtered list returned", func(t *testing.T) {
+		kvs := []*store.KVPair{
+			&store.KVPair{Value: []byte(`{"space":"default","name":"test.event","metadata":{"key1":"val1"}}`)},
+			&store.KVPair{Value: []byte(`{"space":"default","name":"test.event2"}`)},
+		}
+		db := mock.NewMockStore(ctrl)
+		db.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		service := &Service{EventTypeStore: db, Log: zap.NewNop()}
+
+		list, err := service.ListEventTypes("default", metadata.Filter{Key: "key1", Value: "val1"})
+
+		assert.Nil(t, err)
+		assert.Equal(t, event.Types{&event.Type{
+			Space:    "default",
+			Name:     "test.event",
+			Metadata: metadata.Metadata{"key1": "val1"},
+		}}, list)
 	})
 
 	t.Run("KV List error", func(t *testing.T) {

@@ -6,6 +6,7 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	metadata "github.com/serverless/event-gateway/metadata"
 	cors "github.com/serverless/event-gateway/subscription/cors"
 	reflect "reflect"
 )
@@ -72,16 +73,21 @@ func (mr *MockCORSServiceMockRecorder) GetCORS(arg0, arg1 interface{}) *gomock.C
 }
 
 // ListCORS mocks base method
-func (m *MockCORSService) ListCORS(arg0 string) (cors.CORSes, error) {
-	ret := m.ctrl.Call(m, "ListCORS", arg0)
+func (m *MockCORSService) ListCORS(arg0 string, arg1 ...metadata.Filter) (cors.CORSes, error) {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListCORS", varargs...)
 	ret0, _ := ret[0].(cors.CORSes)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListCORS indicates an expected call of ListCORS
-func (mr *MockCORSServiceMockRecorder) ListCORS(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCORS", reflect.TypeOf((*MockCORSService)(nil).ListCORS), arg0)
+func (mr *MockCORSServiceMockRecorder) ListCORS(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCORS", reflect.TypeOf((*MockCORSService)(nil).ListCORS), varargs...)
 }
 
 // UpdateCORS mocks base method

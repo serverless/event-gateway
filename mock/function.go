@@ -7,6 +7,7 @@ package mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	function "github.com/serverless/event-gateway/function"
+	metadata "github.com/serverless/event-gateway/metadata"
 	reflect "reflect"
 )
 
@@ -72,16 +73,21 @@ func (mr *MockFunctionServiceMockRecorder) GetFunction(arg0, arg1 interface{}) *
 }
 
 // ListFunctions mocks base method
-func (m *MockFunctionService) ListFunctions(arg0 string) (function.Functions, error) {
-	ret := m.ctrl.Call(m, "ListFunctions", arg0)
+func (m *MockFunctionService) ListFunctions(arg0 string, arg1 ...metadata.Filter) (function.Functions, error) {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListFunctions", varargs...)
 	ret0, _ := ret[0].(function.Functions)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListFunctions indicates an expected call of ListFunctions
-func (mr *MockFunctionServiceMockRecorder) ListFunctions(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFunctions", reflect.TypeOf((*MockFunctionService)(nil).ListFunctions), arg0)
+func (mr *MockFunctionServiceMockRecorder) ListFunctions(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFunctions", reflect.TypeOf((*MockFunctionService)(nil).ListFunctions), varargs...)
 }
 
 // UpdateFunction mocks base method

@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/serverless/event-gateway/function"
+	"github.com/serverless/event-gateway/metadata"
 	"github.com/serverless/libkv/store"
 )
 
@@ -95,7 +96,7 @@ func (service Service) GetFunction(space string, id function.ID) (*function.Func
 }
 
 // ListFunctions returns an array of all functions in the space.
-func (service Service) ListFunctions(space string) (function.Functions, error) {
+func (service Service) ListFunctions(space string, filters ...metadata.Filter) (function.Functions, error) {
 	fns := []*function.Function{}
 
 	kvs, err := service.FunctionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
@@ -111,6 +112,9 @@ func (service Service) ListFunctions(space string) (function.Functions, error) {
 			return nil, err
 		}
 
+		if !fn.Metadata.Check(filters...) {
+			continue
+		}
 		fns = append(fns, fn)
 	}
 
