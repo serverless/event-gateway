@@ -711,7 +711,7 @@ components:
     Filters:
       in: "query"
       name: "filters"
-      description: filter out returned list of objects. Currently, filters can only use metadata properties e.g. `metadata.service=usersservice`.
+      description: filter out returned list of objects. Currently, filters can only use metadata properties e.g. `metadata.service=usersService`.
       style: form
       example:
         "metadata.service": usersService
