@@ -33,8 +33,11 @@ type Params map[string]string
 // nolint: gocyclo
 func (n *Node) AddRoute(route string, value interface{}) error {
 	if route == "/" {
-		n.value = value
-		return nil
+		if n.value == nil {
+			n.value = value
+			return nil
+		}
+		return fmt.Errorf("route / conflicts with existing route")
 	}
 
 	segments := toSegments(route)

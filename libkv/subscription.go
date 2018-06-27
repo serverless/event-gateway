@@ -163,10 +163,9 @@ func (service Service) GetSubscription(space string, id subscription.ID) (*subsc
 }
 
 func (service Service) checkForPathConflict(space, method, path string) error {
-	kvs, err := service.SubscriptionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
-
 	tree := pathtree.NewNode()
 
+	kvs, err := service.SubscriptionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
 	for _, kv := range kvs {
 		sub := &subscription.Subscription{}
 		err = json.NewDecoder(bytes.NewReader(kv.Value)).Decode(sub)
