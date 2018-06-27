@@ -142,6 +142,7 @@ Status code:
 
 * `201 Created` on success
 * `400 Bad Request` on validation error
+* `409 Conflict` if event type already exists
 
 JSON object:
 
@@ -296,6 +297,7 @@ Status code:
 
 * `201 Created` on success
 * `400 Bad Request` on validation error
+* `409 Conflict` if function already exists
 
 JSON object:
 
@@ -431,6 +433,7 @@ Status code:
 
 * `201 Created` on success
 * `400 Bad Request` on validation error
+* `409 Conflict` if subscription already exists
 
 JSON object:
 
@@ -576,6 +579,7 @@ Status code:
 
 * `201 Created` on success
 * `400 Bad Request` on validation error
+* `409 Conflict` if CORS configuration already exists
 
 JSON object:
 

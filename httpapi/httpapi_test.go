@@ -129,7 +129,7 @@ func TestCreateEventType(t *testing.T) {
 
 		httpresp := &httpapi.Response{}
 		json.Unmarshal(resp.Body.Bytes(), httpresp)
-		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, http.StatusConflict, resp.Code)
 		assert.Equal(t, `Event Type "test.event" already exists.`, httpresp.Errors[0].Message)
 	})
 
@@ -416,7 +416,7 @@ func TestRegisterFunction(t *testing.T) {
 
 		httpresp := &httpapi.Response{}
 		json.Unmarshal(resp.Body.Bytes(), httpresp)
-		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, http.StatusConflict, resp.Code)
 		assert.Equal(t, `Function "func1" already registered.`, httpresp.Errors[0].Message)
 	})
 
@@ -533,6 +533,120 @@ func TestListSubscriptions(t *testing.T) {
 		subscriptions.EXPECT().ListSubscriptions(gomock.Any()).Return(nil, errors.New("processing failed"))
 
 		resp := request(router, http.MethodGet, "/v1/spaces/default/subscriptions", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+		assert.Equal(t, "processing failed", httpresp.Errors[0].Message)
+	})
+}
+
+func TestCreateSubscription(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	router, _, _, subscriptions, _ := setup(ctrl)
+	subPayload := []byte(`{"type":"sync","eventType":"http.request",` +
+		`"functionId":"func","method":"GET","path":"/"}`)
+
+	createSub := &subscription.Subscription{
+		Space:      "default",
+		Type:       subscription.TypeSync,
+		EventType:  "http.request",
+		FunctionID: "func",
+		Method:     "GET",
+		Path:       "/",
+	}
+
+	t.Run("subscription created", func(t *testing.T) {
+		subscriptions.EXPECT().CreateSubscription(createSub).Return(createSub, nil)
+		resp := request(router, http.MethodPost, "/v1/spaces/default/subscriptions", subPayload)
+
+		sub := &subscription.Subscription{}
+		json.Unmarshal(resp.Body.Bytes(), sub)
+		assert.Equal(t, http.StatusCreated, resp.Code)
+		assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+		assert.Equal(t, "default", sub.Space)
+		assert.Equal(t, function.ID("func"), sub.FunctionID)
+		assert.Equal(t, event.TypeName("http.request"), sub.EventType)
+		assert.Equal(t, subscription.TypeSync, sub.Type)
+		assert.Equal(t, "/", sub.Path)
+		assert.Equal(t, "GET", sub.Method)
+		assert.NotNil(t, sub.ID)
+	})
+
+	t.Run("subscription already exists", func(t *testing.T) {
+		subscriptions.EXPECT().CreateSubscription(gomock.Any()).
+			Return(nil, &subscription.ErrSubscriptionAlreadyExists{ID: subscription.ID("sub1")})
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/subscriptions", subPayload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusConflict, resp.Code)
+		assert.Equal(t, `Subscription "sub1" already exists.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("subscription validation error", func(t *testing.T) {
+		subscriptions.EXPECT().CreateSubscription(gomock.Any()).
+			Return(nil, &subscription.ErrSubscriptionValidation{Message: "wrong function ID format"})
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/subscriptions", subPayload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, `Subscription doesn't validate. Validation error: wrong function ID format`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("function not found", func(t *testing.T) {
+		subscriptions.EXPECT().CreateSubscription(gomock.Any()).
+			Return(nil, &function.ErrFunctionNotFound{ID: function.ID("func")})
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/subscriptions", subPayload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, `Function "func" not found.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("event type not found", func(t *testing.T) {
+		subscriptions.EXPECT().CreateSubscription(gomock.Any()).
+			Return(nil, &event.ErrEventTypeNotFound{Name: event.TypeName("http.request")})
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/subscriptions", subPayload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, `Event Type "http.request" not found.`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("path conflict", func(t *testing.T) {
+		subscriptions.EXPECT().CreateSubscription(gomock.Any()).
+			Return(nil, &subscription.ErrPathConfict{Message: "route / conflicts with existing route"})
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/subscriptions", subPayload)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, `Subscription path conflict: route / conflicts with existing route`, httpresp.Errors[0].Message)
+	})
+
+	t.Run("invalid JSON", func(t *testing.T) {
+		resp := request(router, http.MethodPost, "/v1/spaces/default/subscriptions", []byte(`{"name":"te`))
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, "Subscription doesn't validate. Validation error: unexpected EOF", httpresp.Errors[0].Message)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		subscriptions.EXPECT().CreateSubscription(gomock.Any()).Return(nil, errors.New("processing failed"))
+
+		resp := request(router, http.MethodPost, "/v1/spaces/default/subscriptions", subPayload)
 
 		httpresp := &httpapi.Response{}
 		json.Unmarshal(resp.Body.Bytes(), httpresp)
@@ -801,7 +915,7 @@ func TestCreateCORS(t *testing.T) {
 
 		httpresp := &httpapi.Response{}
 		json.Unmarshal(resp.Body.Bytes(), httpresp)
-		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, http.StatusConflict, resp.Code)
 		assert.Equal(t, `CORS configuration "GET%2Fhello" already exists.`, httpresp.Errors[0].Message)
 	})
 
