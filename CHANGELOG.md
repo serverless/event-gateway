@@ -1,4 +1,18 @@
 
+0.9.0 / 2018-06-27
+==================
+
+IMPROVEMENTS:
+
+  * Add 409 return status code to Config API resources. Closes #465 (#466)
+  * Add support for Metadata field in all resources. Closes #435 (#470)
+  * Cleanup Services interfaces (#469)
+
+BUG FIXES:
+
+  * Fix defining multiple subscriptions on root path (#472)
+
+
 0.8.2 / 2018-06-25
 ==================
 
