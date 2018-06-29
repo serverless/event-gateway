@@ -480,6 +480,17 @@ func TestDeleteFunction(t *testing.T) {
 		assert.Equal(t, "Function cannot be deleted because it's subscribed to a least one event.", httpresp.Errors[0].Message)
 	})
 
+	t.Run("function is authorizer", func(t *testing.T) {
+		functions.EXPECT().DeleteFunction(gomock.Any(), gomock.Any()).Return(&function.ErrFunctionIsAuthorizer{ID: function.ID("func1"), EventType: "test.event"})
+
+		resp := request(router, http.MethodDelete, "/v1/spaces/default/functions/func1", nil)
+
+		httpresp := &httpapi.Response{}
+		json.Unmarshal(resp.Body.Bytes(), httpresp)
+		assert.Equal(t, http.StatusBadRequest, resp.Code)
+		assert.Equal(t, "Function func1 cannot be deleted because is used as an authorizer for test.event event type.", httpresp.Errors[0].Message)
+	})
+
 	t.Run("function not found", func(t *testing.T) {
 		functions.EXPECT().DeleteFunction(gomock.Any(), gomock.Any()).Return(&function.ErrFunctionNotFound{ID: function.ID("testid")})
 

@@ -328,6 +328,8 @@ func (h HTTPAPI) deleteFunction(w http.ResponseWriter, r *http.Request, params h
 			w.WriteHeader(http.StatusNotFound)
 		} else if _, ok := err.(*function.ErrFunctionHasSubscriptions); ok {
 			w.WriteHeader(http.StatusBadRequest)
+		} else if _, ok := err.(*function.ErrFunctionIsAuthorizer); ok {
+			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

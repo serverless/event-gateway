@@ -223,9 +223,11 @@ func TestDeleteFunction(t *testing.T) {
 		kvs := []*store.KVPair{}
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Delete("default/testid").Return(nil)
-		service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+		service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, EventTypeStore: eventTypesDB, Log: zap.NewNop()}
 
 		err := service.DeleteFunction("default", function.ID("testid"))
 
@@ -236,9 +238,11 @@ func TestDeleteFunction(t *testing.T) {
 		kvs := []*store.KVPair{}
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
 		functionsDB := mock.NewMockStore(ctrl)
 		functionsDB.EXPECT().Delete("default/testid").Return(errors.New("KV func not found"))
-		service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
+		service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, EventTypeStore: eventTypesDB, Log: zap.NewNop()}
 
 		err := service.DeleteFunction("default", function.ID("testid"))
 
@@ -256,6 +260,21 @@ func TestDeleteFunction(t *testing.T) {
 		err := service.DeleteFunction("default", function.ID("testid"))
 
 		assert.Equal(t, err, &function.ErrFunctionHasSubscriptions{})
+	})
+
+	t.Run("function is authorizer", func(t *testing.T) {
+		kvs := []*store.KVPair{
+			{Value: []byte(`{"name":"test.event","authorizerId":"testid"}`)}}
+		eventTypesDB := mock.NewMockStore(ctrl)
+		eventTypesDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
+		subscriptionsDB := mock.NewMockStore(ctrl)
+		subscriptionsDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return([]*store.KVPair{}, nil)
+		functionsDB := mock.NewMockStore(ctrl)
+		service := &Service{FunctionStore: functionsDB, SubscriptionStore: subscriptionsDB, EventTypeStore: eventTypesDB, Log: zap.NewNop()}
+
+		err := service.DeleteFunction("default", function.ID("testid"))
+
+		assert.Equal(t, err, &function.ErrFunctionIsAuthorizer{ID: function.ID("testid"), EventType: "test.event"})
 	})
 }
 

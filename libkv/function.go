@@ -133,6 +133,16 @@ func (service Service) DeleteFunction(space string, id function.ID) error {
 		}
 	}
 
+	eventTypes, err := service.ListEventTypes(space)
+	if err != nil {
+		return err
+	}
+	for _, eventType := range eventTypes {
+		if id == *eventType.AuthorizerID {
+			return &function.ErrFunctionIsAuthorizer{ID: id, EventType: string(eventType.Name)}
+		}
+	}
+
 	err = service.FunctionStore.Delete(FunctionKey{space, id}.String())
 	if err != nil {
 		return &function.ErrFunctionNotFound{ID: id}

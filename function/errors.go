@@ -31,6 +31,16 @@ func (e ErrFunctionValidation) Error() string {
 	return fmt.Sprintf("Function doesn't validate. Validation error: %s", e.Message)
 }
 
+// ErrFunctionIsAuthorizer occurs when function cannot be deleted because is used as authorizer.
+type ErrFunctionIsAuthorizer struct {
+	ID        ID
+	EventType string
+}
+
+func (e ErrFunctionIsAuthorizer) Error() string {
+	return fmt.Sprintf("Function %s cannot be deleted because is used as an authorizer for %s event type.", e.ID, e.EventType)
+}
+
 // ErrFunctionCallFailed occurs when function call failed.
 type ErrFunctionCallFailed struct {
 	Original error
