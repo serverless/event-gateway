@@ -138,7 +138,7 @@ func (service Service) DeleteFunction(space string, id function.ID) error {
 		return err
 	}
 	for _, eventType := range eventTypes {
-		if id == *eventType.AuthorizerID {
+		if eventType.AuthorizerID != nil && id == *eventType.AuthorizerID {
 			return &function.ErrFunctionIsAuthorizer{ID: id, EventType: string(eventType.Name)}
 		}
 	}

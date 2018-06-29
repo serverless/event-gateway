@@ -264,6 +264,7 @@ func TestDeleteFunction(t *testing.T) {
 
 	t.Run("function is authorizer", func(t *testing.T) {
 		kvs := []*store.KVPair{
+			{Value: []byte(`{"name":"test.event.noauth"}`)},
 			{Value: []byte(`{"name":"test.event","authorizerId":"testid"}`)}}
 		eventTypesDB := mock.NewMockStore(ctrl)
 		eventTypesDB.EXPECT().List("default/", &store.ReadOptions{Consistent: true}).Return(kvs, nil)
