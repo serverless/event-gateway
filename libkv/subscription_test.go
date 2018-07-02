@@ -28,9 +28,9 @@ func TestCreateSubscription(t *testing.T) {
 		Type: subscription.TypeAsync, EventType: "user.created", FunctionID: "func", Path: "/", Method: "GET"}
 	asyncEventPayload := []byte(`{"space":"default","name":"user.created"}`)
 
-	syncKey := "default/c3luYyxodHRwLnJlcXVlc3QsZnVuYywlMkYsUE9TVA"
+	syncKey := "default/c3luYyxodHRwLnJlcXVlc3QsJTJGLFBPU1Q"
 	syncValue := []byte(
-		`{"space":"default","subscriptionId":"c3luYyxodHRwLnJlcXVlc3QsZnVuYywlMkYsUE9TVA",` +
+		`{"space":"default","subscriptionId":"c3luYyxodHRwLnJlcXVlc3QsJTJGLFBPU1Q",` +
 			`"type":"sync","eventType":"http.request","functionId":"func","path":"/","method":"POST"}`)
 	syncSub := &subscription.Subscription{
 		Type: subscription.TypeSync, EventType: "http.request", FunctionID: "func", Path: "/", Method: "POST"}
