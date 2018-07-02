@@ -37,7 +37,7 @@ func (tc *Target) SyncSubscriber(method, path string, eventType eventpkg.TypeNam
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
-	root := tc.subscriptionCache.endpoints[method]
+	root := tc.subscriptionCache.sync[method][eventType]
 	if root == nil {
 		return nil
 	}
@@ -67,7 +67,7 @@ func (tc *Target) AsyncSubscribers(method, path string, eventType eventpkg.TypeN
 	tc.subscriptionCache.RLock()
 	defer tc.subscriptionCache.RUnlock()
 
-	keys := tc.subscriptionCache.eventToFunctions[method][path][eventType]
+	keys := tc.subscriptionCache.async[method][path][eventType]
 	subscribers := []router.AsyncSubscriber{}
 	for _, key := range keys {
 		subscribers = append(subscribers, router.AsyncSubscriber{
