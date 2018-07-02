@@ -102,7 +102,7 @@ func TestCreateSubscription(t *testing.T) {
 		subscriptionsDB := mock.NewMockStore(ctrl)
 		subscriptionsDB.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("KV sub not found"))
 		kv := &store.KVPair{
-			Value: []byte(`{"subscriptionId":"test","type":"sync","functionId":"func","method":"GET","path":"/:name"}`)}
+			Value: []byte(`{"subscriptionId":"test","type":"sync","eventType":"http.request","functionId":"func","method":"GET","path":"/:name"}`)}
 		subscriptionsDB.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*store.KVPair{kv}, nil)
 		subs := &Service{SubscriptionStore: subscriptionsDB, Log: zap.NewNop()}
 

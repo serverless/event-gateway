@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/function"
 	"github.com/serverless/event-gateway/internal/pathtree"
 	istrings "github.com/serverless/event-gateway/internal/strings"
@@ -35,7 +36,7 @@ func (service Service) CreateSubscription(sub *subscription.Subscription) (*subs
 	}
 
 	if sub.Type == subscription.TypeSync {
-		err = service.checkForPathConflict(sub.Space, sub.Method, sub.Path)
+		err = service.checkForPathConflict(sub.Space, sub.Method, sub.Path, sub.EventType)
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +163,7 @@ func (service Service) GetSubscription(space string, id subscription.ID) (*subsc
 	return sub, err
 }
 
-func (service Service) checkForPathConflict(space, method, path string) error {
+func (service Service) checkForPathConflict(space, method, path string, eventType event.TypeName) error {
 	tree := pathtree.NewNode()
 
 	kvs, err := service.SubscriptionStore.List(spacePath(space), &store.ReadOptions{Consistent: true})
@@ -173,7 +174,7 @@ func (service Service) checkForPathConflict(space, method, path string) error {
 			return err
 		}
 
-		if sub.Type == subscription.TypeSync && sub.Method == method {
+		if sub.Type == subscription.TypeSync && sub.Method == method && sub.EventType == eventType {
 			// add existing paths to check
 			tree.AddRoute(sub.Path, FunctionKey{Space: sub.Space, ID: function.ID("")})
 		}

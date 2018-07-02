@@ -14,18 +14,18 @@ import (
 
 type subscriptionCache struct {
 	sync.RWMutex
-	// eventToFunctions maps method path and event type to function key (space + function ID)
-	eventToFunctions map[string]map[string]map[eventpkg.TypeName][]libkv.FunctionKey
-	// endpoints maps HTTP method to internal/pathtree. Tree struct which is used for resolving HTTP requests paths.
-	endpoints map[string]*pathtree.Node
-	log       *zap.Logger
+	// async maps method, path and event type to function key (space + function ID) (async subscriptions)
+	async map[string]map[string]map[eventpkg.TypeName][]libkv.FunctionKey
+	// sync maps method and event type to internal/pathtree (sync subscriptions)
+	sync map[string]map[eventpkg.TypeName]*pathtree.Node
+	log  *zap.Logger
 }
 
 func newSubscriptionCache(log *zap.Logger) *subscriptionCache {
 	return &subscriptionCache{
-		eventToFunctions: map[string]map[string]map[eventpkg.TypeName][]libkv.FunctionKey{},
-		endpoints:        map[string]*pathtree.Node{},
-		log:              log,
+		async: map[string]map[string]map[eventpkg.TypeName][]libkv.FunctionKey{},
+		sync:  map[string]map[eventpkg.TypeName]*pathtree.Node{},
+		log:   log,
 	}
 }
 
@@ -44,24 +44,25 @@ func (c *subscriptionCache) Modified(k string, v []byte) {
 	key := libkv.FunctionKey{Space: s.Space, ID: s.FunctionID}
 
 	if s.Type == subscription.TypeSync {
-		root := c.endpoints[s.Method]
+		c.ensureSyncMethod(s.Method)
+		root := c.sync[s.Method][s.EventType]
 		if root == nil {
 			root = pathtree.NewNode()
-			c.endpoints[s.Method] = root
+			c.sync[s.Method][s.EventType] = root
 		}
 		err := root.AddRoute(s.Path, libkv.FunctionKey{Space: s.Space, ID: s.FunctionID})
 		if err != nil {
-			c.log.Error("Could not add path to the tree.", zap.Error(err), zap.String("path", s.Path), zap.String("method", s.Method))
+			c.log.Error("Could not add path to the tree.", zap.Error(err), zap.String("path", s.Path), zap.String("method", s.Method), zap.String("eventType", string(s.EventType)))
 		}
 	} else {
-		c.createMethodPath(s.Method, s.Path)
-		ids, exists := c.eventToFunctions[s.Method][s.Path][s.EventType]
+		c.ensureAsyncMethodPath(s.Method, s.Path)
+		ids, exists := c.async[s.Method][s.Path][s.EventType]
 		if exists {
 			ids = append(ids, key)
 		} else {
 			ids = []libkv.FunctionKey{key}
 		}
-		c.eventToFunctions[s.Method][s.Path][s.EventType] = ids
+		c.async[s.Method][s.Path][s.EventType] = ids
 	}
 }
 
@@ -83,20 +84,27 @@ func (c *subscriptionCache) Deleted(k string, v []byte) {
 	}
 }
 
-func (c *subscriptionCache) createMethodPath(method, path string) {
-	_, exists := c.eventToFunctions[method]
+func (c *subscriptionCache) ensureAsyncMethodPath(method, path string) {
+	_, exists := c.async[method]
 	if !exists {
-		c.eventToFunctions[method] = map[string]map[eventpkg.TypeName][]libkv.FunctionKey{}
+		c.async[method] = map[string]map[eventpkg.TypeName][]libkv.FunctionKey{}
 	}
 
-	_, exists = c.eventToFunctions[method][path]
+	_, exists = c.async[method][path]
 	if !exists {
-		c.eventToFunctions[method][path] = map[eventpkg.TypeName][]libkv.FunctionKey{}
+		c.async[method][path] = map[eventpkg.TypeName][]libkv.FunctionKey{}
+	}
+}
+
+func (c *subscriptionCache) ensureSyncMethod(method string) {
+	_, exists := c.sync[method]
+	if !exists {
+		c.sync[method] = map[eventpkg.TypeName]*pathtree.Node{}
 	}
 }
 
 func (c *subscriptionCache) deleteEndpoint(sub subscription.Subscription) {
-	root := c.endpoints[sub.Method]
+	root := c.sync[sub.Method][sub.EventType]
 	if root == nil {
 		return
 	}
@@ -107,7 +115,7 @@ func (c *subscriptionCache) deleteEndpoint(sub subscription.Subscription) {
 }
 
 func (c *subscriptionCache) deleteSubscription(sub subscription.Subscription) {
-	ids, exists := c.eventToFunctions[sub.Method][sub.Path][sub.EventType]
+	ids, exists := c.async[sub.Method][sub.Path][sub.EventType]
 	if exists {
 		for i, id := range ids {
 			key := libkv.FunctionKey{Space: sub.Space, ID: sub.FunctionID}
@@ -116,10 +124,10 @@ func (c *subscriptionCache) deleteSubscription(sub subscription.Subscription) {
 				break
 			}
 		}
-		c.eventToFunctions[sub.Method][sub.Path][sub.EventType] = ids
+		c.async[sub.Method][sub.Path][sub.EventType] = ids
 
 		if len(ids) == 0 {
-			delete(c.eventToFunctions[sub.Method][sub.Path], sub.EventType)
+			delete(c.async[sub.Method][sub.Path], sub.EventType)
 		}
 	}
 }
