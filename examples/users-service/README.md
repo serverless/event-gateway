@@ -117,7 +117,7 @@ Now let's give it a try! Using `curl` or in your browser, navigate to the `getUs
 ```bash
 $ curl -X GET https://tenant-myapp.slsgateway.com/users/15 | jq "."
 {
-  "id": "10",
+  "id": "15",
   "name": "Ariel Dach",
   "email": "Aubree22@gmail.com"
 }
