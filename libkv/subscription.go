@@ -265,7 +265,13 @@ func isPathInConflict(existing, new string) bool {
 }
 
 func newSubscriptionID(sub *subscription.Subscription) subscription.ID {
-	raw := string(sub.Type) + "," + string(sub.EventType) + "," + string(sub.FunctionID) + "," + url.PathEscape(sub.Path) + "," + sub.Method
+	var raw string
+	if sub.Type == subscription.TypeAsync {
+		raw = string(sub.Type) + "," + string(sub.EventType) + "," + string(sub.FunctionID) + "," + url.PathEscape(sub.Path) + "," + sub.Method
+	} else {
+		raw = string(sub.Type) + "," + string(sub.EventType) + "," + url.PathEscape(sub.Path) + "," + sub.Method
+	}
+
 	return subscription.ID(base64.RawURLEncoding.EncodeToString([]byte(raw)))
 }
 
