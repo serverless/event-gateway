@@ -71,6 +71,11 @@ func (l Hclog2ZapLogger) ResetNamed(name string) hclog.Logger {
 	return Hclog2ZapLogger{}
 }
 
+// SetLevel implementation.
+func (l Hclog2ZapLogger) SetLevel(level hclog.Level) {
+	// no need to implement that as go-plugin doesn't use this method.
+}
+
 // StandardLogger implementation.
 func (l Hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
