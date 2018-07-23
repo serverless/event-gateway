@@ -1,4 +1,4 @@
-service: serverless-golang-simple-http-endpoint
+service: aws-golang-simple-http-endpoint
 tenant: ${env:EVENT_GATEWAY_TENANT}
 app: ${env:EVENT_GATEWAY_APP_NAME}
 
