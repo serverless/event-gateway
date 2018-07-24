@@ -6,6 +6,10 @@ func extractPath(host, path string) string {
 	return path
 }
 
-func systemEventPath(space string) string {
+func systemPathFromSpace(space string) string {
+	return "/"
+}
+
+func systemPathFromPath(space string) string {
 	return "/"
 }

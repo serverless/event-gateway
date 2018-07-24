@@ -1,3 +1,5 @@
+// +build !hosted
+
 package router_test
 
 import (

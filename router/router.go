@@ -454,7 +454,7 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 		mimeJSON,
 		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
 	)
-	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromPath(path), *system, nil)
 	return router.plugins.React(system)
 }
 
@@ -464,7 +464,7 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 		mimeJSON,
 		eventpkg.SystemFunctionInvokingData{Space: space, FunctionID: functionID, Event: event},
 	)
-	router.handleAsyncSubscriptions(http.MethodPost, systemEventPath(space), *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromSpace(space), *system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokingType)).Inc()
 
@@ -476,7 +476,7 @@ func (router *Router) emitSystemFunctionInvoked(space string, functionID functio
 		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
 		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
-	router.handleAsyncSubscriptions(http.MethodPost, systemEventPath(space), *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromSpace(space), *system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokedType)).Inc()
 
@@ -489,7 +489,7 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 			eventpkg.SystemFunctionInvocationFailedType,
 			mimeJSON,
 			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
-		router.handleAsyncSubscriptions(http.MethodPost, systemEventPath(space), *system, nil)
+		router.handleAsyncSubscriptions(http.MethodPost, systemPathFromSpace(space), *system, nil)
 
 		metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
 	}

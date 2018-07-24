@@ -9,9 +9,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/serverless/event-gateway/event"
+	"github.com/serverless/event-gateway/plugin"
 	"github.com/serverless/event-gateway/router"
 	"github.com/serverless/event-gateway/router/mock"
-	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestHostedRouterServeHTTP(t *testing.T) {
@@ -19,17 +20,37 @@ func TestHostedRouterServeHTTP(t *testing.T) {
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
 
+	t.Run("emit system event 'event received' on path prefixed with space", func(t *testing.T) {
+		target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
+		target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), event.TypeName("http.request")).Return([]router.AsyncSubscriber{})
+
+		target.EXPECT().AsyncSubscribers(http.MethodPost, "/custom/", event.SystemEventReceivedType).Return([]router.AsyncSubscriber{})
+
+		router := setupTestRouter(target)
+		req, _ := http.NewRequest(http.MethodGet, "https://custom.slsgateway.com/foo/bar", nil)
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+	})
+
 	t.Run("extract path from hosted domain", func(t *testing.T) {
 		target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
-		target.EXPECT().SyncSubscriber(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return(nil).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return([]router.AsyncSubscriber{}).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(http.MethodPost, "/", event.SystemEventReceivedType).Return([]router.AsyncSubscriber{}).MaxTimes(1)
-		router := setupTestRouter(target)
+		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), event.SystemEventReceivedType).Return([]router.AsyncSubscriber{})
 
+		target.EXPECT().SyncSubscriber(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return(nil)
+		target.EXPECT().AsyncSubscribers(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return([]router.AsyncSubscriber{})
+
+		router := setupTestRouter(target)
 		req, _ := http.NewRequest(http.MethodGet, "https://custom.slsgateway.com/test", nil)
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, req)
-
-		assert.Equal(t, http.StatusAccepted, recorder.Code)
 	})
+}
+
+func setupTestRouter(target router.Targeter) *router.Router {
+	log := zap.NewNop()
+	plugins := plugin.NewManager([]string{}, log)
+	router := router.New(10, 10, target, plugins, log)
+	router.StartWorkers()
+	return router
 }
