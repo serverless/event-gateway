@@ -3,13 +3,23 @@
 package router
 
 import (
+	"regexp"
 	"strings"
 )
 
-// extractPath extracts path from hosted EG host name (<space>.eventgateway([a-z-]*)?.io|slsgateway.com)
+var hostedDomainPattern *regexp.Regexp
+
+func init() {
+	hostedDomainPattern = regexp.MustCompile("(eventgateway([a-z-]*)?.io|slsgateway.com)")
+}
+
 func extractPath(host, path string) string {
-	subdomain := strings.Split(host, ".")[0]
-	return basePath + subdomain + path
+	extracted := path
+	if hostedDomainPattern.Copy().MatchString(host) {
+		subdomain := strings.Split(host, ".")[0]
+		extracted = basePath + subdomain + path
+	}
+	return extracted
 }
 
 func systemPathFromSpace(space string) string {
