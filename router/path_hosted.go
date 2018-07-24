@@ -14,19 +14,23 @@ func init() {
 }
 
 func extractPath(host, path string) string {
-	extracted := path
 	if hostedDomainPattern.Copy().MatchString(host) {
 		subdomain := strings.Split(host, ".")[0]
-		extracted = basePath + subdomain + path
+		return basePath + subdomain + path
 	}
-	return extracted
+	return path
 }
 
 func systemPathFromSpace(space string) string {
 	return basePath + space + "/"
 }
 
-// systemPathFromPath constructs path from path on which event was emitted. Helpful for "event.received" system event.
-func systemPathFromPath(path string) string {
-	return basePath + strings.Split(path, "/")[1] + "/"
+// systemPathFromURL constructs system event path based on hostname and path
+// on which the event was emitted. Helpful for "event.received" system event.
+func systemPathFromURL(host, path string) string {
+	if hostedDomainPattern.Copy().MatchString(host) {
+		segment := strings.Split(path, "/")[1]
+		return basePath + segment + "/"
+	}
+	return basePath
 }

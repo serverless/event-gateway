@@ -20,7 +20,7 @@ func TestHostedRouterServeHTTP(t *testing.T) {
 	defer ctrl.Finish()
 	target := mock.NewMockTargeter(ctrl)
 
-	t.Run("emit system event 'event received' on path prefixed with space", func(t *testing.T) {
+	t.Run("emit system event 'event.received' on path prefixed with space", func(t *testing.T) {
 		target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
 		target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), event.TypeName("http.request")).Return([]router.AsyncSubscriber{})
@@ -42,6 +42,32 @@ func TestHostedRouterServeHTTP(t *testing.T) {
 
 		router := setupTestRouter(target)
 		req, _ := http.NewRequest(http.MethodGet, "https://custom.slsgateway.com/test", nil)
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+	})
+
+	t.Run("if not hosted EG should fallback to full path", func(t *testing.T) {
+		target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
+		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), event.SystemEventReceivedType).Return([]router.AsyncSubscriber{})
+
+		target.EXPECT().SyncSubscriber(http.MethodGet, "/foo/bar", event.TypeName("http.request")).Return(nil)
+		target.EXPECT().AsyncSubscribers(http.MethodGet, "/foo/bar", event.TypeName("http.request")).Return([]router.AsyncSubscriber{})
+
+		router := setupTestRouter(target)
+		req, _ := http.NewRequest(http.MethodGet, "https://127.0.0.1/foo/bar", nil)
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+	})
+
+	t.Run("if not hosted EG should fallback to / for 'event.received' system event", func(t *testing.T) {
+		target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
+		target.EXPECT().SyncSubscriber(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		target.EXPECT().AsyncSubscribers(gomock.Any(), gomock.Any(), event.TypeName("http.request")).Return([]router.AsyncSubscriber{})
+
+		target.EXPECT().AsyncSubscribers(http.MethodPost, "/", event.SystemEventReceivedType).Return([]router.AsyncSubscriber{})
+
+		router := setupTestRouter(target)
+		req, _ := http.NewRequest(http.MethodGet, "https://127.0.0.1/test", nil)
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, req)
 	})
