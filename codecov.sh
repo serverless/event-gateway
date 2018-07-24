@@ -12,4 +12,6 @@ for d in $(go list ./... | grep -v vendor); do
 done
 
 # include coverage for hosted EG
-go test -race -coverprofile=profile.out -covermode=atomic -tags=hosted ./router >> coverage.txt
+go test -race -coverprofile=profile.out -covermode=atomic -tags=hosted ./router
+cat profile.out >> coverage.txt
+rm profile.out

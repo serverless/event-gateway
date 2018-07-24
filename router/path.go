@@ -10,6 +10,6 @@ func systemPathFromSpace(space string) string {
 	return basePath
 }
 
-func systemPathFromPath(space string) string {
+func systemPathFromPath(path string) string {
 	return basePath
 }
