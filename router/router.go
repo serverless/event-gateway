@@ -238,7 +238,7 @@ func (router *Router) httpRequestHandler(space string, backingFunction function.
 // handleAsyncSubscriptions fetched events subscribers, runs authorization and enqueues event in the queue
 func (router *Router) handleAsyncSubscriptions(method, path string, event eventpkg.Event, r *http.Request) {
 	if event.IsSystem() {
-		router.log.Debug("System event received.", zap.Object("event", event))
+		router.log.Debug("System event received.", zap.String("path", path), zap.Object("event", event))
 	}
 
 	subscribers := router.targetCache.AsyncSubscribers(method, path, event.EventType)
