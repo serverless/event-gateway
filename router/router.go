@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"regexp"
-	"strings"
 	"sync"
 
 	"github.com/jinzhu/copier"
@@ -162,8 +160,6 @@ func (router *Router) Drain() {
 	}
 	router.Unlock()
 }
-
-const hostedDomain = "(eventgateway([a-z-]*)?.io|slsgateway.com)"
 
 var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
@@ -468,7 +464,7 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 		mimeJSON,
 		eventpkg.SystemFunctionInvokingData{Space: space, FunctionID: functionID, Event: event},
 	)
-	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemEventPath(space), *system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokingType)).Inc()
 
@@ -480,7 +476,7 @@ func (router *Router) emitSystemFunctionInvoked(space string, functionID functio
 		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
 		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
-	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemEventPath(space), *system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokedType)).Inc()
 
@@ -493,7 +489,7 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 			eventpkg.SystemFunctionInvocationFailedType,
 			mimeJSON,
 			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
-		router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
+		router.handleAsyncSubscriptions(http.MethodPost, systemEventPath(space), *system, nil)
 
 		metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
 	}
@@ -530,16 +526,6 @@ func determineErrorMessage(err error) string {
 	}
 
 	return message
-}
-
-func extractPath(host, path string) string {
-	extracted := path
-	rxp, _ := regexp.Compile(hostedDomain)
-	if rxp.MatchString(host) {
-		subdomain := strings.Split(host, ".")[0]
-		extracted = "/" + subdomain + path
-	}
-	return extracted
 }
 
 type backlogEvent struct {
