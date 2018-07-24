@@ -10,6 +10,6 @@ func systemPathFromSpace(space string) string {
 	return basePath
 }
 
-func systemPathFromPath(path string) string {
+func systemPathFromURL(host, path string) string {
 	return basePath
 }

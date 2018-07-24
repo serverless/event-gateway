@@ -82,7 +82,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		router.log.Debug("Event received.", zap.String("path", path), zap.Object("event", event))
-		err = router.emitSystemEventReceived(path, *event, r.Header)
+		err = router.emitSystemEventReceived(path, *event, r)
 		if err != nil {
 			router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
 				zap.Object("event", event),
@@ -440,13 +440,13 @@ func (router *Router) processEvent(e backlogEvent) {
 	metricEventsProcessed.WithLabelValues(e.space, "custom").Inc()
 }
 
-func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, header http.Header) error {
+func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, r *http.Request) error {
 	system := eventpkg.New(
 		eventpkg.SystemEventReceivedType,
 		mimeJSON,
-		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
+		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(r.Header)},
 	)
-	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromPath(path), *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromURL(r.Host, path), *system, nil)
 	return router.plugins.React(system)
 }
 
