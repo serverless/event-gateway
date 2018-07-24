@@ -22,10 +22,6 @@ func extractPath(host, path string) string {
 	return extracted
 }
 
-func systemEventPath(space string) string {
-	return basePath + space + basePath
-}
-
 func systemPathFromSpace(space string) string {
 	return basePath + space + "/"
 }
