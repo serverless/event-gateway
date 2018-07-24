@@ -43,5 +43,5 @@ type SystemFunctionInvocationFailedData struct {
 	Space      string      `json:"space"`
 	FunctionID function.ID `json:"functionId"`
 	Event      Event       `json:"event"`
-	Error      error       `json:"result"`
+	Error      error       `json:"error"`
 }
