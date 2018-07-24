@@ -6,7 +6,7 @@ Both Events and Configuration API exposes Prometheus metrics. The metrics are ac
 
 | Metric Name                       | Description                                                  | Type    | Labels           |
 | --------------------------------- | ------------------------------------------------------------ | ------- | ---------------- |
-| `gateway_events_received_total`   | Total of events received.                                    | Counter | `space`,  `type` |
+| `gateway_events_received_total`   | Total of events received.                                    | Counter | `space`, `type` |
 | `gateway_events_processed_total`  | Total of processed events.                                   | Counter | `space`, `type`  |
 | `gateway_events_dropped_total`    | Total of events dropped due to insufficient processing power. | Counter | `space`, `type`  |
 | `gateway_events_backlog`          | Gauge of asynchronous events count waiting to be processed.  | Gauge   |                  |

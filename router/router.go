@@ -167,18 +167,9 @@ var (
 )
 
 func (router *Router) handleSyncSubscription(path string, event eventpkg.Event, subscriber SyncSubscriber, w http.ResponseWriter, r *http.Request) {
-	// metrics & logs
 	metricEventsReceived.WithLabelValues(subscriber.Space, string(event.EventType)).Inc()
-	router.log.Debug("Event received.", zap.String("path", path), zap.String("space", subscriber.Space), zap.Object("event", event))
-	err := router.emitSystemEventReceived(path, event, r.Header)
-	if err != nil {
-		router.log.Debug("Event processing stopped because sync plugin subscription returned an error.",
-			zap.Object("event", event),
-			zap.Error(err))
-		return
-	}
 
-	err = router.authorizeEventType(subscriber.Space, &event, r)
+	err := router.authorizeEventType(subscriber.Space, &event, r)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		return
