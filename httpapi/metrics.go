@@ -18,7 +18,7 @@ func init() {
 
 var metricEventTypes = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "eventtypes",
 		Name:      "total",
 		Help:      "Gauge of created event types count.",
@@ -28,7 +28,7 @@ var metricEventTypes = prometheus.NewGaugeVec(
 
 var metricFunctions = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "functions",
 		Name:      "total",
 		Help:      "Gauge of registered functions count.",
@@ -38,7 +38,7 @@ var metricFunctions = prometheus.NewGaugeVec(
 
 var metricSubscriptions = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "subscriptions",
 		Name:      "total",
 		Help:      "Gauge of created subscriptions count.",
@@ -48,7 +48,7 @@ var metricSubscriptions = prometheus.NewGaugeVec(
 
 var metricCORS = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "cors",
 		Name:      "total",
 		Help:      "Gauge of created CORS configurations count.",
@@ -58,7 +58,7 @@ var metricCORS = prometheus.NewGaugeVec(
 
 var metricConfigRequests = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "config",
 		Name:      "requests_total",
 		Help:      "Total of Config API requests.",
@@ -66,7 +66,7 @@ var metricConfigRequests = prometheus.NewCounterVec(
 
 var metricConfigRequestDuration = prometheus.NewHistogram(
 	prometheus.HistogramOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "config",
 		Name:      "request_duration_seconds",
 		Help:      "Bucketed histogram of request duration of Config API requests",

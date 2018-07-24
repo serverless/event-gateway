@@ -18,7 +18,7 @@ func init() {
 
 var metricEventsReceived = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "events",
 		Name:      "received_total",
 		Help:      "Total of events received.",
@@ -26,7 +26,7 @@ var metricEventsReceived = prometheus.NewCounterVec(
 
 var metricEventsProcessed = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "events",
 		Name:      "processed_total",
 		Help:      "Total of processed events.",
@@ -34,7 +34,7 @@ var metricEventsProcessed = prometheus.NewCounterVec(
 
 var metricEventsDropped = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "events",
 		Name:      "dropped_total",
 		Help:      "Total of events dropped due to insufficient processing power.",
@@ -42,7 +42,7 @@ var metricEventsDropped = prometheus.NewCounterVec(
 
 var metricBacklog = prometheus.NewGauge(
 	prometheus.GaugeOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "events",
 		Name:      "backlog",
 		Help:      "Gauge of asynchronous events count waiting to be processed.",
@@ -50,7 +50,7 @@ var metricBacklog = prometheus.NewGauge(
 
 var metricProcessingDuration = prometheus.NewHistogram(
 	prometheus.HistogramOpts{
-		Namespace: "gateway",
+		Namespace: "eventgateway",
 		Subsystem: "events",
 		Name:      "custom_processing_seconds",
 		Help: "Bucketed histogram of processing duration of an event. " +
