@@ -25,3 +25,12 @@ func extractPath(host, path string) string {
 func systemEventPath(space string) string {
 	return basePath + space + basePath
 }
+
+func systemPathFromSpace(space string) string {
+	return basePath + space + basePath
+}
+
+// systemPathFromPath constructs path from path on which event was emitted. Helpful for "event.received" system event.
+func systemPathFromPath(path string) string {
+	return basePath + strings.Split(path, "/")[1] + basePath
+}
