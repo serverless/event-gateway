@@ -20,6 +20,7 @@ import (
 
 const (
 	mimeJSON = "application/json"
+	basePath = "/"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.

@@ -7,9 +7,9 @@ func extractPath(host, path string) string {
 }
 
 func systemPathFromSpace(space string) string {
-	return "/"
+	return basePath
 }
 
 func systemPathFromPath(space string) string {
-	return "/"
+	return basePath
 }
