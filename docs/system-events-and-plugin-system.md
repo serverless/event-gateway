@@ -10,13 +10,16 @@ of event processing flow starting from receiving event to function invocation en
   * `path` - Events API path
   * `headers` - HTTP request headers
 * `eventgateway.function.invoking` - the event emitted before invoking a function. Data fields:
+  * `space` - space name
   * `event` - event payload
   * `functionId` - registered function ID
 * `eventgateway.function.invoked` - the event emitted after successful function invocation. Data fields:
+  * `space` - space name
   * `event` - event payload
   * `functionId` - registered function ID
   * `result` - function response
 * `eventgateway.function.invocationFailed` - the event emitted after failed function invocation. Data fields:
+  * `space` - space name
   * `event` - event payload
   * `functionId` - registered function ID
   * `error` - invocation error
