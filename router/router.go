@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"regexp"
-	"strings"
 	"sync"
 
 	"github.com/jinzhu/copier"
@@ -22,6 +20,7 @@ import (
 
 const (
 	mimeJSON = "application/json"
+	basePath = "/"
 )
 
 // Router calls a target function when an endpoint is hit, and handles pubsub message delivery.
@@ -163,8 +162,6 @@ func (router *Router) Drain() {
 	router.Unlock()
 }
 
-const hostedDomain = "(eventgateway([a-z-]*)?.io|slsgateway.com)"
-
 var (
 	errUnableToLookUpRegisteredFunction = errors.New("unable to look up registered function")
 )
@@ -242,7 +239,7 @@ func (router *Router) httpRequestHandler(space string, backingFunction function.
 // handleAsyncSubscriptions fetched events subscribers, runs authorization and enqueues event in the queue
 func (router *Router) handleAsyncSubscriptions(method, path string, event eventpkg.Event, r *http.Request) {
 	if event.IsSystem() {
-		router.log.Debug("System event received.", zap.Object("event", event))
+		router.log.Debug("System event received.", zap.String("path", path), zap.Object("event", event))
 	}
 
 	subscribers := router.targetCache.AsyncSubscribers(method, path, event.EventType)
@@ -458,7 +455,7 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 		mimeJSON,
 		eventpkg.SystemEventReceivedData{Path: path, Event: event, Headers: ihttp.FlattenHeader(header)},
 	)
-	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromPath(path), *system, nil)
 	return router.plugins.React(system)
 }
 
@@ -468,7 +465,7 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 		mimeJSON,
 		eventpkg.SystemFunctionInvokingData{Space: space, FunctionID: functionID, Event: event},
 	)
-	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromSpace(space), *system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokingType)).Inc()
 
@@ -480,7 +477,7 @@ func (router *Router) emitSystemFunctionInvoked(space string, functionID functio
 		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
 		eventpkg.SystemFunctionInvokedData{Space: space, FunctionID: functionID, Event: event, Result: result})
-	router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
+	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromSpace(space), *system, nil)
 
 	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvokedType)).Inc()
 
@@ -493,7 +490,7 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 			eventpkg.SystemFunctionInvocationFailedType,
 			mimeJSON,
 			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
-		router.handleAsyncSubscriptions(http.MethodPost, "/", *system, nil)
+		router.handleAsyncSubscriptions(http.MethodPost, systemPathFromSpace(space), *system, nil)
 
 		metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
 	}
@@ -530,16 +527,6 @@ func determineErrorMessage(err error) string {
 	}
 
 	return message
-}
-
-func extractPath(host, path string) string {
-	extracted := path
-	rxp, _ := regexp.Compile(hostedDomain)
-	if rxp.MatchString(host) {
-		subdomain := strings.Split(host, ".")[0]
-		extracted = "/" + subdomain + path
-	}
-	return extracted
 }
 
 type backlogEvent struct {
