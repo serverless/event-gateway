@@ -1,3 +1,5 @@
+// +build !hosted
+
 package router_test
 
 import (
@@ -59,20 +61,6 @@ func TestRouterServeHTTP(t *testing.T) {
 		assert.Equal(t, "X-Api-Key", recorder.Header().Get("Access-Control-Allow-Headers"))
 		assert.Equal(t, "PUT", recorder.Header().Get("Access-Control-Allow-Methods"))
 		assert.Equal(t, "http://example.com", recorder.Header().Get("Access-Control-Allow-Origin"))
-	})
-
-	t.Run("extract path from hosted domain", func(t *testing.T) {
-		target.EXPECT().CORS(gomock.Any(), gomock.Any()).Return(nil)
-		target.EXPECT().SyncSubscriber(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return(nil).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(http.MethodGet, "/custom/test", event.TypeName("http.request")).Return([]router.AsyncSubscriber{}).MaxTimes(1)
-		target.EXPECT().AsyncSubscribers(http.MethodPost, "/", event.SystemEventReceivedType).Return([]router.AsyncSubscriber{}).MaxTimes(1)
-		router := setupTestRouter(target)
-
-		req, _ := http.NewRequest(http.MethodGet, "https://custom.slsgateway.com/test", nil)
-		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, req)
-
-		assert.Equal(t, http.StatusAccepted, recorder.Code)
 	})
 
 	t.Run("reject if system event", func(t *testing.T) {
