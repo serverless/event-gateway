@@ -5,18 +5,18 @@
 System Events are special type of events emitted by the Event Gateway instance internally. They are emitted on each stage
 of event processing flow starting from receiving event to function invocation end. Those events are:
 
-* `gateway.event.received` - the event is emitted when an event was received by Events API. Data fields:
+* `eventgateway.event.received` - the event is emitted when an event was received by Events API. Data fields:
   * `event` - event payload
   * `path` - Events API path
   * `headers` - HTTP request headers
-* `gateway.function.invoking` - the event emitted before invoking a function. Data fields:
+* `eventgateway.function.invoking` - the event emitted before invoking a function. Data fields:
   * `event` - event payload
   * `functionId` - registered function ID
-* `gateway.function.invoked` - the event emitted after successful function invocation. Data fields:
+* `eventgateway.function.invoked` - the event emitted after successful function invocation. Data fields:
   * `event` - event payload
   * `functionId` - registered function ID
   * `result` - function response
-* `gateway.function.invocationFailed` - the event emitted after failed function invocation. Data fields:
+* `eventgateway.function.invocationFailed` - the event emitted after failed function invocation. Data fields:
   * `event` - event payload
   * `functionId` - registered function ID
   * `error` - invocation error

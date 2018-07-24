@@ -68,7 +68,7 @@ func TestRouterServeHTTP(t *testing.T) {
 		router := setupTestRouter(target)
 
 		req, _ := http.NewRequest(http.MethodPost, "/", nil)
-		req.Header.Set("Event", "gateway.something")
+		req.Header.Set("Event", "eventgateway.something")
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, req)
 

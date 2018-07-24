@@ -116,7 +116,7 @@ func (e *Event) Validate() error {
 
 // IsSystem indicates if the event is a system event.
 func (e *Event) IsSystem() bool {
-	return strings.HasPrefix(string(e.EventType), "gateway.")
+	return strings.HasPrefix(string(e.EventType), "eventgateway.")
 }
 
 // MarshalLogObject is a part of zapcore.ObjectMarshaler interface

@@ -5,7 +5,7 @@ import (
 )
 
 // SystemEventReceivedType is a system event emitted when the Event Gateway receives an event.
-const SystemEventReceivedType = TypeName("gateway.event.received")
+const SystemEventReceivedType = TypeName("eventgateway.event.received")
 
 // SystemEventReceivedData struct.
 type SystemEventReceivedData struct {
@@ -15,7 +15,7 @@ type SystemEventReceivedData struct {
 }
 
 // SystemFunctionInvokingType is a system event emitted before invoking a function.
-const SystemFunctionInvokingType = TypeName("gateway.function.invoking")
+const SystemFunctionInvokingType = TypeName("eventgateway.function.invoking")
 
 // SystemFunctionInvokingData struct.
 type SystemFunctionInvokingData struct {
@@ -25,7 +25,7 @@ type SystemFunctionInvokingData struct {
 }
 
 // SystemFunctionInvokedType is a system event emitted after successful function invocation.
-const SystemFunctionInvokedType = TypeName("gateway.function.invoked")
+const SystemFunctionInvokedType = TypeName("eventgateway.function.invoked")
 
 // SystemFunctionInvokedData struct.
 type SystemFunctionInvokedData struct {
@@ -36,7 +36,7 @@ type SystemFunctionInvokedData struct {
 }
 
 // SystemFunctionInvocationFailedType is a system event emitted after successful function invocation.
-const SystemFunctionInvocationFailedType = TypeName("gateway.function.invocationFailed")
+const SystemFunctionInvocationFailedType = TypeName("eventgateway.function.invocationFailed")
 
 // SystemFunctionInvocationFailedData struct.
 type SystemFunctionInvocationFailedData struct {
