@@ -185,11 +185,11 @@ func parseAsCloudEventBinary(headers http.Header, payload interface{}) (*Event, 
 	}
 
 	if headers.Get("CE-EventTime") != "" {
-		if val, err := time.Parse(time.RFC3339, headers.Get("CE-EventTime")); err == nil {
-			event.EventTime = &val
-		} else {
+		val, err := time.Parse(time.RFC3339, headers.Get("CE-EventTime"))
+		if err != nil {
 			return nil, err
 		}
+		event.EventTime = &val
 	}
 
 	if val := headers.Get("CE-SchemaURL"); len(val) > 0 {
