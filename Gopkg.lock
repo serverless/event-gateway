@@ -20,6 +20,12 @@
   version = "v1.3.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/bouk/monkey"
+  packages = ["."]
+  revision = "5df1f207ff77e025801505ae4d903133a0b4353f"
+
+[[projects]]
   name = "github.com/cockroachdb/cmux"
   packages = ["."]
   revision = "112f0506e7743d64a6eb8fedbcff13d9979bbf92"
@@ -263,6 +269,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "40303385e38e32716a606f65ba02c55615db5dbbf68100052f8265e835747293"
+  inputs-digest = "d6373538a2997e117949edecf1a8de3f004aa79782970ba9c3a859d2f36ab9c1"
   solver-name = "gps-cdcl"
   solver-version = 1
