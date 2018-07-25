@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
+	"github.com/bouk/monkey"
 	eventpkg "github.com/serverless/event-gateway/event"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,6 +38,9 @@ func TestNew_Encoding(t *testing.T) {
 }
 
 func TestFromRequest(t *testing.T) {
+	patch := monkey.Patch(time.Now, func() time.Time { return testTime })
+	defer patch.Unpatch()
+
 	for _, testCase := range fromRequestTests {
 		t.Run(testCase.name, func(t *testing.T) {
 			url, _ := url.Parse("http://example.com")
@@ -49,6 +54,7 @@ func TestFromRequest(t *testing.T) {
 				assert.Equal(t, testCase.expectedError, err)
 			} else {
 				assert.Equal(t, testCase.expectedEvent.EventType, received.EventType, "EventType is not equal")
+				assert.Equal(t, testCase.expectedEvent.EventTime, received.EventTime, "EventTime is not equal")
 				assert.Equal(t, testCase.expectedEvent.Source, received.Source, "Source is not equal")
 				assert.Equal(t, testCase.expectedEvent.CloudEventsVersion, received.CloudEventsVersion, "CloudEventsVersion is not equal")
 				assert.Equal(t, testCase.expectedEvent.ContentType, received.ContentType, "ContentType is not equal")
@@ -107,6 +113,8 @@ var newTests = []struct {
 	},
 }
 
+var testTime = time.Date(1985, time.April, 12, 23, 20, 50, 00, time.UTC) //1985-04-12T23:20:50.00Z
+
 var encodingTests = []struct {
 	name         string
 	body         []byte
@@ -151,19 +159,36 @@ var fromRequestTests = []struct {
 		requestHeaders: http.Header{"Content-Type": []string{"application/cloudevents+json"}},
 		requestBody: []byte(`{
 			"eventType": "user.created",
+			"eventTime": "1985-04-12T23:20:50.00Z",
 			"cloudEventsVersion": "0.1",
 			"source": "http://example.com",
 			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
 			"contentType": "text/plain",
 			"data": "test"
 			}`),
+
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.TypeName("user.created"),
+			EventTime:          &testTime,
 			CloudEventsVersion: "0.1",
 			Source:             "http://example.com",
 			ContentType:        "text/plain",
 			Data:               "test",
 		},
+	},
+	{
+		name:           "valid CloudEvent with invalid event time",
+		requestHeaders: http.Header{"Content-Type": []string{"application/cloudevents+json"}},
+		requestBody: []byte(`{
+			"eventType": "user.created",
+			"eventTime": "nottime",
+			"cloudEventsVersion": "0.1",
+			"source": "http://example.com",
+			"eventID": "6f6ada3b-0aa2-4b3c-989a-91ffc6405f11",
+			"contentType": "text/plain",
+			"data": "test"
+			}`),
+		expectedError: &time.ParseError{Layout: "\"2006-01-02T15:04:05Z07:00\"", Value: "\"nottime\"", LayoutElem: "2006", ValueElem: "nottime\"", Message: ""},
 	},
 	{
 		name:           "error if invalid CloudEvent",
@@ -198,6 +223,47 @@ var fromRequestTests = []struct {
 		},
 	},
 	{
+		name: "valid CloudEvent in binary mode with valid event time",
+		requestHeaders: http.Header{
+			"Content-Type":          []string{"text/plain"},
+			"Ce-Eventtype":          []string{"myevent"},
+			"Ce-Eventtypeversion":   []string{"0.1beta"},
+			"Ce-Cloudeventsversion": []string{"0.1"},
+			"Ce-Source":             []string{"https://example.com"},
+			"Ce-Eventid":            []string{"778d495b-a29e-48f9-a438-a26de1e33515"},
+			"Ce-Eventtime":          []string{"1985-04-12T23:20:50.00Z"},
+			"Ce-Schemaurl":          []string{"https://example.com"},
+			"Ce-X-MyExtension":      []string{"ding"},
+		},
+		requestBody: []byte("hey there"),
+		expectedEvent: &eventpkg.Event{
+			EventType:          eventpkg.TypeName("myevent"),
+			EventTime:          &testTime,
+			CloudEventsVersion: "0.1",
+			Source:             "https://example.com",
+			ContentType:        "text/plain",
+			SchemaURL:          "https://example.com",
+			Data:               []byte("hey there"),
+			Extensions:         map[string]interface{}{"myExtension": "ding"},
+		},
+	},
+	{
+		name: "valid CloudEvent in binary mode with invalid event time",
+		requestHeaders: http.Header{
+			"Content-Type":          []string{"text/plain"},
+			"Ce-Eventtype":          []string{"myevent"},
+			"Ce-Eventtypeversion":   []string{"0.1beta"},
+			"Ce-Cloudeventsversion": []string{"0.1"},
+			"Ce-Source":             []string{"https://example.com"},
+			"Ce-Eventid":            []string{"778d495b-a29e-48f9-a438-a26de1e33515"},
+			"Ce-Eventtime":          []string{"nottime"},
+			"Ce-Schemaurl":          []string{"https://example.com"},
+			"Ce-X-MyExtension":      []string{"ding"},
+		},
+		requestBody:   []byte("hey there"),
+		expectedError: &time.ParseError{Layout: "2006-01-02T15:04:05Z07:00", Value: "nottime", LayoutElem: "2006", ValueElem: "nottime", Message: ""},
+	},
+	{
 		name: "error if invalid CloudEvent in binary mode",
 		requestHeaders: http.Header{
 			"Content-Type":          []string{"text/plain"},
@@ -218,6 +284,7 @@ var fromRequestTests = []struct {
 		requestBody: []byte("hey there"),
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.TypeName("myevent"),
+			EventTime:          &testTime,
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/octet-stream",
@@ -259,6 +326,7 @@ var fromRequestTests = []struct {
 		}`),
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.TypeName("user.created"),
+			EventTime:          &testTime,
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",
@@ -275,6 +343,7 @@ var fromRequestTests = []struct {
 		requestBody: []byte(`{"key": "value"}`),
 		expectedEvent: &eventpkg.Event{
 			EventType:          eventpkg.TypeHTTPRequest,
+			EventTime:          &testTime,
 			CloudEventsVersion: "0.1",
 			Source:             "https://serverless.com/event-gateway/#transformationVersion=0.1",
 			ContentType:        "application/json",

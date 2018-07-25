@@ -34,7 +34,7 @@ type Event struct {
 	CloudEventsVersion string                 `json:"cloudEventsVersion" validate:"required"`
 	Source             string                 `json:"source" validate:"uri,required"`
 	EventID            string                 `json:"eventID" validate:"required"`
-	EventTime          time.Time              `json:"eventTime,omitempty"`
+	EventTime          *time.Time             `json:"eventTime,omitempty"`
 	SchemaURL          string                 `json:"schemaURL,omitempty"`
 	Extensions         zap.MapStringInterface `json:"extensions,omitempty"`
 	ContentType        string                 `json:"contentType,omitempty"`
@@ -43,12 +43,14 @@ type Event struct {
 
 // New return new instance of Event.
 func New(eventType TypeName, mimeType string, payload interface{}) *Event {
+	now := time.Now()
+
 	event := &Event{
 		EventType:          eventType,
 		CloudEventsVersion: CloudEventsVersion,
 		Source:             "https://serverless.com/event-gateway/#transformationVersion=" + TransformationVersion,
 		EventID:            uuid.NewV4().String(),
-		EventTime:          time.Now(),
+		EventTime:          &now,
 		ContentType:        mimeType,
 		Data:               payload,
 		Extensions: map[string]interface{}{
@@ -128,7 +130,9 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("cloudEventsVersion", e.CloudEventsVersion)
 	enc.AddString("source", e.Source)
 	enc.AddString("eventID", e.EventID)
-	enc.AddString("eventTime", e.EventTime.String())
+	if e.EventTime != nil {
+		enc.AddString("eventTime", e.EventTime.String())
+	}
 	if e.SchemaURL != "" {
 		enc.AddString("schemaURL", e.SchemaURL)
 	}
@@ -180,8 +184,12 @@ func parseAsCloudEventBinary(headers http.Header, payload interface{}) (*Event, 
 		return nil, err
 	}
 
-	if val, err := time.Parse(time.RFC3339, headers.Get("CE-EventTime")); err == nil {
-		event.EventTime = val
+	if headers.Get("CE-EventTime") != "" {
+		val, err := time.Parse(time.RFC3339, headers.Get("CE-EventTime"))
+		if err != nil {
+			return nil, err
+		}
+		event.EventTime = &val
 	}
 
 	if val := headers.Get("CE-SchemaURL"); len(val) > 0 {
