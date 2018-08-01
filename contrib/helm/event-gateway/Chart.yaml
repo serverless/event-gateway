@@ -1,0 +1,4 @@
+apiVersion: v1
+description: https://github.com/serverless/event-gateway
+name: event-gateway
+version: 0.1.0
