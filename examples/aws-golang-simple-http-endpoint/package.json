@@ -1,0 +1,14 @@
+{
+  "name": "aws-golang-simple-http-endpoint",
+  "version": "0.0.1",
+  "description": "Example demonstrates how to setup a simple HTTP GET endpoint with golang on the serverless event gateway using AWS Lambda behind the scenes",
+  "author": "Sebastian Borza <sebito91@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@serverless/serverless-event-gateway-plugin": "^0.7.3"
+  },
+  "dependencies": {
+    "@serverless/event-gateway-sdk": "^0.6.0",
+    "serverless": "^1.28.0"
+  }
+}

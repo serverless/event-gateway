@@ -1,0 +1,41 @@
+service: aws-golang-simple-http-endpoint
+tenant: ${env:EVENT_GATEWAY_TENANT}
+app: ${env:EVENT_GATEWAY_APP_NAME}
+
+custom:
+  eventTypes:
+    http.request:
+  eventgateway:
+    url: ${env:EVENT_GATEWAY_APPLICATION}
+    accessKey: ${env:EVENT_GATEWAY_ACCESS_KEY}
+
+plugins:
+  - "@serverless/serverless-event-gateway-plugin"
+
+provider:
+  name: aws
+  runtime: go1.x
+
+functions:
+  hello:
+    handler: bin/hello
+    events:
+      - eventgateway:
+          type: sync
+          eventType: http.request
+          path: /hello
+          method: GET
+  world:
+    handler: bin/world
+    events:
+      - eventgateway:
+          type: sync
+          eventType: http.request
+          path: /world
+          method: GET
+
+package:
+ exclude:
+   - ./**
+ include:
+   - ./bin/**
