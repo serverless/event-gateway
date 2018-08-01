@@ -1,0 +1,53 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "event-gateway.fullname" . }}
+  labels:
+    app: {{ template "event-gateway.fullname" . }}
+    chart: {{ template "event-gateway.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "event-gateway.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "event-gateway.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- range .Values.command }}
+            - {{ . }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /v1/status
+              port: {{ .Values.service.config.port }}
+          readinessProbe:
+            httpGet:
+              path: /v1/status
+              port: {{ .Values.service.config.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "event-gateway.fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  - name: config
+    port: {{ .Values.service.config.port }}
+  - name: events
+    port: {{ .Values.service.events.port }}
+  selector:
+    app: {{ template "event-gateway.name" . }}
