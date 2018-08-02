@@ -451,6 +451,10 @@ func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event,
 }
 
 func (router *Router) emitSystemFunctionInvoking(space string, functionID function.ID, event eventpkg.Event) error {
+	if event.IsSystem() {
+		return nil
+	}
+
 	system := eventpkg.New(
 		eventpkg.SystemFunctionInvokingType,
 		mimeJSON,
@@ -464,6 +468,10 @@ func (router *Router) emitSystemFunctionInvoking(space string, functionID functi
 }
 
 func (router *Router) emitSystemFunctionInvoked(space string, functionID function.ID, event eventpkg.Event, result []byte) error {
+	if event.IsSystem() {
+		return nil
+	}
+
 	system := eventpkg.New(
 		eventpkg.SystemFunctionInvokedType,
 		mimeJSON,
@@ -476,6 +484,10 @@ func (router *Router) emitSystemFunctionInvoked(space string, functionID functio
 }
 
 func (router *Router) emitSystemFunctionInvocationFailed(space string, functionID function.ID, event eventpkg.Event, err error) {
+	if event.IsSystem() {
+		return
+	}
+
 	if _, ok := err.(*function.ErrFunctionError); ok {
 		system := eventpkg.New(
 			eventpkg.SystemFunctionInvocationFailedType,
