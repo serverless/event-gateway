@@ -17,6 +17,6 @@ resources:
   requests:
    cpu: 200m
    memory: 256Mi
-command: ["-log-level=debug"]
+command: ["--log-level=debug"]
 etcd_cluster_name: eg-etcd-cluster
 etcd_cluster_port: 2379
