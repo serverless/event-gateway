@@ -36,6 +36,7 @@ spec:
             httpGet:
               path: /v1/status
               port: {{ .Values.service.config.port }}
+
 ---
 apiVersion: v1
 kind: Service
@@ -46,13 +47,15 @@ metadata:
     {{ . }}
     {{- end }}
   labels:
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 spec:
   type: {{ .Values.service.type }}
   ports:
   - name: config
     port: {{ .Values.service.config.port }}
+    targetPort: {{ .Values.service.config.port }}
   - name: events
     port: {{ .Values.service.events.port }}
+    targetPort: {{ .Values.service.events.port }}
   selector:
     app: {{ template "event-gateway.name" . }}

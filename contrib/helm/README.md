@@ -1,24 +1,47 @@
 # Event Gateway Helm chart
 
-This chart deploys the Event Gateway with etcd onto a Kubernetes cluster.
+This chart deploys the Event Gateway with etcd onto a Kubernetes cluster. Please note, the default instructions expect
+an existing kubernetes cluster that supports loadbalancers, such as GKE. If your environment doesn't have a loadbalancer
+set up, please follow the minikube instructions below to retrieve the `event_gateway` information.
 
-## Installation
+## Contents
 
-Make sure you have helm installed on you machine and run `helm init` on your K8s cluster.
+1. [Quickstart](#quickstart)
+1. [Minikube or local clusters](#minikube-or-local-clusters)
+    1. [Setting up an Ingress](#setting-up-an-ingress)
+1. [Configuration](#configuration)
 
-From the `event-gateway/contrib/helm` folder:
+### Quickstart
 
-First, install etcd operator:
+Make sure you have helm installed on you machine and run `helm init` on your k8s cluster. This will set up the
+`helm` and `tiller` functions required for easy deployment of config files to your cluster. You can follow
+instructions [here](https://docs.helm.sh/using_helm/#quickstart) if you have not set this up previously.
+
+**NOTE:** This portion of the config expects you to have a pre-existing kubernetes cluster (not minikube). For 
+local development please check the [minikube](#minikube-or-local-clusters) information below.
+
+Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
+
+**etcd-operator**
 ```
-helm install stable/etcd-operator --name ego
+helm install stable/etcd-operator --name ego [--namespace <namespace>]
 ```
 
-Then, install the Event Gateway:
+**event-gateway**
 ```
-helm install event-gateway --name eg
+helm install event-gateway --name eg [--namespace <namespace>]
 ```
 
-Note: to deploy the stack to a namespace other than the default, add `--namespace` option to both `helm install` commands.
+This will install each of the `etcd-operator` and `event-gateway` into the `default` namespace in kubernetes. Please note,
+this namespace has no bearing on your Event Gateway `spaces` as outlined in the [docs](https://github.com/serverless/event-gateway/blob/master/README.md). If you'd like to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to both `helm install` commands above.
+
+Next we'll need to collect the Event Gateway IP and ports for use on the CLI. To do so, inspect your services as follows:
+
+```
+export EVENT_GATEWAY_URL=$(kubectl get svc event-gateway -o jsonpath={.status.loadBalancer.ingress[0].ip})
+export EVENT_GATEWAY_CONFIG_API_PORT=4001
+export EVENT_GATEWAY_EVENTS_API_PORT=4000
+```
 
 To get the Event Gateway load balancer IP:
 ```
@@ -31,7 +54,11 @@ helm delete eg
 helm delete ego
 ```
 
-## Configuration
+### Minikube or local clusters
+
+#### Setting up an Ingress
+
+### Configuration
 
 | Parameter                   | Description                                  | Default                    |
 |-----------------------------|----------------------------------------------|----------------------------|

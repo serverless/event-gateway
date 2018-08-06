@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "event-gateway.fullname" . }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  backend:
+    serviceName: default-http-backend
+    servicePort: 80
+  rules:
+    - host: {{ template "event-gateway.name" . }}
+      http:
+        paths:
+          - path: /v1/config
+            backend:
+              serviceName: config
+              servicePort: {{ .Values.service.config.port }}
+          - path: /v1/events
+            backend:
+              serviceName: events
+              servicePort: {{ .Values.service.events.port }}
