@@ -158,7 +158,105 @@ PENDING
 
 ## Examples
 
-PENDING
+Once you've set each of the `EVENT_GATEWAY_URL`, `EVENT_GATEWAY_CONFIG_API_PORT`, and `EVENT_GATEWAY_EVENTS_API_PORT` environment 
+variables, you're set to start interacting with the `event-gateway`! 
+
+#### Register a function
+
+Define the function registration payload, using **AWS** as an example:
+
+```
+cat > function.json <<EOF
+{
+    "functionId": "echo",
+    "type": "awslambda",
+    "provider": {
+        "arn": "arn:aws:lambda:us-east-1:123456789012:function:event-gateway-tests-dev-echo",
+        "region": "us-east-1",
+        "awsAccessKeyID": "AAAAAAAAAAAAAAAAAAAA",
+        "awsSecretAccessKey": "AAAAaBcDeFgHiJqLmNoPqRsTuVwXyz0123456789"
+    }
+}
+EOF
+```
+
+Then call the registration endpoint with your json payload:
+
+```
+curl --request POST \
+  --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
+  --header 'content-type: application/json' \
+  --data @function.json
+```
+
+And the corresponsing reply (if successful) should read something like the following:
+
+```
+{
+	"space": "default",
+	"functionId": "echo",
+	"type": "awslambda",
+	"provider": {
+		"arn": "arn:aws:lambda:us-east-1:123456789012:function:event-gateway-tests-dev-echo",
+		"region": "us-east-1",
+		"awsAccessKeyId": "AAAAAAAAAAAAAAAAAAAA",
+		"awsSecretAccessKey": "AAAAaBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"
+	}
+}
+```
+
+**NOTE:** if you try to overwrite an existing function, you will receive an error! To replace an existing function
+you will have to delete it first, then register the function once more. For example, trying to re-register the `echo`
+function will yield:
+
+```
+curl --request POST \
+   --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
+   --header 'content-type: application/json' \
+   --data @function.json
+
+{
+    "errors": [{
+        "message": "Function \"echo\" already registered."
+    }]
+}
+```
+
+#### Query all functions
+
+To check for registered functions, query the `config` API with the `GET` request:
+
+```
+curl --request GET \
+  --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
+  --header 'content-type: application/json' | jq
+```
+
+You should see the functions list return your defined set of functions across all vendors.
+
+```
+{
+  "functions": [
+    {
+      "space": "default",
+      "functionId": "echo",
+      "type": "awslambda",
+      "provider": {
+        "arn": "arn:aws:lambda:us-east-1:123456789012:function:event-gateway-tests-dev-echo",
+        "region": "us-east-1",
+        "awsAccessKeyId": "AAAAAAAAAAAAAAAAAAAA",
+        "awsSecretAccessKey": "AAAAaBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"
+      }
+    }
+  ]
+}
+```
+
+**Register an event**
+
+**Register a subscription**
+
+**Trigger an event**
 
 ## Configuration
 
