@@ -124,6 +124,15 @@ export EVENT_GATEWAY_CONFIG_API_PORT=$(kubectl get svc eg-event-gateway -o json 
 export EVENT_GATEWAY_EVENTS_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="events") | .nodePort | tostring')
 ```
 
+This should yield something like the following (your data will be dependent on your specific cluster):
+```
+$ env | grep EVENT
+...
+EVENT_GATEWAY_URL=192.168.42.202
+EVENT_GATEWAY_EVENTS_API_PORT=31455
+EVENT_GATEWAY_CONFIG_API_PORT=30523
+```
+
 With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
 
 ### Using custom resource definitions
