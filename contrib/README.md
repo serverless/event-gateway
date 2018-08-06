@@ -71,17 +71,24 @@ To develop and deploy the `event-gateway` and all related elements locally, the 
 
 + Add the [docker-machine](https://github.com/docker/machine) binary to your system 
   ```
-  curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine && chmod +x /tmp/docker-machine && sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
+  curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine && \
+  chmod +x /tmp/docker-machine && \
+  sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
   ```
 
 + Add the CentOS `docker-machine` kvm driver. It's ok if you're not using CentOS as the driver should **still work**&trade;
   ```
-  sudo curl -L https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.10.0/docker-machine-driver-kvm-centos7 > /tmp/docker-machine-driver-kvm && sudo chmod +x /tmp/docker-machine-driver-kvm && sudo mv /tmp/docker-machine-driver-kvm /usr/local/bin/docker-machine-driver-kvm
+  sudo curl -L https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.10.0/docker-machine-driver-kvm-centos7 > /tmp/docker-machine-driver-kvm && \
+  sudo chmod +x /tmp/docker-machine-driver-kvm && \
+  sudo mv /tmp/docker-machine-driver-kvm /usr/local/bin/docker-machine-driver-kvm
   ```
 
 + Download the minikube instance for your system 
   ```
-  curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo chmod +x minikube && sudo mv minikube /usr/local/bin/
+  curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 &&i \
+  sudo chmod +x minikube && \
+  sudo mv minikube /usr/local/bin/
+  ```
 
 + Finally, start up your minikube service! **NOTE:** the instructions recommend using `kvm2` but please use the version that matches your system install
   ```
@@ -89,6 +96,8 @@ To develop and deploy the `event-gateway` and all related elements locally, the 
   ```
 
 **Debian/Ubuntu**
+
+PENDING
 
 **MacOS**
 
@@ -99,7 +108,9 @@ PENDING
 Most of the instructions for using `helm` come from the [Quickstart](#quick-start), but please note the differnce when collecting
 the `config` and `events` API ports. Minikube does not ship with integrated loadbalancer options like hosted environments would
 provide (e.g. Google Kubernetes Engine). As a result, though we can use the same `helm` charts as those installations, we'll
-need to grab our ports from the randomly assigned `nodePort` fields before moving forward. There are numerous articles in the community that describe this minikube-specific behavior, but they are beyond the scope of this document (edit: [here](https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/) is a bit of information on exposing services).
+need to grab our ports from the randomly assigned `nodePort` fields before moving forward. There are numerous articles in the 
+community that describe this minikube-specific behavior, but they are beyond the scope of this document 
+(edit: [here](https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/) is a bit of information on exposing services).
 
 Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
 
@@ -114,7 +125,9 @@ helm install event-gateway --name eg [--namespace <namespace>]
 ```
 
 This will install each of the `etcd-operator` and `event-gateway` into the `default` namespace in kubernetes. Please note,
-this namespace has no bearing on your Event Gateway `spaces` as outlined in the [docs](https://github.com/serverless/event-gateway/blob/master/README.md). If you'd like to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to both `helm install` commands above.
+this namespace has no bearing on your Event Gateway `spaces` as outlined in the [docs](https://github.com/serverless/event-gateway/blob/master/README.md). 
+If you'd like to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to 
+both `helm install` commands above.
 
 Next we'll need to collect the Event Gateway IP and ports for use on the CLI. To do so, inspect your services as follows:
 
