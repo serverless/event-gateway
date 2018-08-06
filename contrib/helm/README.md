@@ -71,9 +71,7 @@ To develop and deploy the `event-gateway` and all related elements locally, the 
 
 + Add the [docker-machine](https://github.com/docker/machine) binary to your system 
   ```
-  curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine &&
-  chmod +x /tmp/docker-machine &&
-  sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
+  curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine && chmod +x /tmp/docker-machine && sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
   ```
 
 + Add the CentOS `docker-machine` kvm driver. It's ok if you're not using CentOS as the driver should **still work**&trade;
@@ -90,11 +88,43 @@ To develop and deploy the `event-gateway` and all related elements locally, the 
   minikube start --vm-driver kvm2
   ```
 
+**Debian/Ubuntu**
+
 **MacOS**
 
 PENDING
 
 ### Using helm
+
+Most of the instructions for using `helm` come from the [Quickstart](#quick-start), but please note the differnce when collecting
+the `config` and `events` API ports. Minikube does not ship with integrated loadbalancer options like hosted environments would
+provide (e.g. Google Kubernetes Engine). As a result, though we can use the same `helm` charts as those installations, we'll
+need to grab our ports from the randomly assigned `nodePort` fields before moving forward. There are numerous articles in the community that describe this minikube-specific behavior, but they are beyond the scope of this document (edit: [here](https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/) is a bit of information on exposing services).
+
+Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
+
+**etcd-operator**
+```
+helm install stable/etcd-operator --name ego [--namespace <namespace>]
+```
+
+**event-gateway**
+```
+helm install event-gateway --name eg [--namespace <namespace>]
+```
+
+This will install each of the `etcd-operator` and `event-gateway` into the `default` namespace in kubernetes. Please note,
+this namespace has no bearing on your Event Gateway `spaces` as outlined in the [docs](https://github.com/serverless/event-gateway/blob/master/README.md). If you'd like to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to both `helm install` commands above.
+
+Next we'll need to collect the Event Gateway IP and ports for use on the CLI. To do so, inspect your services as follows:
+
+```
+export EVENT_GATEWAY_URL=$(kubectl get svc event-gateway -o jsonpath={.status.loadBalancer.ingress[0].ip})
+export EVENT_GATEWAY_CONFIG_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="config") | .nodePort | tostring')
+export EVENT_GATEWAY_EVENTS_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="events") | .nodePort | tostring')
+```
+
+With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
 
 ### Using custom resource definitions
 
