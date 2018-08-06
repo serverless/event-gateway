@@ -8,12 +8,16 @@ set up, please follow the minikube instructions below to retrieve the `event_gat
 
 1. [Quickstart](#quickstart)
 1. [Minikube or local clusters](#minikube-or-local-clusters)
+    1. [Using helm](#using-helm)
+    1. [Using custom resources)(#using-custom-resources)
     1. [Setting up an Ingress](#setting-up-an-ingress)
+1. [Examples](#examples)
 1. [Configuration](#configuration)
+1. [Cleanup](#cleanup)
 
-### Quickstart
+## Quickstart
 
-Make sure you have helm installed on you machine and run `helm init` on your k8s cluster. This will set up the
+Make sure you have helm installed on your machine and run `helm init` on your k8s cluster. This will set up the
 `helm` and `tiller` functions required for easy deployment of config files to your cluster. You can follow
 instructions [here](https://docs.helm.sh/using_helm/#quickstart) if you have not set this up previously.
 
@@ -43,22 +47,48 @@ export EVENT_GATEWAY_CONFIG_API_PORT=4001
 export EVENT_GATEWAY_EVENTS_API_PORT=4000
 ```
 
-To get the Event Gateway load balancer IP:
-```
-kubectl get svc
-```
+With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
 
-To delete the Event Gatway and etcd:
-```
-helm delete eg
-helm delete ego
-```
+## Minikube or local clusters
 
-### Minikube or local clusters
+To develop and deploy the `event-gateway` and all related elements locally, the easiest method includes using the [minikube](https://github.com/kubernetes/minikube) toolset. To get started, set up your cluster with the following instructions:
 
-#### Setting up an Ingress
+**Fedora/RHEL/CentOS**
++ Install the prerequisite packages:
+  ```
+  sudo dnf install kubernetes libvirt-daemon-kvm qemu-kvm nodejs docker
+  ```
 
-### Configuration
++ Ensure your user is added to the `libvirt` group for VM access. You can verify with `getent group libvirt` once done.
+  ```
+  sudo usermod -a -G libvirt $(whoami)
+  ``
+
++ Next, add the `libvirt` group to your current user grouplist. Verify by running `id` once done.
+  ``
+  newgrp libvirt
+  ``
+
++. curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine &&
+   chmod +x /tmp/docker-machine &&
+   sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
+   a. can be found here: https://github.com/docker/machine/releases
++. sudo curl -L https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.10.0/docker-machine-driver-kvm-centos7 > /tmp/docker-machine-driver-kvm && sudo chmod +x /tmp/docker-machine-driver-kvm && sudo mv /tmp/docker-machine-driver-kvm /usr/local/bin/docker-machine-driver-kvm
+   a. can be found here: https://github.com/dhiltgen/docker-machine-kvm/releases/
++. curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo chmod +x minikube && sudo mv minikube /usr/local/bin/
++. minikube start --vm-driver kvm2
+
+
+
+### Using helm
+
+### Using custom resource definitions
+
+### Setting up an Ingress
+
+## Examples
+
+## Configuration
 
 | Parameter                   | Description                                  | Default                    |
 |-----------------------------|----------------------------------------------|----------------------------|
@@ -96,4 +126,13 @@ metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
     foo: bar
+```
+
+## Cleanup
+
+When you'd like to clean up the deployments, it's easy to remove services using helm: 
+
+```
+helm delete --purge eg
+helm delete --purge ego
 ```
