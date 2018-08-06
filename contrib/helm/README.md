@@ -9,7 +9,7 @@ set up, please follow the minikube instructions below to retrieve the `event_gat
 1. [Quickstart](#quickstart)
 1. [Minikube or local clusters](#minikube-or-local-clusters)
     1. [Using helm](#using-helm)
-    1. [Using custom resources)(#using-custom-resources)
+    1. [Using custom resources](#using-custom-resources)
     1. [Setting up an Ingress](#setting-up-an-ingress)
 1. [Examples](#examples)
 1. [Configuration](#configuration)
@@ -62,31 +62,51 @@ To develop and deploy the `event-gateway` and all related elements locally, the 
 + Ensure your user is added to the `libvirt` group for VM access. You can verify with `getent group libvirt` once done.
   ```
   sudo usermod -a -G libvirt $(whoami)
-  ``
+  ```
 
 + Next, add the `libvirt` group to your current user grouplist. Verify by running `id` once done.
-  ``
+  ```
   newgrp libvirt
-  ``
+  ```
 
-+. curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine &&
-   chmod +x /tmp/docker-machine &&
-   sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
-   a. can be found here: https://github.com/docker/machine/releases
-+. sudo curl -L https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.10.0/docker-machine-driver-kvm-centos7 > /tmp/docker-machine-driver-kvm && sudo chmod +x /tmp/docker-machine-driver-kvm && sudo mv /tmp/docker-machine-driver-kvm /usr/local/bin/docker-machine-driver-kvm
-   a. can be found here: https://github.com/dhiltgen/docker-machine-kvm/releases/
-+. curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo chmod +x minikube && sudo mv minikube /usr/local/bin/
-+. minikube start --vm-driver kvm2
++ Add the [docker-machine](https://github.com/docker/machine) binary to your system 
+  ```
+  curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine &&
+  chmod +x /tmp/docker-machine &&
+  sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
+  ```
 
++ Add the CentOS `docker-machine` kvm driver. It's ok if you're not using CentOS as the driver should **still work**&trade;
+  ```
+  sudo curl -L https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.10.0/docker-machine-driver-kvm-centos7 > /tmp/docker-machine-driver-kvm && sudo chmod +x /tmp/docker-machine-driver-kvm && sudo mv /tmp/docker-machine-driver-kvm /usr/local/bin/docker-machine-driver-kvm
+  ```
 
++ Download the minikube instance for your system 
+  ```
+  curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo chmod +x minikube && sudo mv minikube /usr/local/bin/
+
++ Finally, start up your minikube service! **NOTE:** the instructions recommend using `kvm2` but please use the version that matches your system install
+  ```
+  minikube start --vm-driver kvm2
+  ```
+
+**MacOS**
+
+PENDING
 
 ### Using helm
 
 ### Using custom resource definitions
 
+PENDING
+
 ### Setting up an Ingress
 
+PENDING
+
 ## Examples
+
+PENDING
 
 ## Configuration
 
