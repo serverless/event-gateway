@@ -1,4 +1,4 @@
-# Event Gateway Helm chart
+# Event Gateway on Kubernetes 
 
 This chart deploys the Event Gateway with etcd onto a Kubernetes cluster. Please note, the default instructions expect
 an existing kubernetes cluster that supports loadbalancers, such as GKE. If your environment doesn't have a loadbalancer
@@ -132,7 +132,7 @@ both `helm install` commands above.
 Next we'll need to collect the Event Gateway IP and ports for use on the CLI. To do so, inspect your services as follows:
 
 ```
-export EVENT_GATEWAY_URL=$(kubectl get svc event-gateway -o jsonpath={.status.loadBalancer.ingress[0].ip})
+export EVENT_GATEWAY_URL=$(minikube ip)
 export EVENT_GATEWAY_CONFIG_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="config") | .nodePort | tostring')
 export EVENT_GATEWAY_EVENTS_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="events") | .nodePort | tostring')
 ```
