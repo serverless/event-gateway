@@ -85,7 +85,7 @@ To develop and deploy the `event-gateway` and all related elements locally, the 
 
 + Download the minikube instance for your system 
   ```bash
-  curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 &&i \
+  curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && \
   sudo chmod +x minikube && \
   sudo mv minikube /usr/local/bin/
   ```
