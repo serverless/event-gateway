@@ -27,12 +27,12 @@ local development please check the [minikube](#minikube-or-local-clusters) infor
 Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
 
 **etcd-operator**
-```
+```bash
 helm install stable/etcd-operator --name ego [--namespace <namespace>]
 ```
 
 **event-gateway**
-```
+```bash
 helm install event-gateway --name eg [--namespace <namespace>]
 ```
 
@@ -41,7 +41,7 @@ this namespace has no bearing on your Event Gateway `spaces` as outlined in the 
 
 Next we'll need to collect the Event Gateway IP and ports for use on the CLI. To do so, inspect your services as follows:
 
-```
+```bash
 export EVENT_GATEWAY_URL=$(kubectl get svc event-gateway -o jsonpath={.status.loadBalancer.ingress[0].ip})
 export EVENT_GATEWAY_CONFIG_API_PORT=4001
 export EVENT_GATEWAY_EVENTS_API_PORT=4000
@@ -55,43 +55,43 @@ To develop and deploy the `event-gateway` and all related elements locally, the 
 
 **Fedora/RHEL/CentOS**
 + Install the prerequisite packages:
-  ```
+  ```bash
   sudo dnf install kubernetes libvirt-daemon-kvm qemu-kvm nodejs docker
   ```
 
 + Ensure your user is added to the `libvirt` group for VM access. You can verify with `getent group libvirt` once done.
-  ```
+  ```bash
   sudo usermod -a -G libvirt $(whoami)
   ```
 
 + Next, add the `libvirt` group to your current user grouplist. Verify by running `id` once done.
-  ```
+  ```bash
   newgrp libvirt
   ```
 
 + Add the [docker-machine](https://github.com/docker/machine) binary to your system 
-  ```
+  ```bash
   curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine && \
   chmod +x /tmp/docker-machine && \
   sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
   ```
 
 + Add the CentOS `docker-machine` kvm driver. It's ok if you're not using CentOS as the driver should **still work**&trade;
-  ```
+  ```bash
   sudo curl -L https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.10.0/docker-machine-driver-kvm-centos7 > /tmp/docker-machine-driver-kvm && \
   sudo chmod +x /tmp/docker-machine-driver-kvm && \
   sudo mv /tmp/docker-machine-driver-kvm /usr/local/bin/docker-machine-driver-kvm
   ```
 
 + Download the minikube instance for your system 
-  ```
+  ```bash
   curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 &&i \
   sudo chmod +x minikube && \
   sudo mv minikube /usr/local/bin/
   ```
 
 + Finally, start up your minikube service! **NOTE:** the instructions recommend using `kvm2` but please use the version that matches your system install
-  ```
+  ```bash
   minikube start --vm-driver kvm2
   ```
 
@@ -115,12 +115,12 @@ community that describe this minikube-specific behavior, but they are beyond the
 Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
 
 **etcd-operator**
-```
+```bash
 helm install stable/etcd-operator --name ego [--namespace <namespace>]
 ```
 
 **event-gateway**
-```
+```bash
 helm install event-gateway --name eg [--namespace <namespace>]
 ```
 
@@ -131,14 +131,14 @@ both `helm install` commands above.
 
 Next we'll need to collect the Event Gateway IP and ports for use on the CLI. To do so, inspect your services as follows:
 
-```
+```bash
 export EVENT_GATEWAY_URL=$(minikube ip)
 export EVENT_GATEWAY_CONFIG_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="config") | .nodePort | tostring')
 export EVENT_GATEWAY_EVENTS_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="events") | .nodePort | tostring')
 ```
 
 This should yield something like the following (your data will be dependent on your specific cluster):
-```
+```bash
 $ env | grep EVENT
 ...
 EVENT_GATEWAY_URL=192.168.42.202
@@ -165,7 +165,7 @@ variables, you're set to start interacting with the `event-gateway`!
 
 Define the function registration payload, using **AWS** as an example:
 
-```
+```bash
 cat > function.json <<EOF
 {
     "functionId": "echo",
@@ -182,7 +182,7 @@ EOF
 
 Then call the registration endpoint with your json payload:
 
-```
+```bash
 curl --request POST \
   --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
   --header 'content-type: application/json' \
@@ -191,7 +191,7 @@ curl --request POST \
 
 And the corresponsing reply (if successful) should read something like the following:
 
-```
+```bash
 {
 	"space": "default",
 	"functionId": "echo",
@@ -209,7 +209,7 @@ And the corresponsing reply (if successful) should read something like the follo
 you will have to delete it first, then register the function once more. For example, trying to re-register the `echo`
 function will yield:
 
-```
+```bash
 curl --request POST \
    --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
    --header 'content-type: application/json' \
@@ -226,7 +226,7 @@ curl --request POST \
 
 To check for registered functions, query the `config` API with the `GET` request:
 
-```
+```bash
 curl --request GET \
   --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
   --header 'content-type: application/json' | jq
@@ -234,7 +234,7 @@ curl --request GET \
 
 You should see the functions list return your defined set of functions across all vendors.
 
-```
+```bash
 {
   "functions": [
     {
@@ -302,7 +302,7 @@ metadata:
 
 When you'd like to clean up the deployments, it's easy to remove services using helm: 
 
-```
+```bash
 helm delete --purge eg
 helm delete --purge ego
 ```
