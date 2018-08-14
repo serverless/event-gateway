@@ -94,7 +94,7 @@ $ event-gateway -dev
 
 ### Kubernetes
 
-We've added `helm` charts to the repo for a quick deploy to an existing cluster. Please note, the default
+The repo contains `helm` charts for a quick deploy to an existing cluster. Please note, the default
 installation requires proper `loadbalancer` support out of the box. If you don't have this enabled in your
 cluster you can check the `minikube` instructions for more guidance.
 
