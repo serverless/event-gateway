@@ -1,4 +1,4 @@
-apiVersion: apps/v1beta2
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: {{ template "event-gateway.fullname" . }}
@@ -24,7 +24,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-            - "-db-hosts={{ .Values.etcd_cluster_name }}-client:{{ .Values.etcd_cluster_port }}"
+            - "--db-hosts={{ .Values.etcd_cluster_name }}-client:{{ .Values.etcd_cluster_port }}"
             {{- range .Values.command }}
             - {{ . }}
             {{- end }}
@@ -54,8 +54,12 @@ spec:
   - name: config
     port: {{ .Values.service.config.port }}
     targetPort: {{ .Values.service.config.port }}
+    nodePort: 32401
   - name: events
     port: {{ .Values.service.events.port }}
     targetPort: {{ .Values.service.events.port }}
+    nodePort: 32400
   selector:
     app: {{ template "event-gateway.name" . }}
+#  selector:
+#    k8s-app: traefik-ingress-lb
