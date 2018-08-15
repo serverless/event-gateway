@@ -10,9 +10,9 @@ spec:
         paths:
           - path: /v1/
             backend:
-              serviceName: eg-event-gateway
+              serviceName: {{ template "event-gateway.fullname" . }}
               servicePort: config
           - path: /
             backend:
-              serviceName: eg-event-gateway
+              serviceName: {{ template "event-gateway.fullname" . }}
               servicePort: events
