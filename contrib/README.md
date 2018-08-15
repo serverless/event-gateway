@@ -1,16 +1,14 @@
 # Event Gateway on Kubernetes 
 
 This chart deploys the Event Gateway with etcd onto a Kubernetes cluster. Please note, the default instructions expect
-an existing kubernetes cluster that supports loadbalancers, such as GKE. If your environment doesn't have a loadbalancer
-set up, please follow the minikube instructions below to retrieve the `event_gateway` information.
+an existing kubernetes cluster that supports ingress, such as GKE. If your environment doesn't have ingress support
+set up, please follow the [minikube](MINIKUBE.md) instructions to set this up for your development environment.  
 
 ## Contents
 
 1. [Quickstart](#quickstart)
-1. [Minikube or local clusters](#minikube-or-local-clusters)
     1. [Using helm](#using-helm)
     1. [Using custom resources](#using-custom-resources)
-    1. [Setting up an Ingress](#setting-up-an-ingress)
 1. [Examples](#examples)
 1. [Configuration](#configuration)
 1. [Cleanup](#cleanup)
@@ -22,7 +20,7 @@ Make sure you have helm installed on your machine and run `helm init` on your k8
 instructions [here](https://docs.helm.sh/using_helm/#quickstart) if you have not set this up previously.
 
 **NOTE:** This portion of the config expects you to have a pre-existing kubernetes cluster (not minikube). For 
-local development please check the [minikube](#minikube-or-local-clusters) information below.
+local development please check the [minikube](MINIKUBE.md) information below.
 
 Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
 
@@ -37,71 +35,17 @@ helm install event-gateway --name eg [--namespace <namespace>]
 ```
 
 This will install each of the `etcd-operator` and `event-gateway` into the `default` namespace in kubernetes. Please note,
-this namespace has no bearing on your Event Gateway `spaces` as outlined in the [docs](https://github.com/serverless/event-gateway/blob/master/README.md). If you'd like to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to both `helm install` commands above.
+this namespace has no bearing on your Event Gateway `spaces` as outlined in the [docs](https://github.com/serverless/event-gateway/blob/master/README.md). If you'd like
+to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to
+ both `helm install` commands above.
 
-Next we'll need to collect the Event Gateway IP and ports for use on the CLI. To do so, inspect your services as follows:
+Next we'll need to collect the Event Gateway IP to use on the CLI. To do so, inspect your services as follows:
 
 ```bash
-export EVENT_GATEWAY_URL=$(kubectl get svc event-gateway -o jsonpath={.status.loadBalancer.ingress[0].ip})
-export EVENT_GATEWAY_CONFIG_API_PORT=4001
-export EVENT_GATEWAY_EVENTS_API_PORT=4000
+export EVENT_GATEWAY_URL=$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip})
 ```
 
 With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
-
-## Minikube or local clusters
-
-To develop and deploy the `event-gateway` and all related elements locally, the easiest method includes using the [minikube](https://github.com/kubernetes/minikube) toolset. To get started, set up your cluster with the following instructions:
-
-**Fedora/RHEL/CentOS**
-+ Install the prerequisite packages:
-  ```bash
-  sudo dnf install kubernetes libvirt-daemon-kvm qemu-kvm nodejs docker
-  ```
-
-+ Ensure your user is added to the `libvirt` group for VM access. You can verify with `getent group libvirt` once done.
-  ```bash
-  sudo usermod -a -G libvirt $(whoami)
-  ```
-
-+ Next, add the `libvirt` group to your current user grouplist. Verify by running `id` once done.
-  ```bash
-  newgrp libvirt
-  ```
-
-+ Add the [docker-machine](https://github.com/docker/machine) binary to your system 
-  ```bash
-  curl -L https://github.com/docker/machine/releases/download/v0.15.0/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine && \
-  chmod +x /tmp/docker-machine && \
-  sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
-  ```
-
-+ Add the CentOS `docker-machine` kvm driver. It's ok if you're not using CentOS as the driver should **still work**&trade;
-  ```bash
-  sudo curl -L https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.10.0/docker-machine-driver-kvm-centos7 > /tmp/docker-machine-driver-kvm && \
-  sudo chmod +x /tmp/docker-machine-driver-kvm && \
-  sudo mv /tmp/docker-machine-driver-kvm /usr/local/bin/docker-machine-driver-kvm
-  ```
-
-+ Download the minikube instance for your system 
-  ```bash
-  curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && \
-  sudo chmod +x minikube && \
-  sudo mv minikube /usr/local/bin/
-  ```
-
-+ Finally, start up your minikube service! **NOTE:** the instructions recommend using `kvm2` but please use the version that matches your system install
-  ```bash
-  minikube start --vm-driver kvm2
-  ```
-
-**Debian/Ubuntu**
-
-PENDING
-
-**MacOS**
-
-PENDING
 
 ### Using helm
 
@@ -149,10 +93,6 @@ EVENT_GATEWAY_CONFIG_API_PORT=30523
 With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
 
 ### Using custom resource definitions
-
-PENDING
-
-### Setting up an Ingress
 
 PENDING
 
