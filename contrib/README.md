@@ -14,6 +14,7 @@ set up, please follow the [minikube](MINIKUBE.md) instructions to set this up fo
     1. [Query all events](#query-all-events)
     1. [Register a subscription](#register-a-subscription)
     1. [Query all subscriptions](#query-all-subscriptions)
+    1. [Trigger an event](#trigger-an-event)
 1. [Configuration](#configuration)
 1. [Cleanup](#cleanup)
 
