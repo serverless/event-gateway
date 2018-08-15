@@ -7,8 +7,6 @@ set up, please follow the [minikube](MINIKUBE.md) instructions to set this up fo
 ## Contents
 
 1. [Quickstart](#quickstart)
-    1. [Using helm](#using-helm)
-    1. [Using custom resources](#using-custom-resources)
 1. [Examples](#examples)
     1. [Register a function](#register-a-function)
     1. [Query all function](#query-all-function)
@@ -26,7 +24,7 @@ Make sure you have helm installed on your machine and run `helm init` on your k8
 instructions [here](https://docs.helm.sh/using_helm/#quickstart) if you have not set this up previously.
 
 **NOTE:** This portion of the config expects you to have a pre-existing kubernetes cluster (not minikube). For 
-local development please check the [minikube](MINIKUBE.md) information below.
+local development please check the [minikube](MINIKUBE.md) information.
 
 Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
 
@@ -72,44 +70,6 @@ internal services of the kubernetes cluster exposed via Ingress:
 
 With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
 
-### Using helm
-
-Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
-
-**etcd-operator**
-```bash
-helm install stable/etcd-operator --name ego [--namespace <namespace>]
-```
-
-**event-gateway**
-```bash
-helm install event-gateway --name eg [--namespace <namespace>]
-```
-
-This will install each of the `etcd-operator` and `event-gateway` into the `default` namespace in kubernetes. Please note,
-this namespace has no bearing on your Event Gateway `spaces` as outlined in the [docs](https://github.com/serverless/event-gateway/blob/master/README.md). 
-If you'd like to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to 
-both `helm install` commands above.
-
-Next we'll need to collect the Event Gateway IP for use on the CLI. To do so, inspect your services as follows:
-
-```bash
-export EVENT_GATEWAY_URL=$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip})
-```
-
-This should yield something like the following (your data will be dependent on your specific cluster):
-```bash
-$ env | grep EVENT
-...
-EVENT_GATEWAY_URL=192.168.42.202
-```
-
-With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
-
-### Using custom resource definitions
-
-PENDING
-
 ## Examples
 
 Once you've set the `EVENT_GATEWAY_URL` environment variable, you're set to start interacting with the `event-gateway`! 
@@ -118,7 +78,7 @@ Once you've set the `EVENT_GATEWAY_URL` environment variable, you're set to star
 routing will ensure the request goes to the proper service managed by the cluster. 
 
 **DOUBLENOTE:** if you did not want to use an environment variable for connecting to the `event-gateway`, you can use
-the IP address of your Ingress. Please check the [Quickstart](#quickstart) for reference. 
+the host of your Ingress by adding to `/etc/hosts`. Please check the [Quickstart](#quickstart) for reference. 
 
 **TRIPLENOTE:** the examples below all assume the `default` namespace for the `event-gateway`. If you've updated or changed
 this on your end, please don't forget to update the queries accordingly.
