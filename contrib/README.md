@@ -10,6 +10,12 @@ set up, please follow the [minikube](MINIKUBE.md) instructions to set this up fo
     1. [Using helm](#using-helm)
     1. [Using custom resources](#using-custom-resources)
 1. [Examples](#examples)
+    1. [Register a function](#register-a-function)
+    1. [Query all function](#query-all-function)
+    1. [Register an event](#register-an-event)
+    1. [Query all events](#query-all-events)
+    1. [Register a subscription](#register-a-subscription)
+    1. [Query all subscriptions](#query-all-subscriptions)
 1. [Configuration](#configuration)
 1. [Cleanup](#cleanup)
 
@@ -39,22 +45,32 @@ this namespace has no bearing on your Event Gateway `spaces` as outlined in the 
 to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to
  both `helm install` commands above.
 
-Next we'll need to collect the Event Gateway IP to use on the CLI. To do so, inspect your services as follows:
+Next we'll need to collect the Event Gateway IP to use on the CLI. We have a couple of options available to reference the
+internal services of the kubernetes cluster exposed via Ingress:
 
-```bash
-export EVENT_GATEWAY_URL=$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip})
-```
+1. add Ingress IP to /etc/hosts (recommended)
+   This method enables us to reference the `event-gateway` from the hostname we configured in the Ingress module. This document 
+   assumes the name to be `eventgateway.minikube` so please update the instructions to your naming convention if you need.
+  
+   ```bash
+     echo "$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip}) eventgateway.minikube" | sudo tee -a "/etc/hosts"
+  ```
+
+1. use Ingress IP and pass header to request
+   With this method we access the `event-gateway` using the IP of the Ingress directly. Since the Ingress was configured to 
+   receive all connections from the `eventgateway.minikube` host, you'll need to pass this as a header value to the request.
+   
+   ```bash
+   export EVENT_GATEWAY_URL=$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip})
+   curl --request GET \
+        --url http://{EVENT_GATEWAY_URL}/v1/metrics \
+        --header 'content-type: application/json' \
+        --header 'host: eventgateway.minikube'
+   ```
 
 With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
 
 ### Using helm
-
-Most of the instructions for using `helm` come from the [Quickstart](#quick-start), but please note the differnce when collecting
-the `config` and `events` API ports. Minikube does not ship with integrated loadbalancer options like hosted environments would
-provide (e.g. Google Kubernetes Engine). As a result, though we can use the same `helm` charts as those installations, we'll
-need to grab our ports from the randomly assigned `nodePort` fields before moving forward. There are numerous articles in the 
-community that describe this minikube-specific behavior, but they are beyond the scope of this document 
-(edit: [here](https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/) is a bit of information on exposing services).
 
 Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
 
@@ -73,12 +89,10 @@ this namespace has no bearing on your Event Gateway `spaces` as outlined in the 
 If you'd like to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to 
 both `helm install` commands above.
 
-Next we'll need to collect the Event Gateway IP and ports for use on the CLI. To do so, inspect your services as follows:
+Next we'll need to collect the Event Gateway IP for use on the CLI. To do so, inspect your services as follows:
 
 ```bash
-export EVENT_GATEWAY_URL=$(minikube ip)
-export EVENT_GATEWAY_CONFIG_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="config") | .nodePort | tostring')
-export EVENT_GATEWAY_EVENTS_API_PORT=$(kubectl get svc eg-event-gateway -o json | jq -r '.spec.ports[] | select(.name=="events") | .nodePort | tostring')
+export EVENT_GATEWAY_URL=$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip})
 ```
 
 This should yield something like the following (your data will be dependent on your specific cluster):
@@ -86,8 +100,6 @@ This should yield something like the following (your data will be dependent on y
 $ env | grep EVENT
 ...
 EVENT_GATEWAY_URL=192.168.42.202
-EVENT_GATEWAY_EVENTS_API_PORT=31455
-EVENT_GATEWAY_CONFIG_API_PORT=30523
 ```
 
 With your environment set up, you can now jump to the [examples](#examples) section to put your `event-gateway` to use!
@@ -98,8 +110,16 @@ PENDING
 
 ## Examples
 
-Once you've set each of the `EVENT_GATEWAY_URL`, `EVENT_GATEWAY_CONFIG_API_PORT`, and `EVENT_GATEWAY_EVENTS_API_PORT` environment 
-variables, you're set to start interacting with the `event-gateway`! 
+Once you've set the `EVENT_GATEWAY_URL` environment variable, you're set to start interacting with the `event-gateway`! 
+
+**NOTE:** the events and configuration API ports are abstracted away from us via the kubernetes Ingress. The path-based 
+routing will ensure the request goes to the proper service managed by the cluster. 
+
+**DOUBLENOTE:** if you did not want to use an environment variable for connecting to the `event-gateway`, you can use
+the IP address of your Ingress. Please check the [Quickstart](#quickstart) for reference. 
+
+**TRIPLENOTE:** the examples below all assume the `default` namespace for the `event-gateway`. If you've updated or changed
+this on your end, please don't forget to update the queries accordingly.
 
 #### Register a function
 
@@ -124,8 +144,9 @@ Then call the registration endpoint with your json payload:
 
 ```bash
 curl --request POST \
-  --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
+  --url http://${EVENT_GATEWAY_URL}/v1/spaces/default/functions \
   --header 'content-type: application/json' \
+  --header 'host: eventgateway.minikube' \
   --data @function.json
 ```
 
@@ -151,8 +172,9 @@ function will yield:
 
 ```bash
 curl --request POST \
-   --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
+   --url http://${EVENT_GATEWAY_URL}/v1/spaces/default/functions \
    --header 'content-type: application/json' \
+   --header 'host: eventgateway.minikube' \
    --data @function.json
 
 {
@@ -168,8 +190,9 @@ To check for registered functions, query the `config` API with the `GET` request
 
 ```bash
 curl --request GET \
-  --url http://${EVENT_GATEWAY_URL}:${EVENT_GATEWAY_CONFIG_API_PORT}/v1/spaces/default/functions \
-  --header 'content-type: application/json' | jq
+  --url http://${EVENT_GATEWAY_URL}/v1/spaces/default/functions \
+  --header 'content-type: application/json' \
+  --header 'host: eventgateway.minikube'  | jq
 ```
 
 You should see the functions list return your defined set of functions across all vendors.
@@ -192,11 +215,106 @@ You should see the functions list return your defined set of functions across al
 }
 ```
 
-**Register an event**
+#### Register an event
 
-**Register a subscription**
+To register an event, make sure to `POST` the event name to the `event-gateway`.
 
-**Trigger an event**
+```bash
+curl --request POST \
+  --url http://eventgateway.minikube/v1/spaces/default/eventtypes \
+  --header 'content-type: application/json' \
+  --data '{ "name": "eventgateway.function.invoked" }'
+```
+
+The reply should look something like the following:
+
+```bash
+{ 
+  "space": "default",
+  "name": "eventgateway.function.invoked"
+}
+```
+
+#### Query all events
+
+```bash
+curl --request GET \
+  --url http://eventgateway.minikube/v1/spaces/default/eventtypes \
+  --header 'content-type: application/json'
+```
+
+Your registered events reply should look as follows:
+
+```bash
+{
+  "eventTypes": [
+    {
+      "space": "default",
+      "name": "eventgateway.function.invoked"
+    }
+  ]
+}
+```
+
+#### Register a subscription
+
+To register subscriptions to one of your registered event types, make sure to specify the `eventType` in 
+the JSON POST payload.
+
+```bash
+curl --request POST \
+  --url http://eventgateway.minikube/v1/spaces/default/subscriptions \
+  --header 'content-type: application/json' \
+  --data '{
+    "type": "async",
+    "eventType": "eventgateway.function.invoked",
+    "functionId": "echo",
+    "path": "/",
+    "method": "POST"
+}'
+```
+
+Your reply payload should include the `subscriptionId` for your new subscription:
+
+```bash
+{
+  "space": "default",
+  "subscriptionId": "YXN5bmMsZXZlbnRnYXRld2F5LmZ1bmN0aW9uLmludm9rZWQsZWNobywlMkYsUE9TVA",
+  "type": "async",
+  "eventType": "eventgateway.function.invoked",
+  "functionId": "echo",
+  "path": "/",
+  "method": "POST"
+}
+```
+
+#### Query all subscriptions
+
+To list our your current subscrptions, you can do the following:
+
+```bash
+curl --request GET \
+  --url http://eventgateway.minikube/v1/spaces/default/subscriptions \
+  --header 'content-type: application/json' \
+```
+
+The output should list each of the registered subscriptions:
+
+```bash
+{
+  "subscriptions": [
+    {
+      "space": "default",
+      "subscriptionId": "YXN5bmMsZXZlbnRnYXRld2F5LmZ1bmN0aW9uLmludm9rZWQsZWNobywlMkYsUE9TVA",
+      "type": "async",
+      "eventType": "eventgateway.function.invoked",
+      "functionId": "echo",
+      "path": "/",
+      "method": "POST"
+    }
+  ]
+}
+```
 
 ## Configuration
 
@@ -213,8 +331,8 @@ You should see the functions list return your defined set of functions across al
 | `resources.limits.memory`   | Memory resource limits                       | `256Mi`                    |
 | `resources.requests.cpu`    | CPU resource requests                        | `200m`                     |
 | `resources.requests.memory` | Memory resource requests                     | `256Mi`                    |
-| `command`                   | Options to pass to `event-gateway` command   | `[-db-hosts=eg-etcd-cluster-client:2379, -log-level=debug]`|
-| `etcd_cluster_name`         | Name of the etcd cluster. Passed to the `-db-hosts` option as `<etcd-cluster-name>-client`  | `eg-etcd-cluster`|
+| `command`                   | Options to pass to `event-gateway` command   | `[--db-hosts=eg-etcd-cluster-client:2379, --log-level=debug]`|
+| `etcd_cluster_name`         | Name of the etcd cluster. Passed to the `--db-hosts` option as `<etcd-cluster-name>-client`  | `eg-etcd-cluster`|
 
 The service annotations can be used to set any annotations required by your platform, for example, if
 you update your values.yml with:
