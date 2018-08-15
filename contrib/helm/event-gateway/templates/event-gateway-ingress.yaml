@@ -3,10 +3,6 @@ kind: Ingress
 metadata:
   name: event-gateway-ingress
   annotations:
-#    kubernetes.io/ingress.class: traefik
-#    traefik.frontend.rule.type: PathPrefixStrip
-#    traefik.frontend.passHostHeader: "true"
-##    traefik.backend.loadbalancer.sticky: "true"
 spec:
   rules:
     - host: eventgateway.minikube
