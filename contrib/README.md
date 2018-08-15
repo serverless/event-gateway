@@ -278,6 +278,21 @@ The output should list each of the registered subscriptions:
 }
 ```
 
+#### Trigger an event
+
+In order to trigger a registered function, call the `event-gateway` URL with the proper `functionId`. Following
+our example from earlier, we've registered a `GET` function with `functionId` set to `echo`. To trigger this function,
+we would:
+
+```bash
+curl --request GET \
+  --url http://eventgateway.minikube/echo \
+  --header 'content-type: application/json'
+```
+
+**NOTE**: as mentioned earlier, the `events` service is handled by the path-routing service of the kubernetes Ingress. Any path
+that's prepended with `/v1` will ultimately route to the `config` service, while other paths default to the `events` service. 
+
 ## Configuration
 
 | Parameter                   | Description                                  | Default                    |
