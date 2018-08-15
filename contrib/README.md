@@ -54,9 +54,9 @@ internal services of the kubernetes cluster exposed via Ingress:
   
    ```bash
      echo "$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip}) eventgateway.minikube" | sudo tee -a "/etc/hosts"
-  ```
+   ```
 
-2. use Ingress IP and pass header to request
+1. use Ingress IP and pass header to request
    With this method we access the `event-gateway` using the IP of the Ingress directly. Since the Ingress was configured to 
    receive all connections from the `eventgateway.minikube` host, you'll need to pass this as a header value to the request.
    
