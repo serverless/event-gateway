@@ -7,8 +7,9 @@ spec:
   selector:
     k8s-app: traefik-ingress-lb
   ports:
-  - port: 9999
-    targetPort: 9999
+  - port: 8080
+    targetPort: 8080
+
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -24,4 +25,4 @@ spec:
       paths:
       - backend:
           serviceName: traefik-web-ui
-          servicePort: 9999
+          servicePort: 8080

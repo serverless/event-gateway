@@ -26,14 +26,14 @@ spec:
         name: traefik-ingress-lb
         ports:
         - name: http
-          containerPort: 9999
-          hostPort: 9999
+          containerPort: 8080
+          hostPort: 8080
         - name: events
-          containerPort: 32400
-          hostPort: 32400
+          containerPort: 4000
+          hostPort: 4000
         - name: config
-          containerPort: 32401
-          hostPort: 32401
+          containerPort: 4001
+          hostPort: 4001
         securityContext:
           capabilities:
             drop:
@@ -56,11 +56,11 @@ spec:
     k8s-app: traefik-ingress-lb
   ports:
     - protocol: TCP
-      port: 9999
+      port: 8080
       name: web
     - protocol: TCP
-      port: 32400
+      port: 4000
       name: events
     - protocol: TCP
-      port: 32401
+      port: 4001
       name: config

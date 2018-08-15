@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: {{ template "event-gateway.fullname" . }}
@@ -49,17 +49,12 @@ metadata:
   labels:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 spec:
-  type: {{ .Values.service.type }}
   ports:
   - name: config
     port: {{ .Values.service.config.port }}
     targetPort: {{ .Values.service.config.port }}
-    nodePort: 32401
   - name: events
     port: {{ .Values.service.events.port }}
     targetPort: {{ .Values.service.events.port }}
-    nodePort: 32400
   selector:
     app: {{ template "event-gateway.name" . }}
-#  selector:
-#    k8s-app: traefik-ingress-lb
