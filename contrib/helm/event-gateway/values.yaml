@@ -9,7 +9,7 @@ service:
     port: 4001
   events:
     port: 4000
-  annotations:
+  annotations: []
 resources:
   limits:
    cpu: 200m
@@ -19,3 +19,4 @@ resources:
    memory: 256Mi
 command: ["-log-level=debug"]
 etcd_cluster_name: eg-etcd-cluster
+etcd_cluster_port: 2379

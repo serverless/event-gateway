@@ -24,7 +24,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-            - "-db-hosts={{ .Values.etcd_cluster_name }}-client:2379"
+            - "-db-hosts={{ .Values.etcd_cluster_name }}-client:{{ .Values.etcd_cluster_port }}"
             {{- range .Values.command }}
             - {{ . }}
             {{- end }}
