@@ -39,6 +39,7 @@ helm delete ego
 | `images.tag`                | Event Gateway image tag                      | `0.9.0`                    |
 | `replicaCount`              | Number of containers                         | `3`                        |
 | `service.type`              | Type of Kubernetes service                   | `LoadBalancer`             |
+| `service.annotations`       | Custom annotations for the service           | `[]`                       |
 | `service.config.port`       | Config API port number                       | `4001`                     |
 | `service.events.port`       | Events API port number                       | `4000`                     |
 | `resources.limits.cpu`      | CPU resource limits                          | `200m`                     |
@@ -46,4 +47,26 @@ helm delete ego
 | `resources.requests.cpu`    | CPU resource requests                        | `200m`                     |
 | `resources.requests.memory` | Memory resource requests                     | `256Mi`                    |
 | `command`                   | Options to pass to `event-gateway` command   | `[-db-hosts=eg-etcd-cluster-client:2379, -log-level=debug]`|
-| `etcd_cluster_name`         | Name of the etcd cluster. Must be passed to the `-db-host` option as `<etcd-cluster-name>-client`  | `eg-etcd-cluster`|
+| `etcd_cluster_name`         | Name of the etcd cluster. Passed to the `-db-hosts` option as `<etcd-cluster-name>-client`  | `eg-etcd-cluster`|
+
+The service annotations can be used to set any annotations required by your platform, for example, if
+you update your values.yml with:
+
+```
+-  annotations: []
++  annotations:
++    - "service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0"
++    - "foo: bar"
+```
+
+then the service will be annotated as shown:
+
+```
+$ helm install event-gateway --debug --dry-run | grep "kind: Service" -A5
+kind: Service
+metadata:
+  name: rafting-umbrellabird-event-gateway
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
+    foo: bar
+```

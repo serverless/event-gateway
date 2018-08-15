@@ -9,6 +9,7 @@ service:
     port: 4001
   events:
     port: 4000
+  annotations: []
 resources:
   limits:
    cpu: 200m
@@ -16,5 +17,6 @@ resources:
   requests:
    cpu: 200m
    memory: 256Mi
-command: ["-db-hosts=eg-etcd-cluster-client:2379", "-log-level=debug"]
+command: ["-log-level=debug"]
 etcd_cluster_name: eg-etcd-cluster
+etcd_cluster_port: 2379
