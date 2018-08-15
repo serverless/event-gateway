@@ -49,6 +49,7 @@ Next we'll need to collect the Event Gateway IP to use on the CLI. We have a cou
 internal services of the kubernetes cluster exposed via Ingress:
 
 1. add Ingress IP to /etc/hosts (recommended)
+
    This method enables us to reference the `event-gateway` from the hostname we configured in the Ingress module. This document 
    assumes the name to be `eventgateway.minikube` so please update the instructions to your naming convention if you need.
   
@@ -57,6 +58,7 @@ internal services of the kubernetes cluster exposed via Ingress:
    ```
 
 1. use Ingress IP and pass header to request
+
    With this method we access the `event-gateway` using the IP of the Ingress directly. Since the Ingress was configured to 
    receive all connections from the `eventgateway.minikube` host, you'll need to pass this as a header value to the request.
    
