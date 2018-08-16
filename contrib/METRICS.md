@@ -9,6 +9,8 @@ This guide details how to collect and analyze metrics from the Event Gateway.
 1. [Visualizing Data](#visualizing-data)
 1. [List of Metrics](#list-of-metrics)
     1. [etcd cluster](#etcd-cluster)
+    1. [gateway](#gateway)
+    1. [go](#go)
 
 ### Introduction
 
@@ -24,55 +26,56 @@ API to help monitor the health of the gateway. The table below outlines the spec
 ### List of Metrics
 
 #### etcd cluster
-| Metric | Type | Description             |
-|--------|------|-------------------------|
-| etcd_debugging_mvcc_db_compaction_pause_duration_milliseconds_bucket    | histogram | bucketed histogram of db compaction pause duration (ms) |
-| etcd_debugging_mvcc_db_compaction_pause_duration_milliseconds_sum       | counter   | total sum of db compaction pause duration (ms) |  
-| etcd_debugging_mvcc_db_compaction_pause_duration_milliseconds_count     | counter   | count of db compaction pause duration (ms) | 
-| etcd_debugging_mvcc_db_compaction_total_duration_milliseconds_bucket    | histogram | bucketed histogram of db compaction total duration (ms) |
-| etcd_debugging_mvcc_db_compaction_total_duration_milliseconds_sum       | counter   | total sum of db compaction total duration (ms) |  
-| etcd_debugging_mvcc_db_compaction_total_duration_milliseconds_count     | counter   | count of db compaction total duration (ms) | 
-| etcd_debugging_mvcc_db_total_size_in_bytes                              | gauge     | total size of the underlying database in bytes |
-| etcd_debugging_mvcc_delete_total                                        | counter   | total number of deletes seen by this member |
-| etcd_debugging_mvcc_events_total                                        | counter   | total number of events sent by this member |
-| etcd_debugging_mvcc_index_compaction_pause_duration_milliseconds_bucket | histogram | bucketed histogram of index compaction pause duration (ms) |
-| etcd_debugging_mvcc_index_compaction_pause_duration_milliseconds_sum    | counter   | total sum of index compaction pause duration (ms) |
-| etcd_debugging_mvcc_index_compaction_pause_duration_milliseconds_count  | counter   | count of index compaction pause duration (ms) |
-| etcd_debugging_mvcc_keys_total                                          | gauge     | total number of keys |
-| etcd_debugging_mvcc_pending_events_total                                | gauge     | total number of pending events to be sent |
-| etcd_debugging_mvcc_put_total                                           | counter   | total number of puts seen by this member | 
-| etcd_debugging_mvcc_range_total                                         | counter   | total number of ranges seen by this member |
-| etcd_debugging-mvcc_slow_watcher_total                                  | gauge     | total number of unsynced slow watchers |
-| etcd_debugging_mvcc_txn_total                                           | counter   | toatl number of transactions seen by the member |
-| etcd_debugging_mvcc_watch_stream_total                                  | gauge     | total number of watch streams |
-| etcd_debugging_mvcc_watcher_total                                       | gauge     | total number of watchers |
-| etcd_debugging_server_lease_expired_total                               | counter   | total number of expired leases |
+
+| Metric                                                                  | Type      | Description                                                       |
+|-------------------------------------------------------------------------|-----------|-------------------------------------------------------------------|
+| etcd_debugging_mvcc_db_compaction_pause_duration_milliseconds_bucket    | histogram | bucketed histogram of db compaction pause duration (ms)           |
+| etcd_debugging_mvcc_db_compaction_pause_duration_milliseconds_sum       | counter   | total sum of db compaction pause duration (ms)                    |  
+| etcd_debugging_mvcc_db_compaction_pause_duration_milliseconds_count     | counter   | count of db compaction pause duration (ms)                        | 
+| etcd_debugging_mvcc_db_compaction_total_duration_milliseconds_bucket    | histogram | bucketed histogram of db compaction total duration (ms)           |
+| etcd_debugging_mvcc_db_compaction_total_duration_milliseconds_sum       | counter   | total sum of db compaction total duration (ms)                    |  
+| etcd_debugging_mvcc_db_compaction_total_duration_milliseconds_count     | counter   | count of db compaction total duration (ms)                        | 
+| etcd_debugging_mvcc_db_total_size_in_bytes                              | gauge     | total size of the underlying database in bytes                    |
+| etcd_debugging_mvcc_delete_total                                        | counter   | total number of deletes seen by this member                       |
+| etcd_debugging_mvcc_events_total                                        | counter   | total number of events sent by this member                        |
+| etcd_debugging_mvcc_index_compaction_pause_duration_milliseconds_bucket | histogram | bucketed histogram of index compaction pause duration (ms)        |
+| etcd_debugging_mvcc_index_compaction_pause_duration_milliseconds_sum    | counter   | total sum of index compaction pause duration (ms)                 |
+| etcd_debugging_mvcc_index_compaction_pause_duration_milliseconds_count  | counter   | count of index compaction pause duration (ms)                     |
+| etcd_debugging_mvcc_keys_total                                          | gauge     | total number of keys                                              |
+| etcd_debugging_mvcc_pending_events_total                                | gauge     | total number of pending events to be sent                         |
+| etcd_debugging_mvcc_put_total                                           | counter   | total number of puts seen by this member                          | 
+| etcd_debugging_mvcc_range_total                                         | counter   | total number of ranges seen by this member                        |
+| etcd_debugging-mvcc_slow_watcher_total                                  | gauge     | total number of unsynced slow watchers                            |
+| etcd_debugging_mvcc_txn_total                                           | counter   | toatl number of transactions seen by the member                   |
+| etcd_debugging_mvcc_watch_stream_total                                  | gauge     | total number of watch streams                                     |
+| etcd_debugging_mvcc_watcher_total                                       | gauge     | total number of watchers                                          |
+| etcd_debugging_server_lease_expired_total                               | counter   | total number of expired leases                                    |
 | etcd_debugging_snap_save_marshalling_duration_seconds_bucket            | histogram | the marshalling cost distributions of save called by snapshot (s) |
-| etcd_debugging_snap_save_marshalling_duration_seconds_sum               | counter   | total duration of snap save marshalling (s) |
-| etcd_debugging_snap_save_marshalling_duration_seconds_count             | counter   | count of snap save marshalling duration (s) |
-| etcd_debugging_snap_save_total_duration_seconds_bucket                  | histogram | total latency distributions of save called by snapshot (s) |
-| etcd_debugging_snap_save_total_duration_seconds_sum                     | counter   | total sum of snapshot save duration (s) |
-| etcd_debugging_snap_save_total_duration_seconds_count                   | counter   | count of snapshot save duration (s) |
-| etcd_debugging_store_expires_total                                      | counter   | total number of expired store keys | 
-| etcd_debugging_store_watch_requests_total                               | counter   | total number of incoming watch request (new or re-established) |
-| etcd_debugging_store_watchers                                           | gauge     | count of currently active watchers |
-| etcd_disk_backend_commit_duration_seconds_bucket                        | histogram | latency distribution of commit called by backend (s) |
-| etcd_disk_backend_commit_duration_seconds_sum                           | counter   | sum of backend commit duration (s) |
-| etcd_disk_backend_commit_duration_seconds_count                         | counter   | count of backend commit duration (s) |
-| etcd_disk_backend_snapshot_duration_seconds_bucket                      | histogram | latency distribution of backend snapshots (s) |
-| etcd_disk_backend_snapshot_duration_seconds_sum                         | counter   | total sum of backend snapshot duration (s) |
-| etcd_disk_backend_snapshot_duration_seconds_count                       | counter   | count of backend snapshot duration (s) |
-| etcd_disk_wal_fsync_duration_seconds_bucket                             | histogram | latency distribution of fsync called by wal (s) |
-| etcd_disk_wal_fsync_duration_seconds_sum                                | counter   | total sum of fsync latency duration (s) |
-| etcd_disk_wal_fsync_duration_seconds_count                              | counter   | count of fsync latency duration (s) |
-| etcd_network_client_grpc_received_bytes_total                           | counter   | total numbe rof bytes received from gRPC clients |
-| etcd_network_client_grpc_sent_bytes_total                               | counter   | total number of bytes sent to grpc clients |
-| etcd_server_has_leader                                                  | gauge     | whether a leader exists (1 == exists, 0 == does not exist) |
-| etcd_server_leader_changes_seen_total                                   | counter   | number of leader changes seen |
-| etcd_server_proposals_applied_total                                     | gauge     | total number of consensus proposals applied |
-| etcd_server_proposals_committed_total                                   | gauge     | toatl number of consensus proposals committed |
-| etcd_server_proposals_failed_total                                      | counter   | total number of failed proposals seen |
-| etcd_server_proposals_pending                                           | gauge     | current number of pending proposals to commit |
+| etcd_debugging_snap_save_marshalling_duration_seconds_sum               | counter   | total duration of snap save marshalling (s)                       |
+| etcd_debugging_snap_save_marshalling_duration_seconds_count             | counter   | count of snap save marshalling duration (s)                       |
+| etcd_debugging_snap_save_total_duration_seconds_bucket                  | histogram | total latency distributions of save called by snapshot (s)        |
+| etcd_debugging_snap_save_total_duration_seconds_sum                     | counter   | total sum of snapshot save duration (s)                           |
+| etcd_debugging_snap_save_total_duration_seconds_count                   | counter   | count of snapshot save duration (s)                               |
+| etcd_debugging_store_expires_total                                      | counter   | total number of expired store keys                                | 
+| etcd_debugging_store_watch_requests_total                               | counter   | total number of incoming watch request (new or re-established)    |
+| etcd_debugging_store_watchers                                           | gauge     | count of currently active watchers                                |
+| etcd_disk_backend_commit_duration_seconds_bucket                        | histogram | latency distribution of commit called by backend (s)              |
+| etcd_disk_backend_commit_duration_seconds_sum                           | counter   | sum of backend commit duration (s)                                |
+| etcd_disk_backend_commit_duration_seconds_count                         | counter   | count of backend commit duration (s)                              |
+| etcd_disk_backend_snapshot_duration_seconds_bucket                      | histogram | latency distribution of backend snapshots (s)                     |
+| etcd_disk_backend_snapshot_duration_seconds_sum                         | counter   | total sum of backend snapshot duration (s)                        |
+| etcd_disk_backend_snapshot_duration_seconds_count                       | counter   | count of backend snapshot duration (s)                            |
+| etcd_disk_wal_fsync_duration_seconds_bucket                             | histogram | latency distribution of fsync called by wal (s)                   |
+| etcd_disk_wal_fsync_duration_seconds_sum                                | counter   | total sum of fsync latency duration (s)                           |
+| etcd_disk_wal_fsync_duration_seconds_count                              | counter   | count of fsync latency duration (s)                               |
+| etcd_network_client_grpc_received_bytes_total                           | counter   | total numbe rof bytes received from gRPC clients                  |
+| etcd_network_client_grpc_sent_bytes_total                               | counter   | total number of bytes sent to grpc clients                        |
+| etcd_server_has_leader                                                  | gauge     | whether a leader exists (1 == exists, 0 == does not exist)        |
+| etcd_server_leader_changes_seen_total                                   | counter   | number of leader changes seen                                     |
+| etcd_server_proposals_applied_total                                     | gauge     | total number of consensus proposals applied                       |
+| etcd_server_proposals_committed_total                                   | gauge     | toatl number of consensus proposals committed                     |
+| etcd_server_proposals_failed_total                                      | counter   | total number of failed proposals seen                             |
+| etcd_server_proposals_pending                                           | gauge     | current number of pending proposals to commit                     |
 
 # HELP gateway_config_request_duration_seconds Bucketed histogram of request duration of Config API requests
 # TYPE gateway_config_request_duration_seconds histogram
