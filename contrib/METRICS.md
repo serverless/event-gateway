@@ -77,70 +77,27 @@ API to help monitor the health of the gateway. The table below outlines the spec
 | etcd_server_proposals_failed_total                                      | counter   | total number of failed proposals seen                             |
 | etcd_server_proposals_pending                                           | gauge     | current number of pending proposals to commit                     |
 
-# HELP gateway_config_request_duration_seconds Bucketed histogram of request duration of Config API requests
-# TYPE gateway_config_request_duration_seconds histogram
-gateway_config_request_duration_seconds_bucket{le="0.0005"} 55
-gateway_config_request_duration_seconds_bucket{le="0.001"} 55
-gateway_config_request_duration_seconds_bucket{le="0.002"} 55
-gateway_config_request_duration_seconds_bucket{le="0.004"} 55
-gateway_config_request_duration_seconds_bucket{le="0.008"} 55
-gateway_config_request_duration_seconds_bucket{le="0.016"} 55
-gateway_config_request_duration_seconds_bucket{le="0.032"} 55
-gateway_config_request_duration_seconds_bucket{le="0.064"} 55
-gateway_config_request_duration_seconds_bucket{le="0.128"} 55
-gateway_config_request_duration_seconds_bucket{le="0.256"} 55
-gateway_config_request_duration_seconds_bucket{le="0.512"} 55
-gateway_config_request_duration_seconds_bucket{le="1.024"} 55
-gateway_config_request_duration_seconds_bucket{le="2.048"} 55
-gateway_config_request_duration_seconds_bucket{le="4.096"} 55
-gateway_config_request_duration_seconds_bucket{le="8.192"} 55
-gateway_config_request_duration_seconds_bucket{le="16.384"} 55
-gateway_config_request_duration_seconds_bucket{le="+Inf"} 55
-gateway_config_request_duration_seconds_sum 0.0002328390000000001
-gateway_config_request_duration_seconds_count 55
-# HELP gateway_events_backlog Gauge of asynchronous events count waiting to be processed.
-# TYPE gateway_events_backlog gauge
-gateway_events_backlog 0
-# HELP gateway_events_custom_processing_seconds Bucketed histogram of processing duration of an event. From receiving the asynchronous custom event to calling a function.
-# TYPE gateway_events_custom_processing_seconds histogram
-gateway_events_custom_processing_seconds_bucket{le="1e-05"} 0
-gateway_events_custom_processing_seconds_bucket{le="2e-05"} 0
-gateway_events_custom_processing_seconds_bucket{le="4e-05"} 0
-gateway_events_custom_processing_seconds_bucket{le="8e-05"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.00016"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.00032"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.00064"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.00128"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.00256"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.00512"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.01024"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.02048"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.04096"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.08192"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.16384"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.32768"} 0
-gateway_events_custom_processing_seconds_bucket{le="0.65536"} 0
-gateway_events_custom_processing_seconds_bucket{le="1.31072"} 0
-gateway_events_custom_processing_seconds_bucket{le="2.62144"} 0
-gateway_events_custom_processing_seconds_bucket{le="5.24288"} 0
-gateway_events_custom_processing_seconds_bucket{le="+Inf"} 0
-gateway_events_custom_processing_seconds_sum 0
-gateway_events_custom_processing_seconds_count 0
-# HELP go_gc_duration_seconds A summary of the GC invocation durations.
-# TYPE go_gc_duration_seconds summary
-go_gc_duration_seconds{quantile="0"} 0
-go_gc_duration_seconds{quantile="0.25"} 0
-go_gc_duration_seconds{quantile="0.5"} 0
-go_gc_duration_seconds{quantile="0.75"} 0
-go_gc_duration_seconds{quantile="1"} 0
-go_gc_duration_seconds_sum 0
-go_gc_duration_seconds_count 0
-# HELP go_goroutines Number of goroutines that currently exist.
-# TYPE go_goroutines gauge
-go_goroutines 171
-# HELP go_memstats_alloc_bytes Number of bytes allocated and still in use.
-# TYPE go_memstats_alloc_bytes gauge
-go_memstats_alloc_bytes 2.919896e+06
+#### gateway
+
+| Metric                                          | Type      | Description                                                                                                         |
+|-------------------------------------------------|-----------|---------------------------------------------------------------------------------------------------------------------|
+| gateway_config_request_duration_seconds_bucket  | histogram | bucketed histogram of request duration of Config API requests                                                       |
+| gateway_config_request_duration_seconds_sum     | counter   | total sum of Config API request duration (s)                                                                        |
+| gateway_config_request_duration_seconds_count   | counter   | count of Config API request duration (s)                                                                            |
+| gateway_events_backlog                          | gauge     | asynchronous events count waiting to be processed                                                                   |
+| gateway_events_custom_processing_seconds_bucket | histogram | bucketed histogram of processing duration of an event (from receiving the async custom event to calling a function) |
+| gateway_events_custom_processing_seconds_sum    | counter   | total sum of custom event processing (s)                                                                            | 
+| gateway_events_custom_processing_seconds_count  | counter   | count of custom event processing (s)                                                                                |
+
+#### go
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| go_gc_duration_seconds       | histogram | summary of the go GC invocation duration (s)   |
+| go_gc_duration_seconds_sum   | counter   | total sum of the go GC invocation duration (s) |
+| go_gc_duration_seconds_count | counter   | count of the go GC invocation duration (s)     |
+| go_goroutines | gauge | number of goroutines that currently exist            |
+| go_memstats_alloc_bytes | gauge | number of bytes allocated and still in use |
 # HELP go_memstats_alloc_bytes_total Total number of bytes allocated, even if freed.
 # TYPE go_memstats_alloc_bytes_total counter
 go_memstats_alloc_bytes_total 2.919896e+06
