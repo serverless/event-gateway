@@ -61,10 +61,7 @@ Once you've set the `EVENT_GATEWAY_URL` environment variable, you're set to star
 **NOTE:** the events and configuration API ports are abstracted away from us via the kubernetes Ingress. The path-based 
 routing will ensure the request goes to the proper service managed by the cluster. 
 
-**DOUBLENOTE:** if you did not want to use an environment variable for connecting to the `event-gateway`, you can use
-the host of your Ingress by adding to `/etc/hosts`. Please check the [Quickstart](#quickstart) for reference. 
-
-**TRIPLENOTE:** the examples below all assume the `default` namespace for the `event-gateway`. If you've updated or changed
+**DOUBLENOTE:** the examples below all assume the `default` namespace for the `event-gateway`. If you've updated or changed
 this on your end, please don't forget to update the queries accordingly.
 
 #### Register a function
