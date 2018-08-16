@@ -73,7 +73,7 @@ If you don't want to run the Event Gateway yourself, you can use the hosted vers
 There is a [official Docker image](https://hub.docker.com/r/serverless/event-gateway/).
 
 ```bash
-docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway -dev
+docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway --dev
 ```
 
 ### Binary
@@ -89,8 +89,13 @@ On Windows download [binary](https://github.com/serverless/event-gateway/release
 Then run the binary in development mode with:
 
 ```bash
-$ event-gateway -dev
+$ event-gateway --dev
 ```
+
+### Kubernetes
+
+The repo contains `helm` [charts](contrib/helm/README.md) for a quick deploy to an existing cluster using native nginx Ingress. To deploy
+a development cluster you can follow the [minikube](contrib/helm/MINIKUBE.md) instructions.
 
 ---
 

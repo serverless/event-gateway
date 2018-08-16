@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: event-gateway-ingress
+  annotations:
+spec:
+  rules:
+    - host: eventgateway.minikube
+      http:
+        paths:
+          - path: /v1/
+            backend:
+              serviceName: {{ template "event-gateway.fullname" . }}
+              servicePort: config
+          - path: /
+            backend:
+              serviceName: {{ template "event-gateway.fullname" . }}
+              servicePort: events

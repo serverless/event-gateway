@@ -24,7 +24,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-            - "-db-hosts={{ .Values.etcd_cluster_name }}-client:{{ .Values.etcd_cluster_port }}"
+            - "--db-hosts={{ .Values.etcd_cluster_name }}-client:{{ .Values.etcd_cluster_port }}"
             {{- range .Values.command }}
             - {{ . }}
             {{- end }}
@@ -36,6 +36,7 @@ spec:
             httpGet:
               path: /v1/status
               port: {{ .Values.service.config.port }}
+
 ---
 apiVersion: v1
 kind: Service
@@ -46,13 +47,14 @@ metadata:
     {{ . }}
     {{- end }}
   labels:
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 spec:
-  type: {{ .Values.service.type }}
   ports:
   - name: config
     port: {{ .Values.service.config.port }}
+    targetPort: {{ .Values.service.config.port }}
   - name: events
     port: {{ .Values.service.events.port }}
+    targetPort: {{ .Values.service.events.port }}
   selector:
     app: {{ template "event-gateway.name" . }}
