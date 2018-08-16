@@ -94,7 +94,7 @@ $ event-gateway --dev
 
 ### Kubernetes
 
-The repo contains `helm` charts for a quick deploy to an existing cluster using native nginx Ingress. To deploy
+The repo contains `helm` [charts](contrib/helm/README.md) for a quick deploy to an existing cluster using native nginx Ingress. To deploy
 a development cluster you can follow the [minikube](contrib/helm/MINIKUBE.md) instructions.
 
 ---

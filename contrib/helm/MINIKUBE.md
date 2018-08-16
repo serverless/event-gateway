@@ -1,4 +1,4 @@
-# Event Gateway on Kubernetes (minikube)
+# Install Minikube for Local Development 
 
 To develop and deploy the `event-gateway` and all related elements locally, the easiest method includes using 
 the [minikube](https://github.com/kubernetes/minikube) toolset. To get started, set up your local cluster with the 
