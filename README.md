@@ -94,12 +94,8 @@ $ event-gateway -dev
 
 ### Kubernetes
 
-The repo contains `helm` charts for a quick deploy to an existing cluster. Please note, the default
-installation requires proper `loadbalancer` support out of the box. If you don't have this enabled in your
-cluster you can check the `minikube` instructions for more guidance.
-
-[Helm Chart](./contrib/helm/README.md)
-[Minikube](./contrib/helm/README.md)
+The repo contains `helm` charts for a quick deploy to an existing cluster using native nginx Ingress. To deploy
+a development cluster you can follow the [minikube](contrib/MINIKUBE.md) instructions.
 
 ---
 

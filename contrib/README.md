@@ -24,9 +24,6 @@ Make sure you have helm installed on your machine and run `helm init` on your k8
 `helm` and `tiller` functions required for easy deployment of config files to your cluster. You can follow
 instructions [here](https://docs.helm.sh/using_helm/#quickstart) if you have not set this up previously.
 
-**NOTE:** This portion of the config expects you to have a pre-existing kubernetes cluster (not minikube). For 
-local development please check the [minikube](MINIKUBE.md) information.
-
 Once installed, navigate to the `event-gateway/contrib/helm` folder and install the following components:
 
 **etcd-operator**
