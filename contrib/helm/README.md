@@ -11,7 +11,7 @@ set up, please follow the [minikube](MINIKUBE.md) instructions to set this up fo
     1. [Register a function](#register-a-function)
     1. [Query all function](#query-all-function)
     1. [Register an event type](#register-an-event-type)
-    1. [Query all events](#query-all-events)
+    1. [Query all event types](#query-all-event-types)
     1. [Register a subscription](#register-a-subscription)
     1. [Query all subscriptions](#query-all-subscriptions)
     1. [Trigger an event](#trigger-an-event)
@@ -195,7 +195,7 @@ The reply should look something like the following:
 }
 ```
 
-#### Query all events
+#### Query all event types
 
 ```bash
 curl --request GET \
