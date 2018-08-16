@@ -10,7 +10,7 @@ set up, please follow the [minikube](MINIKUBE.md) instructions to set this up fo
 1. [Examples](#examples)
     1. [Register a function](#register-a-function)
     1. [Query all function](#query-all-function)
-    1. [Register an event](#register-an-event)
+    1. [Register an event type](#register-an-event-type)
     1. [Query all events](#query-all-events)
     1. [Register a subscription](#register-a-subscription)
     1. [Query all subscriptions](#query-all-subscriptions)
@@ -175,7 +175,7 @@ You should see the functions list return your defined set of functions across al
 }
 ```
 
-#### Register an event
+#### Register an event type
 
 To register an event, make sure to `POST` the event name to the `event-gateway`.
 
