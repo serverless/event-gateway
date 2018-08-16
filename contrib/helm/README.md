@@ -41,22 +41,8 @@ this namespace has no bearing on your Event Gateway `spaces` as outlined in the 
 to install `etcd-operator` and `event-gateway` in another namespace, add the `--namespace <namespace>` option to
  both `helm install` commands above.
 
-Next we'll need to collect the Event Gateway IP to use on the CLI. We have a couple of options available to reference the
-internal services of the kubernetes cluster exposed via Ingress:
-
-1. add Ingress IP to /etc/hosts (recommended)
-
-   This method enables us to reference the `event-gateway` from the hostname we configured in the Ingress module. This document 
-   assumes the name to be `eventgateway.minikube` so please update the instructions to your naming convention if you need.
-  
-   ```bash
-     echo "$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip}) eventgateway.minikube" | sudo tee -a "/etc/hosts"
-   ```
-
-1. use Ingress IP and pass header to request
-
-   With this method we access the `event-gateway` using the IP of the Ingress directly. Since the Ingress was configured to 
-   receive all connections from the `eventgateway.minikube` host, you'll need to pass this as a header value to the request.
+Next we'll need to collect the Event Gateway IP to use on the CLI. Since the Ingress was configured to receive all 
+connections from the `eventgateway.minikube` host, you'll need to pass this as a header value to the request.
    
    ```bash
    export EVENT_GATEWAY_URL=$(kubectl get ingress event-gateway-ingress -o jsonpath={.status.loadBalancer.ingress[0].ip})
@@ -181,8 +167,9 @@ To register an event, make sure to `POST` the event name to the `event-gateway`.
 
 ```bash
 curl --request POST \
-  --url http://eventgateway.minikube/v1/spaces/default/eventtypes \
+  --url http://${EVENT_GATEWAY_URL}/v1/spaces/default/eventtypes \
   --header 'content-type: application/json' \
+  --header 'host: eventgateway.minikube' \
   --data '{ "name": "eventgateway.function.invoked" }'
 ```
 
@@ -199,8 +186,9 @@ The reply should look something like the following:
 
 ```bash
 curl --request GET \
-  --url http://eventgateway.minikube/v1/spaces/default/eventtypes \
-  --header 'content-type: application/json'
+  --url http://${EVENT_GATEWAY_URL}/v1/spaces/default/eventtypes \
+  --header 'content-type: application/json' \
+  --header 'host: eventgateway.minikube'
 ```
 
 Your registered events reply should look as follows:
@@ -223,8 +211,9 @@ the JSON POST payload.
 
 ```bash
 curl --request POST \
-  --url http://eventgateway.minikube/v1/spaces/default/subscriptions \
+  --url http://${EVENT_GATEWAY_URL}/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
+  --header 'host: eventgateway.minikube' \
   --data '{
     "type": "async",
     "eventType": "eventgateway.function.invoked",
@@ -254,8 +243,9 @@ To list our your current subscrptions, you can do the following:
 
 ```bash
 curl --request GET \
-  --url http://eventgateway.minikube/v1/spaces/default/subscriptions \
+  --url http://${EVENT_GATEWAY_URL}/v1/spaces/default/subscriptions \
   --header 'content-type: application/json' \
+  --header 'host: eventgateway.minikube'
 ```
 
 The output should list each of the registered subscriptions:
@@ -284,8 +274,9 @@ we would:
 
 ```bash
 curl --request GET \
-  --url http://eventgateway.minikube/echo \
-  --header 'content-type: application/json'
+  --url http://${EVENT_GATEWAY_URL}/echo \
+  --header 'content-type: application/json' \
+  --header 'host: eventgateway.minikube'
 ```
 
 **NOTE**: as mentioned earlier, the `events` service is handled by the path-routing service of the kubernetes Ingress. Any path
