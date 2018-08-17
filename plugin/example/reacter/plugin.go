@@ -6,6 +6,7 @@ import (
 
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/plugin"
+	"github.com/serverless/event-gateway/subscription"
 )
 
 func init() {
@@ -22,7 +23,7 @@ func (s *Simple) Subscriptions() []plugin.Subscription {
 	return []plugin.Subscription{
 		plugin.Subscription{
 			EventType: event.SystemEventReceivedType,
-			Type:      plugin.Sync,
+			Type:      subscription.TypeSync,
 		},
 	}
 }
@@ -32,7 +33,8 @@ func (s *Simple) React(instance event.Event) error {
 	switch instance.EventType {
 	case event.SystemEventReceivedType:
 		received := instance.Data.(event.SystemEventReceivedData)
-		log.Printf("received gateway.received.event for event: %q", received.Event.EventType)
+		log.Printf("received %s for event: %q", event.SystemEventReceivedType, received.Event.EventType)
+		break
 	}
 
 	return nil

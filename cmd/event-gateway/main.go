@@ -97,15 +97,14 @@ func main() {
 	}
 
 	// Plugin manager
-	pluginManager := plugin.NewManager(plugins, log)
-	err = pluginManager.Connect()
+	pluginManager, err := plugin.NewManager(plugins, log)
 	if err != nil {
 		log.Fatal("Loading plugins failed.", zap.Error(err))
 	}
 
 	// Router
 	targetCache := cache.NewTarget("/serverless-event-gateway", kvstore, log)
-	router := router.New(*workersNumber, *workersBacklog, targetCache, pluginManager, log)
+	router := router.New(*workersNumber, *workersBacklog, targetCache, pluginManager, pluginManager, log)
 	router.StartWorkers()
 
 	httpapi.StartEventsAPI(router, httpapi.ServerConfig{

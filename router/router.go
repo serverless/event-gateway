@@ -16,6 +16,7 @@ import (
 	"github.com/serverless/event-gateway/httpapi"
 	ihttp "github.com/serverless/event-gateway/internal/http"
 	"github.com/serverless/event-gateway/plugin"
+	"github.com/serverless/event-gateway/subscription"
 )
 
 const (
@@ -35,10 +36,11 @@ type Router struct {
 	drainWaitGroup sync.WaitGroup
 	active         bool
 	backlog        chan backlogEvent
+	queue          Queue
 }
 
 // New instantiates a new Router
-func New(workersNumber uint, backlogLength uint, targetCache Targeter, plugins *plugin.Manager, log *zap.Logger) *Router {
+func New(workersNumber uint, backlogLength uint, targetCache Targeter, plugins *plugin.Manager, queue Queue, log *zap.Logger) *Router {
 	return &Router{
 		targetCache:   targetCache,
 		plugins:       plugins,
@@ -47,6 +49,7 @@ func New(workersNumber uint, backlogLength uint, targetCache Targeter, plugins *
 		backlogLength: backlogLength,
 		drain:         make(chan struct{}),
 		backlog:       nil,
+		queue:         queue,
 	}
 }
 
@@ -241,6 +244,7 @@ func (router *Router) handleAsyncSubscriptions(method, path string, event eventp
 		copier.Copy(&subEvent, &event)
 		err := router.authorizeEventType(subscriber.Space, &subEvent, r)
 		if err == nil {
+			router.queue.Push(subscription.ID(subscriber.Space+"/"+string(subscriber.FunctionID)), subEvent)
 			router.enqueueWork(method, path, subscriber.Space, subscriber.FunctionID, subEvent)
 		}
 	}
