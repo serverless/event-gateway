@@ -1,4 +1,34 @@
 
+0.9.1 / 2018-08-18
+==================
+
+IMPROVEMENTS:
+
+  * Helm: Pass etcd_cluster_name to command args. Allow service annotations (#500)
+  * Documentation for running event-gateway on k8s (#498)
+  * Update api.md (#497)
+  * Add simple golang http endpoint example (#494)
+  * Add kubernetes helm chart (#448) (#484)
+  * Add Terraform templates (#316) (#477)
+  * Update README.md (#480)
+
+BUG FIXES:
+
+  * Fix system events recursive triggering (#495)
+  * Omit EventTime field if it's not present (#492)
+  * Fix path creation for hosted version (#491)
+  * Update metrics names in the docs (#490)
+  * Fix redundant system event (#489)
+  * Adding in proper path processing (#488)
+  * Fix system event invocationFailed field name (#487)
+  * Consistent prefix for system events and metrics. Closes #425 (#486)
+  * Publish system events on space prefixed path for hosted version (#485)
+  * Fix creating sync subscription for the same method and path (#476) (#481)
+  * Implement missing interface methods in plugin logger (#482)
+  * Fix creating sync subscription for the same method and path (#476)
+  * Fix nil pointer when checking for event authorizer (#475)
+  * Fix deleting function that is used as authorizer (#474)
+
 0.9.0 / 2018-06-27
 ==================
 
