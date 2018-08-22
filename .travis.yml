@@ -18,3 +18,13 @@ script:
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 - bash <(curl -s https://codecov.io/bash)
+- |
+  if [ "$TRAVIS_BRANCH" == "master" ]; then
+      curl -s --request POST \
+      --header "content-type: application/json" \
+      --header "accept: application/json" \
+      --header "travis-api-version: 3" \
+      --header "authorization: token $TRAVIS_API_TOKEN" \
+      -d '{ "request": { "branch": "master", "message": "Automated Deployment" } }' \
+      https://api.travis-ci.com/repo/serverless%2Fevent-gateway-deploy/requests
+  fi
