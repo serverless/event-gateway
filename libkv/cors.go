@@ -32,7 +32,7 @@ func (service Service) CreateCORS(config *cors.CORS) (*cors.CORS, error) {
 	}
 
 	config.ID = newCORSID(config)
-	_, err := service.CORSStore.Get(CORSKey{config.Space, config.ID}.String(), &store.ReadOptions{Consistent: true})
+	_, err := service.CORSStore.Get(CORSKey{Space: config.Space, ID: config.ID}.String(), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &cors.ErrCORSAlreadyExists{ID: config.ID}
 	}
@@ -42,7 +42,7 @@ func (service Service) CreateCORS(config *cors.CORS) (*cors.CORS, error) {
 		return nil, &cors.ErrCORSValidation{Message: err.Error()}
 	}
 
-	err = service.CORSStore.Put(CORSKey{config.Space, config.ID}.String(), byt, nil)
+	err = service.CORSStore.Put(CORSKey{Space: config.Space, ID: config.ID}.String(), byt, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (service Service) CreateCORS(config *cors.CORS) (*cors.CORS, error) {
 
 // GetCORS returns function from configuration.
 func (service Service) GetCORS(space string, id cors.ID) (*cors.CORS, error) {
-	kv, err := service.CORSStore.Get(CORSKey{space, id}.String(), &store.ReadOptions{Consistent: true})
+	kv, err := service.CORSStore.Get(CORSKey{Space: space, ID: id}.String(), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		if err.Error() == errKeyNotFound {
 			return nil, &cors.ErrCORSNotFound{ID: id}
@@ -118,7 +118,7 @@ func (service Service) UpdateCORS(config *cors.CORS) (*cors.CORS, error) {
 		return nil, &cors.ErrCORSValidation{Message: err.Error()}
 	}
 
-	err = service.CORSStore.Put(CORSKey{config.Space, config.ID}.String(), buf, nil)
+	err = service.CORSStore.Put(CORSKey{Space: config.Space, ID: config.ID}.String(), buf, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (service Service) UpdateCORS(config *cors.CORS) (*cors.CORS, error) {
 
 // DeleteCORS deletes CORS config from the configuration.
 func (service Service) DeleteCORS(space string, id cors.ID) error {
-	if err := service.CORSStore.Delete(CORSKey{space, id}.String()); err != nil {
+	if err := service.CORSStore.Delete(CORSKey{Space: space, ID: id}.String()); err != nil {
 		return &cors.ErrCORSNotFound{ID: id}
 	}
 

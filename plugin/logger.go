@@ -57,12 +57,12 @@ func (l Hclog2ZapLogger) IsError() bool { return false }
 
 // With implementation.
 func (l Hclog2ZapLogger) With(args ...interface{}) hclog.Logger {
-	return Hclog2ZapLogger{l.Zap.With(argsToFields(args...)...)}
+	return Hclog2ZapLogger{Zap: l.Zap.With(argsToFields(args...)...)}
 }
 
 // Named implementation.
 func (l Hclog2ZapLogger) Named(name string) hclog.Logger {
-	return Hclog2ZapLogger{l.Zap.Named(name)}
+	return Hclog2ZapLogger{Zap: l.Zap.Named(name)}
 }
 
 // ResetNamed implementation.

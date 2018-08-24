@@ -1,30 +1,29 @@
 language: go
 go:
-- 1.9
+  - 1.9
 cache:
   directories:
-  - vendor
+    - vendor
 install:
-- go get -u github.com/hashicorp/{go-plugin,go-hclog}
-- go get -u golang.org/x/net/{context,http2,trace}
-- go get -u github.com/golang/dep/cmd/dep
-- dep ensure
+  - go get -u github.com/hashicorp/{go-plugin,go-hclog}
+  - go get -u golang.org/x/net/{context,http2,trace}
+  - go get -u github.com/golang/dep/cmd/dep
+  - dep ensure
 script:
-- go get -u github.com/alecthomas/gometalinter
-- gometalinter --install --force
-- gometalinter --vendor --fast --disable=gotype --disable=vetshadow --disable=gas --skip=mock ./...
-- ./codecov.sh
-- go test ./tests -tags=integration
+  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v1.10
+  - golangci-lint run --disable=errcheck,megacheck --enable=goimports,goconst,gocyclo
+  - ./codecov.sh
+  - go test ./tests -tags=integration
 after_success:
-- test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
-- bash <(curl -s https://codecov.io/bash)
-- |
-  if [ "$TRAVIS_BRANCH" == "master" ]; then
-      curl -s --request POST \
-      --header "content-type: application/json" \
-      --header "accept: application/json" \
-      --header "travis-api-version: 3" \
-      --header "authorization: token $TRAVIS_API_TOKEN" \
-      -d '{ "request": { "branch": "master", "message": "Automated Deployment" } }' \
-      https://api.travis-ci.com/repo/serverless%2Fevent-gateway-deploy/requests
-  fi
+  - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+  - bash <(curl -s https://codecov.io/bash)
+  - |
+    if [ "$TRAVIS_BRANCH" == "master" ]; then
+        curl -s --request POST \
+        --header "content-type: application/json" \
+        --header "accept: application/json" \
+        --header "travis-api-version: 3" \
+        --header "authorization: token $TRAVIS_API_TOKEN" \
+        -d '{ "request": { "branch": "master", "message": "Automated Deployment" } }' \
+        https://api.travis-ci.com/repo/serverless%2Fevent-gateway-deploy/requests
+    fi
