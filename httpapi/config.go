@@ -25,7 +25,7 @@ func StartConfigAPI(eventtypes event.Service, functions function.Service, subscr
 
 	handler := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(config.Port)),
-		Handler:      metricsReporter{router},
+		Handler:      metricsReporter{Handler: router},
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 	}

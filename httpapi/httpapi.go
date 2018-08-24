@@ -105,7 +105,7 @@ func (h HTTPAPI) listEventTypes(w http.ResponseWriter, r *http.Request, params h
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
-		encoder.Encode(&EventTypesResponse{types})
+		encoder.Encode(&EventTypesResponse{EventTypes: types})
 	}
 
 	metricConfigRequests.WithLabelValues(space, "eventtype", "list").Inc()
@@ -241,7 +241,7 @@ func (h HTTPAPI) listFunctions(w http.ResponseWriter, r *http.Request, params ht
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
-		encoder.Encode(&FunctionsResponse{fns})
+		encoder.Encode(&FunctionsResponse{Functions: fns})
 	}
 
 	metricConfigRequests.WithLabelValues(space, "function", "list").Inc()
@@ -355,7 +355,7 @@ func (h HTTPAPI) listSubscriptions(w http.ResponseWriter, r *http.Request, param
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
-		encoder.Encode(&SubscriptionsResponse{subs})
+		encoder.Encode(&SubscriptionsResponse{Subscriptions: subs})
 	}
 
 	metricConfigRequests.WithLabelValues(space, "subscription", "list").Inc()
@@ -497,7 +497,7 @@ func (h HTTPAPI) listCORS(w http.ResponseWriter, r *http.Request, params httprou
 		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(&Response{Errors: []Error{{Message: err.Error()}}})
 	} else {
-		encoder.Encode(&CORSResponse{configs})
+		encoder.Encode(&CORSResponse{CORSes: configs})
 	}
 
 	metricConfigRequests.WithLabelValues(space, "cors", "list").Inc()

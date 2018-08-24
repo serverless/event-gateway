@@ -111,7 +111,7 @@ func (e *Event) Validate() error {
 	validate := validator.New()
 	err := validate.Struct(e)
 	if err != nil {
-		return &ErrParsingCloudEvent{err.Error()}
+		return &ErrParsingCloudEvent{Message: err.Error()}
 	}
 	return nil
 }
@@ -150,11 +150,7 @@ func (e Event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 func isLegacyMode(headers http.Header) bool {
-	if headers.Get("Event") != "" {
-		return true
-	}
-
-	return false
+	return headers.Get("Event") != ""
 }
 
 func isCloudEventsBinaryContentMode(headers http.Header) bool {

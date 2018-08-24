@@ -35,7 +35,7 @@ type Manager struct {
 // NewManager creates new Manager.
 func NewManager(paths []string, log *zap.Logger) *Manager {
 	plugins := []*Plugin{}
-	logger := Hclog2ZapLogger{log}
+	logger := Hclog2ZapLogger{Zap: log}
 	for _, path := range paths {
 		client := goplugin.NewClient(&goplugin.ClientConfig{
 			HandshakeConfig: handshakeConfig,

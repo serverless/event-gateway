@@ -30,7 +30,7 @@ func (service Service) CreateFunction(fn *function.Function) (*function.Function
 		return nil, err
 	}
 
-	_, err := service.FunctionStore.Get(FunctionKey{fn.Space, fn.ID}.String(), &store.ReadOptions{Consistent: true})
+	_, err := service.FunctionStore.Get(FunctionKey{Space: fn.Space, ID: fn.ID}.String(), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &function.ErrFunctionAlreadyRegistered{ID: fn.ID}
 	}
@@ -40,7 +40,7 @@ func (service Service) CreateFunction(fn *function.Function) (*function.Function
 		return nil, err
 	}
 
-	_, _, err = service.FunctionStore.AtomicPut(FunctionKey{fn.Space, fn.ID}.String(), byt, nil, nil)
+	_, _, err = service.FunctionStore.AtomicPut(FunctionKey{Space: fn.Space, ID: fn.ID}.String(), byt, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (service Service) UpdateFunction(fn *function.Function) (*function.Function
 		return nil, err
 	}
 
-	_, err := service.FunctionStore.Get(FunctionKey{fn.Space, fn.ID}.String(), &store.ReadOptions{Consistent: true})
+	_, err := service.FunctionStore.Get(FunctionKey{Space: fn.Space, ID: fn.ID}.String(), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		return nil, &function.ErrFunctionNotFound{ID: fn.ID}
 	}
@@ -66,7 +66,7 @@ func (service Service) UpdateFunction(fn *function.Function) (*function.Function
 		return nil, &function.ErrFunctionValidation{Message: err.Error()}
 	}
 
-	err = service.FunctionStore.Put(FunctionKey{fn.Space, fn.ID}.String(), byt, nil)
+	err = service.FunctionStore.Put(FunctionKey{Space: fn.Space, ID: fn.ID}.String(), byt, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (service Service) UpdateFunction(fn *function.Function) (*function.Function
 
 // GetFunction returns function from configuration.
 func (service Service) GetFunction(space string, id function.ID) (*function.Function, error) {
-	kv, err := service.FunctionStore.Get(FunctionKey{space, id}.String(), &store.ReadOptions{Consistent: true})
+	kv, err := service.FunctionStore.Get(FunctionKey{Space: space, ID: id}.String(), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		if err.Error() == errKeyNotFound {
 			return nil, &function.ErrFunctionNotFound{ID: id}
@@ -143,7 +143,7 @@ func (service Service) DeleteFunction(space string, id function.ID) error {
 		}
 	}
 
-	err = service.FunctionStore.Delete(FunctionKey{space, id}.String())
+	err = service.FunctionStore.Delete(FunctionKey{Space: space, ID: id}.String())
 	if err != nil {
 		return &function.ErrFunctionNotFound{ID: id}
 	}

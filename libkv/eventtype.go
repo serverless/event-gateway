@@ -29,7 +29,7 @@ func (service Service) CreateEventType(eventType *event.Type) (*event.Type, erro
 		return nil, err
 	}
 
-	_, err := service.EventTypeStore.Get(EventTypeKey{eventType.Space, eventType.Name}.String(), &store.ReadOptions{Consistent: true})
+	_, err := service.EventTypeStore.Get(EventTypeKey{Space: eventType.Space, Name: eventType.Name}.String(), &store.ReadOptions{Consistent: true})
 	if err == nil {
 		return nil, &event.ErrEventTypeAlreadyExists{Name: eventType.Name}
 	}
@@ -46,7 +46,7 @@ func (service Service) CreateEventType(eventType *event.Type) (*event.Type, erro
 		return nil, &event.ErrEventTypeValidation{Message: err.Error()}
 	}
 
-	_, _, err = service.EventTypeStore.AtomicPut(EventTypeKey{eventType.Space, eventType.Name}.String(), byt, nil, nil)
+	_, _, err = service.EventTypeStore.AtomicPut(EventTypeKey{Space: eventType.Space, Name: eventType.Name}.String(), byt, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (service Service) CreateEventType(eventType *event.Type) (*event.Type, erro
 
 // GetEventType returns function from configuration.
 func (service Service) GetEventType(space string, name event.TypeName) (*event.Type, error) {
-	kv, err := service.EventTypeStore.Get(EventTypeKey{space, name}.String(), &store.ReadOptions{Consistent: true})
+	kv, err := service.EventTypeStore.Get(EventTypeKey{Space: space, Name: name}.String(), &store.ReadOptions{Consistent: true})
 	if err != nil {
 		if err.Error() == errKeyNotFound {
 			return nil, &event.ErrEventTypeNotFound{Name: name}
@@ -124,7 +124,7 @@ func (service Service) UpdateEventType(newEventType *event.Type) (*event.Type, e
 		return nil, &event.ErrEventTypeValidation{Message: err.Error()}
 	}
 
-	err = service.EventTypeStore.Put(EventTypeKey{newEventType.Space, newEventType.Name}.String(), buf, nil)
+	err = service.EventTypeStore.Put(EventTypeKey{Space: newEventType.Space, Name: newEventType.Name}.String(), buf, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (service Service) DeleteEventType(space string, name event.TypeName) error 
 		}
 	}
 
-	err = service.EventTypeStore.Delete(EventTypeKey{space, name}.String())
+	err = service.EventTypeStore.Delete(EventTypeKey{Space: space, Name: name}.String())
 	if err != nil {
 		return &event.ErrEventTypeNotFound{Name: name}
 	}

@@ -24,7 +24,7 @@ func init() {
 
 // AWSSQS function implementation
 type AWSSQS struct {
-	Service sqsiface.SQSAPI`json:"-" validate:"-"`
+	Service sqsiface.SQSAPI `json:"-" validate:"-"`
 
 	QueueURL           string `json:"queueUrl" validate:"required"`
 	Region             string `json:"region" validate:"required"`
@@ -35,10 +35,10 @@ type AWSSQS struct {
 
 // Call sends message to AWS SQS Queue
 func (a AWSSQS) Call(payload []byte) ([]byte, error) {
-    body := string(payload)
+	body := string(payload)
 	sendMessageOutput, err := a.Service.SendMessage(&sqs.SendMessageInput{
-		QueueUrl:       &a.QueueURL,
-		MessageBody:    &body,
+		QueueUrl:    &a.QueueURL,
+		MessageBody: &body,
 	})
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {

@@ -34,9 +34,9 @@ func TestCall(t *testing.T) {
 		serviceMock.EXPECT().SendMessage(gomock.Any()).Return(testCase.sendMessageResult, testCase.sendMessageError)
 
 		provider := awssqs.AWSSQS{
-			Service:    serviceMock,
-			QueueURL:   "https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue",
-			Region:     "us-east-1",
+			Service:  serviceMock,
+			QueueURL: "https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue",
+			Region:   "us-east-1",
 		}
 
 		output, err := provider.Call([]byte("testpayload"))
@@ -77,8 +77,8 @@ var loadTests = []struct {
 var callTests = []struct {
 	sendMessageResult *sqs.SendMessageOutput
 	sendMessageError  error
-	expectedResult  []byte
-	expectedError   error
+	expectedResult    []byte
+	expectedError     error
 }{
 	{
 		&sqs.SendMessageOutput{MessageId: aws.String("testid")},
@@ -100,12 +100,12 @@ var logTests = []struct {
 }{
 	{
 		awssqs.AWSSQS{
-			QueueURL  : "https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue",
-			Region:     "us-east-1",
+			QueueURL: "https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue",
+			Region:   "us-east-1",
 		},
 		map[string]interface{}{
 			"queueUrl": "https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue",
-			"region":     "us-east-1",
+			"region":   "us-east-1",
 		},
 	},
 	{
