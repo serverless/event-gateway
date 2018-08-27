@@ -19,7 +19,8 @@ EOF
   --peer-key-file=/etc/ssl/etcd/peer.key \
   --peer-trusted-ca-file=/etc/ssl/etcd/ca.crt \
   --peer-client-cert-auth=true \
-  --trusted-ca-file=/etc/ssl/etcd/ca.crtEOF
+  --trusted-ca-file=/etc/ssl/etcd/ca.crt
+EOF
 }
 
 data "template_file" "etcd_hostname_list" {
