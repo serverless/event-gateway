@@ -235,7 +235,7 @@ func (router *Router) handleAsyncSubscriptions(method, path string, event eventp
 
 	subscribers := router.targetCache.AsyncSubscribers(method, path, event.EventType)
 	for _, subscriber := range subscribers {
-		metricEventsReceived.WithLabelValues(subscriber.Space, "custom").Inc()
+		metricEventsReceived.WithLabelValues(subscriber.Space, customEventType).Inc()
 
 		subEvent := eventpkg.Event{}
 		copier.Copy(&subEvent, &event)
@@ -260,7 +260,7 @@ func (router *Router) enqueueWork(method, path, space string, functionID functio
 		metricBacklog.Inc()
 	default:
 		// We could not submit any work, this is NOT good but we will sacrifice consistency for availability for now.
-		metricEventsDropped.WithLabelValues("", "custom").Inc()
+		metricEventsDropped.WithLabelValues("", customEventType).Inc()
 	}
 }
 
@@ -437,7 +437,7 @@ func (router *Router) processEvent(e backlogEvent) {
 
 	router.callFunction(e.space, e.functionID, e.event)
 
-	metricEventsProcessed.WithLabelValues(e.space, "custom").Inc()
+	metricEventsProcessed.WithLabelValues(e.space, customEventType).Inc()
 }
 
 func (router *Router) emitSystemEventReceived(path string, event eventpkg.Event, r *http.Request) error {
@@ -488,15 +488,13 @@ func (router *Router) emitSystemFunctionInvocationFailed(space string, functionI
 		return
 	}
 
-	if _, ok := err.(*function.ErrFunctionError); ok {
-		system := eventpkg.New(
-			eventpkg.SystemFunctionInvocationFailedType,
-			mimeJSON,
-			eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
-		router.handleAsyncSubscriptions(http.MethodPost, systemPathFromSpace(space), *system, nil)
+	system := eventpkg.New(
+		eventpkg.SystemFunctionInvocationFailedType,
+		mimeJSON,
+		eventpkg.SystemFunctionInvocationFailedData{Space: space, FunctionID: functionID, Event: event, Error: err})
+	router.handleAsyncSubscriptions(http.MethodPost, systemPathFromSpace(space), *system, nil)
 
-		metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
-	}
+	metricEventsReceived.WithLabelValues(space, string(eventpkg.SystemFunctionInvocationFailedType)).Inc()
 }
 
 // isDraining returns true if this Router is being drained of items in its work queue before shutting down.

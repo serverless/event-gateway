@@ -16,6 +16,8 @@ func init() {
 	prometheus.MustRegister(metricProcessingDuration)
 }
 
+const customEventType = "custom"
+
 var metricEventsReceived = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "eventgateway",
