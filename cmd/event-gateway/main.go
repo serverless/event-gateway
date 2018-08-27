@@ -97,8 +97,7 @@ func main() {
 	}
 
 	// Plugin manager
-	pluginManager := plugin.NewManager(plugins, log)
-	err = pluginManager.Connect()
+	pluginManager, err := plugin.NewManager(plugins, log)
 	if err != nil {
 		log.Fatal("Loading plugins failed.", zap.Error(err))
 	}
