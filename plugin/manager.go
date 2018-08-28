@@ -9,7 +9,6 @@ import (
 	goplugin "github.com/hashicorp/go-plugin"
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/plugin/shared"
-	"github.com/serverless/event-gateway/subscription"
 )
 
 func init() {
@@ -19,6 +18,16 @@ func init() {
 	gob.Register(event.SystemFunctionInvokedData{})
 	gob.Register(event.SystemFunctionInvocationFailedData{})
 }
+
+// Type of a subscription.
+type Type int
+
+const (
+	// Async subscription type. Plugin host will not block on it.
+	Async Type = iota
+	// Sync subscription type. Plugin host will use the response from the plugin before proceeding.
+	Sync
+)
 
 // Plugin is a generic struct for storing info about a plugin.
 type Plugin struct {
@@ -88,7 +97,7 @@ func (m *Manager) React(event *event.Event) error {
 						zap.String("plugin", plugin.Path),
 						zap.Error(err),
 						zap.String("subscriptionType", string(sub.Type)))
-					if sub.Type == subscription.TypeSync {
+					if sub.Type == Sync {
 						return err
 					}
 				}

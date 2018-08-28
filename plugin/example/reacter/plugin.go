@@ -6,7 +6,6 @@ import (
 
 	"github.com/serverless/event-gateway/event"
 	"github.com/serverless/event-gateway/plugin"
-	"github.com/serverless/event-gateway/subscription"
 )
 
 func init() {
@@ -23,7 +22,7 @@ func (s *Simple) Subscriptions() []plugin.Subscription {
 	return []plugin.Subscription{
 		plugin.Subscription{
 			EventType: event.SystemEventReceivedType,
-			Type:      subscription.TypeSync,
+			Type:      plugin.Sync,
 		},
 	}
 }

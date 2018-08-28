@@ -5,13 +5,12 @@ import (
 
 	goplugin "github.com/hashicorp/go-plugin"
 	eventpkg "github.com/serverless/event-gateway/event"
-	"github.com/serverless/event-gateway/subscription"
 )
 
 // Subscription use by plugin to indicate which event it wants to react to.
 type Subscription struct {
 	EventType eventpkg.TypeName
-	Type      subscription.Type
+	Type
 }
 
 // Reacter allows reacting on subscribed event types.
