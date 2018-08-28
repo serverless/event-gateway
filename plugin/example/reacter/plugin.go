@@ -32,7 +32,7 @@ func (s *Simple) React(instance event.Event) error {
 	switch instance.EventType {
 	case event.SystemEventReceivedType:
 		received := instance.Data.(event.SystemEventReceivedData)
-		log.Printf("received gateway.received.event for event: %q", received.Event.EventType)
+		log.Printf("received %s for event: %q", event.SystemEventReceivedType, received.Event.EventType)
 	}
 
 	return nil

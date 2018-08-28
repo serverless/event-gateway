@@ -253,7 +253,7 @@ func TestRouterServeHTTP(t *testing.T) {
 
 func setupTestRouter(target router.Targeter) *router.Router {
 	log := zap.NewNop()
-	plugins := plugin.NewManager([]string{}, log)
+	plugins, _ := plugin.NewManager([]string{}, log)
 	router := router.New(10, 10, target, plugins, log)
 	router.StartWorkers()
 	return router

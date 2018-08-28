@@ -47,4 +47,4 @@ further processed by the Event Gateway.
 
 `React` method is called for every system event that plugin subscribed to.
 
-For more details, see [the example plugin](../plugin/example).
+For more details, see [the example plugin](../plugin/example/reacter).
