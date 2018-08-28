@@ -1,14 +1,5 @@
 {
-  "__inputs": [
-    {
-      "name": "prometheus",
-      "label": "prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
+  "__inputs": [],
   "__requires": [
     {
       "type": "grafana",
@@ -21,12 +12,6 @@
       "id": "graph",
       "name": "Graph",
       "version": ""
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
     },
     {
       "type": "panel",
@@ -65,7 +50,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -138,7 +123,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -210,7 +195,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "decimals": null,
           "format": "short",
           "gauge": {
@@ -283,7 +268,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -355,7 +340,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -427,7 +412,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "decimals": null,
           "format": "short",
           "gauge": {
@@ -519,7 +504,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 3,
           "legend": {
@@ -621,7 +606,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 1,
           "legend": {
@@ -696,7 +681,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 6,
           "legend": {
@@ -771,7 +756,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 8,
           "legend": {
@@ -859,7 +844,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 4,
           "legend": {
@@ -948,7 +933,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 5,
           "legend": {
@@ -1031,7 +1016,22 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "prometheus",
+          "value": "prometheus"
+        },
+        "hide": 0,
+        "label": "datasource",
+        "name": "ds",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-3h",

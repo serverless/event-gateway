@@ -1,4 +1,25 @@
 {
+  "__inputs": [],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "4.6.2"
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "singlestat",
+      "name": "Singlestat",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -16,7 +37,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "hideControls": false,
-  "id": 9,
+  "id": null,
   "links": [],
   "refresh": "1m",
   "rows": [
@@ -29,7 +50,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -127,7 +148,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -225,7 +246,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -323,7 +344,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "decimals": 0,
           "format": "short",
           "gauge": {
@@ -422,7 +443,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "decimals": 0,
           "format": "short",
           "gauge": {
@@ -521,7 +542,7 @@
           "colorBackground": false,
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-          "datasource": null,
+          "datasource": "$ds",
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -634,7 +655,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 7,
           "legend": {
@@ -787,7 +808,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 8,
           "legend": {
@@ -888,7 +909,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 9,
           "legend": {
@@ -989,7 +1010,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 10,
           "legend": {
@@ -1102,7 +1123,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 11,
           "legend": {
@@ -1268,7 +1289,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "$ds",
           "fill": 1,
           "id": 12,
           "legend": {
@@ -1377,7 +1398,22 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "influxdb",
+          "value": "influxdb"
+        },
+        "hide": 0,
+        "label": "datasource",
+        "name": "ds",
+        "options": [],
+        "query": "influxdb",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-3h",
@@ -1399,6 +1435,6 @@
     "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
   },
   "timezone": "",
-  "title": "Hosted Event Gateway (all spaces, influxdb)",
+  "title": "Hosted Event Gateway (all spaces)",
   "version": 1
 }
