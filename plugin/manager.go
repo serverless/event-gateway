@@ -63,8 +63,6 @@ func NewManager(paths []string, log *zap.Logger) (*Manager, error) {
 				Path:    path,
 				Reacter: raw.(*ReacterClient),
 			})
-		default:
-			panic("plugin unrecognized")
 		}
 	}
 
