@@ -97,7 +97,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invoking\",space=\"$space\"})",
+              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invoking\"})",
               "format": "time_series",
               "instant": false,
               "intervalFactor": 1,
@@ -170,7 +170,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invoked\",space=\"$space\"}) OR on() vector(0)",
+              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invoked\"}) OR on() vector(0)",
               "format": "time_series",
               "intervalFactor": 1,
               "refId": "A"
@@ -196,7 +196,7 @@
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
           "datasource": "$ds",
-          "decimals": 0,
+          "decimals": null,
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -243,7 +243,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invocationFailed\",space=\"$space\"}) OR on() vector(0)",
+              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invocationFailed\"}) OR on() vector(0)",
               "format": "time_series",
               "intervalFactor": 1,
               "refId": "A"
@@ -315,7 +315,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(eventgateway_functions_total{space=\"$space\"}) OR on() vector(0)",
+              "expr": "sum(eventgateway_functions_total) OR on() vector(0)",
               "format": "time_series",
               "intervalFactor": 2,
               "refId": "A"
@@ -387,7 +387,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(eventgateway_subscriptions_total{space=\"$space\"}) OR on() vector(0)",
+              "expr": "sum(eventgateway_subscriptions_total) OR on() vector(0)",
               "format": "time_series",
               "intervalFactor": 2,
               "refId": "A"
@@ -460,7 +460,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(eventgateway_config_requests_total{space=\"$space\"})",
+              "expr": "sum(eventgateway_config_requests_total)",
               "format": "time_series",
               "intervalFactor": 2,
               "refId": "A"
@@ -493,7 +493,14 @@
       "height": "350",
       "panels": [
         {
-          "aliasColors": {},
+          "aliasColors": {
+            "eventgateway.function.invocationFailed": "#3f6833",
+            "eventgateway.function.invocationFailed (total)": "#eab839",
+            "eventgateway.function.invoked": "#cca300",
+            "eventgateway.function.invoked (total)": "#e5a8e2",
+            "eventgateway.function.invoking": "#64b0c8",
+            "eventgateway.function.invoking (total)": "#584477"
+          },
           "bars": false,
           "dashLength": 10,
           "dashes": false,
@@ -531,7 +538,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(eventgateway_events_received_total{type=~\"eventgateway.*\",space=\"$space\"}[30s])) by (type)",
+              "expr": "sum(rate(eventgateway_events_received_total{type=~\"eventgateway.*\"}[30s])) by (type)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -539,7 +546,7 @@
               "refId": "A"
             },
             {
-              "expr": "sum(eventgateway_events_received_total{type=~\"eventgateway.*\",space=\"$space\"}) by (type)",
+              "expr": "sum(eventgateway_events_received_total{type=~\"eventgateway.*\"}) by (type)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{type}} (total)",
@@ -626,7 +633,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(eventgateway_config_requests_total{resource=\"function\",space=\"$space\"}) by (resource, operation)",
+              "expr": "sum(eventgateway_config_requests_total{resource=\"function\"}) by (resource, operation)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{operation}} {{resource}}",
@@ -701,7 +708,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(eventgateway_config_requests_total{resource=\"subscription\",space=\"$space\"}) by (operation)",
+              "expr": "sum(eventgateway_config_requests_total{resource=\"subscription\"}) by (operation)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{operation}} {{resource}}",
@@ -776,7 +783,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(eventgateway_config_requests_total{resource=\"eventtype\",space=\"$space\"}) by (operation)",
+              "expr": "sum(eventgateway_config_requests_total{resource=\"eventtype\"}) by (operation)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{operation}}",
@@ -802,6 +809,7 @@
           },
           "yaxes": [
             {
+              "decimals": null,
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -863,21 +871,21 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(eventgateway_events_received_total{type=\"custom\",space=\"$space\"})",
+              "expr": "sum(eventgateway_events_received_total{type=\"custom\"})",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Received",
               "refId": "A"
             },
             {
-              "expr": "sum(eventgateway_events_processed_total{type=\"custom\",space=\"$space\"})",
+              "expr": "sum(eventgateway_events_processed_total{type=\"custom\"})",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Processed",
               "refId": "B"
             },
             {
-              "expr": "sum(eventgateway_events_dropped_total{type=\"custom\",space=\"$space\"})",
+              "expr": "sum(eventgateway_events_dropped_total{type=\"custom\"})",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Dropped",
@@ -952,7 +960,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(eventgateway_events_processed_total{type=\"http.request\",space=\"$space\"})",
+              "expr": "sum(eventgateway_events_processed_total{type=\"http.request\"})",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Processed",
@@ -1010,26 +1018,6 @@
   "templating": {
     "list": [
       {
-        "allValue": null,
-        "current": {},
-        "datasource": "$ds",
-        "hide": 0,
-        "includeAll": false,
-        "label": null,
-        "multi": false,
-        "name": "space",
-        "options": [],
-        "query": "label_values(space)",
-        "refresh": 1,
-        "regex": "",
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
         "current": {
           "text": "prometheus",
           "value": "prometheus"
@@ -1046,7 +1034,7 @@
     ]
   },
   "time": {
-    "from": "now-12h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {
@@ -1065,6 +1053,6 @@
     "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
   },
   "timezone": "",
-  "title": "Hosted Event Gateway (per space)",
+  "title": "Event Gateway (all spaces)",
   "version": 1
 }

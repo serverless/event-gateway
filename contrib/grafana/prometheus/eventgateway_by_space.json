@@ -43,7 +43,7 @@
   "rows": [
     {
       "collapse": false,
-      "height": "250px",
+      "height": 250,
       "panels": [
         {
           "cacheTimeout": null,
@@ -59,7 +59,7 @@
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
-          "id": 1,
+          "id": 9,
           "interval": null,
           "links": [],
           "mappingType": 1,
@@ -97,36 +97,11 @@
           "tableColumn": "",
           "targets": [
             {
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(counter) from eventgateway_events_received_total where $timeFilter and type = 'eventgateway.function.invoking'",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invoking\",space=\"$space\"})",
+              "format": "time_series",
+              "instant": false,
+              "intervalFactor": 1,
+              "refId": "A"
             }
           ],
           "thresholds": "",
@@ -141,7 +116,7 @@
               "value": "null"
             }
           ],
-          "valueName": "current"
+          "valueName": "delta"
         },
         {
           "cacheTimeout": null,
@@ -157,7 +132,7 @@
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
-          "id": 2,
+          "id": 10,
           "interval": null,
           "links": [],
           "mappingType": 1,
@@ -195,36 +170,10 @@
           "tableColumn": "",
           "targets": [
             {
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(counter) from eventgateway_events_received_total where $timeFilter and type = 'eventgateway.function.invoked'",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invoked\",space=\"$space\"}) OR on() vector(0)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
             }
           ],
           "thresholds": "",
@@ -239,7 +188,7 @@
               "value": "null"
             }
           ],
-          "valueName": "current"
+          "valueName": "delta"
         },
         {
           "cacheTimeout": null,
@@ -247,6 +196,7 @@
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
           "datasource": "$ds",
+          "decimals": 0,
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -255,7 +205,7 @@
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
-          "id": 3,
+          "id": 11,
           "interval": null,
           "links": [],
           "mappingType": 1,
@@ -293,36 +243,10 @@
           "tableColumn": "",
           "targets": [
             {
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(counter) from eventgateway_events_received_total where $timeFilter and type = 'eventgateway.function.invocationFailed'",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_events_received_total{type=\"eventgateway.function.invocationFailed\",space=\"$space\"}) OR on() vector(0)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
             }
           ],
           "thresholds": "",
@@ -337,7 +261,7 @@
               "value": "null"
             }
           ],
-          "valueName": "current"
+          "valueName": "delta"
         },
         {
           "cacheTimeout": null,
@@ -345,7 +269,6 @@
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
           "datasource": "$ds",
-          "decimals": 0,
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -354,7 +277,7 @@
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
-          "id": 4,
+          "id": 12,
           "interval": null,
           "links": [],
           "mappingType": 1,
@@ -392,36 +315,10 @@
           "tableColumn": "",
           "targets": [
             {
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(gauge) from eventgateway_functions_total where $timeFilter",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_functions_total{space=\"$space\"}) OR on() vector(0)",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "refId": "A"
             }
           ],
           "thresholds": "",
@@ -436,7 +333,7 @@
               "value": "null"
             }
           ],
-          "valueName": "current"
+          "valueName": "delta"
         },
         {
           "cacheTimeout": null,
@@ -444,7 +341,6 @@
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
           "datasource": "$ds",
-          "decimals": 0,
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -453,7 +349,7 @@
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
-          "id": 5,
+          "id": 13,
           "interval": null,
           "links": [],
           "mappingType": 1,
@@ -491,36 +387,10 @@
           "tableColumn": "",
           "targets": [
             {
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(gauge) from eventgateway_subscriptions_total where $timeFilter ",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_subscriptions_total{space=\"$space\"}) OR on() vector(0)",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "refId": "A"
             }
           ],
           "thresholds": "",
@@ -535,7 +405,7 @@
               "value": "null"
             }
           ],
-          "valueName": "current"
+          "valueName": "delta"
         },
         {
           "cacheTimeout": null,
@@ -543,6 +413,7 @@
           "colorValue": false,
           "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
           "datasource": "$ds",
+          "decimals": null,
           "format": "short",
           "gauge": {
             "maxValue": 100,
@@ -551,7 +422,7 @@
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
-          "id": 6,
+          "id": 14,
           "interval": null,
           "links": [],
           "mappingType": 1,
@@ -589,36 +460,10 @@
           "tableColumn": "",
           "targets": [
             {
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(counter) from eventgateway_config_requests_total where $timeFilter",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_config_requests_total{space=\"$space\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "refId": "A"
             }
           ],
           "thresholds": "",
@@ -633,7 +478,7 @@
               "value": "null"
             }
           ],
-          "valueName": "current"
+          "valueName": "delta"
         }
       ],
       "repeat": null,
@@ -648,16 +493,13 @@
       "height": "350",
       "panels": [
         {
-          "aliasColors": {
-            "eventgateway.function.invoked (total)": "#e5a8e2",
-            "eventgateway.function.invoking (total)": "#584477"
-          },
+          "aliasColors": {},
           "bars": false,
           "dashLength": 10,
           "dashes": false,
           "datasource": "$ds",
           "fill": 1,
-          "id": 7,
+          "id": 3,
           "legend": {
             "avg": false,
             "current": false,
@@ -670,7 +512,7 @@
           "lines": true,
           "linewidth": 1,
           "links": [],
-          "nullPointMode": "null",
+          "nullPointMode": "null as zero",
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -679,6 +521,7 @@
             {
               "alias": "/total/",
               "fill": 0,
+              "linewidth": 2,
               "yaxis": 2
             }
           ],
@@ -688,71 +531,19 @@
           "steppedLine": false,
           "targets": [
             {
-              "alias": "[[tag_type]]",
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "measurement": "eventgateway_events_received_total",
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select sum(non_negative_derivative) from (select non_negative_derivative(mean(counter), 1s) from eventgateway_events_received_total where $timeFilter and type =~ /eventgateway.*/ group by time(30s),*) where $timeFilter group by time(30s),type fill(0)",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(rate(eventgateway_events_received_total{type=~\"eventgateway.*\",space=\"$space\"}[30s])) by (type)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{type}}",
+              "refId": "A"
             },
             {
-              "alias": "[[tag_type]] (total)",
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select sum(counter) from eventgateway_events_received_total where $timeFilter and type =~ /eventgateway.*/ group by time(30s),type fill(0)",
-              "rawQuery": true,
-              "refId": "B",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_events_received_total{type=~\"eventgateway.*\",space=\"$space\"}) by (type)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{type}} (total)",
+              "refId": "B"
             }
           ],
           "thresholds": [],
@@ -778,7 +569,7 @@
               "label": null,
               "logBase": 1,
               "max": null,
-              "min": null,
+              "min": "0",
               "show": true
             },
             {
@@ -786,7 +577,7 @@
               "label": null,
               "logBase": 1,
               "max": null,
-              "min": null,
+              "min": "0",
               "show": true
             }
           ]
@@ -801,8 +592,158 @@
     },
     {
       "collapse": false,
-      "height": "301",
+      "height": 301,
       "panels": [
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$ds",
+          "fill": 1,
+          "id": 1,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "span": 4,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(eventgateway_config_requests_total{resource=\"function\",space=\"$space\"}) by (resource, operation)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{operation}} {{resource}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Config API Requests -- Functions",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ]
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$ds",
+          "fill": 1,
+          "id": 6,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null as zero",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "span": 4,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(eventgateway_config_requests_total{resource=\"subscription\",space=\"$space\"}) by (operation)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{operation}} {{resource}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Config API Requests -- Subscriptions",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ]
+        },
         {
           "aliasColors": {},
           "bars": false,
@@ -823,7 +764,7 @@
           "lines": true,
           "linewidth": 1,
           "links": [],
-          "nullPointMode": "null",
+          "nullPointMode": "null as zero",
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -835,43 +776,17 @@
           "steppedLine": false,
           "targets": [
             {
-              "alias": "[[tag_operation]] [[tag_resource]]",
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select sum(counter) from eventgateway_config_requests_total where $timeFilter and resource = 'function' group by time(30s),operation,resource fill(0)",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_config_requests_total{resource=\"eventtype\",space=\"$space\"}) by (operation)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{operation}}",
+              "refId": "A"
             }
           ],
           "thresholds": [],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Config API Requests -- Functions",
+          "title": "Config API Requests -- Event Types",
           "tooltip": {
             "shared": true,
             "sort": 2,
@@ -891,209 +806,7 @@
               "label": null,
               "logBase": 1,
               "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ]
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "$ds",
-          "fill": 1,
-          "id": 9,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "links": [],
-          "nullPointMode": "null",
-          "percentage": false,
-          "pointradius": 5,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "span": 4,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "alias": "[[tag_operation]] [[tag_resource]]",
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select sum(counter) from eventgateway_config_requests_total where $timeFilter and resource = 'subscription' group by time(30s),operation,resource fill(0)",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Config API Requests -- Functions",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ]
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "$ds",
-          "fill": 1,
-          "id": 10,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "links": [],
-          "nullPointMode": "null",
-          "percentage": false,
-          "pointradius": 5,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "span": 4,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "alias": "[[tag_operation]] [[tag_resource]]",
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select sum(counter) from eventgateway_config_requests_total where $timeFilter and resource = 'eventtype' group by time(30s),operation,resource fill(0)",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Config API Requests -- Functions",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
+              "min": "0",
               "show": true
             },
             {
@@ -1116,7 +829,7 @@
     },
     {
       "collapse": false,
-      "height": "301",
+      "height": 250,
       "panels": [
         {
           "aliasColors": {},
@@ -1125,7 +838,7 @@
           "dashes": false,
           "datasource": "$ds",
           "fill": 1,
-          "id": 11,
+          "id": 4,
           "legend": {
             "avg": false,
             "current": false,
@@ -1138,7 +851,7 @@
           "lines": true,
           "linewidth": 1,
           "links": [],
-          "nullPointMode": "null",
+          "nullPointMode": "null as zero",
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -1150,102 +863,25 @@
           "steppedLine": false,
           "targets": [
             {
-              "alias": "received",
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(counter) from eventgateway_events_received_total where $timeFilter and type = 'custom' group by time(30s) fill(0)",
-              "rawQuery": true,
-              "refId": "A",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_events_received_total{type=\"custom\",space=\"$space\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "Received",
+              "refId": "A"
             },
             {
-              "alias": "processed",
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(counter) from eventgateway_events_processed_total where $timeFilter and type = 'custom' group by time(30s) fill(0)",
-              "rawQuery": true,
-              "refId": "B",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_events_processed_total{type=\"custom\",space=\"$space\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "Processed",
+              "refId": "B"
             },
             {
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(counter) from eventgateway_events_dropped_total where $timeFilter and type = 'custom' group by time(30s) fill(0)",
-              "rawQuery": true,
-              "refId": "C",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_events_dropped_total{type=\"custom\",space=\"$space\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "Dropped",
+              "refId": "C"
             }
           ],
           "thresholds": [],
@@ -1291,7 +927,7 @@
           "dashes": false,
           "datasource": "$ds",
           "fill": 1,
-          "id": 12,
+          "id": 5,
           "legend": {
             "avg": false,
             "current": false,
@@ -1316,37 +952,11 @@
           "steppedLine": false,
           "targets": [
             {
-              "alias": "processed",
-              "dsType": "influxdb",
-              "groupBy": [
-                {
-                  "params": ["$__interval"],
-                  "type": "time"
-                },
-                {
-                  "params": ["null"],
-                  "type": "fill"
-                }
-              ],
-              "orderByTime": "ASC",
-              "policy": "default",
-              "query": "select mean(counter) from eventgateway_events_processed_total where $timeFilter and type = 'http.request' group by time(30s) fill(0)",
-              "rawQuery": true,
-              "refId": "B",
-              "resultFormat": "time_series",
-              "select": [
-                [
-                  {
-                    "params": ["value"],
-                    "type": "field"
-                  },
-                  {
-                    "params": [],
-                    "type": "mean"
-                  }
-                ]
-              ],
-              "tags": []
+              "expr": "sum(eventgateway_events_processed_total{type=\"http.request\",space=\"$space\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "Processed",
+              "refId": "A"
             }
           ],
           "thresholds": [],
@@ -1355,7 +965,7 @@
           "title": "HTTP Events",
           "tooltip": {
             "shared": true,
-            "sort": 2,
+            "sort": 0,
             "value_type": "individual"
           },
           "type": "graph",
@@ -1400,15 +1010,35 @@
   "templating": {
     "list": [
       {
+        "allValue": null,
+        "current": {},
+        "datasource": "$ds",
+        "hide": 0,
+        "includeAll": false,
+        "label": null,
+        "multi": false,
+        "name": "space",
+        "options": [],
+        "query": "label_values(space)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
         "current": {
-          "text": "influxdb",
-          "value": "influxdb"
+          "text": "prometheus",
+          "value": "prometheus"
         },
         "hide": 0,
         "label": "datasource",
         "name": "ds",
         "options": [],
-        "query": "influxdb",
+        "query": "prometheus",
         "refresh": 1,
         "regex": "",
         "type": "datasource"
@@ -1416,7 +1046,7 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-12h",
     "to": "now"
   },
   "timepicker": {
@@ -1435,6 +1065,6 @@
     "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
   },
   "timezone": "",
-  "title": "Hosted Event Gateway (all spaces)",
+  "title": "Event Gateway (per space)",
   "version": 1
 }
