@@ -1,6 +1,6 @@
 image:
   repository: serverless/event-gateway
-  tag: 0.9.0
+  tag: latest
   pullPolicy: IfNotPresent
 replicaCount: 3
 service:
