@@ -6,7 +6,7 @@ install:
 script:
   - go mod download
   - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v1.10.2
-  - golangci-lint run --disable=errcheck,megacheck --enable=goimports,goconst,gocyclo
+  - golangci-lint run --disable=errcheck,megacheck,typecheck --enable=goimports,goconst,gocyclo
   - ./codecov.sh
   - go test ./tests -tags=integration
 after_success:
