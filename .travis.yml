@@ -2,8 +2,9 @@ language: go
 go:
   - '1.11'
 install:
-  - export GO111MODULE=yes
+  - export GO111MODULE=on
 script:
+  - go mod download
   - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v1.10.2
   - golangci-lint run --disable=errcheck,megacheck --enable=goimports,goconst,gocyclo
   - ./codecov.sh
