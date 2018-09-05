@@ -1,14 +1,14 @@
 language: go
 go:
-  - '1.11'
-install:
-  - export GO111MODULE=on
+  - '1.11.x'
+env:
+  - GO111MODULE=on
+install: true
 script:
-  - go mod download
   - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v1.10.2
   - golangci-lint run --disable=errcheck,megacheck,typecheck --enable=goimports,goconst,gocyclo
   - ./codecov.sh
-  - go test ./tests -tags=integration
+  - go test ./tests -mod=vendor -tags=integration
 after_success:
   - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
   - bash <(curl -s https://codecov.io/bash)
