@@ -45,6 +45,9 @@ to Prometheus.
 If your default datasource is not either of the Prometheus or InfluxDB sources, fear not! The template variable is set as the datasource for each
 panel within the dashboard, so updating the datasource is as easy as choosing another option from the template dropdown.
 
+**NOTE:** There are two dashboards included for each datasource: an aggregated dashboard for all spaces in a given eventgateway deployment, and a second
+dashboard that can drill down to individual spaces.
+
 #### Prometheus
 
 You can find the source for the Prometheus dashboard [here](../contrib/grafana/prometheus).
