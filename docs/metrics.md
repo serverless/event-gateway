@@ -2,25 +2,24 @@
 
 This guide details how to collect and analyze metrics from the Event Gateway.
 
+### Introduction
+
+The Event Gateway exposes a number of [Prometheus](https://prometheus.io/)-based metrics + counters via the configuration
+API to help monitor the health of the gateway.
+
 ## Contents
 
-1. [Introduction](#introduction)
 1. [Collecting Metrics](#collecting-metrics)
 1. [Visualizing Data](#visualizing-data)
-   1. [Prometheus]#prometheus)
+   1. [Prometheus](#prometheus)
    1. [InfluxDB](#influxdb)
 1. [List of Metrics](#list-of-metrics)
    1. [Events API](#events-api)
    1. [Configuration API](#configuration-api)
 
-### Introduction
-
-The Event Gateway exposes a number of [Prometheus](https://prometheus.io/)-based metrics + counters via the configuration
-API to help monitor the health of the gateway. The table below outlines the specific metrics available to query from the endpoint:
-
 ### Collecting Metrics
 
-Event Gateawy metrics are exposed via a Prometheus text-based metric [exporter](https://prometheus.io/docs/instrumenting/exposition_formats/#text-format-example) and as such are
+Event Gateway metrics are exposed via a Prometheus text-based metric [exporter](https://prometheus.io/docs/instrumenting/exposition_formats/#text-format-example) and as such are
 queryable by a variety of modern toolsets. While you can scrape data directly from your prometheus database, the following (non-exhaustive) list of sources can also
 be configured to scrape Event Gateway metrics:
 
@@ -37,15 +36,15 @@ Included in the [contrib](../contrib/grafana) folder are identical dashboards to
 data sources. Depending on your setup you'll find a [Prometheus](../contrib/grafana/prometheus) and [InfluxDB](../contrib/grafana/influxdb) version
 of the dashboard.
 
-Importing a grafana [dashboard](http://docs.grafana.org/reference/export_import/#export-and-import) is relatively straightforward provided your datasources are configured
-properly within your grafana instance. Each of our dashboards lists respective datasources as a template variable, assuming the default datasource is set
+Importing a Grafana [dashboard](http://docs.grafana.org/reference/export_import/#export-and-import) is relatively straightforward provided your datasources are configured
+properly within your Grafana instance. Each of our dashboards lists respective datasources as a template variable, assuming the default datasource is set
 to the type for your datasource; in other words, if you import the Prometheus dashboard the template will expect your default data source to be set
 to Prometheus.
 
 If your default datasource is not either of the Prometheus or InfluxDB sources, fear not! The template variable is set as the datasource for each
 panel within the dashboard, so updating the datasource is as easy as choosing another option from the template dropdown.
 
-**NOTE:** There are two dashboards included for each datasource: an aggregated dashboard for all spaces in a given eventgateway deployment, and a second
+**NOTE:** There are two dashboards included for each datasource: an aggregated dashboard for all spaces in a given Event Gateway deployment, and a second
 dashboard that can drill down to individual spaces.
 
 #### Prometheus
@@ -58,7 +57,7 @@ You can find the source for the InfluxDB dashboard [here](../contrib/grafana/inf
 
 ### List of Metrics
 
-Both Events and Configuration API exposes Prometheus metrics. The metrics are accesible via `/v1/metrics` endpoint of Configuration API.
+Both Events and Configuration API exposes Prometheus metrics. The metrics are accesible via `/v1/metrics` endpoint of Configuration API. The table below outlines the specific metrics available to query from the endpoint:
 
 #### Events API
 
