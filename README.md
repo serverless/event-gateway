@@ -70,7 +70,7 @@ If you don't want to run the Event Gateway yourself, you can use the hosted vers
 
 ### via Docker
 
-There is a [official Docker image](https://hub.docker.com/r/serverless/event-gateway/).
+There is an [official Docker image](https://hub.docker.com/r/serverless/event-gateway/).
 
 ```bash
 docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway --dev
