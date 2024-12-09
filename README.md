@@ -1,3 +1,7 @@
+**📦 Archived - This repository is archived and preserved for reference only. No updates, issues, or pull requests will be accepted. If you have questions, please reach out to our support team.**
+
+---
+
 ![Event Gateway - React to any event with FaaS function across clouds](https://s3.amazonaws.com/assets.github.serverless/event-gateway-readme-header-v2.gif)
 
 [We're Hiring!](https://serverless.com/company/jobs/) • [Website](https://serverless.com/event-gateway/) • [Slack](https://join.slack.com/t/serverless-contrib/shared_invite/enQtMzgxMTkxMzIzNTU3LTY0OGZlYWI2OTI4YTliMWQ0YWNlZGZjMDhkNDAyZGQyZDYwMzYwMTlmNmVmMzMzNmI4YzAyNjg0ZjZkYTdmMzU) • [Newsletter](http://eepurl.com/b8dv4P) • [Forum](http://forum.serverless.com) • [Meetups](https://github.com/serverless/meetups) • [Twitter](https://twitter.com/goserverless)
